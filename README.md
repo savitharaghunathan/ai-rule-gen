@@ -2,22 +2,31 @@
 
 An MCP server and CLI for generating [Konveyor](https://www.konveyor.io/) analyzer rules using AI. Point it at a migration guide, code snippets, or any description of migration concerns — it generates validated rules, tests, and confidence scores ready for the [konveyor/rulesets](https://github.com/konveyor/rulesets) repo.
 
-Works as an MCP server (connect from Claude Code, Kai, or any MCP client) or as a standalone CLI for CI/CD pipelines.
+Two entry points, shared internals:
+- **MCP server** — 4 deterministic tools for interactive rule construction from Claude Code, Cursor, Kai, or any MCP client. No server-side LLM needed.
+- **CLI** — E2E pipeline for CI/CD automation with server-side LLM.
 
-## Tools
+## MCP Tools
 
 | Tool | Description |
 |------|-------------|
-| `generate_rules` | Ingests any input (URL, code, changelog, text), extracts migration patterns via LLM, constructs valid YAML rules, saves to disk |
+| `construct_rule` | Takes rule parameters (ruleID, condition type, pattern, location, message, etc.), validates, returns valid YAML |
+| `construct_ruleset` | Takes name, description, labels, returns ruleset metadata YAML |
 | `validate_rules` | Structural validation: required fields, category, effort, regex, labels, duplicates |
-| `generate_test_data` | Scaffolds `.test.yaml` and generates compilable test source code |
-| `run_tests` | Executes `kantra test` with autonomous test-fix loop (fixes test data, not rules) |
-| `score_confidence` | LLM-as-judge scoring with adversarial rubric — accept/review/reject verdicts with evidence |
+| `get_help` | Documentation on condition types, valid locations, label format, categories, examples |
+
+## CLI Commands (require `RULEGEN_LLM_PROVIDER`)
+
+| Command | Description |
+|---------|-------------|
+| `rulegen generate` | Ingests any input (URL, code, changelog, text), extracts migration patterns via LLM, constructs valid YAML rules, saves to disk |
+| `rulegen test` | Generates test data + runs `kantra test` with autonomous test-fix loop |
+| `rulegen score` | LLM-as-judge scoring with adversarial rubric — accept/review/reject verdicts |
 
 ## Prerequisites
 
 - **Go 1.22+**
-- **kantra** — required for `run_tests` (must be on PATH where the server runs)
+- **kantra** — required for `rulegen test` (must be on PATH)
 
 ## Build
 
@@ -29,38 +38,64 @@ go build -o rulegen ./cmd/rulegen/
 
 ### MCP Server
 
-No API key needed — uses the client's LLM via MCP sampling.
+Start the server — no API key needed:
 
 ```bash
 ./rulegen serve --port 8080
 ```
 
-Connect from your MCP client:
+#### Connect from Claude Code
+
+Add `.mcp.json` to your project root:
 
 ```json
 {
   "mcpServers": {
     "rulegen": {
-      "url": "http://localhost:8080/sse"
+      "type": "sse",
+      "url": "http://localhost:8080/mcp"
     }
   }
 }
 ```
 
-Then call tools interactively:
+#### Connect from Cursor
+
+Add `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "rulegen": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
+```
+
+#### Example: Generate rules from a migration guide
+
+Once connected, ask your MCP client:
 
 ```
-generate_rules({
-  "guide_url": "https://spring.io/blog/migration-guide",
-  "source": "spring-boot-3",
-  "target": "spring-boot-4",
-  "language": "java"
-})
+Use the rulegen MCP server to generate Konveyor analyzer rules for this migration guide:
+https://gist.github.com/savitharaghunathan/52198c722b807f3862af38b72e6d7331
+
+Save the rules to the output/spring-boot-3-to-spring-boot-4/ folder with source and target labels.
 ```
+
+The client LLM will:
+1. Read the migration guide
+2. Call `get_help` to learn about condition types and locations
+3. Call `construct_rule` for each migration pattern it identifies
+4. Call `construct_ruleset` to create ruleset metadata
+5. Call `validate_rules` to verify the output
+
+No server-side LLM or API key is needed — the client's LLM does all the thinking.
 
 ### CLI
 
-Requires an LLM API key:
+Requires a server-side LLM provider:
 
 ```bash
 export RULEGEN_LLM_PROVIDER=anthropic
@@ -79,6 +114,8 @@ rulegen validate --rules ./output/spring-boot-3-to-spring-boot-4/rules/
 rulegen test --test-file ./output/.../tests/web.test.yaml --max-iterations 3
 rulegen score --rules ./output/spring-boot-3-to-spring-boot-4/rules/
 ```
+
+Supported providers: `anthropic`, `openai`, `gemini`, `ollama` (local models).
 
 ## Output
 

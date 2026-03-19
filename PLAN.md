@@ -22,7 +22,7 @@ Make rule generation cheaper, thereby enabling the adoption of Konveyor and Kai 
 | Project | Description | Language |
 |---------|-------------|----------|
 | [konveyor/rulesets](https://github.com/konveyor/rulesets) | Existing rulesets repo | YAML |
-| [analyzer-rule-generator (ARG)](https://github.com/konveyor-ecosystem/analyzer-rule-generator) | AI-powered rules generator. Takes migration guides as input. Has a Claude skill for interactive generation. E2E pipeline with migration complexity metrics. | Python |
+| [analyzer-rule-generator (ARG)](https://github.com/konveyor-ecosystem/analyzer-rule-generator) | AI-powered rules generator. Takes migration guides as input. E2E pipeline with migration complexity metrics. | Python |
 | [Scribe](https://github.com/sshaaf/scribe) | MCP server exposing rule construction tools. One unified tool handling various operations via parametric collapse pattern. | Java (Quarkus) |
 
 ## Phase Overview
@@ -41,59 +41,136 @@ Make rule generation cheaper, thereby enabling the adoption of Konveyor and Kai 
 
 Two entry points, shared internals:
 
+#### Interactive Workflow (MCP Client — no server LLM)
+
 ```
-┌──────────────────────┐      ┌───────────────────────┐
-│  MCP Clients         │      │  CLI / Pipeline        │
-│  Claude Code, Kai,   │      │  rulegen generate ...  │
-│  VS Code             │      │  rulegen validate ...  │
-└──────────┬───────────┘      └───────────┬────────────┘
-           │ MCP (SSE)                    │ direct Go calls
-           ▼                              ▼
-┌────────────────────┐       ┌────────────────────────┐
-│  MCP Server        │       │  CLI commands (Cobra)  │
-│  (tool handlers    │       │  + server-side LLM     │
-│   + MCP sampling)  │       │    (API key required)  │
-└────────┬───────────┘       └───────────┬────────────┘
-         │                               │
-         └──────────┬────────────────────┘
-                    ▼
-      ┌───────────────────────────┐
-      │  Shared internal packages │
-      │  rules/     ingestion/    │
-      │  extraction/ generation/  │
-      │  testing/   confidence/   │
-      └─────────────┬─────────────┘
-                    │
-                    ▼ shells out / imports
-      ┌───────────────┐  ┌────────────────┐
-      │  kantra test  │  │ rulesets repo   │
-      └───────────────┘  │ (output)        │
-                         └────────────────┘
+You: "Generate rules from https://example.com/spring-boot-4-migration"
+ │
+ ▼
+Client LLM (Claude/Cursor/Kai):
+ │  1. Fetches the URL, reads the migration guide
+ │  2. Understands the content — identifies breaking changes, API removals
+ │  3. For each migration pattern it finds, calls construct_rule:
+ │
+ ├── construct_rule(ruleID, condition_type, pattern, location, message, ...)
+ │     → returns valid YAML ✓
+ ├── construct_rule(...)  → valid YAML ✓
+ ├── construct_rule(...)  → valid YAML ✓
+ ├── construct_ruleset(name, description, labels)  → ruleset YAML ✓
+ └── validate_rules(rules_path)  → {valid: true, rule_count: 3}
+ │
+ ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  MCP Server (deterministic tools — no LLM, just builds YAML)    │
+│  construct_rule · construct_ruleset · validate_rules · get_help  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-| Entry Point | LLM | Transport |
-|-------------|-----|-----------|
-| MCP server | MCP sampling (client's LLM) | SSE |
-| CLI (`rulegen generate --guide-url ...`) | Server-side LLM (API key required) | None — direct Go calls |
+#### Pipeline Workflow (CLI — server-side LLM)
 
-### Transport: SSE Only
+```
+$ export RULEGEN_LLM_PROVIDER=anthropic
+$ export ANTHROPIC_API_KEY=sk-ant-...
+$ rulegen generate --guide-url <URL> --source s --target t --language java
+ │
+ ▼
+┌────────────────────────────────────────────────────────────────┐
+│  CLI does everything automatically:                            │
+│                                                                │
+│  1. INGEST:   Fetch URL → HTML→markdown → chunk if large       │
+│  2. EXTRACT:  Send chunks + prompt to LLM → []MigrationPattern │
+│  3. CONSTRUCT: Pattern → Rule (deterministic, same as          │
+│               construct_rule tool)                              │
+│  4. VALIDATE: Same checks as validate_rules tool               │
+│  5. SAVE:    Write to output/<source>-to-<target>/rules/       │
+│                                                                │
+│  Providers: Anthropic, OpenAI, Gemini, Ollama (local)          │
+└──────────────────────┬─────────────────────────────────────────┘
+                       │
+                       ▼
+         output/spring-boot-3-to-spring-boot-4/rules/
+         ├── ruleset.yaml
+         ├── web.yaml
+         └── security.yaml
+```
 
-SSE (Server-Sent Events over HTTP) is the sole transport. No stdio support.
+#### Same output, different "brain"
 
-- Works for all clients: Claude Code, Kai, VS Code, CI/CD pipelines
+| | Interactive (MCP) | Pipeline (CLI) |
+|---|---|---|
+| **Who reads the guide?** | Client LLM (Claude/Cursor) | Server-side LLM |
+| **Who picks the patterns?** | Client LLM | Server-side LLM |
+| **Who builds the YAML?** | MCP Server (`construct_rule`) | CLI (same internal code) |
+| **Who validates?** | MCP Server (`validate_rules`) | CLI (same internal code) |
+| **API key needed?** | No | Yes |
+| **Human in the loop?** | Yes | No |
+| **Best for** | Crafting rules, learning, small batches | CI/CD, bulk generation, automation |
+
+#### System Architecture
+
+```
+┌──────────────────────────┐      ┌───────────────────────┐
+│  MCP Clients             │      │  CLI                   │
+│  Claude Code, Cursor,    │      │  rulegen generate ...  │
+│  Kai                     │      │  rulegen test ...      │
+└──────────┬───────────────┘      │  rulegen score ...     │
+           │ MCP (SSE)            └───────────┬────────────┘
+           ▼                                  │ direct Go calls
+┌────────────────────────┐                    │
+│  MCP Server            │                    │
+│  (4 deterministic      │                    │
+│  tools, no LLM)        │                    │
+│                        │                    │
+│  construct_rule        │                    │
+│  construct_ruleset     │                    │
+│  validate_rules        │                    │
+│  get_help              │                    │
+└──────────┬─────────────┘                    │
+           │                                  │
+           ▼                                  ▼
+┌────────────────────────────────────────────────────────────┐
+│  Shared internal packages                                  │
+└────────────────────────────────────┬───────────────────────┘
+                                     │
+                                     ▼
+                       ┌───────────────────────────┐
+                       │  Shared internal packages  │
+                       │  rules/     ingestion/     │
+                       │  extraction/ generation/   │
+                       │  testing/   confidence/    │
+                       └─────────────┬──────────────┘
+                                     │
+                                     ▼ shells out
+                       ┌───────────────┐  ┌────────────────┐
+                       │  kantra test  │  │ rulesets repo   │
+                       └───────────────┘  │ (output)        │
+                                          └────────────────┘
+```
+
+### Transport: SSE
+
+SSE transport via the official Go MCP SDK. No stdio.
+
+- Works for all MCP clients: Claude Code, Kai, Cursor
 - Single deployment model — run locally (`localhost:port`) or containerized
-- Natural fit for container/Kubernetes deployment
 - Bind to `localhost` by default for security; configurable for remote use
 
-### MCP Tools (5 user-facing)
+### MCP Tools (4 deterministic, no server LLM)
 
-| # | Tool | Type | MCP (via sampling) | CLI (via server LLM) | Description |
-|---|------|------|--------------------|----------------------|-------------|
-| 1 | `generate_rules` | LLM + deterministic | MCP Sampling | Server-side LLM | Takes any input (guide URL, code snippets, changelog, text). Internally ingests, extracts patterns via LLM, deterministically constructs valid YAML rules + ruleset metadata, and saves to `output/<source>-to-<target>/rules/`. |
-| 2 | `validate_rules` | Deterministic | N/A | N/A | Validate rule YAML: structure, required fields, regex syntax, label format, duplicate ruleIDs. |
-| 3 | `generate_test_data` | LLM + deterministic | MCP Sampling | Server-side LLM | Scaffolds .test.yaml + directory structure, generates compilable test source code (ARG-style: templates + post-processing). Saves to `output/<source>-to-<target>/tests/`. |
-| 4 | `run_tests` | LLM + deterministic | MCP Sampling | Server-side LLM | Execute `kantra test`. On failure, autonomous test-fix loop: analyze failures → LLM regenerates test data with hints → re-run. Configurable `max_iterations` (default 3). Fixes test data, not rules. |
-| 5 | `score_confidence` | LLM | MCP Sampling | Server-side LLM | LLM-as-judge scoring with adversarial rubric in fresh context. Saves to `output/<source>-to-<target>/confidence/`. |
+| # | Tool | Description |
+|---|------|-------------|
+| 1 | `construct_rule` | Takes all rule parameters (ruleID, condition type, pattern, location, message, category, effort, labels, links), validates, returns valid YAML. Rich description for client LLM. |
+| 2 | `construct_ruleset` | Takes name, description, labels, returns ruleset YAML. |
+| 3 | `validate_rules` | Validate rule YAML: structure, required fields, regex syntax, label format, duplicate ruleIDs. |
+| 4 | `get_help` | Returns documentation on condition types, locations, labels, rule format, examples. |
+
+### CLI Commands (pipeline, require `RULEGEN_LLM_PROVIDER` + API key)
+
+| Command | Description |
+|---------|-------------|
+| `rulegen generate` | E2E pipeline: ingest → extract patterns (LLM) → construct rules → validate → save to disk. |
+| `rulegen test` | Generates test data (ARG-style) + executes `kantra test` + autonomous fix loop. |
+| `rulegen score` | LLM-as-judge scoring with adversarial rubric in fresh context. |
 
 ### Internal Functions (not exposed as MCP tools)
 
@@ -101,60 +178,57 @@ SSE (Server-Sent Events over HTTP) is the sole transport. No stdio support.
 |----------|------|---------|
 | `ingest` | Deterministic | `generate_rules` — URL/file/text ingestion, HTML→markdown |
 | `extract_migration_patterns` | LLM | `generate_rules` — pattern extraction from ingested content |
-| `construct_rule` | Deterministic | `generate_rules` — assembles valid YAML from extracted patterns |
-| `construct_ruleset` | Deterministic | `generate_rules` — builds ruleset.yaml metadata |
+| `construct_rule` (internal) | Deterministic | `generate_rules` + `construct_rule` tool — assembles valid YAML |
+| `construct_ruleset` (internal) | Deterministic | `generate_rules` + `construct_ruleset` tool — builds ruleset.yaml |
 | `scaffold_test` | Deterministic | `generate_test_data` — creates .test.yaml + directory structure |
 | `fix_test_data` | LLM | `run_tests` — analyzes kantra failures, regenerates test code with hints |
 
 ### LLM Strategy
 
-The same internal packages power both entry points. The only difference is where the LLM inference happens.
+No MCP sampling — no mainstream MCP client supports it. Two entry points:
 
-#### MCP Server Path (Interactive)
+#### Interactive Mode (MCP — no server LLM)
 
-When used from Claude Code, Kai, or any MCP client with an LLM:
-- The **server builds the prompt** using structured templates (ported from ARG's Jinja2 templates)
-- The server sends a **sampling request** to the client via MCP protocol
-- The **client's LLM generates** the response
-- The server **post-processes** the result (extract code blocks, validate language, inject imports, etc.)
-- **No API key needed on the server**
+The client LLM (Claude/Cursor/Kai) does all the thinking. It reads migration guides, identifies patterns, and calls deterministic MCP tools. No API key needed on the server.
 
-#### CLI Path (Pipeline)
+#### Pipeline Mode (CLI — server-side LLM)
 
-When running from CLI (`rulegen generate ...`), CI/CD, or batch scripts:
-- The CLI calls internal packages directly — no MCP protocol involved
-- The server-side LLM client handles inference
-- Same templates, same post-processing as the MCP path
-- **Requires API key**: `RULEGEN_LLM_PROVIDER`, `ANTHROPIC_API_KEY`, etc.
+Configured via environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `RULEGEN_LLM_PROVIDER` | Provider name: `anthropic`, `openai`, `gemini`, `ollama` |
+| `ANTHROPIC_API_KEY` | API key for Anthropic (Claude) |
+| `OPENAI_API_KEY` | API key for OpenAI (GPT) |
+| `GEMINI_API_KEY` | API key for Google Gemini |
+| `OLLAMA_HOST` | Ollama server URL (default: `http://localhost:11434`) |
+| `OLLAMA_MODEL` | Ollama model name (default: `llama3`) |
 
 #### Implementation
 
-Both paths share the same core logic, parameterized by an LLM interface:
+Both modes share the same core logic. Pipeline commands are parameterized by a `Completer` interface:
 
 ```go
-// Completer abstracts LLM inference — could be MCP sampling or server-side LLM
+// Completer abstracts LLM inference
 type Completer interface {
     Complete(ctx context.Context, prompt string) (string, error)
 }
 
-// MCP path: sampling-based completer
-type SamplingCompleter struct { sampler mcp.Sampler }
+// Server-side LLM: calls provider API directly
+type LLMCompleter struct { provider Provider }
 
-// CLI path: direct API completer
-type LLMCompleter struct { client llm.Client }
-
-// Shared logic uses the interface
-func (t *TestDataGenerator) generate(rules []Rule, lang string, c Completer) (string, error) {
-    prompt := t.buildPrompt(rules, lang) // same template either way
-    return c.Complete(ctx, prompt)
+// Provider implementations
+type Provider interface {
+    Complete(ctx context.Context, prompt string) (string, error)
 }
+// AnthropicProvider, OpenAIProvider, GeminiProvider, OllamaProvider
 ```
 
 ### Confidence Scoring
 
 Independence is about **context, not vendor**. The judge never sees the generation prompt, chain-of-thought, or migration guide. It receives only the raw rule YAML and the rubric.
 
-Works with both MCP sampling (fresh context in the sampling request) and server-side LLM.
+Works with any configured LLM provider.
 
 #### Adversarial Framing
 
@@ -170,27 +244,22 @@ many rules you approve. Score conservatively.
 criteria:
   pattern_correctness (1-5):
     5: Pattern matches exactly what's described, correct provider/location
-    3: Pattern mostly works but could miss cases or match unintended code
     1: Pattern is wrong, uses wrong provider, or will never match
 
   message_quality (1-5):
     5: Clear Before/After code examples, actionable migration steps, 10+ lines
-    3: Has examples but missing context or steps
     1: Vague, no examples, not actionable
 
   category_appropriateness (1-5):
     5: Category perfectly matches the severity
-    3: Debatable but defensible
     1: Clearly wrong category
 
   effort_accuracy (1-5):
     5: Effort score accurately reflects the work needed
-    3: Off by 1 point
     1: Wildly inaccurate
 
   false_positive_risk (1-5):
     5: Highly specific, near-zero false positive risk
-    3: Some risk of matching non-migration code
     1: Will flag most codebases incorrectly
 
 verdict:
@@ -199,60 +268,42 @@ verdict:
   reject:  overall < 2.5
 ```
 
-Evidence requirement: Judge must cite specific pattern/line for every deduction.
-
 ### Test Data Generation (ARG-style)
 
 The `generate_test_data` tool follows ARG's proven pipeline:
 
 1. **Load rules** — parse rule YAML, extract patterns
 2. **Detect language** — from conditions (java.referenced -> Java, etc.)
-3. **Extract code hints** — deterministic hints from regex patterns + Before/After code blocks in messages
-4. **Build prompt** — Go templates (ported from ARG's Jinja2) with:
-   - Language-specific instructions (Java: pom.xml, location-type rules; Go: go.mod; TypeScript: package.json)
-   - Pattern requirements with code hints
-   - Build file format specification
-   - Request for exactly 2-3 code blocks
-5. **Call LLM** — via MCP sampling (interactive) or server-side LLM (pipeline)
-6. **Extract code blocks** — parse fenced blocks by type (xml -> build, java -> source, properties -> config)
-7. **Validate language** — detect Java/TypeScript mismatches
-8. **Post-process**:
-   - Inject missing import statements for IMPORT location rules
-   - Create missing config files for builtin.filecontent rules targeting config patterns
-   - Create placeholder files for builtin.file rules (e.g., banner.png)
+3. **Extract code hints** — deterministic hints from regex patterns + Before/After code blocks
+4. **Build prompt** — Go templates with language-specific instructions
+5. **Call LLM** — via configured provider
+6. **Extract code blocks** — parse fenced blocks by type
+7. **Validate language** — detect mismatches
+8. **Post-process** — inject imports, create config files, create placeholder files
 9. **Write files** — build file, source file, config file to test data directory
-10. **Generate .test.yaml** — with rulesPath, providers, test cases (atLeast: 1)
+10. **Generate .test.yaml** — with rulesPath, providers, test cases
 
-**Autonomous test-fix loop** (in `run_tests`, configurable `max_iterations`):
-1. Run `kantra test`
-2. If all pass → done
-3. For each failure: analyze kantra debug output, identify which pattern didn't match
-4. Use LLM to generate improved code hints for failing patterns
-5. Regenerate test data with patched hints
-6. Re-run tests
-7. Repeat until passing or max iterations reached
-
-Rules are the source of truth — the loop fixes **test data, not rules** (same as ARG).
+**Autonomous test-fix loop** (in `run_tests`):
+Rules are the source of truth — the loop fixes **test data, not rules**.
 ARG real-world performance: 70% pass → 95%+ in 2-3 iterations.
 
 ### Condition Types Supported
 
 | Provider | Condition | Key Fields |
 |----------|-----------|------------|
-| `java.referenced` | Java type/class reference | `pattern`, `location` (ANNOTATION, IMPORT, CLASS, METHOD_CALL, CONSTRUCTOR_CALL, FIELD, METHOD, INHERITANCE, IMPLEMENTS_TYPE, ENUM, RETURN_TYPE, VARIABLE_DECLARATION, TYPE, PACKAGE) |
+| `java.referenced` | Java type/class reference | `pattern`, `location` (14 values) |
 | `java.dependency` | Maven dependency | `name`, `nameregex`, `lowerbound`, `upperbound` |
 | `go.referenced` | Go symbol reference | `pattern` |
 | `go.dependency` | Go module dependency | `name`, `nameregex`, `lowerbound`, `upperbound` |
 | `nodejs.referenced` | Node.js symbol reference | `pattern` |
-| `csharp.referenced` | C# symbol reference | `pattern`, `location` (ALL, METHOD, FIELD, CLASS) |
+| `csharp.referenced` | C# symbol reference | `pattern`, `location` (4 values) |
 | `builtin.filecontent` | File content regex | `pattern`, `filePattern`, `filepaths` |
 | `builtin.file` | File existence | `pattern` |
 | `builtin.xml` | XPath on XML | `xpath`, `namespaces`, `filepaths` |
 | `builtin.json` | XPath on JSON | `xpath`, `filepaths` |
 | `builtin.hasTags` | Tag check | `[]string` |
 | `builtin.xmlPublicID` | DOCTYPE match | `regex`, `namespaces`, `filepaths` |
-| `and` | All conditions match | Array of conditions |
-| `or` | Any condition matches | Array of conditions |
+| `and` / `or` | Combinators | Array of conditions |
 
 Advanced condition fields: `from`, `as`, `ignore`, `not` (for chaining and negation).
 
@@ -292,35 +343,6 @@ Advanced condition fields: `from`, `as`, `ignore`, `not` (for chaining and negat
     java.referenced:
       pattern: org.springframework.web.bind.annotation.RequestMapping
       location: ANNOTATION
-  customVariables: []
-  tag: []
-```
-
-### Ruleset Format
-
-```yaml
-name: spring-boot-4-migration
-description: Rules for migrating Spring Boot 3.x to 4.0
-labels:
-  - konveyor.io/source=spring-boot-3
-  - konveyor.io/target=spring-boot-4
-```
-
-### Test YAML Format
-
-```yaml
-rulesPath: ../rules/spring-boot-4-migration.yaml
-providers:
-  - name: java
-    dataPath: ./data/spring-boot-4
-  - name: builtin
-    dataPath: ./data/spring-boot-4
-tests:
-  - ruleID: spring-boot-4-migration-00010
-    testCases:
-      - name: tc-1
-        hasIncidents:
-          atLeast: 1
 ```
 
 ### Output Structure (matches rulesets repo)
@@ -329,17 +351,12 @@ tests:
 output_path/
 ├── rules/
 │   ├── ruleset.yaml
-│   ├── spring-boot-4-migration-controller.yaml
-│   ├── spring-boot-4-migration-security.yaml
-│   └── ...
+│   ├── web.yaml
+│   └── security.yaml
 ├── tests/
-│   ├── spring-boot-4-migration-controller.test.yaml
-│   ├── spring-boot-4-migration-security.test.yaml
+│   ├── web.test.yaml
 │   └── data/
-│       ├── controller/
-│       │   ├── pom.xml
-│       │   └── src/main/java/com/example/App.java
-│       └── security/
+│       └── web/
 │           ├── pom.xml
 │           └── src/main/java/com/example/App.java
 └── confidence/
@@ -348,149 +365,25 @@ output_path/
 
 ---
 
-## Project Structure
-
-```
-ai-rule-gen/
-├── cmd/
-│   └── rulegen/
-│       └── main.go                 # Entry point: MCP server + CLI (Cobra)
-├── internal/
-│   ├── server/
-│   │   └── server.go               # MCP server setup, tool registration, SSE transport
-│   ├── tools/
-│   │   ├── generate.go             # generate_rules tool (LLM + deterministic, saves to disk)
-│   │   ├── validate.go             # validate_rules tool
-│   │   ├── test_generate.go        # generate_test_data tool (LLM + deterministic)
-│   │   ├── test_run.go             # run_tests tool (kantra + autonomous fix loop)
-│   │   └── confidence.go           # score_confidence tool (LLM)
-│   ├── llm/
-│   │   ├── completer.go            # Completer interface + SamplingCompleter + LLMCompleter
-│   │   ├── anthropic.go            # Anthropic provider
-│   │   ├── openai.go               # OpenAI provider
-│   │   └── google.go               # Google provider
-│   ├── rules/
-│   │   ├── types.go                # Rule, Ruleset, Condition, Link types
-│   │   ├── builder.go              # Condition builders (java, go, builtin, etc.)
-│   │   ├── serializer.go           # YAML serialization/deserialization
-│   │   └── validator.go            # Structural validation
-│   ├── ingestion/
-│   │   ├── ingest.go               # URL/file/text ingestion
-│   │   ├── html.go                 # HTML to Markdown conversion
-│   │   └── chunker.go              # Content chunking for LLM context
-│   ├── extraction/
-│   │   ├── extractor.go            # Migration pattern extraction
-│   │   └── patterns.go             # MigrationPattern type
-│   ├── generation/
-│   │   ├── generator.go            # Pattern to Rule conversion
-│   │   └── ruleid.go               # Rule ID generation (increment by 10)
-│   ├── testing/
-│   │   ├── scaffold.go             # Test project scaffolding
-│   │   ├── testgen.go              # Test source generation
-│   │   ├── fixer.go                # Test failure analysis + LLM-driven code hint regen
-│   │   ├── runner.go               # kantra test runner wrapper
-│   │   └── langconfig.go           # Per-language project structure config
-│   ├── confidence/
-│   │   ├── scorer.go               # LLM-as-judge scorer
-│   │   └── rubric.go               # Scoring rubric definition
-│   ├── integration/                     # Integration tests (build tag: integration)
-│   │   ├── generate_test.go
-│   │   ├── validate_test.go
-│   │   ├── test_pipeline_test.go
-│   │   ├── confidence_test.go
-│   │   └── cli_test.go
-│   └── workspace/
-│       └── workspace.go            # Workspace directory management
-├── templates/
-│   ├── extraction/
-│   │   └── extract_patterns.tmpl   # Pattern extraction prompt
-│   ├── generation/
-│   │   ├── generate_rules.tmpl     # Rule generation prompt
-│   │   └── generate_message.tmpl   # Message generation prompt
-│   ├── testing/
-│   │   ├── main.tmpl               # Test source generation master prompt
-│   │   ├── java.tmpl               # Java-specific instructions
-│   │   ├── go.tmpl                 # Go-specific instructions
-│   │   ├── csharp.tmpl             # C#-specific instructions
-│   │   └── typescript.tmpl         # TypeScript-specific instructions
-│   └── confidence/
-│       └── judge.tmpl              # Adversarial judge prompt
-├── testdata/                            # Shared test fixtures
-│   ├── rules/valid/                     # Valid rule YAML for testing
-│   ├── rules/invalid/                   # Invalid rules for validator tests
-│   ├── ingestion/                       # Sample HTML/markdown for ingestion tests
-│   └── extraction/                      # Mock LLM responses
-├── test/
-│   └── e2e/                             # E2E tests (real LLM, build tag: e2e)
-├── go.mod
-├── go.sum
-├── Makefile
-├── Containerfile
-└── README.md
-```
-
 ## Key Dependencies
 
 ```
-github.com/konveyor/analyzer-lsp         → output/v1/konveyor types (Category, Link)
-github.com/konveyor-ecosystem/kantra      → pkg/testing types (TestsFile, Runner, Result)
-github.com/mark3labs/mcp-go               → MCP server SDK (widely adopted, SSE support)
-github.com/anthropics/anthropic-sdk-go    → Anthropic LLM client (pipeline mode)
-github.com/openai/openai-go              → OpenAI LLM client (pipeline mode)
+github.com/modelcontextprotocol/go-sdk    → Official MCP SDK (SSE + Streamable HTTP)
+github.com/anthropics/anthropic-sdk-go    → Anthropic LLM client
 gopkg.in/yaml.v3                          → YAML serialization
 github.com/JohannesKaufmann/html-to-markdown → HTML to Markdown for ingestion
+github.com/spf13/cobra                    → CLI framework
 ```
-
-### Condition Schema Approach
-
-**Chosen: Hardcoded condition structs (Approach B)**
-
-Define our own Go structs for each provider condition, mirroring upstream definitions from analyzer-lsp and external providers. Matches ARG's approach (`schema.py` with Pydantic models) and Constitution Principle VI (Simplicity).
-
-Use `parser.CreateSchema()` from analyzer-lsp for the base rule/ruleset OpenAPI schema, then define our own condition structs for the `when` field.
-
-**Alternative considered (Approach A — not chosen):** Import and instantiate the actual providers, call `Capabilities()` to get schemas always in sync with upstream. Rejected because:
-1. **Cross-language providers**: The C# provider is a Rust binary (`c-sharp-analyzer-provider`) — cannot be imported as a Go package. Would need to run it as a separate process and call via GRPC just to get its schema.
-2. **External provider architecture**: Java, Go, and Node.js providers are separate binaries that communicate with analyzer-lsp via GRPC. Getting their capabilities requires starting those processes and making RPC calls.
-3. **Heavy initialization**: Even the builtin provider requires `Init()` with logger, config, and service client setup before `Capabilities()` can be called.
-4. **Transitive dependencies**: Importing provider packages pulls in LSP clients, language server tooling, tree-sitter parsers, and other runtime dependencies irrelevant to YAML generation.
-5. **Diminishing returns**: The condition types are stable — the provider capability schemas haven't changed materially in years. Manual sync on rare upstream changes is cheaper than permanent runtime coupling.
-
-**Provider condition reference** (collected from upstream sources):
-
-| Provider | Condition | Source Repo | Fields |
-|----------|-----------|-------------|--------|
-| `java.referenced` | Java symbol reference | analyzer-lsp (external-providers/java-external-provider) | `pattern`, `location` (14 values: TYPE, INHERITANCE, METHOD_CALL, CONSTRUCTOR_CALL, ANNOTATION, IMPLEMENTS_TYPE, ENUM, RETURN_TYPE, IMPORT, VARIABLE_DECLARATION, PACKAGE, FIELD, METHOD, CLASS), `annotated` (pattern + elements[name,value]), `filepaths` |
-| `java.dependency` | Maven dependency | analyzer-lsp (provider/provider.go) | `name`, `name_regex`, `upperbound`, `lowerbound` |
-| `go.referenced` | Go symbol reference | analyzer-lsp (lsp/base_service_client) | `pattern` |
-| `go.dependency` | Go module dependency | analyzer-lsp (provider/provider.go) | `name`, `name_regex`, `upperbound`, `lowerbound` (shared `DependencyConditionCap`) |
-| `nodejs.referenced` | Node.js symbol reference | analyzer-lsp (external-providers/generic-external-provider) | `pattern` |
-| `csharp.referenced` | C# symbol reference | c-sharp-analyzer-provider (Rust, GRPC) | `pattern`, `location` (4 values: ALL, METHOD, FIELD, CLASS) |
-| `builtin.filecontent` | Regex in files | analyzer-lsp (provider/internal/builtin) | `pattern`, `filePattern`, `filepaths` |
-| `builtin.file` | File existence | analyzer-lsp (provider/internal/builtin) | `pattern` |
-| `builtin.xml` | XPath on XML | analyzer-lsp (provider/internal/builtin) | `xpath`, `namespaces`, `filepaths` |
-| `builtin.json` | XPath on JSON | analyzer-lsp (provider/internal/builtin) | `xpath`, `filepaths` |
-| `builtin.hasTags` | Tag check | analyzer-lsp (provider/internal/builtin) | `[]string` |
-| `builtin.xmlPublicID` | DOCTYPE match | analyzer-lsp (provider/internal/builtin) | `regex`, `namespaces`, `filepaths` |
-| `and` / `or` | Combinators | analyzer-lsp (parser/rule_parser.go) | Array of conditions |
-
-**Chaining fields** (available on all conditions): `from`, `as`, `ignore`, `not`
-
-**Note**: `csharp.dependency` does not exist — the C# provider returns empty dependency lists. The C# provider is Rust-based in a separate repo (`konveyor/c-sharp-analyzer-provider`), communicating via GRPC.
 
 ### Why Not Import engine.Rule Directly
 
 The analyzer-lsp `engine.Rule` type contains runtime interfaces (`Conditional` with `Evaluate()` methods) and heavy provider dependencies. We only need YAML-serializable types. Both Scribe and ARG take this same approach.
 
-We **can** import:
-- `github.com/konveyor/analyzer-lsp/output/v1/konveyor` — lightweight types (Category, Link)
-- `github.com/konveyor-ecosystem/kantra/pkg/testing` — test execution (TestsFile, Runner, Result)
-
 ---
 
 ## Testing Strategy
 
-Three test levels, all using `go test`. The `Completer` interface enables mocking LLM calls — no API keys needed for unit or integration tests.
+Three test levels, all using `go test`. The `Completer` interface enables mocking LLM calls.
 
 | Level | Scope | Build Tag | External Deps | Runs In CI |
 |-------|-------|-----------|---------------|------------|
@@ -498,22 +391,11 @@ Three test levels, all using `go test`. The `Completer` interface enables mockin
 | **Integration** | Multi-package pipelines with mock LLM | `integration` | None | Yes, every PR |
 | **E2E** | Real LLM + optionally kantra | `e2e` | API key, kantra | Nightly / manual |
 
-**Key testing patterns**:
-- `*_test.go` files live alongside source code
-- `testdata/` directories hold YAML fixtures and expected outputs
-- Mock `Completer` returns fixture JSON for deterministic assertions
-- `httptest.NewServer` for URL ingestion tests
-- `t.TempDir()` for workspace/filesystem tests
-
-**Test commands**:
 ```bash
 go test ./internal/...                           # Unit (fast, no deps)
 go test -tags=integration ./internal/integration/ # Integration (mock LLM)
 go test -tags=e2e ./test/e2e/                     # E2E (real LLM + kantra)
-go test -coverprofile=coverage.out ./...          # Coverage
 ```
-
-See [specs/001-mcp-rule-gen/test-plan.md](specs/001-mcp-rule-gen/test-plan.md) for detailed per-package test plan.
 
 ---
 
@@ -522,118 +404,34 @@ See [specs/001-mcp-rule-gen/test-plan.md](specs/001-mcp-rule-gen/test-plan.md) f
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Language | Go | Aligns with Konveyor ecosystem (analyzer-lsp, kantra) |
-| Transport | SSE only | Works for all clients (Claude Code, Kai, VS Code, CI/CD). Single deployment model. No need for stdio complexity. |
-| MCP SDK | `mcp-go` | 1695 importers, mature, supports SSE |
+| Transport | SSE | Works for all MCP clients. Single deployment model. |
+| MCP SDK | `modelcontextprotocol/go-sdk` | Official SDK |
 | Rule types | Own YAML types | engine.Rule has runtime interfaces; we only need serializable types |
-| LLM for tools | MCP sampling (MCP server path) + server-side LLM (CLI path) | No API key needed for MCP; CLI requires server config |
-| CLI / Pipeline | Direct Go calls, no MCP | CLI is not an MCP client — it calls internal packages directly with its own LLM client |
-| Confidence scoring | MCP sampling or server-side LLM, both with adversarial prompt in fresh context | Independence = context separation, not vendor separation |
+| Tool approach | MCP: constructor tools, CLI: pipeline | Constructor tools via MCP for interactive (Scribe-style). Pipeline via CLI for CI/automation. Pipeline not exposed as MCP tools (redundant — client LLM already does the thinking). |
+| LLM strategy | Server-side LLM only | No MCP client supports sampling. Multi-provider: Anthropic, OpenAI, Gemini, Ollama. |
+| CLI / Pipeline | Direct Go calls, no MCP | CLI calls internal packages directly with its own LLM client. Pipeline capabilities not exposed as MCP tools. |
 | Test generation | ARG-style (templates + LLM + post-processing) | Proven pipeline; deterministic-only covers ~30-40% of rules |
-| Server-side LLM | Optional for interactive, required for pipeline | Configured via env vars when needed |
-| Rule schema | `parser.CreateSchema()` for base rule/ruleset schema + own condition structs for `when` field | analyzer-lsp's `open_api.go` provides base schema; `when` is populated dynamically from providers at runtime, but we hardcode known capabilities (like ARG's `schema.py`) to avoid pulling in provider dependencies |
-| OpenRewrite | Phase 1.5 follow-up, not Phase 1 | Separate ingestion source feeding same MigrationPattern pipeline; easy to add later |
 
 ## Open Questions
 
-1. **kantra packaging**: How do we want to package/use kantra? Options:
-   - Local install (POC/Phase 1 — shell out to `kantra test` on PATH, same as ARG)
-   - Bundle in container image (Containerfile includes kantra binary)
-   - Import `kantra/pkg/testing` programmatically (Go library, no CLI dependency)
-   - Run kantra in its own container (kantra already supports containerized execution)
-   - **Are there alternatives to kantra for testing rules?** Could we validate rules against code without kantra (e.g., import analyzer-lsp's engine directly, or use a lightweight rule matcher)?
-   - **Phase 1 decision**: Local install, shell out. Revisit packaging for production deployment.
-
-2. **Rules per file**: ARG groups by "concern" (e.g., all controller-related rules in one file). Follow same pattern?
-
-3. **MCP sampling support**: Which MCP clients currently support sampling? Need testing to confirm Claude Code and Kai support.
-
----
-
-## Breakdown
-
-### 1 — Foundation
-- [ ] Project scaffold: go.mod, directory structure, Makefile
-- [ ] `rules/types.go` — Rule, Ruleset, Condition, Link types
-- [ ] `rules/builder.go` — All condition builders (java, go, csharp, nodejs, builtin, combinators)
-- [ ] `rules/serializer.go` — YAML read/write
-- [ ] `rules/validator.go` — Structural validation
-- [ ] MCP server skeleton with mcp-go, SSE transport
-- [ ] `llm/completer.go` — Completer interface + SamplingCompleter + LLMCompleter
-- [ ] MCP tool: `validate_rules`
-- [ ] Unit tests for types, builders, validation
-
-### 2 — Generate Rules (E2E)
-- [ ] `ingestion/ingest.go` — URL/file/text ingestion
-- [ ] `ingestion/html.go` — HTML to Markdown
-- [ ] `ingestion/chunker.go` — Content chunking
-- [ ] `extraction/extractor.go` — Pattern extraction (sampling + server-side LLM)
-- [ ] `extraction/patterns.go` — MigrationPattern type
-- [ ] `generation/generator.go` — Pattern to Rule conversion (deterministic construction)
-- [ ] `generation/ruleid.go` — Rule ID generation
-- [ ] `templates/extraction/extract_patterns.tmpl`
-- [ ] `templates/generation/*.tmpl`
-- [ ] `llm/anthropic.go` — Anthropic provider
-- [ ] `workspace/workspace.go` — Output directory management
-- [ ] MCP tool: `generate_rules` (ingest + extract + construct + save to disk)
-- [ ] Integration tests with sample migration guides
-- [ ] E2E test: guide URL -> rules saved to output directory
-
-### 3 — Testing
-- [ ] `testing/scaffold.go` — Test project scaffolding + .test.yaml generation
-- [ ] `testing/testgen.go` — Test source generation (sampling + server-side LLM, ARG-style)
-- [ ] `testing/runner.go` — kantra test runner wrapper (shells out, graceful if kantra not found)
-- [ ] `testing/fixer.go` — Test failure analysis + LLM-driven code hint regeneration
-- [ ] `testing/langconfig.go` — Per-language config (Java, Go, C#, TypeScript)
-- [ ] `templates/testing/*.tmpl` — Test generation prompts (ported from ARG)
-- [ ] MCP tool: `generate_test_data` (scaffold + LLM code gen + post-process)
-- [ ] MCP tool: `run_tests` (kantra test + autonomous fix loop)
-- [ ] E2E test: rules -> test data -> kantra test -> fix loop -> pass
-
-### 4 — Confidence + CLI + Polish
-- [ ] `confidence/scorer.go` — LLM-as-judge implementation
-- [ ] `confidence/rubric.go` — Rubric definition
-- [ ] `templates/confidence/judge.tmpl` — Adversarial judge prompt
-- [ ] MCP tool: `score_confidence`
-- [ ] CLI entry point with Cobra (`rulegen generate`, `rulegen validate`, etc.)
-- [ ] `llm/openai.go`, `llm/google.go` — Additional LLM providers
-- [ ] Containerfile + CI/CD
-- [ ] Documentation
-
-### 5 — Integration + Validation
-- [ ] Kai integration testing
-- [ ] Claude Code integration testing
-- [ ] Real-world validation: generate rules for 3+ migration paths
-- [ ] Submit generated rules to konveyor/rulesets
-- [ ] Performance tuning (parallel operations, caching)
-- [ ] Error handling, retry logic, rate limiting
+1. **kantra packaging**: Local install (Phase 1 — shell out to `kantra test`). Revisit for production.
+2. **Rules per file**: Group by "concern" (e.g., all controller-related rules in one file). Follow ARG pattern.
 
 ---
 
 ## Future Phases (out of scope for Phase 1)
 
 ### Phase 1.5 — OpenRewrite Recipe Ingestion
-- Ingest OpenRewrite YAML recipes (from URLs, GitHub raw, local files) and convert transformation logic into Konveyor detection rules
-- Follows ARG's approach: `OpenRewriteRecipeIngester` fetches/parses recipes, specialized LLM prompt converts transformations (ChangePackage, ChangeType, ChangeDependency) to detection patterns
-- Same pipeline: recipe → MigrationPattern → generate_rules → validate → test → score
-- New ingestion source, not a new tool — either extend `ingest` tool or add `ingest_openrewrite`
-- Mutually exclusive with migration guide input (different source, same output)
+- Ingest OpenRewrite YAML recipes and convert to Konveyor detection rules
 
 ### Phase 2a — Research Agents
 - LLM discovers migration paths, breaking changes, guides
-- Claude skill for migration user stories
-- Output feeds into Phase 1 tools
 
 ### Phase 2b — GitHub Mining
 - Discover framework usage patterns across repos
-- Categorize by age, migration status
-- Discover common patterns (SOAP, etc.)
 
 ### Phase 2c — Reverse Engineering
-- Identify migrated apps/repos
-- Reverse engineer patterns
-- Create migration guides and rules
+- Identify migrated apps, reverse engineer patterns
 
 ### Knowledge DB
 - Accumulate migration knowledge over time
-- Migration paths, concerns, patterns
-- "Migrating from JavaEE to Quarkus? Here are the 16 things you should know"

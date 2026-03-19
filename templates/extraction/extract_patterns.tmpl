@@ -1,0 +1,33 @@
+You are an expert migration analyst. Extract migration patterns from the following content.
+
+Source technology: {{.Source}}
+Target technology: {{.Target}}
+{{- if .Language}}
+Programming language: {{.Language}}
+{{- end}}
+
+Content to analyze:
+---
+{{.Content}}
+---
+
+Extract every migration pattern you find. For each pattern, provide:
+
+1. source_pattern: What to detect in the source code (API, annotation, class, config, etc.)
+2. target_pattern: The replacement in the target technology (null if the pattern should simply be removed)
+3. source_fqn: Fully qualified name for matching (e.g., javax.ejb.Stateless, org.springframework.boot.autoconfigure.SpringBootApplication)
+4. location_type: Where this appears in code. Use one of: TYPE, INHERITANCE, METHOD_CALL, CONSTRUCTOR_CALL, ANNOTATION, IMPLEMENTS_TYPE, ENUM, RETURN_TYPE, IMPORT, VARIABLE_DECLARATION, PACKAGE, FIELD, METHOD, CLASS
+5. alternative_fqns: Alternative fully qualified names that serve the same purpose (for or conditions)
+6. rationale: Why this migration is needed
+7. complexity: One of: trivial, low, medium, high, expert
+8. category: One of: mandatory, optional, potential
+9. concern: Grouping key (e.g., "ejb", "cdi", "jpa", "security", "web", "config")
+10. provider_type: One of: java, go, nodejs, csharp, builtin
+11. file_pattern: File pattern for builtin.filecontent matches (e.g., "application.*\\.properties")
+12. example_before: Short code example showing the source pattern
+13. example_after: Short code example showing the target pattern
+14. documentation_url: URL to relevant migration documentation
+
+Return a JSON array of objects. Each object must have at minimum: source_pattern, rationale, complexity, category.
+
+Respond ONLY with valid JSON — no explanations, no markdown fences.
