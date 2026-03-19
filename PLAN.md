@@ -393,6 +393,12 @@ ai-rule-gen/
 │   ├── confidence/
 │   │   ├── scorer.go               # LLM-as-judge scorer
 │   │   └── rubric.go               # Scoring rubric definition
+│   ├── integration/                     # Integration tests (build tag: integration)
+│   │   ├── generate_test.go
+│   │   ├── validate_test.go
+│   │   ├── test_pipeline_test.go
+│   │   ├── confidence_test.go
+│   │   └── cli_test.go
 │   └── workspace/
 │       └── workspace.go            # Workspace directory management
 ├── templates/
@@ -405,9 +411,17 @@ ai-rule-gen/
 │   │   ├── main.tmpl               # Test source generation master prompt
 │   │   ├── java.tmpl               # Java-specific instructions
 │   │   ├── go.tmpl                 # Go-specific instructions
+│   │   ├── csharp.tmpl             # C#-specific instructions
 │   │   └── typescript.tmpl         # TypeScript-specific instructions
 │   └── confidence/
 │       └── judge.tmpl              # Adversarial judge prompt
+├── testdata/                            # Shared test fixtures
+│   ├── rules/valid/                     # Valid rule YAML for testing
+│   ├── rules/invalid/                   # Invalid rules for validator tests
+│   ├── ingestion/                       # Sample HTML/markdown for ingestion tests
+│   └── extraction/                      # Mock LLM responses
+├── test/
+│   └── e2e/                             # E2E tests (real LLM, build tag: e2e)
 ├── go.mod
 ├── go.sum
 ├── Makefile
@@ -471,6 +485,35 @@ The analyzer-lsp `engine.Rule` type contains runtime interfaces (`Conditional` w
 We **can** import:
 - `github.com/konveyor/analyzer-lsp/output/v1/konveyor` — lightweight types (Category, Link)
 - `github.com/konveyor-ecosystem/kantra/pkg/testing` — test execution (TestsFile, Runner, Result)
+
+---
+
+## Testing Strategy
+
+Three test levels, all using `go test`. The `Completer` interface enables mocking LLM calls — no API keys needed for unit or integration tests.
+
+| Level | Scope | Build Tag | External Deps | Runs In CI |
+|-------|-------|-----------|---------------|------------|
+| **Unit** | Single package, table-driven | (none) | None | Yes, every PR |
+| **Integration** | Multi-package pipelines with mock LLM | `integration` | None | Yes, every PR |
+| **E2E** | Real LLM + optionally kantra | `e2e` | API key, kantra | Nightly / manual |
+
+**Key testing patterns**:
+- `*_test.go` files live alongside source code
+- `testdata/` directories hold YAML fixtures and expected outputs
+- Mock `Completer` returns fixture JSON for deterministic assertions
+- `httptest.NewServer` for URL ingestion tests
+- `t.TempDir()` for workspace/filesystem tests
+
+**Test commands**:
+```bash
+go test ./internal/...                           # Unit (fast, no deps)
+go test -tags=integration ./internal/integration/ # Integration (mock LLM)
+go test -tags=e2e ./test/e2e/                     # E2E (real LLM + kantra)
+go test -coverprofile=coverage.out ./...          # Coverage
+```
+
+See [specs/001-mcp-rule-gen/test-plan.md](specs/001-mcp-rule-gen/test-plan.md) for detailed per-package test plan.
 
 ---
 

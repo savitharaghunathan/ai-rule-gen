@@ -15,7 +15,25 @@ tests/
 
 ## Commands
 
-# Add commands for Go 1.22+
+```bash
+# Build
+go build -o rulegen ./cmd/rulegen/
+
+# Unit tests (fast, no external deps)
+go test ./internal/...
+
+# Integration tests (mock LLM, no API key)
+go test -tags=integration ./internal/integration/...
+
+# E2E tests (real LLM + kantra required)
+go test -tags=e2e ./test/e2e/...
+
+# Coverage
+go test -coverprofile=coverage.out ./...
+
+# Lint
+golangci-lint run ./...
+```
 
 ## Code Style
 

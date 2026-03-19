@@ -102,7 +102,7 @@ A DevOps engineer integrates rule generation into a CI/CD pipeline. They run a C
 - **FR-003**: System MUST support all Konveyor condition types: java.referenced (with all locations), java.dependency, go.referenced, go.dependency, nodejs.referenced, csharp.referenced, builtin.filecontent, builtin.file, builtin.xml, builtin.json, builtin.hasTags, builtin.xmlPublicID, and/or combinators
 - **FR-004**: System MUST use MCP sampling for LLM inference when an MCP client is present — no server-side API key required for interactive use
 - **FR-005**: System MUST provide a CLI entry point that calls internal packages directly with a server-side LLM for pipeline/CI use
-- **FR-006**: System MUST validate rules for: valid YAML, required fields (ruleID, when, message or tag), valid category values, effort range (1-5), regex pattern validity, label format (konveyor.io/source=, konveyor.io/target=), duplicate ruleIDs
+- **FR-006**: System MUST validate rules for: valid YAML, required fields (ruleID, when, message or tag), valid category values, effort range (1-10), regex pattern validity, label format (konveyor.io/source=, konveyor.io/target=), duplicate ruleIDs
 - **FR-007**: System MUST generate test data following ARG's pipeline: build prompt from templates, call LLM, extract code blocks, validate language, inject missing imports, create config files, write test project
 - **FR-008**: System MUST generate `.test.yaml` files compatible with `kantra test`
 - **FR-009**: System MUST score confidence using an adversarial rubric with 5 criteria (pattern correctness, message quality, category appropriateness, effort accuracy, false positive risk), producing accept/review/reject verdicts with evidence
