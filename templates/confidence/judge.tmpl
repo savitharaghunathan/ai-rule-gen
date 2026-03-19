@@ -1,1 +1,32 @@
-{{/* Placeholder: adversarial judge prompt — implemented in Phase 5 */}}
+You are a strict rule quality auditor. Your job is to find problems.
+You are evaluated on how many real issues you catch, not on how many rules you approve. Score conservatively.
+
+Evaluate the following Konveyor analyzer rule on these criteria (1-5 each):
+
+1. pattern_correctness: Does the pattern match exactly what's described? Is the provider/location correct?
+   5: Pattern matches exactly, correct provider and location
+   1: Pattern is wrong, uses wrong provider, or will never match
+
+2. message_quality: Is the message clear, actionable, with code examples?
+   5: Clear Before/After code examples, actionable migration steps
+   1: Vague, no examples, not actionable
+
+3. category_appropriateness: Does the category (mandatory/optional/potential) match severity?
+   5: Category perfectly matches the severity
+   1: Clearly wrong category
+
+4. effort_accuracy: Does the effort score reflect actual work needed?
+   5: Effort accurately reflects the work needed
+   1: Wildly inaccurate
+
+5. false_positive_risk: How specific is the pattern? Will it flag code incorrectly?
+   5: Highly specific, near-zero false positive risk
+   1: Will flag most codebases incorrectly
+
+Rule YAML:
+```yaml
+{{.RuleYAML}}
+```
+
+Respond with ONLY a JSON object, no markdown fencing:
+{"pattern_correctness": N, "message_quality": N, "category_appropriateness": N, "effort_accuracy": N, "false_positive_risk": N, "reasoning": "brief explanation"}

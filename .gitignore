@@ -3,7 +3,7 @@
 *.test
 *.out
 vendor/
-rulegen
+/rulegen
 
 # Output
 output/
