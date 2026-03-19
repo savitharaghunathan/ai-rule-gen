@@ -44,6 +44,7 @@ specs/001-mcp-rule-gen/
 ├── research.md          # Phase 0 output
 ├── data-model.md        # Phase 1 output
 ├── quickstart.md        # Phase 1 output
+├── test-plan.md         # Phase 1 output (per-package test plan)
 ├── contracts/           # Phase 1 output (MCP tool schemas)
 └── tasks.md             # Phase 2 output (/speckit.tasks)
 ```
@@ -93,6 +94,12 @@ ai-rule-gen/
 │   ├── confidence/
 │   │   ├── scorer.go               # LLM-as-judge scorer
 │   │   └── rubric.go               # Scoring rubric definition
+│   ├── integration/                     # Integration tests (build tag: integration)
+│   │   ├── generate_test.go
+│   │   ├── validate_test.go
+│   │   ├── test_pipeline_test.go
+│   │   ├── confidence_test.go
+│   │   └── cli_test.go
 │   └── workspace/
 │       └── workspace.go            # Output directory management
 ├── templates/
@@ -109,6 +116,13 @@ ai-rule-gen/
 │   │   └── typescript.tmpl         # TypeScript-specific instructions
 │   └── confidence/
 │       └── judge.tmpl              # Adversarial judge prompt
+├── testdata/                            # Shared test fixtures
+│   ├── rules/valid/                     # Valid rule YAML for testing
+│   ├── rules/invalid/                   # Invalid rules for validator tests
+│   ├── ingestion/                       # Sample HTML/markdown for ingestion tests
+│   └── extraction/                      # Mock LLM responses
+├── test/
+│   └── e2e/                             # E2E tests (real LLM, build tag: e2e)
 ├── go.mod
 ├── go.sum
 ├── Makefile
