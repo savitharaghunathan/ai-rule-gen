@@ -15,7 +15,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-type generateInput struct {
+// GenerateInput holds the parameters for the generate pipeline.
+type GenerateInput struct {
 	Input      string `json:"input"`
 	Source     string `json:"source"`
 	Target     string `json:"target"`
@@ -23,7 +24,8 @@ type generateInput struct {
 	OutputPath string `json:"output_path"`
 }
 
-type generateOutput struct {
+// GenerateOutput holds the results of the generate pipeline.
+type GenerateOutput struct {
 	OutputPath        string   `json:"output_path"`
 	FilesWritten      []string `json:"files_written"`
 	RuleCount         int      `json:"rule_count"`
@@ -35,7 +37,7 @@ type generateOutput struct {
 // If completer is nil, it creates one from RULEGEN_LLM_PROVIDER env var.
 func GenerateRulesHandler(completer llm.Completer) mcp.ToolHandler {
 	return func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var input generateInput
+		var input GenerateInput
 		if err := json.Unmarshal(req.Params.Arguments, &input); err != nil {
 			return errorResult(fmt.Sprintf("invalid arguments: %v", err)), nil
 		}
@@ -58,7 +60,7 @@ func GenerateRulesHandler(completer llm.Completer) mcp.ToolHandler {
 			}
 		}
 
-		result, err := runGeneratePipeline(ctx, c, input)
+		result, err := RunGeneratePipeline(ctx, c, input)
 		if err != nil {
 			return errorResult(fmt.Sprintf("generate_rules failed: %v", err)), nil
 		}
@@ -76,14 +78,39 @@ func GenerateRulesHandler(completer llm.Completer) mcp.ToolHandler {
 	}
 }
 
-func runGeneratePipeline(ctx context.Context, completer llm.Completer, input generateInput) (*generateOutput, error) {
+// RunGeneratePipeline executes the full rule generation pipeline.
+func RunGeneratePipeline(ctx context.Context, completer llm.Completer, input GenerateInput) (*GenerateOutput, error) {
 	// 1. Ingest
 	ingested, err := ingestion.Ingest(input.Input, ingestion.DefaultMaxChunkSize)
 	if err != nil {
 		return nil, fmt.Errorf("ingestion: %w", err)
 	}
 
+	// 1b. Auto-detect source/target/language if not provided
+	if input.Source == "" || input.Target == "" {
+		detectTmpl, err := templates.Load("extraction/detect_metadata.tmpl")
+		if err != nil {
+			return nil, fmt.Errorf("loading detect template: %w", err)
+		}
+		content := ingested.Chunks[0]
+		meta, err := extraction.DetectMetadata(ctx, completer, detectTmpl, content)
+		if err != nil {
+			return nil, fmt.Errorf("auto-detection: %w", err)
+		}
+		if input.Source == "" {
+			input.Source = meta.Source
+		}
+		if input.Target == "" {
+			input.Target = meta.Target
+		}
+		if input.Language == "" {
+			input.Language = meta.Language
+		}
+		fmt.Printf("Auto-detected: source=%s, target=%s, language=%s\n", input.Source, input.Target, input.Language)
+	}
+
 	// 2. Extract patterns (LLM)
+	fmt.Printf("Extracting patterns from %d chunk(s)...\n", len(ingested.Chunks))
 	extractTmpl, err := templates.Load("extraction/extract_patterns.tmpl")
 	if err != nil {
 		return nil, fmt.Errorf("loading extraction template: %w", err)
@@ -93,8 +120,10 @@ func runGeneratePipeline(ctx context.Context, completer llm.Completer, input gen
 	if err != nil {
 		return nil, fmt.Errorf("extraction: %w", err)
 	}
+	fmt.Printf("Extracted %d patterns\n", len(patterns))
 
 	// 3. Generate rules (deterministic + LLM for messages)
+	fmt.Println("Generating rules...")
 	messageTmpl, err := templates.Load("generation/generate_message.tmpl")
 	if err != nil {
 		return nil, fmt.Errorf("loading message template: %w", err)
@@ -114,6 +143,7 @@ func runGeneratePipeline(ctx context.Context, completer llm.Completer, input gen
 	for _, rr := range grouped {
 		allRules = append(allRules, rr...)
 	}
+	fmt.Printf("Generated %d rules, validating...\n", len(allRules))
 	result := rules.Validate(allRules)
 	if !result.Valid {
 		return nil, fmt.Errorf("generated rules failed validation: %v", result.Errors)
@@ -145,7 +175,7 @@ func runGeneratePipeline(ctx context.Context, completer llm.Completer, input gen
 		concerns = append(concerns, name)
 	}
 
-	return &generateOutput{
+	return &GenerateOutput{
 		OutputPath:        ws.Root,
 		FilesWritten:      filesWritten,
 		RuleCount:         len(allRules),

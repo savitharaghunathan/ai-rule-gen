@@ -36,10 +36,12 @@ func (e *Extractor) Extract(ctx context.Context, chunks []string, source, target
 	var allPatterns []MigrationPattern
 
 	for i, chunk := range chunks {
+		fmt.Printf("  Processing chunk %d/%d (%d chars)...\n", i+1, len(chunks), len(chunk))
 		patterns, err := e.extractChunk(ctx, chunk, source, target, language)
 		if err != nil {
 			return nil, fmt.Errorf("chunk %d: %w", i, err)
 		}
+		fmt.Printf("  Chunk %d: found %d patterns\n", i+1, len(patterns))
 		allPatterns = append(allPatterns, patterns...)
 	}
 
