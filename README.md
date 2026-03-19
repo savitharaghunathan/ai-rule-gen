@@ -1,10 +1,10 @@
 # ai-rule-gen
 
-An MCP server and CLI for generating [Konveyor](https://www.konveyor.io/) analyzer rules using AI. Point it at a migration guide, code snippets, or any description of migration concerns — it generates validated rules, tests, and confidence scores ready for the [konveyor/rulesets](https://github.com/konveyor/rulesets) repo.
+An MCP server and CLI for generating [Konveyor](https://www.konveyor.io/) analyzer rules using AI. Point it at a migration guide, code snippets, or any description of migration concerns — it generates validated rules ready for the [konveyor/rulesets](https://github.com/konveyor/rulesets) repo.
 
 Two entry points, shared internals:
 - **MCP server** — 4 deterministic tools for interactive rule construction from Claude Code, Cursor, Kai, or any MCP client. No server-side LLM needed.
-- **CLI** — E2E pipeline for CI/CD automation with server-side LLM.
+- **CLI** — E2E pipeline for CI/CD automation with server-side LLM. Auto-detects source/target/language from content.
 
 ## MCP Tools
 
@@ -15,13 +15,13 @@ Two entry points, shared internals:
 | `validate_rules` | Structural validation: required fields, category, effort, regex, labels, duplicates |
 | `get_help` | Documentation on condition types, valid locations, label format, categories, examples |
 
-## CLI Commands (require `RULEGEN_LLM_PROVIDER`)
+## CLI Commands
 
-| Command | Description |
-|---------|-------------|
-| `rulegen generate` | Ingests any input (URL, code, changelog, text), extracts migration patterns via LLM, constructs valid YAML rules, saves to disk |
-| `rulegen test` | Generates test data + runs `kantra test` with autonomous test-fix loop |
-| `rulegen score` | LLM-as-judge scoring with adversarial rubric — accept/review/reject verdicts |
+| Command | Description | Status |
+|---------|-------------|--------|
+| `rulegen generate` | Ingest input (URL, file, text) → extract patterns via LLM → construct rules → validate → save | Implemented |
+| `rulegen test` | Generate test data + run `kantra test` with autonomous fix loop | Planned |
+| `rulegen score` | LLM-as-judge scoring with adversarial rubric | Planned |
 
 ## Prerequisites
 
@@ -53,7 +53,7 @@ Add `.mcp.json` to your project root:
   "mcpServers": {
     "rulegen": {
       "type": "sse",
-      "url": "http://localhost:8080/mcp"
+      "url": "http://localhost:8080/sse"
     }
   }
 }
@@ -67,13 +67,13 @@ Add `.cursor/mcp.json`:
 {
   "mcpServers": {
     "rulegen": {
-      "url": "http://localhost:8080/mcp"
+      "url": "http://localhost:8080/sse"
     }
   }
 }
 ```
 
-#### Example: Generate rules from a migration guide
+#### Example: Generate rules interactively
 
 Once connected, ask your MCP client:
 
@@ -81,12 +81,12 @@ Once connected, ask your MCP client:
 Use the rulegen MCP server to generate Konveyor analyzer rules for this migration guide:
 https://gist.github.com/savitharaghunathan/52198c722b807f3862af38b72e6d7331
 
-Save the rules to the output/spring-boot-3-to-spring-boot-4/ folder with source and target labels.
+Save the rules to the output folder with source and target labels.
 ```
 
 The client LLM will:
-1. Read the migration guide
-2. Call `get_help` to learn about condition types and locations
+1. Call `get_help` to learn about condition types and locations
+2. Read the migration guide content
 3. Call `construct_rule` for each migration pattern it identifies
 4. Call `construct_ruleset` to create ruleset metadata
 5. Call `validate_rules` to verify the output
@@ -95,27 +95,51 @@ No server-side LLM or API key is needed — the client's LLM does all the thinki
 
 ### CLI
 
-Requires a server-side LLM provider:
+Set your LLM provider and API key:
 
 ```bash
-export RULEGEN_LLM_PROVIDER=anthropic
-export ANTHROPIC_API_KEY=sk-...
+export GEMINI_API_KEY=your-key
+```
 
-# Full pipeline
-rulegen generate \
-  --guide-url https://spring.io/blog/migration-guide \
+Generate rules (source/target/language auto-detected from content):
+
+```bash
+./rulegen generate \
+  --input "https://gist.github.com/savitharaghunathan/52198c722b807f3862af38b72e6d7331" \
+  --provider gemini
+```
+
+Or specify everything explicitly:
+
+```bash
+./rulegen generate \
+  --input "https://spring.io/blog/migration-guide" \
   --source spring-boot-3 \
   --target spring-boot-4 \
   --language java \
-  --output ./output/
-
-# Individual operations
-rulegen validate --rules ./output/spring-boot-3-to-spring-boot-4/rules/
-rulegen test --test-file ./output/.../tests/web.test.yaml --max-iterations 3
-rulegen score --rules ./output/spring-boot-3-to-spring-boot-4/rules/
+  --output ./output \
+  --provider anthropic
 ```
 
-Supported providers: `anthropic`, `openai`, `gemini`, `ollama` (local models).
+#### CLI Flags
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--input` | URL, file path, or text content | Yes |
+| `--source` | Source technology (auto-detected if omitted) | No |
+| `--target` | Target technology (auto-detected if omitted) | No |
+| `--language` | Programming language: java, go, nodejs, csharp (auto-detected if omitted) | No |
+| `--output` | Output directory (default: `output`) | No |
+| `--provider` | LLM provider: `anthropic`, `openai`, `gemini`, `ollama` (overrides `RULEGEN_LLM_PROVIDER` env var) | Yes |
+
+#### LLM Provider Configuration
+
+| Provider | API Key Env Var | Model Env Var | Default Model |
+|----------|----------------|---------------|---------------|
+| `anthropic` | `ANTHROPIC_API_KEY` | `ANTHROPIC_MODEL` | `claude-sonnet-4-5` |
+| `openai` | `OPENAI_API_KEY` | `OPENAI_MODEL` | `gpt-4o` |
+| `gemini` | `GEMINI_API_KEY` | `GEMINI_MODEL` | `gemini-2.5-flash` |
+| `ollama` | — | `OLLAMA_MODEL` | `llama3` |
 
 ## Output
 
@@ -127,12 +151,12 @@ output/spring-boot-3-to-spring-boot-4/
 │   ├── ruleset.yaml
 │   ├── web.yaml
 │   └── security.yaml
-├── tests/
+├── tests/           # (planned - rulegen test)
 │   ├── web.test.yaml
 │   └── data/web/
 │       ├── pom.xml
 │       └── src/main/java/com/example/App.java
-└── confidence/
+└── confidence/      # (planned - rulegen score)
     └── scores.yaml
 ```
 
