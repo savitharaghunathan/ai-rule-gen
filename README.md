@@ -211,7 +211,7 @@ Java (`java.referenced`, `java.dependency`), Go (`go.referenced`, `go.dependency
 
 ```bash
 go test ./internal/...                                    # Unit tests
-go test -tags=integration ./internal/integration/...      # Integration tests
+go test -tags=integration ./test/integration/...          # Integration tests (mock LLM)
 go test -tags=e2e ./test/e2e/...                          # E2E tests (real LLM + kantra)
 ```
 

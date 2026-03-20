@@ -393,7 +393,7 @@ Three test levels, all using `go test`. The `Completer` interface enables mockin
 
 ```bash
 go test ./internal/...                           # Unit (fast, no deps)
-go test -tags=integration ./internal/integration/ # Integration (mock LLM)
+go test -tags=integration ./test/integration/     # Integration (mock LLM)
 go test -tags=e2e ./test/e2e/                     # E2E (real LLM + kantra)
 ```
 
