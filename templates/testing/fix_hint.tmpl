@@ -1,0 +1,20 @@
+Generate a single-line code snippet that matches this Konveyor analyzer rule pattern.
+
+Rule ID: {{.RuleID}}
+Provider: {{.Provider}}
+Pattern: {{.Pattern}}
+Language: {{.Language}}
+
+Requirements:
+1. MUST be a SINGLE line of code (no newlines)
+2. MUST match the pattern exactly
+3. Use realistic syntax for the language
+4. Keep it minimal and simple
+
+Return ONLY the code snippet, nothing else. No markdown, no explanations.
+
+Example formats by language:
+- Go: import "golang.org/x/crypto/md4"
+- Go: var ip net.IP = net.ParseIP("192.168.1.1")
+- TypeScript: import { Button } from '@patternfly/react-core';
+- Java: import javax.ejb.Stateless;

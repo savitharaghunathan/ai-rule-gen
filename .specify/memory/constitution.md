@@ -34,7 +34,7 @@ All LLM prompts MUST be defined as Go templates (`text/template`) in the `templa
 
 ### V. Test-First
 
-Every internal package MUST have unit tests before feature work is considered complete. Integration tests MUST validate end-to-end flows (guide URL to generated rules, rules to test data, test data to kantra test results). Generated rules MUST be validated both structurally (deterministic) and via confidence scoring (LLM-as-judge with adversarial rubric). Test data generation MUST follow the ARG-style pipeline: templates, LLM generation, post-processing (code block extraction, language validation, import injection).
+Every internal package MUST have unit tests before feature work is considered complete. Integration tests MUST validate end-to-end flows (guide URL to generated rules, rules to test data, test data to kantra test results). Generated rules MUST be validated both structurally (deterministic) and via confidence scoring. Confidence MUST be grounded in functional test results (does the rule actually match incidents?) — not solely in LLM opinion. Test data generation MUST follow the ARG-style pipeline: templates, LLM generation, post-processing (code block extraction, language validation, import injection).
 
 ### VI. Simplicity
 
@@ -46,11 +46,14 @@ Start with the minimum viable set of tools. Do not add abstractions, indirection
 - **MCP SDK**: `github.com/mark3labs/mcp-go` — SSE transport, widely adopted
 - **Transport**: SSE only — no stdio. Bind to `localhost` by default
 - **LLM Providers**: Anthropic (default), OpenAI, Google — configured via environment variables for CLI path only
-- **Confidence Scoring**: MUST use adversarial framing, rubric-based scoring, evidence requirement. Independence is context separation (fresh prompt with only rule YAML), not vendor separation
+- **Confidence Scoring**: Primary signal MUST be functional (kantra test pass/fail). LLM-as-judge is a secondary quality signal, not a substitute for functional testing
+- **Kantra Testing**: `kantra test` runs inside a container. The runner and scorer MUST detect the provider from test files upfront — if Go provider is present, use `kantra analyze --run-local` directly (container lacks Go toolchain as of v0.9.0-alpha.6). A 0/total safety-net fallback MUST be kept for unrecognized providers
 - **Supported Condition Types**: java.referenced, java.dependency, go.referenced, go.dependency, nodejs.referenced, builtin.filecontent, builtin.file, builtin.hasTags, and/or combinators
 
 ## Development Workflow
 
+- A feature is NOT ready to commit until it has: code, tests, and docs updates. All three together.
+- New code MUST have corresponding tests. No exceptions.
 - All changes MUST be reviewed against ecosystem compatibility (does the output still parse in analyzer-lsp? does kantra test still pass?)
 - Templates MUST be tested with real migration guides before merging
 - Generated rules MUST be validated against at least one real codebase before claiming a migration path is "supported"
@@ -66,4 +69,4 @@ This constitution governs all development on the ai-rule-gen project. Amendments
 
 Complexity MUST be justified. If a simpler approach achieves the same outcome, the simpler approach MUST be chosen. The PLAN.md in the project root is the authoritative source for architectural decisions and tool design.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-19 | **Last Amended**: 2026-03-19
+**Version**: 1.1.0 | **Ratified**: 2026-03-19 | **Last Amended**: 2026-03-20

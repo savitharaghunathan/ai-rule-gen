@@ -34,20 +34,23 @@
 - [ ] T007 [P] Implement `internal/rules/serializer.go` — YAML read/write for rules and rulesets. Read single file, read directory, write rules grouped by concern.
 - [ ] T008 [P] Implement `internal/rules/validator.go` — Structural validation: valid YAML, required fields (ruleID, when, message or tag), valid category enum (mandatory/optional/potential), effort range, regex pattern syntax, label format (konveyor.io/source=, konveyor.io/target=), duplicate ruleIDs. Returns errors and warnings.
 - [ ] T009 [P] Implement `internal/workspace/workspace.go` — Output directory management: create `output/<source>-to-<target>/` with `rules/`, `tests/`, `tests/data/`, `confidence/` subdirectories.
-- [ ] T010 [P] Implement `internal/llm/completer.go` — `Completer` interface with `Complete(ctx, prompt) (string, error)`. `SamplingCompleter` (MCP sampling path). `LLMCompleter` (server-side LLM path, delegates to provider).
-- [ ] T011 Implement `internal/server/server.go` — MCP server setup with mcp-go: create server, register 5 tools (generate_rules, validate_rules, generate_test_data, run_tests, score_confidence), SSE transport on configurable host:port (default localhost:8080).
+- [ ] T010 [P] Implement `internal/llm/completer.go` — `Completer` interface with `Complete(ctx, prompt) (string, error)`. `LLMCompleter` (server-side LLM, delegates to `Provider` interface). Provider selection via `RULEGEN_LLM_PROVIDER` env var.
+- [ ] T011 Implement `internal/server/server.go` — MCP server setup with official go-sdk: create server, register 4 deterministic tools (construct_rule, construct_ruleset, validate_rules, get_help), SSE transport on configurable host:port (default localhost:8080). Pipeline capabilities are CLI-only.
 - [ ] T012 Implement `internal/tools/validate.go` — `validate_rules` MCP tool handler. Input: `rules_path`. Calls `rules.Validate()`. Returns JSON with valid, errors, warnings, rule_count. (Deterministic, no LLM.)
+- [ ] T012a [P] Implement `internal/tools/construct.go` — `construct_rule` and `construct_ruleset` MCP tool handlers. Takes JSON params (ruleID, condition_type, pattern, location, message, etc.), uses `rules/builder.go` to construct Rule, marshals to YAML, validates, returns YAML string. Deterministic.
+- [ ] T012b [P] Implement `internal/tools/help.go` — `get_help` MCP tool handler. Returns documentation on condition types, valid locations, label format, categories, rule format, examples. Deterministic.
 - [ ] T013 [P] Implement `cmd/rulegen/main.go` — Cobra root command with `serve` subcommand (starts MCP server). Placeholder subcommands for `generate`, `validate`, `test`, `score`.
 - [ ] T014 [P] Unit tests for `internal/rules/` — types serialization roundtrip, all builder functions, validator (valid rules, missing fields, bad regex, duplicate IDs, bad categories, bad labels).
 - [ ] T015 [P] Unit tests for `internal/workspace/` — directory creation, path resolution.
+- [ ] T015a [P] Unit tests for `internal/tools/construct.go` — all condition types, validation errors, edge cases.
 
-**Checkpoint**: `validate_rules` works end-to-end via MCP. Server starts, accepts SSE connections, validates rule YAML files.
+**Checkpoint**: All 4 MCP tools (`construct_rule`, `construct_ruleset`, `validate_rules`, `get_help`) work end-to-end. Server starts, accepts connections, builds valid YAML. No server-side LLM needed.
 
 ---
 
-## Phase 3: User Story 1 — Generate Rules from Any Input (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1b — Generate Rules Pipeline (Priority: P1) 🎯 MVP
 
-**Goal**: A user provides any input (URL, code snippets, changelog, text) and gets valid Konveyor rules saved to disk.
+**Goal**: `generate_rules` works E2E with server-side LLM. A user provides any input (URL, code snippets, changelog, text) and gets valid Konveyor rules saved to disk.
 
 **Independent Test**: Point at a real migration guide URL, call `generate_rules`, verify output rules are structurally valid.
 
@@ -63,14 +66,17 @@
 - [ ] T023 [P] [US1] Create `templates/generation/generate_message.tmpl` — Go template for rule message generation. Input: MigrationPattern. Output: markdown message with Before/After code examples.
 - [ ] T024 [US1] Implement `internal/generation/generator.go` — Deterministic rule construction: MigrationPattern → Rule. Maps provider_type + source_fqn → condition (using builders), complexity → effort, category pass-through. Groups rules by concern. Generates ruleset.yaml metadata. Calls Completer for message generation (template-driven).
 - [ ] T025 [P] [US1] Create `templates/generation/generate_rules.tmpl` — Go template for rule generation guidance (used when LLM needs to help with complex condition mapping).
-- [ ] T026 [US1] Implement `internal/tools/generate.go` — `generate_rules` MCP tool handler. Full pipeline: parse input JSON → ingest → extract patterns (LLM) → construct rules (deterministic) → validate → save to workspace. Returns JSON with output_path, files_written, rule_count, concerns, patterns_extracted.
-- [ ] T027 [US1] Implement `internal/llm/anthropic.go` — Anthropic API client implementing the provider interface for `LLMCompleter`. Uses anthropic-sdk-go.
+- [ ] T026 [US1] Implement pipeline logic in `internal/tools/generate.go` — CLI-only (not an MCP tool). Full pipeline: parse input → ingest → extract patterns (LLM) → construct rules (deterministic) → validate → save to workspace. Returns output_path, files_written, rule_count, concerns, patterns_extracted.
+- [ ] T027 [US1b] Implement `internal/llm/anthropic.go` — Anthropic API client implementing the `Provider` interface. Uses anthropic-sdk-go.
+- [ ] T027a [P] [US1b] Implement `internal/llm/openai.go` — OpenAI API client implementing the `Provider` interface.
+- [ ] T027b [P] [US1b] Implement `internal/llm/gemini.go` — Google Gemini API client implementing the `Provider` interface.
+- [ ] T027c [P] [US1b] Implement `internal/llm/ollama.go` — Ollama client implementing the `Provider` interface. Connects to local Ollama server.
 - [ ] T028 [P] [US1] Unit tests for `internal/ingestion/` — URL fetch mock, HTML→markdown, chunking, file reading.
 - [ ] T029 [P] [US1] Unit tests for `internal/extraction/` — pattern parsing from mock LLM response, deduplication.
 - [ ] T030 [P] [US1] Unit tests for `internal/generation/` — rule ID generation, pattern→rule mapping for each provider type, ruleset construction, concern grouping.
 - [ ] T031 [US1] Integration test: sample migration guide text → generate_rules → validate output rules are structurally valid YAML.
 
-**Checkpoint**: `generate_rules` works E2E. User provides a migration guide URL (or text), gets valid rules saved to `output/<source>-to-<target>/rules/`.
+**Checkpoint**: `rulegen generate` CLI command works E2E. User provides a migration guide URL (or text), gets valid rules saved to `output/<source>-to-<target>/rules/`.
 
 ---
 
@@ -92,12 +98,12 @@
 - [ ] T039 [US2] Implement `internal/testing/testgen.go` — ARG-style test source generation pipeline: extract code hints from rule patterns + message Before/After blocks → build prompt from templates → call Completer → extract fenced code blocks → validate language → inject missing imports → create config files → write to data directory.
 - [ ] T040 [US2] Implement `internal/testing/runner.go` — kantra test runner: shell out to `kantra test <test-file>`, parse output for pass/fail per rule, capture structured results (ruleID, status, incidents, failure reason, debug path). Graceful error if kantra not installed.
 - [ ] T041 [US2] Implement `internal/testing/fixer.go` — Test failure analysis + fix: parse kantra debug output for each failing rule, identify which pattern didn't match, use LLM to generate improved code hints, return patched hints for re-generation.
-- [ ] T042 [US2] Implement `internal/tools/test_generate.go` — `generate_test_data` MCP tool handler. Input: rules_path, language. Pipeline: load rules → scaffold → testgen → write files. Returns JSON with test_yaml_path, files_written, post_processing stats.
-- [ ] T043 [US2] Implement `internal/tools/test_run.go` — `run_tests` MCP tool handler. Input: test_file, max_iterations (default 3). Pipeline: run kantra → if failures and iterations remain → analyze failures → LLM generates improved hints → regenerate test data → re-run. Returns JSON with passed, failed, total, iterations_run, per-rule results, fix_history.
+- [ ] T042 [US2] Implement test generation pipeline in `internal/tools/test_generate.go` — CLI-only (not an MCP tool). Input: rules_path, language. Pipeline: load rules → scaffold → testgen → write files.
+- [ ] T043 [US2] Implement test runner pipeline in `internal/tools/test_run.go` — CLI-only (not an MCP tool). Input: test_file, max_iterations (default 3). Pipeline: run kantra → if failures and iterations remain → analyze failures → LLM generates improved hints → regenerate test data → re-run.
 - [ ] T044 [P] [US2] Unit tests for `internal/testing/` — scaffold output, code block extraction, import injection, langconfig, kantra output parsing (mock).
 - [ ] T045 [US2] Integration test: generated rules → generate_test_data → verify .test.yaml + data directory structure is correct.
 
-**Checkpoint**: `generate_test_data` and `run_tests` work E2E. Test data generated, kantra runs, fix loop improves pass rate.
+**Checkpoint**: `rulegen test` CLI command works E2E. Test data generated, kantra runs, fix loop improves pass rate.
 
 ---
 
@@ -112,11 +118,11 @@
 - [ ] T046 [P] [US3] Implement `internal/confidence/rubric.go` — Rubric definition: 5 criteria (pattern_correctness, message_quality, category_appropriateness, effort_accuracy, false_positive_risk), scoring 1-5, verdict thresholds (accept ≥4.0, review ≥2.5, reject <2.5). `ConfidenceResult` struct per data-model.md.
 - [ ] T047 [P] [US3] Create `templates/confidence/judge.tmpl` — Adversarial judge prompt: strict auditor framing, rubric criteria with examples, evidence requirement. Input: raw rule YAML only + rubric. No generation context.
 - [ ] T048 [US3] Implement `internal/confidence/scorer.go` — LLM-as-judge: for each rule, render judge template with rule YAML + rubric, call Completer in fresh context, parse structured scores, compute overall, assign verdict, collect evidence. Write results to `confidence/scores.yaml`.
-- [ ] T049 [US3] Implement `internal/tools/confidence.go` — `score_confidence` MCP tool handler. Input: rules_path. Pipeline: load rules → score each → save results. Returns JSON with scores_file, per-rule results, summary (accept/review/reject counts).
+- [ ] T049 [US3] Implement confidence scoring pipeline in `internal/tools/confidence.go` — CLI-only (not an MCP tool). Input: rules_path. Pipeline: load rules → score each → save results.
 - [ ] T050 [P] [US3] Unit tests for `internal/confidence/` — rubric verdict calculation, score parsing from mock LLM response.
 - [ ] T051 [US3] Integration test: score known-good rules (expect accept) and known-bad rules (expect review/reject).
 
-**Checkpoint**: `score_confidence` works E2E. Rules scored independently with adversarial rubric.
+**Checkpoint**: `rulegen score` CLI command works E2E. Rules scored independently with adversarial rubric.
 
 ---
 

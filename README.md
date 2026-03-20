@@ -1,23 +1,32 @@
 # ai-rule-gen
 
-An MCP server and CLI for generating [Konveyor](https://www.konveyor.io/) analyzer rules using AI. Point it at a migration guide, code snippets, or any description of migration concerns — it generates validated rules, tests, and confidence scores ready for the [konveyor/rulesets](https://github.com/konveyor/rulesets) repo.
+An MCP server and CLI for generating [Konveyor](https://www.konveyor.io/) analyzer rules using AI. Point it at a migration guide, code snippets, or any description of migration concerns — it generates validated rules ready for the [konveyor/rulesets](https://github.com/konveyor/rulesets) repo.
 
-Works as an MCP server (connect from Claude Code, Kai, or any MCP client) or as a standalone CLI for CI/CD pipelines.
+Two entry points, shared internals:
+- **MCP server** — 4 deterministic tools for interactive rule construction from Claude Code, Cursor, Kai, or any MCP client. No server-side LLM needed.
+- **CLI** — E2E pipeline for CI/CD automation with server-side LLM. Auto-detects source/target/language from content.
 
-## Tools
+## MCP Tools
 
 | Tool | Description |
 |------|-------------|
-| `generate_rules` | Ingests any input (URL, code, changelog, text), extracts migration patterns via LLM, constructs valid YAML rules, saves to disk |
+| `construct_rule` | Takes rule parameters (ruleID, condition type, pattern, location, message, etc.), validates, returns valid YAML |
+| `construct_ruleset` | Takes name, description, labels, returns ruleset metadata YAML |
 | `validate_rules` | Structural validation: required fields, category, effort, regex, labels, duplicates |
-| `generate_test_data` | Scaffolds `.test.yaml` and generates compilable test source code |
-| `run_tests` | Executes `kantra test` with autonomous test-fix loop (fixes test data, not rules) |
-| `score_confidence` | LLM-as-judge scoring with adversarial rubric — accept/review/reject verdicts with evidence |
+| `get_help` | Documentation on condition types, valid locations, label format, categories, examples |
+
+## CLI Commands
+
+| Command | Description | Status |
+|---------|-------------|--------|
+| `rulegen generate` | Ingest input (URL, file, text) → extract patterns via LLM → construct rules → validate → save | Implemented |
+| `rulegen test` | Generate test data, run `kantra test`, fix failing rules (up to `--max-iterations`) | Implemented |
+| `rulegen score` | Run kantra tests for functional confidence + optional LLM-as-judge | Implemented |
 
 ## Prerequisites
 
 - **Go 1.22+**
-- **kantra** — required for `run_tests` (must be on PATH where the server runs)
+- **kantra** — required for `rulegen test` (must be on PATH)
 
 ## Build
 
@@ -29,13 +38,30 @@ go build -o rulegen ./cmd/rulegen/
 
 ### MCP Server
 
-No API key needed — uses the client's LLM via MCP sampling.
+Start the server — no API key needed:
 
 ```bash
 ./rulegen serve --port 8080
 ```
 
-Connect from your MCP client:
+#### Connect from Claude Code
+
+Add `.mcp.json` to your project root:
+
+```json
+{
+  "mcpServers": {
+    "rulegen": {
+      "type": "sse",
+      "url": "http://localhost:8080/sse"
+    }
+  }
+}
+```
+
+#### Connect from Cursor
+
+Add `.cursor/mcp.json`:
 
 ```json
 {
@@ -47,38 +73,116 @@ Connect from your MCP client:
 }
 ```
 
-Then call tools interactively:
+#### Example: Generate rules interactively
+
+Once connected, ask your MCP client:
 
 ```
-generate_rules({
-  "guide_url": "https://spring.io/blog/migration-guide",
-  "source": "spring-boot-3",
-  "target": "spring-boot-4",
-  "language": "java"
-})
+Use the rulegen MCP server to generate Konveyor analyzer rules for this migration guide:
+https://gist.github.com/savitharaghunathan/52198c722b807f3862af38b72e6d7331
+
+Save the rules to the output folder with source and target labels.
 ```
+
+The client LLM will:
+1. Call `get_help` to learn about condition types and locations
+2. Read the migration guide content
+3. Call `construct_rule` for each migration pattern it identifies
+4. Call `construct_ruleset` to create ruleset metadata
+5. Call `validate_rules` to verify the output
+
+No server-side LLM or API key is needed — the client's LLM does all the thinking.
 
 ### CLI
 
-Requires an LLM API key:
+Set your LLM provider and API key:
 
 ```bash
-export RULEGEN_LLM_PROVIDER=anthropic
-export ANTHROPIC_API_KEY=sk-...
+export GEMINI_API_KEY=your-key
+```
 
-# Full pipeline
-rulegen generate \
-  --guide-url https://spring.io/blog/migration-guide \
+Generate rules (source/target/language auto-detected from content):
+
+```bash
+./rulegen generate \
+  --input "https://gist.github.com/savitharaghunathan/52198c722b807f3862af38b72e6d7331" \
+  --provider gemini
+```
+
+Or specify everything explicitly:
+
+```bash
+./rulegen generate \
+  --input "https://spring.io/blog/migration-guide" \
   --source spring-boot-3 \
   --target spring-boot-4 \
   --language java \
-  --output ./output/
-
-# Individual operations
-rulegen validate --rules ./output/spring-boot-3-to-spring-boot-4/rules/
-rulegen test --test-file ./output/.../tests/web.test.yaml --max-iterations 3
-rulegen score --rules ./output/spring-boot-3-to-spring-boot-4/rules/
+  --output ./output \
+  --provider anthropic
 ```
+
+### Test Rules
+
+Generate test data, run kantra tests, and auto-fix failing tests:
+
+```bash
+./rulegen test \
+  --rules output/golang-non-fips-crypto-to-golang-fips-crypto/rules \
+  --output output/golang-non-fips-crypto-to-golang-fips-crypto \
+  --provider gemini \
+  --max-iterations 3
+```
+
+The test-fix loop:
+1. Generates test source code that should trigger each rule
+2. **Phase A — Compile fix**: Checks compilation (`go build`, `mvn compile`, `npx tsc`, `dotnet build`), feeds errors + API docs back to the LLM, retries up to 5 times
+3. **Phase B — Kantra test**: Detects the provider from test files. For Go rules, uses `kantra analyze --run-local` directly (container lacks Go toolchain). For other providers, uses `kantra test`. A 0/total safety-net fallback to `--run-local` is kept for unrecognized providers.
+4. For failing rules, asks the LLM for code hints, regenerates test data, and re-runs (up to `--max-iterations`)
+
+> **Note**: As of kantra v0.9.0-alpha.6, the container image does not include a Go toolchain. The `go.referenced` provider requires gopls + `go` to resolve modules. The runner detects Go provider from test files and uses `kantra analyze --run-local` (host toolchain) automatically — no extra flags needed.
+
+### Score Confidence
+
+Score rules by running kantra tests (primary signal — does the rule actually work?):
+
+```bash
+./rulegen score \
+  --tests output/go-non-fips-crypto-to-go-fips-140-compliance/tests
+```
+
+Add LLM-as-judge as a secondary quality signal:
+
+```bash
+./rulegen score \
+  --tests output/go-non-fips-crypto-to-go-fips-140-compliance/tests \
+  --rules output/go-non-fips-crypto-to-go-fips-140-compliance/rules \
+  --provider gemini
+```
+
+Verdict logic:
+- kantra fail → **reject** (rule doesn't match test data)
+- kantra pass + judge reject → **review** (works but quality concerns)
+- kantra pass + judge accept → **accept**
+
+#### CLI Flags
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--input` | URL, file path, or text content | Yes |
+| `--source` | Source technology (auto-detected if omitted) | No |
+| `--target` | Target technology (auto-detected if omitted) | No |
+| `--language` | Programming language: java, go, nodejs, csharp (auto-detected if omitted) | No |
+| `--output` | Output directory (default: `output`) | No |
+| `--provider` | LLM provider: `anthropic`, `openai`, `gemini`, `ollama` (overrides `RULEGEN_LLM_PROVIDER` env var) | Yes |
+
+#### LLM Provider Configuration
+
+| Provider | API Key Env Var | Model Env Var | Default Model |
+|----------|----------------|---------------|---------------|
+| `anthropic` | `ANTHROPIC_API_KEY` | `ANTHROPIC_MODEL` | `claude-sonnet-4-5` |
+| `openai` | `OPENAI_API_KEY` | `OPENAI_MODEL` | `gpt-4o` |
+| `gemini` | `GEMINI_API_KEY` | `GEMINI_MODEL` | `gemini-2.5-flash` |
+| `ollama` | — | `OLLAMA_MODEL` | `llama3` |
 
 ## Output
 
@@ -96,7 +200,7 @@ output/spring-boot-3-to-spring-boot-4/
 │       ├── pom.xml
 │       └── src/main/java/com/example/App.java
 └── confidence/
-    └── scores.yaml
+    └── scores.yaml  # kantra test results + optional LLM judge scores
 ```
 
 ## Supported Condition Types
