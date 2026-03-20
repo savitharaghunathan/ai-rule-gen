@@ -22,7 +22,9 @@ internal/           # All internal packages
   confidence/       # Functional scoring (kantra test) + optional LLM-as-judge
   workspace/        # Output directory management
 templates/          # LLM prompt templates (extraction, generation, testing, confidence)
-testdata/           # Test fixtures
+test/
+  integration/      # Integration tests (mock LLM, -tags=integration)
+  e2e/              # E2E tests (real LLM + kantra, -tags=e2e)
 ```
 
 ## Commands
@@ -35,7 +37,7 @@ go build -o rulegen ./cmd/rulegen/
 go test ./internal/...
 
 # Integration tests (mock LLM, no API key)
-go test -tags=integration ./internal/integration/...
+go test -tags=integration ./test/integration/...
 
 # E2E tests (real LLM + kantra required)
 go test -tags=e2e ./test/e2e/...
