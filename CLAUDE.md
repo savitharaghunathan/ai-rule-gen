@@ -18,8 +18,8 @@ internal/           # All internal packages
   ingestion/        # URL/file/text ingestion, HTML→markdown, chunking
   extraction/       # MigrationPattern type, LLM pattern extraction
   generation/       # Pattern→Rule construction, rule ID generation
-  testing/          # Test scaffolding, ARG-style code gen, kantra runner, fix loop
-  confidence/       # LLM-as-judge scorer, rubric
+  testgen/          # Test data generation, kantra runner, ARG-style fix loop
+  confidence/       # Functional scoring (kantra test) + optional LLM-as-judge
   workspace/        # Output directory management
 templates/          # LLM prompt templates (extraction, generation, testing, confidence)
 testdata/           # Test fixtures
@@ -58,9 +58,12 @@ Go 1.22+: Follow standard conventions
 
 Two entry points, shared internals:
 - **MCP server** (`rulegen serve`): 4 deterministic tools (construct_rule, construct_ruleset, validate_rules, get_help). No server LLM needed.
-- **CLI** (`rulegen generate/test/score`): Pipeline commands with server-side LLM. Require RULEGEN_LLM_PROVIDER + API key. Not exposed as MCP tools.
+- **CLI** (`rulegen generate/test/score`): Pipeline commands. `generate` and `test` require RULEGEN_LLM_PROVIDER + API key. `score` runs kantra tests (no LLM needed) with optional LLM-as-judge via `--provider`. Not exposed as MCP tools.
 - LLM providers: Anthropic, OpenAI, Gemini, Ollama (local models)
 
 ## Recent Changes
 
 - 001-mcp-rule-gen: Official MCP SDK (`modelcontextprotocol/go-sdk`), dual tool approach (constructor + pipeline), multi-provider LLM support, own YAML rule types (not engine.Rule)
+- Confidence scoring: Primary signal is functional (kantra test pass/fail, matching ARG's approach). Optional secondary signal is LLM-as-judge with adversarial rubric. `rulegen score --tests <dir>` runs kantra; add `--provider` + `--rules` for LLM judge.
+- Test-fix loop: `rulegen test` now generates data, runs kantra, and auto-fixes failing test data (not rules) via LLM code hints, up to `--max-iterations` (default 3). Matches ARG's pipeline. Two-phase fix: Phase A checks compilation (Go/Java/Node.js/C#) with API doc lookup, Phase B runs kantra and generates code hints for failing rules.
+- Kantra Go workaround: kantra v0.9.0-alpha.6 container lacks Go toolchain, so `go.referenced` rules fail with "no views". Runner falls back to `kantra analyze --run-local` (uses host toolchain) when kantra test reports 0/total. TODO: remove fallback once kantra ships Go in the container.

@@ -5,28 +5,32 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/konveyor/ai-rule-gen/internal/llm"
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 	"gopkg.in/yaml.v3"
 )
 
-// Score holds the confidence score for a single rule.
+// Score holds the confidence result for a single rule.
 type Score struct {
-	RuleID               string  `json:"rule_id" yaml:"ruleID"`
-	PatternCorrectness   float64 `json:"pattern_correctness" yaml:"patternCorrectness"`
-	MessageQuality       float64 `json:"message_quality" yaml:"messageQuality"`
-	CategoryAppropriate  float64 `json:"category_appropriateness" yaml:"categoryAppropriateness"`
-	EffortAccuracy       float64 `json:"effort_accuracy" yaml:"effortAccuracy"`
-	FalsePositiveRisk    float64 `json:"false_positive_risk" yaml:"falsePositiveRisk"`
-	Overall              float64 `json:"overall" yaml:"overall"`
-	Verdict              string  `json:"verdict" yaml:"verdict"`
-	Reasoning            string  `json:"reasoning" yaml:"reasoning"`
+	RuleID        string `json:"rule_id" yaml:"ruleID"`
+	TestPassed    bool   `json:"test_passed" yaml:"testPassed"`
+	Verdict       string `json:"verdict" yaml:"verdict"`
+	FailureReason string `json:"failure_reason,omitempty" yaml:"failureReason,omitempty"`
+	// LLM judge fields (populated when --provider is set)
+	JudgeScore    float64 `json:"judge_score,omitempty" yaml:"judgeScore,omitempty"`
+	JudgeVerdict  string  `json:"judge_verdict,omitempty" yaml:"judgeVerdict,omitempty"`
+	JudgeReasoning string `json:"judge_reasoning,omitempty" yaml:"judgeReasoning,omitempty"`
 }
 
-// ScoreReport is the full confidence report for a set of rules.
+// ScoreReport is the full confidence report.
 type ScoreReport struct {
 	Scores  []Score `json:"scores" yaml:"scores"`
 	Summary Summary `json:"summary" yaml:"summary"`
@@ -34,83 +38,147 @@ type ScoreReport struct {
 
 // Summary provides aggregate statistics.
 type Summary struct {
-	TotalRules    int     `json:"total_rules" yaml:"totalRules"`
-	Accepted      int     `json:"accepted" yaml:"accepted"`
-	NeedsReview   int     `json:"needs_review" yaml:"needsReview"`
-	Rejected      int     `json:"rejected" yaml:"rejected"`
-	AverageScore  float64 `json:"average_score" yaml:"averageScore"`
+	TotalRules int     `json:"total_rules" yaml:"totalRules"`
+	Passed     int     `json:"passed" yaml:"passed"`
+	Failed     int     `json:"failed" yaml:"failed"`
+	PassRate   float64 `json:"pass_rate" yaml:"passRate"`
 }
 
-// Scorer evaluates rule quality using LLM-as-judge.
+// Scorer runs kantra tests and optionally uses LLM-as-judge to evaluate rules.
 type Scorer struct {
-	completer llm.Completer
-	tmpl      *template.Template
+	kantraPath string
+	timeout    time.Duration
+	completer  llm.Completer
+	judgeTmpl  *template.Template
 }
 
-// New creates a Scorer.
-func New(completer llm.Completer, tmpl *template.Template) *Scorer {
-	return &Scorer{completer: completer, tmpl: tmpl}
+// New creates a Scorer. kantraPath defaults to "kantra" on PATH.
+// completer and judgeTmpl are optional — if provided, LLM-as-judge runs after kantra.
+func New(kantraPath string, timeoutSeconds int, completer llm.Completer, judgeTmpl *template.Template) *Scorer {
+	if kantraPath == "" {
+		kantraPath = "kantra"
+	}
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = 900
+	}
+	return &Scorer{
+		kantraPath: kantraPath,
+		timeout:    time.Duration(timeoutSeconds) * time.Second,
+		completer:  completer,
+		judgeTmpl:  judgeTmpl,
+	}
 }
 
-// ScoreRules evaluates each rule independently and returns a report.
-func (s *Scorer) ScoreRules(ctx context.Context, ruleList []rules.Rule) (*ScoreReport, error) {
-	var scores []Score
+// ScoreRules runs kantra test on .test.yaml files in testsDir, optionally runs LLM judge,
+// and returns a report. rulesDir is needed only if completer is set (for LLM judge).
+func (s *Scorer) ScoreRules(ctx context.Context, testsDir string, rulesDir string) (*ScoreReport, error) {
+	testFiles, err := findTestFiles(testsDir)
+	if err != nil {
+		return nil, fmt.Errorf("finding test files: %w", err)
+	}
+	if len(testFiles) == 0 {
+		return nil, fmt.Errorf("no .test.yaml files found in %s", testsDir)
+	}
 
-	for i, r := range ruleList {
-		fmt.Printf("  Scoring rule %d/%d: %s\n", i+1, len(ruleList), r.RuleID)
+	allRuleIDs, err := collectRuleIDs(testFiles)
+	if err != nil {
+		return nil, fmt.Errorf("collecting rule IDs: %w", err)
+	}
 
-		score, err := s.scoreRule(ctx, r)
-		if err != nil {
-			return nil, fmt.Errorf("scoring %s: %w", r.RuleID, err)
+	// Run kantra test (primary signal)
+	fmt.Printf("  Running kantra test on %d test file(s)...\n", len(testFiles))
+	passed, failed, output, err := s.runKantra(ctx, testFiles)
+	if err != nil {
+		return nil, fmt.Errorf("running kantra: %w", err)
+	}
+	fmt.Printf("  kantra result: %d/%d passed\n", passed, passed+failed)
+
+	failedRules := parseFailedRules(output)
+
+	// Build per-rule scores from kantra results
+	scores := make([]Score, 0, len(allRuleIDs))
+	for _, ruleID := range allRuleIDs {
+		reason, isFailed := failedRules[ruleID]
+		score := Score{
+			RuleID:     ruleID,
+			TestPassed: !isFailed,
+			Verdict:    "accept",
+		}
+		if isFailed {
+			score.Verdict = "reject"
+			score.FailureReason = reason
 		}
 		scores = append(scores, score)
+	}
+
+	// Run LLM-as-judge (secondary signal, optional)
+	if s.completer != nil && s.judgeTmpl != nil && rulesDir != "" {
+		fmt.Println("  Running LLM judge on rules...")
+		ruleList, err := rules.ReadRulesDir(rulesDir)
+		if err != nil {
+			return nil, fmt.Errorf("reading rules for judge: %w", err)
+		}
+		ruleMap := make(map[string]rules.Rule)
+		for _, r := range ruleList {
+			ruleMap[r.RuleID] = r
+		}
+
+		for i, sc := range scores {
+			r, ok := ruleMap[sc.RuleID]
+			if !ok {
+				continue
+			}
+			judgeScore, judgeVerdict, reasoning, err := s.judgeRule(ctx, r)
+			if err != nil {
+				fmt.Printf("  Warning: judge failed for %s: %v\n", sc.RuleID, err)
+				continue
+			}
+			scores[i].JudgeScore = judgeScore
+			scores[i].JudgeVerdict = judgeVerdict
+			scores[i].JudgeReasoning = reasoning
+
+			// If kantra passed but judge says reject, downgrade to review
+			if scores[i].TestPassed && judgeVerdict == "reject" {
+				scores[i].Verdict = "review"
+			}
+		}
 	}
 
 	report := &ScoreReport{
 		Scores:  scores,
 		Summary: computeSummary(scores),
 	}
-
 	return report, nil
 }
 
-func (s *Scorer) scoreRule(ctx context.Context, r rules.Rule) (Score, error) {
-	// Marshal rule to YAML for the judge prompt
+// judgeRule uses LLM-as-judge to evaluate a single rule's quality.
+func (s *Scorer) judgeRule(ctx context.Context, r rules.Rule) (score float64, verdict, reasoning string, err error) {
 	ruleYAML, err := yaml.Marshal([]rules.Rule{r})
 	if err != nil {
-		return Score{}, fmt.Errorf("marshaling rule: %w", err)
+		return 0, "", "", fmt.Errorf("marshaling rule: %w", err)
 	}
 
 	var buf bytes.Buffer
-	data := map[string]string{
-		"RuleYAML": string(ruleYAML),
-	}
-	if err := s.tmpl.Execute(&buf, data); err != nil {
-		return Score{}, fmt.Errorf("rendering template: %w", err)
+	data := map[string]string{"RuleYAML": string(ruleYAML)}
+	if err := s.judgeTmpl.Execute(&buf, data); err != nil {
+		return 0, "", "", fmt.Errorf("rendering template: %w", err)
 	}
 
 	response, err := s.completer.Complete(ctx, buf.String())
 	if err != nil {
-		return Score{}, fmt.Errorf("LLM scoring: %w", err)
+		return 0, "", "", fmt.Errorf("LLM scoring: %w", err)
 	}
 
-	score, err := parseScore(response, r.RuleID)
-	if err != nil {
-		return Score{}, fmt.Errorf("parsing score: %w", err)
-	}
-
-	return score, nil
+	return parseJudgeResponse(response)
 }
 
-func parseScore(response, ruleID string) (Score, error) {
-	// Extract JSON from response
+func parseJudgeResponse(response string) (score float64, verdict, reasoning string, err error) {
 	response = strings.TrimSpace(response)
 	start := strings.Index(response, "{")
 	end := strings.LastIndex(response, "}")
 	if start < 0 || end < 0 || end <= start {
-		return Score{}, fmt.Errorf("no JSON object found in response")
+		return 0, "", "", fmt.Errorf("no JSON object found in response")
 	}
-	jsonStr := response[start : end+1]
 
 	var raw struct {
 		PatternCorrectness  float64 `json:"pattern_correctness"`
@@ -120,49 +188,129 @@ func parseScore(response, ruleID string) (Score, error) {
 		FalsePositiveRisk   float64 `json:"false_positive_risk"`
 		Reasoning           string  `json:"reasoning"`
 	}
-	if err := json.Unmarshal([]byte(jsonStr), &raw); err != nil {
-		return Score{}, fmt.Errorf("parsing JSON: %w (response: %s)", err, jsonStr)
+	if err := json.Unmarshal([]byte(response[start:end+1]), &raw); err != nil {
+		return 0, "", "", fmt.Errorf("parsing JSON: %w", err)
 	}
 
-	overall := (raw.PatternCorrectness + raw.MessageQuality + raw.CategoryAppropriate +
+	score = (raw.PatternCorrectness + raw.MessageQuality + raw.CategoryAppropriate +
 		raw.EffortAccuracy + raw.FalsePositiveRisk) / 5.0
 
-	verdict := "review"
-	if overall >= 4.0 {
+	verdict = "review"
+	if score >= 4.0 {
 		verdict = "accept"
-	} else if overall < 2.5 {
+	} else if score < 2.5 {
 		verdict = "reject"
 	}
 
-	return Score{
-		RuleID:              ruleID,
-		PatternCorrectness:  raw.PatternCorrectness,
-		MessageQuality:      raw.MessageQuality,
-		CategoryAppropriate: raw.CategoryAppropriate,
-		EffortAccuracy:      raw.EffortAccuracy,
-		FalsePositiveRisk:   raw.FalsePositiveRisk,
-		Overall:             overall,
-		Verdict:             verdict,
-		Reasoning:           raw.Reasoning,
-	}, nil
+	return score, verdict, raw.Reasoning, nil
+}
+
+// --- kantra integration ---
+
+func findTestFiles(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(e.Name(), ".test.yaml") || strings.HasSuffix(e.Name(), ".test.yml") {
+			files = append(files, filepath.Join(dir, e.Name()))
+		}
+	}
+	return files, nil
+}
+
+type testFileSpec struct {
+	Tests []struct {
+		RuleID string `yaml:"ruleID"`
+	} `yaml:"tests"`
+}
+
+func collectRuleIDs(testFiles []string) ([]string, error) {
+	var ids []string
+	seen := make(map[string]bool)
+	for _, f := range testFiles {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			return nil, fmt.Errorf("reading %s: %w", f, err)
+		}
+		var spec testFileSpec
+		if err := yaml.Unmarshal(data, &spec); err != nil {
+			return nil, fmt.Errorf("parsing %s: %w", f, err)
+		}
+		for _, t := range spec.Tests {
+			if t.RuleID != "" && !seen[t.RuleID] {
+				ids = append(ids, t.RuleID)
+				seen[t.RuleID] = true
+			}
+		}
+	}
+	return ids, nil
+}
+
+func (s *Scorer) runKantra(ctx context.Context, testFiles []string) (passed, failed int, output string, err error) {
+	args := []string{"test"}
+	args = append(args, testFiles...)
+
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, s.kantraPath, args...)
+	out, runErr := cmd.CombinedOutput()
+	output = string(out)
+
+	passed, failed = parseSummary(output)
+
+	if ctx.Err() != nil {
+		return passed, failed, output, fmt.Errorf("kantra timed out after %s", s.timeout)
+	}
+
+	// kantra returns non-zero if tests fail — that's expected, not an error
+	if runErr != nil && passed == 0 && failed == 0 {
+		return 0, 0, output, fmt.Errorf("kantra failed: %w\noutput: %s", runErr, output)
+	}
+
+	return passed, failed, output, nil
+}
+
+var reSummary = regexp.MustCompile(`Rules Summary:\s+(\d+)/(\d+)`)
+var reRuleFail = regexp.MustCompile(`([\w-]+-\d{5})\s+0/\d+\s+PASSED`)
+
+func parseSummary(output string) (passed, failed int) {
+	m := reSummary.FindStringSubmatch(output)
+	if len(m) == 3 {
+		fmt.Sscanf(m[1], "%d", &passed)
+		var total int
+		fmt.Sscanf(m[2], "%d", &total)
+		failed = total - passed
+	}
+	return
+}
+
+func parseFailedRules(output string) map[string]string {
+	failed := make(map[string]string)
+	matches := reRuleFail.FindAllStringSubmatch(output, -1)
+	for _, m := range matches {
+		failed[m[1]] = "rule did not match any incidents in test data"
+	}
+	return failed
 }
 
 func computeSummary(scores []Score) Summary {
 	s := Summary{TotalRules: len(scores)}
-	var total float64
 	for _, sc := range scores {
-		total += sc.Overall
-		switch sc.Verdict {
-		case "accept":
-			s.Accepted++
-		case "review":
-			s.NeedsReview++
-		case "reject":
-			s.Rejected++
+		if sc.TestPassed {
+			s.Passed++
+		} else {
+			s.Failed++
 		}
 	}
-	if len(scores) > 0 {
-		s.AverageScore = total / float64(len(scores))
+	if s.TotalRules > 0 {
+		s.PassRate = float64(s.Passed) / float64(s.TotalRules) * 100
 	}
 	return s
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	stdtemplate "text/template"
 
 	"github.com/konveyor/ai-rule-gen/internal/confidence"
 	"github.com/konveyor/ai-rule-gen/internal/llm"
@@ -63,11 +64,12 @@ func main() {
 	validateCmd.Flags().StringVar(&valRulesPath, "rules", "", "Path to rules directory or file")
 
 	var testRulesDir, testOutputDir, testLanguage, testSource, testTarget, testProvider string
+	var testMaxIterations int
 	testCmd := &cobra.Command{
 		Use:   "test",
-		Short: "Generate test data for rules",
+		Short: "Generate test data, run kantra tests, and fix failing rules",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runTest(testRulesDir, testOutputDir, testLanguage, testSource, testTarget, testProvider)
+			return runTest(testRulesDir, testOutputDir, testLanguage, testSource, testTarget, testProvider, testMaxIterations)
 		},
 	}
 	testCmd.Flags().StringVar(&testRulesDir, "rules", "", "Path to rules directory")
@@ -76,18 +78,23 @@ func main() {
 	testCmd.Flags().StringVar(&testSource, "source", "", "Source technology")
 	testCmd.Flags().StringVar(&testTarget, "target", "", "Target technology")
 	testCmd.Flags().StringVar(&testProvider, "provider", "", "LLM provider: anthropic, openai, gemini, ollama")
+	testCmd.Flags().IntVar(&testMaxIterations, "max-iterations", 3, "Max test-fix iterations")
 
-	var scoreRulesDir, scoreOutputDir, scoreProvider string
+	var scoreTestsDir, scoreRulesDir, scoreOutputDir, scoreKantraPath, scoreProvider string
+	var scoreTimeout int
 	scoreCmd := &cobra.Command{
 		Use:   "score",
-		Short: "Score confidence on generated rules",
+		Short: "Run kantra tests and score confidence on generated rules",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runScore(scoreRulesDir, scoreOutputDir, scoreProvider)
+			return runScore(scoreTestsDir, scoreRulesDir, scoreOutputDir, scoreKantraPath, scoreProvider, scoreTimeout)
 		},
 	}
-	scoreCmd.Flags().StringVar(&scoreRulesDir, "rules", "", "Path to rules directory")
+	scoreCmd.Flags().StringVar(&scoreTestsDir, "tests", "", "Path to tests directory containing .test.yaml files")
+	scoreCmd.Flags().StringVar(&scoreRulesDir, "rules", "", "Path to rules directory (required for LLM judge)")
 	scoreCmd.Flags().StringVar(&scoreOutputDir, "output", "", "Output directory for scores")
-	scoreCmd.Flags().StringVar(&scoreProvider, "provider", "", "LLM provider: anthropic, openai, gemini, ollama")
+	scoreCmd.Flags().StringVar(&scoreKantraPath, "kantra", "", "Path to kantra binary (default: kantra on PATH)")
+	scoreCmd.Flags().StringVar(&scoreProvider, "provider", "", "LLM provider for judge (optional): anthropic, openai, gemini, ollama")
+	scoreCmd.Flags().IntVar(&scoreTimeout, "timeout", 900, "Kantra timeout in seconds")
 
 	rootCmd.AddCommand(serveCmd, generateCmd, validateCmd, testCmd, scoreCmd)
 
@@ -182,7 +189,7 @@ func runValidate(rulesPath string) error {
 	return nil
 }
 
-func runTest(rulesDir, outputDir, language, source, target, provider string) error {
+func runTest(rulesDir, outputDir, language, source, target, provider string, maxIterations int) error {
 	if rulesDir == "" {
 		return fmt.Errorf("--rules is required")
 	}
@@ -207,15 +214,20 @@ func runTest(rulesDir, outputDir, language, source, target, provider string) err
 		return fmt.Errorf("loading test template: %v", err)
 	}
 
+	fixTmpl, err := templates.Load("testing/fix_hint.tmpl")
+	if err != nil {
+		return fmt.Errorf("loading fix hint template: %v", err)
+	}
+
 	gen := testgen.New(completer, tmpl)
-	fmt.Println("Generating test data...")
-	result, err := gen.Generate(context.Background(), testgen.GenerateInput{
+	fmt.Println("Generating test data and running kantra tests...")
+	result, err := gen.RunWithTests(context.Background(), testgen.GenerateInput{
 		RulesDir:  rulesDir,
 		OutputDir: outputDir,
 		Language:  language,
 		Source:    source,
 		Target:    target,
-	})
+	}, fixTmpl, maxIterations)
 	if err != nil {
 		return err
 	}
@@ -225,38 +237,33 @@ func runTest(rulesDir, outputDir, language, source, target, provider string) err
 	return nil
 }
 
-func runScore(rulesDir, outputDir, provider string) error {
-	if rulesDir == "" {
-		return fmt.Errorf("--rules is required")
+func runScore(testsDir, rulesDir, outputDir, kantraPath, provider string, timeout int) error {
+	if testsDir == "" {
+		return fmt.Errorf("--tests is required")
 	}
+
+	// Optional LLM judge
+	var completer llm.Completer
+	var judgeTmpl *stdtemplate.Template
 	if provider != "" {
 		os.Setenv("RULEGEN_LLM_PROVIDER", provider)
+		var err error
+		completer, err = llm.NewCompleterFromEnv()
+		if err != nil {
+			return fmt.Errorf("LLM configuration error: %v", err)
+		}
+		judgeTmpl, err = templates.Load("confidence/judge.tmpl")
+		if err != nil {
+			return fmt.Errorf("loading judge template: %v", err)
+		}
+		if rulesDir == "" {
+			return fmt.Errorf("--rules is required when using --provider for LLM judge")
+		}
 	}
 
-	completer, err := llm.NewCompleterFromEnv()
-	if err != nil {
-		return fmt.Errorf("LLM configuration error: %v", err)
-	}
-	if completer == nil {
-		return fmt.Errorf("--provider is required (anthropic, openai, gemini, ollama)")
-	}
-
-	ruleList, err := rules.ReadRulesDir(rulesDir)
-	if err != nil {
-		return err
-	}
-	if len(ruleList) == 0 {
-		return fmt.Errorf("no rules found in %s", rulesDir)
-	}
-
-	tmpl, err := templates.Load("confidence/judge.tmpl")
-	if err != nil {
-		return fmt.Errorf("loading judge template: %v", err)
-	}
-
-	scorer := confidence.New(completer, tmpl)
-	fmt.Printf("Scoring %d rules...\n", len(ruleList))
-	report, err := scorer.ScoreRules(context.Background(), ruleList)
+	scorer := confidence.New(kantraPath, timeout, completer, judgeTmpl)
+	fmt.Println("Running kantra tests and scoring rules...")
+	report, err := scorer.ScoreRules(context.Background(), testsDir, rulesDir)
 	if err != nil {
 		return err
 	}

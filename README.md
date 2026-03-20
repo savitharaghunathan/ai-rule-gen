@@ -20,8 +20,8 @@ Two entry points, shared internals:
 | Command | Description | Status |
 |---------|-------------|--------|
 | `rulegen generate` | Ingest input (URL, file, text) → extract patterns via LLM → construct rules → validate → save | Implemented |
-| `rulegen test` | Generate test data + run `kantra test` with autonomous fix loop | Planned |
-| `rulegen score` | LLM-as-judge scoring with adversarial rubric | Planned |
+| `rulegen test` | Generate test data, run `kantra test`, fix failing rules (up to `--max-iterations`) | Implemented |
+| `rulegen score` | Run kantra tests for functional confidence + optional LLM-as-judge | Implemented |
 
 ## Prerequisites
 
@@ -121,6 +121,48 @@ Or specify everything explicitly:
   --provider anthropic
 ```
 
+### Test Rules
+
+Generate test data, run kantra tests, and auto-fix failing tests:
+
+```bash
+./rulegen test \
+  --rules output/golang-non-fips-crypto-to-golang-fips-crypto/rules \
+  --output output/golang-non-fips-crypto-to-golang-fips-crypto \
+  --provider gemini \
+  --max-iterations 3
+```
+
+The test-fix loop:
+1. Generates test source code that should trigger each rule
+2. **Phase A — Compile fix**: Checks compilation (`go build`, `mvn compile`, `npx tsc`, `dotnet build`), feeds errors + API docs back to the LLM, retries up to 5 times
+3. **Phase B — Kantra test**: Runs `kantra test` to check which rules matched. If 0/total (e.g. kantra container lacks Go toolchain), automatically falls back to `kantra analyze --run-local` using the host's local toolchain
+4. For failing rules, asks the LLM for code hints, regenerates test data, and re-runs (up to `--max-iterations`)
+
+> **Note**: As of kantra v0.9.0-alpha.6, the container image does not include a Go toolchain. The `go.referenced` provider requires gopls + `go` to resolve modules. For Go rules, the runner falls back to `kantra analyze --run-local` which uses your locally installed Go.
+
+### Score Confidence
+
+Score rules by running kantra tests (primary signal — does the rule actually work?):
+
+```bash
+./rulegen score --tests output/spring-boot-3-to-spring-boot-4/tests
+```
+
+Add LLM-as-judge as a secondary quality signal:
+
+```bash
+./rulegen score \
+  --tests output/spring-boot-3-to-spring-boot-4/tests \
+  --rules output/spring-boot-3-to-spring-boot-4/rules \
+  --provider anthropic
+```
+
+Verdict logic:
+- kantra fail → **reject** (rule doesn't match test data)
+- kantra pass + judge reject → **review** (works but quality concerns)
+- kantra pass + judge accept → **accept**
+
 #### CLI Flags
 
 | Flag | Description | Required |
@@ -151,13 +193,13 @@ output/spring-boot-3-to-spring-boot-4/
 │   ├── ruleset.yaml
 │   ├── web.yaml
 │   └── security.yaml
-├── tests/           # (planned - rulegen test)
+├── tests/
 │   ├── web.test.yaml
 │   └── data/web/
 │       ├── pom.xml
 │       └── src/main/java/com/example/App.java
-└── confidence/      # (planned - rulegen score)
-    └── scores.yaml
+└── confidence/
+    └── scores.yaml  # kantra test results + optional LLM judge scores
 ```
 
 ## Supported Condition Types

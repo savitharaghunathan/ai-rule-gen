@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -201,6 +202,10 @@ func (g *Generator) Generate(ctx context.Context, input GenerateInput) (*Generat
 			return nil, fmt.Errorf("writing source file: %w", err)
 		}
 		output.FilesWritten++
+
+		// Resolve dependencies after writing files
+		fmt.Printf("    Resolving dependencies in %s...\n", dataDir)
+		runDepResolve(language, dataDir)
 
 		// Generate .test.yaml
 		providers := detectProviders(ruleList)
@@ -422,5 +427,42 @@ func buildTestFile(ruleList []rules.Rule, ruleFilePath, dataDir, testsDir string
 		RulesPath: relRulesPath,
 		Providers: testProviders,
 		Tests:     tests,
+	}
+}
+
+// runDepResolve runs the language-appropriate dependency resolution command.
+// For Go, it also vendors dependencies so gopls inside kantra's container can resolve them.
+func runDepResolve(language, dir string) {
+	switch language {
+	case "go":
+		tidyCmd := exec.Command("go", "mod", "tidy")
+		tidyCmd.Dir = dir
+		if out, err := tidyCmd.CombinedOutput(); err != nil {
+			fmt.Printf("    Warning: go mod tidy failed: %v\n%s\n", err, string(out))
+			return
+		}
+		vendorCmd := exec.Command("go", "mod", "vendor")
+		vendorCmd.Dir = dir
+		if out, err := vendorCmd.CombinedOutput(); err != nil {
+			fmt.Printf("    Warning: go mod vendor failed: %v\n%s\n", err, string(out))
+		}
+	case "java":
+		cmd := exec.Command("mvn", "dependency:resolve", "-q", "-B")
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			fmt.Printf("    Warning: dependency resolution failed: %v\n%s\n", err, string(out))
+		}
+	case "nodejs":
+		cmd := exec.Command("npm", "install")
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			fmt.Printf("    Warning: dependency resolution failed: %v\n%s\n", err, string(out))
+		}
+	case "csharp":
+		cmd := exec.Command("dotnet", "restore")
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			fmt.Printf("    Warning: dependency resolution failed: %v\n%s\n", err, string(out))
+		}
 	}
 }
