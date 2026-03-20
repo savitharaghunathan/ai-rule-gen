@@ -85,11 +85,44 @@ func (s *Scorer) ScoreRules(ctx context.Context, testsDir string, rulesDir strin
 		return nil, fmt.Errorf("collecting rule IDs: %w", err)
 	}
 
-	// Run kantra test (primary signal)
-	fmt.Printf("  Running kantra test on %d test file(s)...\n", len(testFiles))
-	passed, failed, output, err := s.runKantra(ctx, testFiles)
-	if err != nil {
-		return nil, fmt.Errorf("running kantra: %w", err)
+	// Detect providers from test files — if Go, use --run-local directly
+	// TODO: Remove once kantra ships Go toolchain in the container image.
+	_, _, providers := parseTestFilesPaths(testsDir, testFiles)
+
+	var passed, failed int
+	var output string
+
+	if needsLocalRun(providers) {
+		fmt.Println("  Go provider detected — using kantra analyze --run-local (container lacks Go toolchain)")
+		passed, failed, output, err = s.runKantraLocal(ctx, testsDir, testFiles, allRuleIDs)
+		if err != nil {
+			// Fall back to kantra test if --run-local fails
+			fmt.Printf("  Warning: --run-local failed: %v — falling back to kantra test\n", err)
+			passed, failed, output, err = s.runKantra(ctx, testFiles)
+			if err != nil {
+				return nil, fmt.Errorf("running kantra: %w", err)
+			}
+		}
+	} else {
+		fmt.Printf("  Running kantra test on %d test file(s)...\n", len(testFiles))
+		passed, failed, output, err = s.runKantra(ctx, testFiles)
+		if err != nil {
+			return nil, fmt.Errorf("running kantra: %w", err)
+		}
+
+		// Safety net: if all rules failed unexpectedly, try --run-local
+		if passed == 0 && failed > 0 {
+			fmt.Println("  All rules failed in container — trying kantra analyze --run-local...")
+			localPassed, localFailed, localOutput, localErr := s.runKantraLocal(ctx, testsDir, testFiles, allRuleIDs)
+			if localErr != nil {
+				fmt.Printf("  Warning: --run-local fallback failed: %v\n", localErr)
+			} else if localPassed > passed {
+				fmt.Printf("  Fallback succeeded: %d/%d passed\n", localPassed, localPassed+localFailed)
+				passed = localPassed
+				failed = localFailed
+				output = localOutput
+			}
+		}
 	}
 	fmt.Printf("  kantra result: %d/%d passed\n", passed, passed+failed)
 
@@ -128,6 +161,7 @@ func (s *Scorer) ScoreRules(ctx context.Context, testsDir string, rulesDir strin
 			if !ok {
 				continue
 			}
+			fmt.Printf("  Judging rule %d/%d: %s...\n", i+1, len(scores), sc.RuleID)
 			judgeScore, judgeVerdict, reasoning, err := s.judgeRule(ctx, r)
 			if err != nil {
 				fmt.Printf("  Warning: judge failed for %s: %v\n", sc.RuleID, err)
@@ -275,6 +309,147 @@ func (s *Scorer) runKantra(ctx context.Context, testFiles []string) (passed, fai
 	}
 
 	return passed, failed, output, nil
+}
+
+// runKantraLocal runs `kantra analyze --run-local` and compares violations
+// against expected rules to produce pass/fail counts.
+//
+// TODO: Remove once kantra ships Go toolchain in the container image.
+func (s *Scorer) runKantraLocal(ctx context.Context, testsDir string, testFiles []string, expectedRules []string) (passed, failed int, output string, err error) {
+	rulesDir, dataDirs, providers := parseTestFilesPaths(testsDir, testFiles)
+	if rulesDir == "" || len(dataDirs) == 0 {
+		return 0, 0, "", fmt.Errorf("could not parse rules/data paths from test files")
+	}
+
+	outputDir, err := os.MkdirTemp("", "kantra-score-*")
+	if err != nil {
+		return 0, 0, "", fmt.Errorf("creating temp dir: %w", err)
+	}
+	defer os.RemoveAll(outputDir)
+
+	args := []string{"analyze",
+		"--input", dataDirs[0],
+		"--rules", rulesDir,
+		"--run-local",
+		"--output", outputDir,
+		"--overwrite",
+	}
+	for _, p := range providers {
+		args = append(args, "--provider", p)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, s.kantraPath, args...)
+	out, runErr := cmd.CombinedOutput()
+	output = string(out)
+
+	if ctx.Err() != nil {
+		return 0, 0, output, fmt.Errorf("kantra analyze timed out")
+	}
+	if runErr != nil {
+		return 0, 0, output, fmt.Errorf("kantra analyze failed: %w\noutput: %s", runErr, output)
+	}
+
+	// Parse output.yaml for violations
+	outputFile := filepath.Join(outputDir, "output.yaml")
+	matched := parseAnalyzeViolations(outputFile)
+
+	total := len(expectedRules)
+	for _, ruleID := range expectedRules {
+		if matched[ruleID] {
+			passed++
+		}
+	}
+	failed = total - passed
+
+	// Build synthetic output for parseFailedRules compatibility
+	var synth strings.Builder
+	for _, ruleID := range expectedRules {
+		if matched[ruleID] {
+			fmt.Fprintf(&synth, "%s  1/1  PASSED\n", ruleID)
+		} else {
+			fmt.Fprintf(&synth, "%s  0/1  PASSED\n", ruleID)
+		}
+	}
+	fmt.Fprintf(&synth, "Rules Summary: %d/%d PASSED\n", passed, total)
+	output = synth.String()
+
+	return passed, failed, output, nil
+}
+
+// parseTestFilesPaths extracts the rules directory and data directories from test files.
+func parseTestFilesPaths(testsDir string, testFiles []string) (rulesDir string, dataDirs []string, providers []string) {
+	type provider struct {
+		Name     string `yaml:"name"`
+		DataPath string `yaml:"dataPath"`
+	}
+	type testFileLayout struct {
+		RulesPath string     `yaml:"rulesPath"`
+		Providers []provider `yaml:"providers"`
+	}
+
+	for _, f := range testFiles {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			continue
+		}
+		var tf testFileLayout
+		if err := yaml.Unmarshal(data, &tf); err != nil {
+			continue
+		}
+		if tf.RulesPath != "" && rulesDir == "" {
+			absRules := filepath.Join(testsDir, tf.RulesPath)
+			rulesDir = filepath.Dir(absRules)
+		}
+		for _, p := range tf.Providers {
+			if p.DataPath != "" {
+				absData := filepath.Join(testsDir, p.DataPath)
+				dataDirs = append(dataDirs, absData)
+			}
+			if p.Name != "" {
+				providers = append(providers, p.Name)
+			}
+		}
+	}
+	return
+}
+
+// parseAnalyzeViolations reads kantra analyze output.yaml and returns which rule IDs had violations.
+func parseAnalyzeViolations(outputFile string) map[string]bool {
+	matched := make(map[string]bool)
+
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		return matched
+	}
+
+	var rulesets []struct {
+		Violations map[string]interface{} `yaml:"violations"`
+	}
+	if err := yaml.Unmarshal(data, &rulesets); err != nil {
+		return matched
+	}
+
+	for _, rs := range rulesets {
+		for ruleID := range rs.Violations {
+			matched[ruleID] = true
+		}
+	}
+	return matched
+}
+
+// needsLocalRun returns true if any provider requires a local toolchain that
+// the kantra container doesn't have (currently just Go).
+// TODO: Remove once kantra ships Go toolchain in the container image.
+func needsLocalRun(providers []string) bool {
+	for _, p := range providers {
+		if p == "go" {
+			return true
+		}
+	}
+	return false
 }
 
 var reSummary = regexp.MustCompile(`Rules Summary:\s+(\d+)/(\d+)`)

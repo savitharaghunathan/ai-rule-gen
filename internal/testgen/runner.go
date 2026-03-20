@@ -42,11 +42,11 @@ type FailureInfo struct {
 // always fail with "no views" because gopls can't resolve modules without `go`.
 // Java/Node.js/C# providers work inside the container.
 //
-// Workaround: if kantra test reports 0/total, we fall back to `kantra analyze --run-local`
-// which uses the host's local toolchain (Go, gopls, etc.) and parse violations from
-// the output.yaml to produce test results.
+// Strategy: detect providers from test files upfront. If a provider needs a local
+// toolchain (e.g. Go), skip `kantra test` and go straight to `kantra analyze --run-local`.
+// A 0/total fallback is kept as a safety net for providers we haven't identified yet.
 //
-// TODO: Remove the --run-local fallback once kantra ships a Go toolchain in the container image.
+// TODO: Remove the --run-local path once kantra ships a Go toolchain in the container image.
 // Track: https://github.com/konveyor-ecosystem/kantra — file issue for missing Go in container.
 func RunKantraTests(ctx context.Context, testsDir string, timeoutSeconds int) (*TestResult, error) {
 	testFiles, err := findTestFiles(testsDir)
@@ -61,14 +61,26 @@ func RunKantraTests(ctx context.Context, testsDir string, timeoutSeconds int) (*
 		timeoutSeconds = 900
 	}
 
-	// Try kantra test first
+	// Detect providers from test files — if Go, use --run-local directly
+	_, _, providers := parseTestFilesPaths(testsDir, testFiles)
+	if needsLocalRun(providers) {
+		fmt.Println("  Go provider detected — using kantra analyze --run-local (container lacks Go toolchain)")
+		expectedRules := collectExpectedRules(testFiles)
+		localResult, localErr := runKantraAnalyzeLocal(ctx, testsDir, testFiles, expectedRules, timeoutSeconds)
+		if localErr == nil {
+			fmt.Printf("  Result: %d/%d passed\n", localResult.Passed, localResult.Total)
+			return localResult, nil
+		}
+		fmt.Printf("  Warning: --run-local failed: %v — falling back to kantra test\n", localErr)
+	}
+
+	// Run kantra test (works for Java/Node.js/C# providers in container)
 	result, err := runKantraTest(ctx, testFiles, timeoutSeconds)
 	if err != nil {
 		return nil, err
 	}
 
-	// If all rules failed, try kantra analyze --run-local as fallback
-	// (kantra test container may lack language toolchain, e.g. Go)
+	// Safety net: if all rules failed unexpectedly, try --run-local as fallback
 	if result.Passed == 0 && result.Total > 0 {
 		fmt.Println("  All rules failed in container — trying kantra analyze --run-local...")
 		expectedRules := collectExpectedRules(testFiles)
@@ -84,6 +96,18 @@ func RunKantraTests(ctx context.Context, testsDir string, timeoutSeconds int) (*
 	}
 
 	return result, nil
+}
+
+// needsLocalRun returns true if any provider requires a local toolchain that
+// the kantra container doesn't have (currently just Go).
+// TODO: Remove once kantra ships Go toolchain in the container image.
+func needsLocalRun(providers []string) bool {
+	for _, p := range providers {
+		if p == "go" {
+			return true
+		}
+	}
+	return false
 }
 
 // runKantraTest runs `kantra test` with the given test files.

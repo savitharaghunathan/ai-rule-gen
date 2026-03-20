@@ -136,26 +136,27 @@ Generate test data, run kantra tests, and auto-fix failing tests:
 The test-fix loop:
 1. Generates test source code that should trigger each rule
 2. **Phase A — Compile fix**: Checks compilation (`go build`, `mvn compile`, `npx tsc`, `dotnet build`), feeds errors + API docs back to the LLM, retries up to 5 times
-3. **Phase B — Kantra test**: Runs `kantra test` to check which rules matched. If 0/total (e.g. kantra container lacks Go toolchain), automatically falls back to `kantra analyze --run-local` using the host's local toolchain
+3. **Phase B — Kantra test**: Detects the provider from test files. For Go rules, uses `kantra analyze --run-local` directly (container lacks Go toolchain). For other providers, uses `kantra test`. A 0/total safety-net fallback to `--run-local` is kept for unrecognized providers.
 4. For failing rules, asks the LLM for code hints, regenerates test data, and re-runs (up to `--max-iterations`)
 
-> **Note**: As of kantra v0.9.0-alpha.6, the container image does not include a Go toolchain. The `go.referenced` provider requires gopls + `go` to resolve modules. For Go rules, the runner falls back to `kantra analyze --run-local` which uses your locally installed Go.
+> **Note**: As of kantra v0.9.0-alpha.6, the container image does not include a Go toolchain. The `go.referenced` provider requires gopls + `go` to resolve modules. The runner detects Go provider from test files and uses `kantra analyze --run-local` (host toolchain) automatically — no extra flags needed.
 
 ### Score Confidence
 
 Score rules by running kantra tests (primary signal — does the rule actually work?):
 
 ```bash
-./rulegen score --tests output/spring-boot-3-to-spring-boot-4/tests
+./rulegen score \
+  --tests output/go-non-fips-crypto-to-go-fips-140-compliance/tests
 ```
 
 Add LLM-as-judge as a secondary quality signal:
 
 ```bash
 ./rulegen score \
-  --tests output/spring-boot-3-to-spring-boot-4/tests \
-  --rules output/spring-boot-3-to-spring-boot-4/rules \
-  --provider anthropic
+  --tests output/go-non-fips-crypto-to-go-fips-140-compliance/tests \
+  --rules output/go-non-fips-crypto-to-go-fips-140-compliance/rules \
+  --provider gemini
 ```
 
 Verdict logic:

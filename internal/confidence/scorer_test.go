@@ -301,6 +301,68 @@ func TestCollectRuleIDs_Deduplicates(t *testing.T) {
 	}
 }
 
+func TestParseTestFilesPaths(t *testing.T) {
+	dir := t.TempDir()
+	testYAML := `rulesPath: ../rules/security.yaml
+providers:
+  - name: go
+    dataPath: ./data/security
+tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+`
+	os.WriteFile(filepath.Join(dir, "security.test.yaml"), []byte(testYAML), 0o644)
+
+	rulesDir, dataDirs, providers := parseTestFilesPaths(dir, []string{filepath.Join(dir, "security.test.yaml")})
+	if rulesDir == "" {
+		t.Error("rulesDir is empty")
+	}
+	if len(dataDirs) != 1 {
+		t.Fatalf("got %d dataDirs, want 1", len(dataDirs))
+	}
+	if len(providers) != 1 || providers[0] != "go" {
+		t.Errorf("providers = %v, want [go]", providers)
+	}
+}
+
+func TestParseAnalyzeViolations(t *testing.T) {
+	dir := t.TempDir()
+	outputYAML := `- name: test-ruleset
+  violations:
+    rule-00010:
+      description: test
+      incidents:
+        - uri: file:///test/main.go
+    rule-00020:
+      description: test2
+      incidents:
+        - uri: file:///test/main.go
+  unmatched:
+    - rule-00030
+`
+	outputFile := filepath.Join(dir, "output.yaml")
+	os.WriteFile(outputFile, []byte(outputYAML), 0o644)
+
+	matched := parseAnalyzeViolations(outputFile)
+	if !matched["rule-00010"] {
+		t.Error("expected rule-00010 to be matched")
+	}
+	if !matched["rule-00020"] {
+		t.Error("expected rule-00020 to be matched")
+	}
+	if matched["rule-00030"] {
+		t.Error("rule-00030 should not be matched (it's unmatched)")
+	}
+}
+
+func TestParseAnalyzeViolations_MissingFile(t *testing.T) {
+	matched := parseAnalyzeViolations("/nonexistent/output.yaml")
+	if len(matched) != 0 {
+		t.Errorf("expected empty map, got %v", matched)
+	}
+}
+
 func TestNew_Defaults(t *testing.T) {
 	s := New("", 0, nil, nil)
 	if s.kantraPath != "kantra" {

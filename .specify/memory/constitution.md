@@ -47,7 +47,7 @@ Start with the minimum viable set of tools. Do not add abstractions, indirection
 - **Transport**: SSE only — no stdio. Bind to `localhost` by default
 - **LLM Providers**: Anthropic (default), OpenAI, Google — configured via environment variables for CLI path only
 - **Confidence Scoring**: Primary signal MUST be functional (kantra test pass/fail). LLM-as-judge is a secondary quality signal, not a substitute for functional testing
-- **Kantra Testing**: `kantra test` runs inside a container. When the container lacks a language toolchain (e.g. Go as of v0.9.0-alpha.6), the runner MUST fall back to `kantra analyze --run-local` using the host's toolchain rather than reporting false failures
+- **Kantra Testing**: `kantra test` runs inside a container. The runner and scorer MUST detect the provider from test files upfront — if Go provider is present, use `kantra analyze --run-local` directly (container lacks Go toolchain as of v0.9.0-alpha.6). A 0/total safety-net fallback MUST be kept for unrecognized providers
 - **Supported Condition Types**: java.referenced, java.dependency, go.referenced, go.dependency, nodejs.referenced, builtin.filecontent, builtin.file, builtin.hasTags, and/or combinators
 
 ## Development Workflow
