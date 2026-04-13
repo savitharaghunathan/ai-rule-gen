@@ -19,6 +19,7 @@ CRITICAL RULES — read before extracting:
 - alternative_fqns MUST only include FQNs explicitly mentioned in the content as alternatives. Do NOT guess alternatives.
 - Do NOT create rules for Dockerfiles, CI/CD pipelines, or infrastructure changes — only create rules for source code and build configuration that the analyzer can scan.
 - For java.dependency rules, detect the OLD (source) dependency that needs upgrading or replacing — NOT the new (target) dependency. For example, to detect JUnit 4, use dependency_name "junit.junit" with an upperbound, NOT "org.junit.jupiter.junit-jupiter-api".
+- NEVER use java.dependency for anything other than `<dependency>` elements in pom.xml. It CANNOT match `<plugin>`, `<parent>`, `<properties>`, or other POM sections. For those, use builtin.xml with an XPath expression.
 - source_fqn and source_pattern must be machine-matchable: a fully qualified class name, package prefix, import path, or dependency coordinate. NEVER use English descriptions like "Traditional switch statement" as a pattern.
 
 ## Condition Type Selection
@@ -26,8 +27,11 @@ CRITICAL RULES — read before extracting:
 Choose condition_type based on WHAT is being detected:
 
 ### Java
-- java.referenced — Detect usage of a Java class, annotation, method, or type in SOURCE CODE. Set source_fqn to the fully qualified class name (e.g., "javax.ejb.Stateless") and location_type to where it appears (IMPORT, ANNOTATION, TYPE, METHOD_CALL, INHERITANCE, IMPLEMENTS_TYPE, etc.). For PACKAGE-LEVEL patterns that should match any class under a package, append a `*` wildcard (e.g., "javax.xml.bind*" matches javax.xml.bind.JAXBContext, javax.xml.bind.Marshaller, etc.).
-- java.dependency — Detect a Maven/Gradle dependency by artifact coordinates. ALWAYS use this for dependency upgrades, removals, or version changes (e.g., Spring Boot parent version, JAXB dependency removal). Set dependency_name to "groupId.artifactId" format (e.g., "org.springframework.boot.spring-boot-starter-parent"). Do NOT use builtin.filecontent for pom.xml patterns — use java.dependency instead.
+- java.referenced — Detect usage of a Java class, annotation, method, or type in SOURCE CODE. Set source_fqn to the fully qualified class name (e.g., "javax.ejb.Stateless") and location_type to where it appears (IMPORT, ANNOTATION, TYPE, METHOD_CALL, INHERITANCE, IMPLEMENTS_TYPE, etc.). For PACKAGE-LEVEL patterns that should match any class under a package, append a `*` wildcard (e.g., "javax.xml.bind*" matches javax.xml.bind.JAXBContext, javax.xml.bind.Marshaller, etc.). Prefer IMPORT as the location_type when the goal is to detect any usage of a removed/restricted API — it is the most reliable and broadest match. Use TYPE or METHOD_CALL only when you need to detect a specific usage pattern beyond import.
+- java.dependency — Detect a Maven/Gradle DEPENDENCY (elements under `<dependencies>`) by artifact coordinates. Set dependency_name to "groupId.artifactId" format (e.g., "junit.junit"). ONLY use for actual `<dependency>` elements — NOT for Maven plugins or parent POMs.
+- builtin.xml — Detect Maven PLUGINS (`<build><plugins><plugin>`) or PARENT POMs (`<parent>`) in pom.xml. The java.dependency condition CANNOT match these — you MUST use builtin.xml with an XPath expression. Set xml_xpath to the XPath and xml_filepaths to ["pom.xml"]. Use namespace prefix "m" for Maven namespace. Examples:
+  - Plugin: xml_xpath = "/m:project/m:build/m:plugins/m:plugin[m:groupId/text() = 'org.apache.maven.plugins' and m:artifactId/text() = 'maven-compiler-plugin']"
+  - Parent POM: xml_xpath = "/m:project/m:parent[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-starter-parent']"
 - builtin.filecontent — ONLY for non-XML config files (application.properties, application.yml). Set source_fqn to a regex pattern and file_pattern to the filename glob (e.g., "application.*\\.properties"). Do NOT use for pom.xml.
 
 ### Go
@@ -58,9 +62,12 @@ For each migration pattern found in the content, provide:
 12. category: One of: mandatory, optional, potential
 13. concern: Grouping key — use a simple lowercase word with no commas or spaces (e.g., "ejb", "cdi", "jpa", "security", "web", "config")
 14. file_pattern: For builtin.filecontent only. File glob (e.g., "application.*\\.properties").
-15. example_before: Short code example showing the source pattern
-16. example_after: Short code example showing the target pattern
-17. documentation_url: URL from the content (omit if no URL is present — do NOT generate URLs)
+15. xml_xpath: For builtin.xml only. The XPath expression to match (e.g., "/m:project/m:parent[m:artifactId/text() = 'spring-boot-starter-parent']").
+16. xml_filepaths: For builtin.xml only. List of filenames to scan (e.g., ["pom.xml"]).
+17. xml_namespaces: For builtin.xml only. Namespace prefix mappings (e.g., {"m": "http://maven.apache.org/POM/4.0.0"} for Maven POMs).
+18. example_before: Short code example showing the source pattern
+19. example_after: Short code example showing the target pattern
+20. documentation_url: URL from the content (omit if no URL is present — do NOT generate URLs)
 
 Return a JSON array of objects. Each object must have at minimum: source_pattern, condition_type, rationale, complexity, category.
 

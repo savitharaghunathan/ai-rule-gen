@@ -18,6 +18,9 @@ type MigrationPattern struct {
 	DependencyName   string   `json:"dependency_name,omitempty"`
 	DepUpperbound    string   `json:"dep_upperbound,omitempty"`
 	DepLowerbound    string   `json:"dep_lowerbound,omitempty"`
+	XMLXPath         string            `json:"xml_xpath,omitempty"`
+	XMLFilepaths     []string          `json:"xml_filepaths,omitempty"`
+	XMLNamespaces    map[string]string `json:"xml_namespaces,omitempty"`
 	ExampleBefore    string   `json:"example_before,omitempty"`
 	ExampleAfter     string   `json:"example_after,omitempty"`
 	DocumentationURL string   `json:"documentation_url,omitempty"`

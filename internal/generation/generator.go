@@ -140,7 +140,15 @@ func buildSingleCondition(p extraction.MigrationPattern) rules.Condition {
 	case "builtin.file":
 		return rules.NewBuiltinFile(pattern)
 	case "builtin.xml":
-		return rules.NewBuiltinXML(pattern, nil)
+		xpath := p.XMLXPath
+		if xpath == "" {
+			xpath = pattern
+		}
+		cond := rules.NewBuiltinXML(xpath, p.XMLNamespaces)
+		if len(p.XMLFilepaths) > 0 {
+			cond.BuiltinXML.Filepaths = p.XMLFilepaths
+		}
+		return cond
 	case "builtin.json":
 		return rules.NewBuiltinJSON(pattern)
 	default:
