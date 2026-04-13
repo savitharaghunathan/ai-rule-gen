@@ -20,8 +20,9 @@ Two entry points, shared internals:
 | Command | Description | Status |
 |---------|-------------|--------|
 | `rulegen generate` | Ingest input (URL, file, text) → extract patterns via LLM → construct rules → validate → save | Implemented |
-| `rulegen test` | Generate test data, run `kantra test`, fix failing rules (up to `--max-iterations`) | Implemented |
-| `rulegen score` | Run kantra tests for functional confidence + optional LLM-as-judge | Implemented |
+| `rulegen validate` | Structural validation of rule YAML (directory or file); prints JSON, no LLM | Implemented |
+| `rulegen test` | Generate test data, run kantra, auto-fix **test data** via LLM hints (up to `--max-iterations`) | Implemented |
+| `rulegen score` | Run kantra tests for functional confidence + optional LLM-as-judge | Experimental |
 
 ## Prerequisites
 
@@ -38,13 +39,19 @@ go build -o rulegen ./cmd/rulegen/
 
 ### MCP Server
 
-Start the server — no API key needed:
+Start the server — no API key needed. Supports two transports:
 
 ```bash
-./rulegen serve --port 8080
+# stdio (default) — for local MCP clients
+./rulegen serve
+
+# Streamable HTTP — for remote/shared deployments
+./rulegen serve --transport http --port 8080
 ```
 
-#### Connect from Claude Code
+#### Connect from Claude Code (stdio — recommended)
+
+Stdio is the MCP-recommended transport for local servers. The client launches the server as a subprocess — no separate process to manage, and access is restricted to just the MCP client.
 
 Add `.mcp.json` to your project root:
 
@@ -52,8 +59,24 @@ Add `.mcp.json` to your project root:
 {
   "mcpServers": {
     "rulegen": {
-      "type": "sse",
-      "url": "http://localhost:8080/sse"
+      "type": "stdio",
+      "command": "./rulegen",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+#### Connect from Claude Code (Streamable HTTP)
+
+Use Streamable HTTP when the server runs remotely, is shared across multiple clients, or you want to manage the server lifecycle independently (e.g., for debugging). Requires starting the server separately with `./rulegen serve --transport http --port 8080`.
+
+```json
+{
+  "mcpServers": {
+    "rulegen": {
+      "type": "streamable-http",
+      "url": "http://localhost:8080/mcp"
     }
   }
 }
@@ -61,17 +84,19 @@ Add `.mcp.json` to your project root:
 
 #### Connect from Cursor
 
-Add `.cursor/mcp.json`:
+Streamable HTTP (server must be running separately):
 
 ```json
 {
   "mcpServers": {
     "rulegen": {
-      "url": "http://localhost:8080/sse"
+      "url": "http://localhost:8080/mcp"
     }
   }
 }
 ```
+
+If your Cursor version supports stdio MCP servers, you can use the same `.mcp.json` as in **Connect from Claude Code (stdio — recommended)** above.
 
 #### Example: Generate rules interactively
 
@@ -121,9 +146,30 @@ Or specify everything explicitly:
   --provider anthropic
 ```
 
+#### `generate` flags
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--input` | URL, file path, or text content | Yes |
+| `--source` | Source technology (auto-detected if omitted) | No |
+| `--target` | Target technology (auto-detected if omitted) | No |
+| `--language` | Programming language: java, go, nodejs, csharp (auto-detected if omitted) | No |
+| `--output` | Output directory (default: `output`) | No |
+| `--provider` | LLM provider: `anthropic`, `openai`, `gemini`, `ollama` (overrides `RULEGEN_LLM_PROVIDER` env var) | Yes |
+
+### Validate rules
+
+Validate existing rule YAML without an LLM (same structural checks as the `validate_rules` MCP tool):
+
+```bash
+./rulegen validate --rules ./output/my-ruleset/rules
+```
+
+Use a directory of `.yaml` files or a single rule file. Prints JSON to stdout; exits with a non-zero status if validation fails.
+
 ### Test Rules
 
-Generate test data, run kantra tests, and auto-fix failing tests:
+Generate test data, run kantra tests, and auto-fix **test data** (not rule YAML) when the compile or kantra steps fail:
 
 ```bash
 ./rulegen test \
@@ -136,24 +182,25 @@ Generate test data, run kantra tests, and auto-fix failing tests:
 The test-fix loop:
 1. Generates test source code that should trigger each rule
 2. **Phase A — Compile fix**: Checks compilation (`go build`, `mvn compile`, `npx tsc`, `dotnet build`), feeds errors + API docs back to the LLM, retries up to 5 times
-3. **Phase B — Kantra test**: Detects the provider from test files. For Go rules, uses `kantra analyze --run-local` directly (container lacks Go toolchain). For other providers, uses `kantra test`. A 0/total safety-net fallback to `--run-local` is kept for unrecognized providers.
-4. For failing rules, asks the LLM for code hints, regenerates test data, and re-runs (up to `--max-iterations`)
+3. **Phase B — Kantra test**: Runs `kantra test` on generated test data
+4. When tests still fail, asks the LLM for code hints, regenerates test data, and re-runs (up to `--max-iterations`)
+5. **Consistency check**: Verifies every rule has a test case and every test references a real rule
 
-> **Note**: As of kantra v0.9.0-alpha.6, the container image does not include a Go toolchain. The `go.referenced` provider requires gopls + `go` to resolve modules. The runner detects Go provider from test files and uses `kantra analyze --run-local` (host toolchain) automatically — no extra flags needed.
+### Score Confidence (Experimental)
 
-### Score Confidence
+> Requires `--experimental` flag: `./rulegen --experimental score ...`
 
 Score rules by running kantra tests (primary signal — does the rule actually work?):
 
 ```bash
-./rulegen score \
+./rulegen --experimental score \
   --tests output/go-non-fips-crypto-to-go-fips-140-compliance/tests
 ```
 
 Add LLM-as-judge as a secondary quality signal:
 
 ```bash
-./rulegen score \
+./rulegen --experimental score \
   --tests output/go-non-fips-crypto-to-go-fips-140-compliance/tests \
   --rules output/go-non-fips-crypto-to-go-fips-140-compliance/rules \
   --provider gemini
@@ -164,16 +211,16 @@ Verdict logic:
 - kantra pass + judge reject → **review** (works but quality concerns)
 - kantra pass + judge accept → **accept**
 
-#### CLI Flags
+#### `score` flags
 
 | Flag | Description | Required |
 |------|-------------|----------|
-| `--input` | URL, file path, or text content | Yes |
-| `--source` | Source technology (auto-detected if omitted) | No |
-| `--target` | Target technology (auto-detected if omitted) | No |
-| `--language` | Programming language: java, go, nodejs, csharp (auto-detected if omitted) | No |
-| `--output` | Output directory (default: `output`) | No |
-| `--provider` | LLM provider: `anthropic`, `openai`, `gemini`, `ollama` (overrides `RULEGEN_LLM_PROVIDER` env var) | Yes |
+| `--tests` | Directory containing `.test.yaml` files | Yes |
+| `--rules` | Rules directory; required when using `--provider` (LLM judge) | With `--provider` |
+| `--output` | Project root for `confidence/scores.yaml` (default: print only) | No |
+| `--kantra` | Path to `kantra` binary (default: `kantra` on `PATH`) | No |
+| `--timeout` | Kantra timeout in seconds (default: `900`) | No |
+| `--provider` | LLM provider for judge: `anthropic`, `openai`, `gemini`, `ollama` | No |
 
 #### LLM Provider Configuration
 
@@ -210,9 +257,10 @@ Java (`java.referenced`, `java.dependency`), Go (`go.referenced`, `go.dependency
 ## Testing
 
 ```bash
-go test ./internal/...                                    # Unit tests
-go test -tags=integration ./test/integration/...          # Integration tests (mock LLM)
-go test -tags=e2e ./test/e2e/...                          # E2E tests (real LLM + kantra)
+make test                                                 # Unit tests
+make test-all                                             # Unit tests + vet + race detector
+make test-e2e                                             # E2E tests (real LLM + kantra)
+make lint                                                 # golangci-lint
 ```
 
 ## Related Projects

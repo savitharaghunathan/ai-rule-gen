@@ -83,3 +83,8 @@ func (w *Workspace) RulesFilePath(concern string) string {
 func (w *Workspace) ScoresPath() string {
 	return filepath.Join(w.ConfidenceDir(), "scores.yaml")
 }
+
+// RulesReportPath returns the path to the rules report file.
+func (w *Workspace) RulesReportPath() string {
+	return filepath.Join(w.Root, "rules-report.yaml")
+}

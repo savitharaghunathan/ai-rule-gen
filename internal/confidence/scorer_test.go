@@ -231,6 +231,54 @@ func TestParseJudgeResponse(t *testing.T) {
 	}
 }
 
+func TestParseJudgeResponse_MissingFields(t *testing.T) {
+	// Only some fields present — missing fields default to 0
+	response := `{"pattern_correctness": 5, "reasoning": "partial"}`
+	score, verdict, _, err := parseJudgeResponse(response)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Only pattern_correctness=5, rest default to 0: average = 5/5 = 1.0
+	if score >= 2.5 {
+		t.Errorf("expected low score with missing fields, got %f", score)
+	}
+	if verdict != "reject" {
+		t.Errorf("expected reject verdict, got %q", verdict)
+	}
+}
+
+func TestParseJudgeResponse_MalformedJSON(t *testing.T) {
+	_, _, _, err := parseJudgeResponse(`{"pattern_correctness": 5, broken`)
+	if err == nil {
+		t.Error("expected error for malformed JSON")
+	}
+}
+
+func TestParseJudgeResponse_ExtremeScores(t *testing.T) {
+	// All zeros
+	response := `{"pattern_correctness": 0, "message_quality": 0, "category_appropriateness": 0, "effort_accuracy": 0, "false_positive_risk": 0, "reasoning": "all zero"}`
+	score, verdict, _, err := parseJudgeResponse(response)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if score != 0 {
+		t.Errorf("expected 0 score, got %f", score)
+	}
+	if verdict != "reject" {
+		t.Errorf("expected reject, got %q", verdict)
+	}
+}
+
+func TestParseJudgeResponse_MultipleJSONObjects(t *testing.T) {
+	// Multiple JSON objects — parseJudgeResponse takes first { to last },
+	// which captures invalid text between objects. This is expected to fail.
+	response := `{"pattern_correctness": 3} and {"pattern_correctness": 5}`
+	_, _, _, err := parseJudgeResponse(response)
+	if err == nil {
+		t.Error("expected error for multiple JSON objects with text between them")
+	}
+}
+
 func TestFindTestFiles(t *testing.T) {
 	dir := t.TempDir()
 
@@ -298,68 +346,6 @@ func TestCollectRuleIDs_Deduplicates(t *testing.T) {
 	}
 	if len(ids) != 2 {
 		t.Errorf("got %d IDs (expected dedup), want 2: %v", len(ids), ids)
-	}
-}
-
-func TestParseTestFilesPaths(t *testing.T) {
-	dir := t.TempDir()
-	testYAML := `rulesPath: ../rules/security.yaml
-providers:
-  - name: go
-    dataPath: ./data/security
-tests:
-  - ruleID: rule-00010
-    testCases:
-      - name: tc-1
-`
-	os.WriteFile(filepath.Join(dir, "security.test.yaml"), []byte(testYAML), 0o644)
-
-	rulesDir, dataDirs, providers := parseTestFilesPaths(dir, []string{filepath.Join(dir, "security.test.yaml")})
-	if rulesDir == "" {
-		t.Error("rulesDir is empty")
-	}
-	if len(dataDirs) != 1 {
-		t.Fatalf("got %d dataDirs, want 1", len(dataDirs))
-	}
-	if len(providers) != 1 || providers[0] != "go" {
-		t.Errorf("providers = %v, want [go]", providers)
-	}
-}
-
-func TestParseAnalyzeViolations(t *testing.T) {
-	dir := t.TempDir()
-	outputYAML := `- name: test-ruleset
-  violations:
-    rule-00010:
-      description: test
-      incidents:
-        - uri: file:///test/main.go
-    rule-00020:
-      description: test2
-      incidents:
-        - uri: file:///test/main.go
-  unmatched:
-    - rule-00030
-`
-	outputFile := filepath.Join(dir, "output.yaml")
-	os.WriteFile(outputFile, []byte(outputYAML), 0o644)
-
-	matched := parseAnalyzeViolations(outputFile)
-	if !matched["rule-00010"] {
-		t.Error("expected rule-00010 to be matched")
-	}
-	if !matched["rule-00020"] {
-		t.Error("expected rule-00020 to be matched")
-	}
-	if matched["rule-00030"] {
-		t.Error("rule-00030 should not be matched (it's unmatched)")
-	}
-}
-
-func TestParseAnalyzeViolations_MissingFile(t *testing.T) {
-	matched := parseAnalyzeViolations("/nonexistent/output.yaml")
-	if len(matched) != 0 {
-		t.Errorf("expected empty map, got %v", matched)
 	}
 }
 

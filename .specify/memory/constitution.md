@@ -13,7 +13,7 @@ Sync Impact Report
 
 ### I. MCP-First
 
-All capabilities MUST be exposed as MCP tools over SSE transport. The MCP server is the primary interface for interactive clients (Claude Code, Kai, VS Code). A CLI entry point provides direct access to the same internal packages for pipeline/CI use. Both entry points share identical internal logic — no feature may exist in one path without being available in the other.
+All capabilities MUST be exposed as MCP tools. The MCP server supports stdio (default, recommended for local use) and Streamable HTTP transports. The MCP server is the primary interface for interactive clients (Claude Code, Kai, VS Code). A CLI entry point provides direct access to the same internal packages for pipeline/CI use. Both entry points share identical internal logic — no feature may exist in one path without being available in the other.
 
 ### II. Sampling Over Server LLM
 
@@ -43,11 +43,11 @@ Start with the minimum viable set of tools. Do not add abstractions, indirection
 ## Integration Constraints
 
 - **Language**: Go — aligns with analyzer-lsp and kantra
-- **MCP SDK**: `github.com/mark3labs/mcp-go` — SSE transport, widely adopted
-- **Transport**: SSE only — no stdio. Bind to `localhost` by default
-- **LLM Providers**: Anthropic (default), OpenAI, Google — configured via environment variables for CLI path only
-- **Confidence Scoring**: Primary signal MUST be functional (kantra test pass/fail). LLM-as-judge is a secondary quality signal, not a substitute for functional testing
-- **Kantra Testing**: `kantra test` runs inside a container. The runner and scorer MUST detect the provider from test files upfront — if Go provider is present, use `kantra analyze --run-local` directly (container lacks Go toolchain as of v0.9.0-alpha.6). A 0/total safety-net fallback MUST be kept for unrecognized providers
+- **MCP SDK**: `github.com/modelcontextprotocol/go-sdk` — official SDK, stdio + Streamable HTTP
+- **Transport**: stdio (default) and Streamable HTTP (`--transport http`). Bind to `localhost` by default for HTTP
+- **LLM Providers**: Anthropic, OpenAI, Gemini, Ollama — configured via environment variables for CLI path only
+- **Confidence Scoring**: Experimental (`--experimental` flag). Primary signal MUST be functional (kantra test pass/fail). LLM-as-judge is a secondary quality signal, not a substitute for functional testing
+- **Kantra Testing**: `kantra test` runs inside a container. All providers (Java, Go, Node.js, C#, Python) use `kantra test` directly
 - **Supported Condition Types**: java.referenced, java.dependency, go.referenced, go.dependency, nodejs.referenced, builtin.filecontent, builtin.file, builtin.hasTags, and/or combinators
 
 ## Development Workflow

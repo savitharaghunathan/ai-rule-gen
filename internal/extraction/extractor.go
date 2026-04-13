@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"text/template"
 
@@ -36,12 +37,12 @@ func (e *Extractor) Extract(ctx context.Context, chunks []string, source, target
 	var allPatterns []MigrationPattern
 
 	for i, chunk := range chunks {
-		fmt.Printf("  Processing chunk %d/%d (%d chars)...\n", i+1, len(chunks), len(chunk))
+		slog.Info("processing chunk", "chunk", i+1, "total", len(chunks), "chars", len(chunk))
 		patterns, err := e.extractChunk(ctx, chunk, source, target, language)
 		if err != nil {
 			return nil, fmt.Errorf("chunk %d: %w", i, err)
 		}
-		fmt.Printf("  Chunk %d: found %d patterns\n", i+1, len(patterns))
+		slog.Info("chunk extraction complete", "chunk", i+1, "patterns", len(patterns))
 		allPatterns = append(allPatterns, patterns...)
 	}
 

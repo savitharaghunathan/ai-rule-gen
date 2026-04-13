@@ -1,8 +1,9 @@
 {
   "mcpServers": {
     "rulegen": {
-      "type": "sse",
-      "url": "http://localhost:8080/mcp"
+      "type": "stdio",
+      "command": "./rulegen",
+      "args": ["serve"]
     }
   }
 }

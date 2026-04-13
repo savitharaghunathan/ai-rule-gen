@@ -1,39 +1,86 @@
-You are an expert {{.Language}} developer. Generate test source code that will trigger Konveyor analyzer rules.
+Generate MINIMAL test source code that will trigger Konveyor analyzer rules.
+The analyzer uses a language server that needs dependencies on the classpath to resolve symbols.
+The pom.xml MUST include `<dependency>` entries for every API referenced in the source code
+(e.g., JUnit 4, javax.xml.bind, javax.servlet, javax.persistence, etc.) so the LSP can resolve them.
 
 Migration: {{.Source}} → {{.Target}}
 Language: {{.Language}}
 
-Below are the rules that need to be triggered. Each rule has a `when` condition with a pattern.
-Your generated code MUST contain code that matches EACH rule's pattern.
-
 Rules:
 {{.Rules}}
 
-REQUIREMENTS:
-1. Create a COMPLETE, COMPILABLE {{.Language}} project
-2. For EACH rule, include code that EXACTLY matches the pattern in the `when` condition
-3. Add a comment before each pattern: // Rule: <ruleID>
-4. Keep code minimal — one example per rule, just enough to trigger the pattern
-5. All imports/dependencies must be valid and resolve
+CRITICAL:
+- Use the EXACT fully qualified names from each rule's `pattern` field.
+- Do NOT substitute similar-looking APIs or invent packages/classes.
+- The source file goes at {{.SourceDir}}/{{.MainFile}} — use the matching package declaration.
+- For XML files (pom.xml, .csproj): do NOT use `--` inside XML comments.
 
-CRITICAL: The Konveyor analyzer matches patterns against fully qualified names and source references.
-- For `java.referenced` with location ANNOTATION: use the annotation (e.g., `@Stateless`)
-- For `java.referenced` with location IMPORT: use the import statement
-- For `java.referenced` with location TYPE: declare or use the type
-- For `java.referenced` with location METHOD_CALL: call the method
-- For `go.referenced`: use the package/symbol (e.g., `crypto/md5`)
-- For `builtin.filecontent`: include text matching the regex pattern in the appropriate file
+KEEP IT MINIMAL:
+- Source file: just imports + one class with rule-triggering code (15-30 lines).
+- {{.BuildFile}}: metadata + ALL dependencies needed to resolve the referenced APIs. No plugins, no build config.
+- Add a comment before each pattern: // Rule: <ruleID>
+
+How the analyzer matches patterns:
+- `java.referenced` ANNOTATION: import + apply annotation to class/method/field
+- `java.referenced` IMPORT: import statement alone is sufficient
+- `java.referenced` TYPE: use the FULLY QUALIFIED type name inline (e.g., `sun.misc.Unsafe obj = null;`). Do NOT rely on an import + short name — the analyzer needs the FQN in the code to resolve internal/encapsulated types.
+- `java.referenced` METHOD_CALL: call using the FULLY QUALIFIED form (e.g., `org.junit.Assert.assertEquals(...)`). Do NOT use static imports — `import static org.junit.Assert.assertEquals` then `assertEquals(...)` will NOT match because the analyzer cannot resolve the FQN from a static import.
+- `java.referenced` CONSTRUCTOR_CALL: use `new` with the fully qualified class name
+- `java.referenced` IMPLEMENTS_TYPE: implement the interface
+- `java.referenced` INHERITANCE: extend the class
+- `java.dependency`: dependency in pom.xml with correct groupId:artifactId (name uses "groupId.artifactId" format)
+- `builtin.xml`: pom.xml must contain the XML elements that the XPath expression matches (e.g., `<parent>`, `<plugin>` with the specified groupId/artifactId). Include the full XML structure in the pom.xml.
+- `go.referenced`: import and reference the package
+- `nodejs.referenced`: import the module/symbol
+- `csharp.referenced`: use the namespace/type
+- `builtin.filecontent`: include text matching the regex pattern
+
+EXAMPLE — a minimal Java pom.xml (no build section, no plugins):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.sample</groupId>
+    <artifactId>sample-project</artifactId>
+    <version>0.0.1</version>
+    <dependencies>
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>8.0</version>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+EXAMPLE — a minimal Java source file:
+```java
+package com.example;
+
+import javax.ejb.Stateless;
+import javax.inject.Inject;
+
+// Rule: java-ee-to-quarkus-00010
+@Stateless
+public class Application {
+    // Rule: java-ee-to-quarkus-00020
+    @Inject
+    private String value;
+}
+```
 
 Format your response with EXACTLY TWO fenced code blocks:
 
-FIRST block: {{.BuildFile}} contents (type: {{.BuildFileType}})
+FIRST block: {{.BuildFile}} (type: {{.BuildFileType}})
 ```{{.BuildFileType}}
-... {{.BuildFile}} content ...
+...
 ```
 
-SECOND block: {{.MainFile}} contents (type: {{.MainFileType}})
+SECOND block: {{.MainFile}} (type: {{.MainFileType}})
 ```{{.MainFileType}}
-... source code content ...
+...
 ```
 
 Do NOT include any other text or code blocks.

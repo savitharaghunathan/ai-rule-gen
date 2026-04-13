@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -54,12 +56,38 @@ func New(handlers ToolHandlers) *mcp.Server {
 	return server
 }
 
-// ListenAndServe starts the MCP server with SSE transport.
-func ListenAndServe(cfg Config, s *mcp.Server) error {
-	handler := mcp.NewSSEHandler(func(*http.Request) *mcp.Server { return s }, nil)
+// RunStdio starts the MCP server with stdio transport.
+func RunStdio(ctx context.Context, s *mcp.Server) error {
+	slog.Info("starting MCP server", "transport", "stdio")
+	return s.Run(ctx, &mcp.StdioTransport{})
+}
+
+// ListenAndServe starts the MCP server with Streamable HTTP transport.
+// Supports graceful shutdown via context cancellation.
+func ListenAndServe(ctx context.Context, cfg Config, s *mcp.Server) error {
+	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return s }, nil)
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	slog.Info("starting MCP server", "addr", addr, "transport", "SSE")
-	return http.ListenAndServe(addr, handler)
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: handler,
+	}
+
+	go func() {
+		<-ctx.Done()
+		slog.Info("shutting down HTTP server")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			slog.Warn("HTTP server shutdown error", "error", err)
+		}
+	}()
+
+	slog.Info("starting MCP server", "addr", addr, "transport", "streamable-http")
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 func constructRuleTool() *mcp.Tool {

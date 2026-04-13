@@ -1,13 +1,14 @@
 package ingestion
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestIngest_RawText(t *testing.T) {
-	result, err := Ingest("This is raw migration guide text about javax.ejb.", 0)
+	result, err := Ingest(context.Background(), "This is raw migration guide text about javax.ejb.", 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -29,7 +30,7 @@ func TestIngest_File(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := Ingest(path, 0)
+	result, err := Ingest(context.Background(), path, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -48,7 +49,7 @@ func TestIngest_EmptyContent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := Ingest(path, 0)
+	_, err := Ingest(context.Background(), path, 0)
 	if err == nil {
 		t.Error("expected error for empty content")
 	}
@@ -65,10 +66,32 @@ func TestDetectType(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := detectType(tt.input)
+		got := DetectType(tt.input)
 		if got != tt.want {
-			t.Errorf("detectType(%q): got %v, want %v", tt.input, got, tt.want)
+			t.Errorf("DetectType(%q): got %v, want %v", tt.input, got, tt.want)
 		}
+	}
+}
+
+func TestValidateURLHost_BlocksLoopback(t *testing.T) {
+	err := validateURLHost("http://127.0.0.1/secret")
+	if err == nil {
+		t.Error("expected error for loopback address")
+	}
+}
+
+func TestValidateURLHost_BlocksLocalhost(t *testing.T) {
+	err := validateURLHost("http://localhost/secret")
+	if err == nil {
+		t.Error("expected error for localhost")
+	}
+}
+
+func TestValidateURLHost_AllowsPublic(t *testing.T) {
+	// google.com resolves to public IPs
+	err := validateURLHost("https://google.com")
+	if err != nil {
+		t.Errorf("unexpected error for public host: %v", err)
 	}
 }
 

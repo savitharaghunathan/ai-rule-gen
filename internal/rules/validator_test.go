@@ -1,6 +1,10 @@
 package rules
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestValidate_ValidRule(t *testing.T) {
 	rules := []Rule{{
@@ -209,4 +213,266 @@ func searchString(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func TestValidate_MissingDescription(t *testing.T) {
+	rules := []Rule{{
+		RuleID:  "test-00010",
+		Effort:  5,
+		Message: "test",
+		When:    NewJavaReferenced("foo", ""),
+	}}
+
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid (description is a warning, not error), got errors: %v", result.Errors)
+	}
+	if len(result.Warnings) == 0 {
+		t.Error("expected a warning about missing description")
+	}
+	assertContains(t, result.Warnings, "missing 'description'")
+}
+
+func TestValidate_EffortZero(t *testing.T) {
+	rules := []Rule{{
+		RuleID:      "test-00010",
+		Description: "test rule",
+		Message:     "test",
+		When:        NewJavaReferenced("foo", ""),
+		// Effort defaults to 0
+	}}
+
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid (effort 0 is a warning, not error), got errors: %v", result.Errors)
+	}
+	assertContains(t, result.Warnings, "effort is 0")
+}
+
+func TestValidate_LinkURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		wantWarn bool
+	}{
+		{"valid https", "https://example.com", false},
+		{"valid http", "http://example.com", false},
+		{"empty url", "", true},
+		{"no scheme", "example.com/docs", true},
+		{"ftp scheme", "ftp://example.com", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rules := []Rule{{
+				RuleID:      "test-00010",
+				Description: "test",
+				Effort:      5,
+				Message:     "test",
+				Links:       []Link{{URL: tt.url, Title: "docs"}},
+				When:        NewJavaReferenced("foo", ""),
+			}}
+
+			result := Validate(rules)
+			hasLinkWarning := false
+			for _, w := range result.Warnings {
+				if searchString(w, "links[0]") {
+					hasLinkWarning = true
+					break
+				}
+			}
+			if tt.wantWarn && !hasLinkWarning {
+				t.Errorf("expected link warning for URL %q", tt.url)
+			}
+			if !tt.wantWarn && hasLinkWarning {
+				t.Errorf("unexpected link warning for URL %q: %v", tt.url, result.Warnings)
+			}
+		})
+	}
+}
+
+func TestValidate_MultipleBareConditions(t *testing.T) {
+	rules := []Rule{{
+		RuleID:      "test-00010",
+		Description: "test",
+		Effort:      5,
+		Message:     "test",
+		When: Condition{
+			JavaReferenced:    &JavaReferenced{Pattern: "foo"},
+			BuiltinFilecontent: &BuiltinFilecontent{Pattern: "bar"},
+		},
+	}}
+
+	result := Validate(rules)
+	if result.Valid {
+		t.Error("expected invalid — two bare conditions without combinator")
+	}
+	assertContains(t, result.Errors, "condition types set")
+}
+
+func TestValidate_OrCombinatorMixedTypes_Valid(t *testing.T) {
+	rules := []Rule{{
+		RuleID:      "test-00010",
+		Description: "test",
+		Effort:      5,
+		Message:     "test",
+		When: NewOr(
+			NewJavaReferenced("foo.Bar", ""),
+			Condition{JavaDependency: &Dependency{Name: "foo.bar"}},
+		),
+	}}
+
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid — mixed types in or combinator is fine, got errors: %v", result.Errors)
+	}
+}
+
+func TestValidateConsistency_AllMatched(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+			{RuleID: "rule-00020", Message: "test", When: NewJavaReferenced("bar", "")},
+		},
+		`tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+  - ruleID: rule-00020
+    testCases:
+      - name: tc-1
+`,
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Valid {
+		t.Errorf("expected valid, got errors: %v", result.Errors)
+	}
+}
+
+func TestValidateConsistency_RuleWithoutTest(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+			{RuleID: "rule-00020", Message: "test", When: NewJavaReferenced("bar", "")},
+		},
+		`tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+`,
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Valid {
+		t.Error("expected invalid")
+	}
+	if len(result.RulesWithoutTests) != 1 || result.RulesWithoutTests[0] != "rule-00020" {
+		t.Errorf("RulesWithoutTests = %v, want [rule-00020]", result.RulesWithoutTests)
+	}
+}
+
+func TestValidateConsistency_TestWithoutRule(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+		},
+		`tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+  - ruleID: rule-00099
+    testCases:
+      - name: tc-1
+`,
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Valid {
+		t.Error("expected invalid")
+	}
+	if len(result.TestsWithoutRules) != 1 || result.TestsWithoutRules[0] != "rule-00099" {
+		t.Errorf("TestsWithoutRules = %v, want [rule-00099]", result.TestsWithoutRules)
+	}
+}
+
+func TestValidateConsistency_BothDirections(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+			{RuleID: "rule-00020", Message: "test", When: NewJavaReferenced("bar", "")},
+		},
+		`tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+  - ruleID: rule-00099
+    testCases:
+      - name: tc-1
+`,
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Valid {
+		t.Error("expected invalid")
+	}
+	if len(result.RulesWithoutTests) != 1 {
+		t.Errorf("RulesWithoutTests = %v, want 1 entry", result.RulesWithoutTests)
+	}
+	if len(result.TestsWithoutRules) != 1 {
+		t.Errorf("TestsWithoutRules = %v, want 1 entry", result.TestsWithoutRules)
+	}
+}
+
+func TestValidateConsistency_NoTestFiles(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+		},
+		"", // no test file
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Valid {
+		t.Error("expected invalid — rule has no test")
+	}
+	if len(result.RulesWithoutTests) != 1 {
+		t.Errorf("RulesWithoutTests = %v, want 1 entry", result.RulesWithoutTests)
+	}
+}
+
+// setupConsistencyDirs creates temp rules and tests directories for testing.
+func setupConsistencyDirs(t *testing.T, ruleList []Rule, testYAML string) (string, string) {
+	t.Helper()
+	dir := t.TempDir()
+	rulesDir := filepath.Join(dir, "rules")
+	testsDir := filepath.Join(dir, "tests")
+	os.MkdirAll(rulesDir, 0o755)
+	os.MkdirAll(testsDir, 0o755)
+
+	if len(ruleList) > 0 {
+		if err := WriteRulesFile(filepath.Join(rulesDir, "web.yaml"), ruleList); err != nil {
+			t.Fatalf("writing rules: %v", err)
+		}
+	}
+	if testYAML != "" {
+		os.WriteFile(filepath.Join(testsDir, "web.test.yaml"), []byte(testYAML), 0o644)
+	}
+
+	return rulesDir, testsDir
 }

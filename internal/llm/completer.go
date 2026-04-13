@@ -30,11 +30,10 @@ func (c *LLMCompleter) Complete(ctx context.Context, prompt string) (string, err
 	return c.provider.Complete(ctx, prompt)
 }
 
-// NewCompleterFromEnv creates a Completer based on the RULEGEN_LLM_PROVIDER env var.
-// Returns nil if no provider is configured (deterministic-only mode).
-// Returns an error if the provider is set but misconfigured (e.g., missing API key).
-func NewCompleterFromEnv() (*LLMCompleter, error) {
-	providerName := os.Getenv("RULEGEN_LLM_PROVIDER")
+// NewCompleter creates a Completer for the given provider name.
+// Returns nil if providerName is empty (deterministic-only mode).
+// Returns an error if the provider is unknown or misconfigured (e.g., missing API key).
+func NewCompleter(providerName string) (*LLMCompleter, error) {
 	if providerName == "" {
 		return nil, nil
 	}
@@ -59,4 +58,10 @@ func NewCompleterFromEnv() (*LLMCompleter, error) {
 	}
 
 	return NewLLMCompleter(provider), nil
+}
+
+// NewCompleterFromEnv creates a Completer based on the RULEGEN_LLM_PROVIDER env var.
+// Returns nil if no provider is configured (deterministic-only mode).
+func NewCompleterFromEnv() (*LLMCompleter, error) {
+	return NewCompleter(os.Getenv("RULEGEN_LLM_PROVIDER"))
 }
