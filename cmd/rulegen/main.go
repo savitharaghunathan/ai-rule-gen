@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	stdtemplate "text/template"
 
 	"github.com/konveyor/ai-rule-gen/internal/confidence"
@@ -20,8 +21,10 @@ import (
 )
 
 var (
-	host string
-	port int
+	host         string
+	port         int
+	transport    string
+	experimental bool
 )
 
 func main() {
@@ -35,8 +38,9 @@ func main() {
 		Short: "Start the MCP server",
 		RunE:  runServe,
 	}
-	serveCmd.Flags().StringVar(&host, "host", "localhost", "Host to bind to")
-	serveCmd.Flags().IntVar(&port, "port", 8080, "Port to listen on")
+	serveCmd.Flags().StringVar(&transport, "transport", "stdio", "Transport type: stdio, http")
+	serveCmd.Flags().StringVar(&host, "host", "localhost", "Host to bind to (http transport only)")
+	serveCmd.Flags().IntVar(&port, "port", 8080, "Port to listen on (http transport only)")
 
 	var genInput, genSource, genTarget, genLanguage, genOutput, genProvider string
 	generateCmd := &cobra.Command{
@@ -67,7 +71,7 @@ func main() {
 	var testMaxIterations int
 	testCmd := &cobra.Command{
 		Use:   "test",
-		Short: "Generate test data, run kantra tests, and fix failing rules",
+		Short: "Generate test data, run kantra tests, and fix failing test data",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runTest(testRulesDir, testOutputDir, testLanguage, testSource, testTarget, testProvider, testMaxIterations)
 		},
@@ -96,7 +100,19 @@ func main() {
 	scoreCmd.Flags().StringVar(&scoreProvider, "provider", "", "LLM provider for judge (optional): anthropic, openai, gemini, ollama")
 	scoreCmd.Flags().IntVar(&scoreTimeout, "timeout", 900, "Kantra timeout in seconds")
 
-	rootCmd.AddCommand(serveCmd, generateCmd, validateCmd, testCmd, scoreCmd)
+	rootCmd.PersistentFlags().BoolVar(&experimental, "experimental", false, "Enable experimental commands (score)")
+
+	rootCmd.AddCommand(serveCmd, generateCmd, validateCmd, testCmd)
+
+	// Experimental commands — hidden unless --experimental is set
+	scoreCmd.Hidden = true
+	scoreCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if !experimental {
+			return fmt.Errorf("'score' is experimental; use --experimental to enable it")
+		}
+		return nil
+	}
+	rootCmd.AddCommand(scoreCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -112,8 +128,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 
 	s := server.New(handlers)
-	cfg := server.Config{Host: host, Port: port}
-	return server.ListenAndServe(cfg, s)
+
+	switch transport {
+	case "stdio":
+		return server.RunStdio(cmd.Context(), s)
+	case "http":
+		cfg := server.Config{Host: host, Port: port}
+		return server.ListenAndServe(cfg, s)
+	default:
+		return fmt.Errorf("unknown transport %q; valid: stdio, http", transport)
+	}
 }
 
 func runGenerate(input, source, target, language, output, provider string) error {
@@ -234,6 +258,18 @@ func runTest(rulesDir, outputDir, language, source, target, provider string, max
 
 	data, _ := json.MarshalIndent(result, "", "  ")
 	fmt.Println(string(data))
+
+	// Run bidirectional consistency check: rules ↔ tests
+	testsDir := filepath.Join(outputDir, "tests")
+	fmt.Println("\nChecking rule ↔ test consistency...")
+	consistency, err := rules.ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		fmt.Printf("Warning: consistency check failed: %v\n", err)
+	} else {
+		cdata, _ := json.MarshalIndent(consistency, "", "  ")
+		fmt.Println(string(cdata))
+	}
+
 	return nil
 }
 

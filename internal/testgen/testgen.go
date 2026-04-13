@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -121,6 +122,10 @@ func New(completer llm.Completer, tmpl *template.Template) *Generator {
 	return &Generator{completer: completer, tmpl: tmpl}
 }
 
+// maxRulesPerGroup is the threshold above which rules from a single file are
+// split into smaller groups by condition type for test data generation.
+const maxRulesPerGroup = 8
+
 // Generate creates test data for all rule files in a rules directory.
 func (g *Generator) Generate(ctx context.Context, input GenerateInput) (*GenerateOutput, error) {
 	// Read all rule files
@@ -154,7 +159,6 @@ func (g *Generator) Generate(ctx context.Context, input GenerateInput) (*Generat
 			continue
 		}
 
-		concern := strings.TrimSuffix(entry.Name(), ext)
 		ruleFilePath := filepath.Join(input.RulesDir, entry.Name())
 
 		ruleList, err := rules.ReadRulesFile(ruleFilePath)
@@ -176,57 +180,157 @@ func (g *Generator) Generate(ctx context.Context, input GenerateInput) (*Generat
 			}
 		}
 
-		// Generate test data for this concern
-		dataDir := filepath.Join(testsDir, "data", concern)
-		if err := os.MkdirAll(filepath.Join(dataDir, langConfig.SourceDir), 0o755); err != nil {
-			return nil, fmt.Errorf("creating data dir: %w", err)
+		// Split large rule files into groups by condition type to avoid
+		// conflicting dependencies in a single test project.
+		groups := groupRulesForTestgen(ruleList, entry.Name())
+
+		for groupName, groupRules := range groups {
+			if err := g.generateGroupTestData(ctx, groupRules, groupName, ruleFilePath, language, langConfig, testsDir, input, &output); err != nil {
+				return nil, err
+			}
 		}
-
-		fmt.Printf("  Generating test data for %s (%d rules)...\n", concern, len(ruleList))
-
-		buildContent, sourceContent, err := g.generateCode(ctx, ruleList, language, langConfig, input.Source, input.Target)
-		if err != nil {
-			return nil, fmt.Errorf("generating test code for %s: %w", concern, err)
-		}
-
-		// Write build file
-		buildPath := filepath.Join(dataDir, langConfig.BuildFile)
-		if err := os.WriteFile(buildPath, []byte(buildContent), 0o644); err != nil {
-			return nil, fmt.Errorf("writing build file: %w", err)
-		}
-		output.FilesWritten++
-
-		// Write source file
-		sourcePath := filepath.Join(dataDir, langConfig.SourceDir, langConfig.MainFile)
-		if err := os.WriteFile(sourcePath, []byte(sourceContent), 0o644); err != nil {
-			return nil, fmt.Errorf("writing source file: %w", err)
-		}
-		output.FilesWritten++
-
-		// Resolve dependencies after writing files
-		fmt.Printf("    Resolving dependencies in %s...\n", dataDir)
-		runDepResolve(language, dataDir)
-
-		// Generate .test.yaml
-		providers := detectProviders(ruleList)
-		testFile := buildTestFile(ruleList, ruleFilePath, dataDir, testsDir, providers)
-		testFilePath := filepath.Join(testsDir, concern+".test.yaml")
-
-		testData, err := yaml.Marshal(testFile)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling test file: %w", err)
-		}
-		if err := os.WriteFile(testFilePath, testData, 0o644); err != nil {
-			return nil, fmt.Errorf("writing test file: %w", err)
-		}
-		output.FilesWritten++
-
-		output.TestFiles = append(output.TestFiles, concern+".test.yaml")
-		output.DataDirs = append(output.DataDirs, filepath.Join("data", concern))
-		output.RulesTested += len(ruleList)
 	}
 
 	return &output, nil
+}
+
+// groupRulesForTestgen splits rules into groups suitable for test data generation.
+// Small rule sets stay together; large ones are split by condition type.
+func groupRulesForTestgen(ruleList []rules.Rule, filename string) map[string][]rules.Rule {
+	baseName := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	// Small enough to keep together
+	if len(ruleList) <= maxRulesPerGroup {
+		return map[string][]rules.Rule{baseName: ruleList}
+	}
+
+	// Group by condition type
+	groups := make(map[string][]rules.Rule)
+	for _, r := range ruleList {
+		ct := ruleConditionType(r)
+		groups[ct] = append(groups[ct], r)
+	}
+
+	// If grouping didn't help (all same type), split by size
+	if len(groups) == 1 {
+		return splitBySize(ruleList, baseName, maxRulesPerGroup)
+	}
+
+	// Name groups: baseName-condtype (e.g., "rules-java-referenced", "rules-java-dependency")
+	named := make(map[string][]rules.Rule, len(groups))
+	for ct, rules := range groups {
+		groupName := baseName + "-" + strings.ReplaceAll(ct, ".", "-")
+		named[groupName] = rules
+	}
+	return named
+}
+
+// ruleConditionType returns the condition type string for a rule.
+func ruleConditionType(r rules.Rule) string {
+	c := r.When
+	if c.JavaReferenced != nil {
+		return "java-referenced"
+	}
+	if c.JavaDependency != nil {
+		return "java-dependency"
+	}
+	if c.GoReferenced != nil {
+		return "go-referenced"
+	}
+	if c.GoDependency != nil {
+		return "go-dependency"
+	}
+	if c.NodejsReferenced != nil {
+		return "nodejs-referenced"
+	}
+	if c.CSharpReferenced != nil {
+		return "csharp-referenced"
+	}
+	if c.BuiltinFilecontent != nil {
+		return "builtin-filecontent"
+	}
+	if c.BuiltinFile != nil {
+		return "builtin-file"
+	}
+	if c.BuiltinXML != nil {
+		return "builtin-xml"
+	}
+	if c.BuiltinJSON != nil {
+		return "builtin-json"
+	}
+	if len(c.Or) > 0 || len(c.And) > 0 {
+		return "combinator"
+	}
+	return "other"
+}
+
+// splitBySize divides rules into chunks of at most maxSize.
+func splitBySize(ruleList []rules.Rule, baseName string, maxSize int) map[string][]rules.Rule {
+	groups := make(map[string][]rules.Rule)
+	for i := 0; i < len(ruleList); i += maxSize {
+		end := min(i+maxSize, len(ruleList))
+		groupName := fmt.Sprintf("%s-part%d", baseName, i/maxSize+1)
+		groups[groupName] = ruleList[i:end]
+	}
+	return groups
+}
+
+// generateGroupTestData generates test data for a single group of rules.
+func (g *Generator) generateGroupTestData(ctx context.Context, ruleList []rules.Rule, groupName, ruleFilePath, language string, langConfig LanguageConfig, testsDir string, input GenerateInput, output *GenerateOutput) error {
+	dataDir := filepath.Join(testsDir, "data", groupName)
+	if err := os.MkdirAll(filepath.Join(dataDir, langConfig.SourceDir), 0o755); err != nil {
+		return fmt.Errorf("creating data dir: %w", err)
+	}
+
+	fmt.Printf("  Generating test data for %s (%d rules)...\n", groupName, len(ruleList))
+
+	buildContent, sourceContent, err := g.generateCode(ctx, ruleList, language, langConfig, input.Source, input.Target)
+	if err != nil {
+		return fmt.Errorf("generating test code for %s: %w", groupName, err)
+	}
+
+	// Sanitize XML build files — LLMs often put "--" inside XML comments which breaks parsers
+	if langConfig.BuildFileType == "xml" {
+		buildContent = sanitizeXMLComments(buildContent)
+	}
+
+	// Write build file
+	buildPath := filepath.Join(dataDir, langConfig.BuildFile)
+	if err := os.WriteFile(buildPath, []byte(buildContent), 0o644); err != nil {
+		return fmt.Errorf("writing build file: %w", err)
+	}
+	output.FilesWritten++
+
+	// Write source file
+	sourcePath := filepath.Join(dataDir, langConfig.SourceDir, langConfig.MainFile)
+	if err := os.WriteFile(sourcePath, []byte(sourceContent), 0o644); err != nil {
+		return fmt.Errorf("writing source file: %w", err)
+	}
+	output.FilesWritten++
+
+	// Resolve dependencies after writing files
+	fmt.Printf("    Resolving dependencies in %s...\n", dataDir)
+	runDepResolve(language, dataDir)
+
+	// Generate .test.yaml
+	providers := detectProviders(ruleList)
+	testFile := buildTestFile(ruleList, ruleFilePath, dataDir, testsDir, providers)
+	testFilePath := filepath.Join(testsDir, groupName+".test.yaml")
+
+	testData, err := yaml.Marshal(testFile)
+	if err != nil {
+		return fmt.Errorf("marshaling test file: %w", err)
+	}
+	if err := os.WriteFile(testFilePath, testData, 0o644); err != nil {
+		return fmt.Errorf("writing test file: %w", err)
+	}
+	output.FilesWritten++
+
+	output.TestFiles = append(output.TestFiles, groupName+".test.yaml")
+	output.DataDirs = append(output.DataDirs, filepath.Join("data", groupName))
+	output.RulesTested += len(ruleList)
+
+	return nil
 }
 
 // generateCode calls the LLM to produce build file and source file content.
@@ -465,4 +569,17 @@ func runDepResolve(language, dir string) {
 			fmt.Printf("    Warning: dependency resolution failed: %v\n%s\n", err, string(out))
 		}
 	}
+}
+
+// sanitizeXMLComments removes "--" sequences inside XML comments, which are
+// illegal in XML and break Maven's POM parser. LLMs frequently generate
+// comments like <!-- --add-opens flag --> which is invalid XML.
+var reXMLComment = regexp.MustCompile(`<!--(.*?)-->`)
+
+func sanitizeXMLComments(content string) string {
+	return reXMLComment.ReplaceAllStringFunc(content, func(match string) string {
+		inner := match[4 : len(match)-3] // strip <!-- and -->
+		inner = strings.ReplaceAll(inner, "--", "  ")
+		return "<!--" + inner + "-->"
+	})
 }

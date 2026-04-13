@@ -1,6 +1,10 @@
 package rules
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestValidate_ValidRule(t *testing.T) {
 	rules := []Rule{{
@@ -209,4 +213,153 @@ func searchString(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func TestValidateConsistency_AllMatched(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+			{RuleID: "rule-00020", Message: "test", When: NewJavaReferenced("bar", "")},
+		},
+		`tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+  - ruleID: rule-00020
+    testCases:
+      - name: tc-1
+`,
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Valid {
+		t.Errorf("expected valid, got errors: %v", result.Errors)
+	}
+}
+
+func TestValidateConsistency_RuleWithoutTest(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+			{RuleID: "rule-00020", Message: "test", When: NewJavaReferenced("bar", "")},
+		},
+		`tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+`,
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Valid {
+		t.Error("expected invalid")
+	}
+	if len(result.RulesWithoutTests) != 1 || result.RulesWithoutTests[0] != "rule-00020" {
+		t.Errorf("RulesWithoutTests = %v, want [rule-00020]", result.RulesWithoutTests)
+	}
+}
+
+func TestValidateConsistency_TestWithoutRule(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+		},
+		`tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+  - ruleID: rule-00099
+    testCases:
+      - name: tc-1
+`,
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Valid {
+		t.Error("expected invalid")
+	}
+	if len(result.TestsWithoutRules) != 1 || result.TestsWithoutRules[0] != "rule-00099" {
+		t.Errorf("TestsWithoutRules = %v, want [rule-00099]", result.TestsWithoutRules)
+	}
+}
+
+func TestValidateConsistency_BothDirections(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+			{RuleID: "rule-00020", Message: "test", When: NewJavaReferenced("bar", "")},
+		},
+		`tests:
+  - ruleID: rule-00010
+    testCases:
+      - name: tc-1
+  - ruleID: rule-00099
+    testCases:
+      - name: tc-1
+`,
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Valid {
+		t.Error("expected invalid")
+	}
+	if len(result.RulesWithoutTests) != 1 {
+		t.Errorf("RulesWithoutTests = %v, want 1 entry", result.RulesWithoutTests)
+	}
+	if len(result.TestsWithoutRules) != 1 {
+		t.Errorf("TestsWithoutRules = %v, want 1 entry", result.TestsWithoutRules)
+	}
+}
+
+func TestValidateConsistency_NoTestFiles(t *testing.T) {
+	rulesDir, testsDir := setupConsistencyDirs(t,
+		[]Rule{
+			{RuleID: "rule-00010", Message: "test", When: NewJavaReferenced("foo", "")},
+		},
+		"", // no test file
+	)
+
+	result, err := ValidateConsistency(rulesDir, testsDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Valid {
+		t.Error("expected invalid — rule has no test")
+	}
+	if len(result.RulesWithoutTests) != 1 {
+		t.Errorf("RulesWithoutTests = %v, want 1 entry", result.RulesWithoutTests)
+	}
+}
+
+// setupConsistencyDirs creates temp rules and tests directories for testing.
+func setupConsistencyDirs(t *testing.T, ruleList []Rule, testYAML string) (string, string) {
+	t.Helper()
+	dir := t.TempDir()
+	rulesDir := filepath.Join(dir, "rules")
+	testsDir := filepath.Join(dir, "tests")
+	os.MkdirAll(rulesDir, 0o755)
+	os.MkdirAll(testsDir, 0o755)
+
+	if len(ruleList) > 0 {
+		if err := WriteRulesFile(filepath.Join(rulesDir, "web.yaml"), ruleList); err != nil {
+			t.Fatalf("writing rules: %v", err)
+		}
+	}
+	if testYAML != "" {
+		os.WriteFile(filepath.Join(testsDir, "web.test.yaml"), []byte(testYAML), 0o644)
+	}
+
+	return rulesDir, testsDir
 }

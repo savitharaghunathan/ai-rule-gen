@@ -11,23 +11,57 @@ Content to analyze:
 {{.Content}}
 ---
 
-Extract every migration pattern you find. For each pattern, provide:
+CRITICAL RULES — read before extracting:
+- ONLY extract patterns that are EXPLICITLY mentioned in the content above. Do NOT infer, guess, or add patterns from your general knowledge.
+- source_fqn MUST be a real, fully qualified name that appears in or is directly referenced by the content. If the content says "replace javax.ejb.Stateless", use "javax.ejb.Stateless". If the content does not mention a specific FQN, leave source_fqn empty and put the short name in source_pattern instead.
+- Do NOT fabricate FQNs. If you are unsure whether a fully qualified name is correct, leave source_fqn empty.
+- documentation_url MUST be a URL that appears in the content. Do NOT generate URLs from memory — they are often wrong. If no URL is in the content, omit this field.
+- alternative_fqns MUST only include FQNs explicitly mentioned in the content as alternatives. Do NOT guess alternatives.
+- Do NOT create rules for Dockerfiles, CI/CD pipelines, or infrastructure changes — only create rules for source code and build configuration that the analyzer can scan.
+- For java.dependency rules, detect the OLD (source) dependency that needs upgrading or replacing — NOT the new (target) dependency. For example, to detect JUnit 4, use dependency_name "junit.junit" with an upperbound, NOT "org.junit.jupiter.junit-jupiter-api".
+- source_fqn and source_pattern must be machine-matchable: a fully qualified class name, package prefix, import path, or dependency coordinate. NEVER use English descriptions like "Traditional switch statement" as a pattern.
 
-1. source_pattern: What to detect in the source code (API, annotation, class, config, etc.)
-2. target_pattern: The replacement in the target technology (null if the pattern should simply be removed)
-3. source_fqn: Fully qualified name for matching (e.g., javax.ejb.Stateless, org.springframework.boot.autoconfigure.SpringBootApplication)
-4. location_type: Where this appears in code. Use one of: TYPE, INHERITANCE, METHOD_CALL, CONSTRUCTOR_CALL, ANNOTATION, IMPLEMENTS_TYPE, ENUM, RETURN_TYPE, IMPORT, VARIABLE_DECLARATION, PACKAGE, FIELD, METHOD, CLASS
-5. alternative_fqns: Alternative fully qualified names that serve the same purpose (for or conditions)
-6. rationale: Why this migration is needed
-7. complexity: One of: trivial, low, medium, high, expert
-8. category: One of: mandatory, optional, potential
-9. concern: Grouping key (e.g., "ejb", "cdi", "jpa", "security", "web", "config")
-10. provider_type: One of: java, go, nodejs, csharp, builtin
-11. file_pattern: File pattern for builtin.filecontent matches (e.g., "application.*\\.properties")
-12. example_before: Short code example showing the source pattern
-13. example_after: Short code example showing the target pattern
-14. documentation_url: URL to relevant migration documentation
+## Condition Type Selection
 
-Return a JSON array of objects. Each object must have at minimum: source_pattern, rationale, complexity, category.
+Choose condition_type based on WHAT is being detected:
+
+### Java
+- java.referenced — Detect usage of a Java class, annotation, method, or type in SOURCE CODE. Set source_fqn to the fully qualified class name (e.g., "javax.ejb.Stateless") and location_type to where it appears (IMPORT, ANNOTATION, TYPE, METHOD_CALL, INHERITANCE, IMPLEMENTS_TYPE, etc.). For PACKAGE-LEVEL patterns that should match any class under a package, append a `*` wildcard (e.g., "javax.xml.bind*" matches javax.xml.bind.JAXBContext, javax.xml.bind.Marshaller, etc.).
+- java.dependency — Detect a Maven/Gradle dependency by artifact coordinates. ALWAYS use this for dependency upgrades, removals, or version changes (e.g., Spring Boot parent version, JAXB dependency removal). Set dependency_name to "groupId.artifactId" format (e.g., "org.springframework.boot.spring-boot-starter-parent"). Do NOT use builtin.filecontent for pom.xml patterns — use java.dependency instead.
+- builtin.filecontent — ONLY for non-XML config files (application.properties, application.yml). Set source_fqn to a regex pattern and file_pattern to the filename glob (e.g., "application.*\\.properties"). Do NOT use for pom.xml.
+
+### Go
+- go.referenced — Detect usage of a Go package or symbol. Set source_fqn to the import path or symbol (e.g., "golang.org/x/crypto/md4").
+- go.dependency — Detect a Go module dependency in go.mod. Set dependency_name to the module path (e.g., "github.com/gin-gonic/gin").
+- builtin.filecontent — Detect text patterns in config/YAML files.
+
+### Node.js / TypeScript
+- nodejs.referenced — Detect usage of an npm package or symbol. Set source_fqn to the module name (e.g., "@patternfly/react-core").
+- builtin.filecontent — Detect patterns in config files (package.json, tsconfig.json).
+
+### C#
+- csharp.referenced — Detect usage of a .NET namespace or type. Set source_fqn to the fully qualified type name.
+
+For each migration pattern found in the content, provide:
+
+1. source_pattern: What to detect — use the exact name from the content
+2. target_pattern: The replacement in the target technology (null if removed)
+3. condition_type: The specific condition (e.g., "java.referenced", "java.dependency", "go.referenced", "builtin.filecontent"). See guidance above.
+4. source_fqn: Fully qualified name or regex pattern for matching. ONLY if explicitly stated in the content. Leave empty if unsure.
+5. location_type: For java.referenced and csharp.referenced only. One of: TYPE, INHERITANCE, METHOD_CALL, CONSTRUCTOR_CALL, ANNOTATION, IMPLEMENTS_TYPE, ENUM, RETURN_TYPE, IMPORT, VARIABLE_DECLARATION, PACKAGE, FIELD, METHOD, CLASS
+6. dependency_name: For java.dependency and go.dependency only. The dependency coordinate in "groupId.artifactId" format (e.g., "org.springframework.boot.spring-boot-starter-parent" or "github.com/example/pkg").
+7. dep_upperbound: For dependency rules. The version upper bound (exclusive) — the version to upgrade FROM. E.g., if migrating from Spring Boot 2.x to 3.x, set dep_upperbound to "3.0.0" to flag all 2.x versions.
+8. dep_lowerbound: For dependency rules. The version lower bound (inclusive), if applicable.
+9. alternative_fqns: Alternative FQNs ONLY if the content explicitly lists alternatives
+10. rationale: Why this migration is needed — paraphrase the content, do not add unsupported reasoning
+11. complexity: One of: trivial, low, medium, high, expert
+12. category: One of: mandatory, optional, potential
+13. concern: Grouping key — use a simple lowercase word with no commas or spaces (e.g., "ejb", "cdi", "jpa", "security", "web", "config")
+14. file_pattern: For builtin.filecontent only. File glob (e.g., "application.*\\.properties").
+15. example_before: Short code example showing the source pattern
+16. example_after: Short code example showing the target pattern
+17. documentation_url: URL from the content (omit if no URL is present — do NOT generate URLs)
+
+Return a JSON array of objects. Each object must have at minimum: source_pattern, condition_type, rationale, complexity, category.
 
 Respond ONLY with valid JSON — no explanations, no markdown fences.

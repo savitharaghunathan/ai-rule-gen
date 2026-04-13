@@ -2,8 +2,13 @@ package rules
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // ValidationResult holds errors and warnings from rule validation.
@@ -189,4 +194,112 @@ func (r *ValidationResult) addError(format string, args ...any) {
 
 func (r *ValidationResult) addWarning(format string, args ...any) {
 	r.Warnings = append(r.Warnings, fmt.Sprintf(format, args...))
+}
+
+// ConsistencyResult holds errors from bidirectional rule ↔ test validation.
+type ConsistencyResult struct {
+	Valid            bool     `json:"valid"`
+	Errors           []string `json:"errors,omitempty"`
+	RulesWithoutTests []string `json:"rules_without_tests,omitempty"`
+	TestsWithoutRules []string `json:"tests_without_rules,omitempty"`
+}
+
+// ValidateConsistency checks bidirectional consistency between rules and test files.
+// Every rule should have at least one test case, and every test case should reference a real rule.
+func ValidateConsistency(rulesDir, testsDir string) (*ConsistencyResult, error) {
+	// Collect rule IDs
+	allRules, err := ReadRulesDir(rulesDir)
+	if err != nil {
+		return nil, fmt.Errorf("reading rules: %w", err)
+	}
+	ruleIDs := make(map[string]bool, len(allRules))
+	for _, r := range allRules {
+		if r.RuleID != "" {
+			ruleIDs[r.RuleID] = true
+		}
+	}
+
+	// Collect test rule IDs
+	testRuleIDs, err := readTestRuleIDs(testsDir)
+	if err != nil {
+		return nil, fmt.Errorf("reading tests: %w", err)
+	}
+
+	result := &ConsistencyResult{Valid: true}
+
+	// Check: every rule has a test
+	for id := range ruleIDs {
+		if !testRuleIDs[id] {
+			result.RulesWithoutTests = append(result.RulesWithoutTests, id)
+		}
+	}
+
+	// Check: every test references a real rule
+	for id := range testRuleIDs {
+		if !ruleIDs[id] {
+			result.TestsWithoutRules = append(result.TestsWithoutRules, id)
+		}
+	}
+
+	// Sort for deterministic output
+	sort.Strings(result.RulesWithoutTests)
+	sort.Strings(result.TestsWithoutRules)
+
+	if len(result.RulesWithoutTests) > 0 {
+		result.Valid = false
+		for _, id := range result.RulesWithoutTests {
+			result.Errors = append(result.Errors, fmt.Sprintf("rule %q has no test case", id))
+		}
+	}
+	if len(result.TestsWithoutRules) > 0 {
+		result.Valid = false
+		for _, id := range result.TestsWithoutRules {
+			result.Errors = append(result.Errors, fmt.Sprintf("test references non-existent rule %q", id))
+		}
+	}
+
+	return result, nil
+}
+
+// testFileEntry is a minimal struct to parse test YAML for rule IDs only.
+type testFileEntry struct {
+	Tests []struct {
+		RuleID string `yaml:"ruleID"`
+	} `yaml:"tests"`
+}
+
+// readTestRuleIDs reads all .test.yaml/.test.yml files in a directory and
+// returns the set of rule IDs referenced.
+func readTestRuleIDs(testsDir string) (map[string]bool, error) {
+	entries, err := os.ReadDir(testsDir)
+	if err != nil {
+		return nil, fmt.Errorf("reading tests directory %s: %w", testsDir, err)
+	}
+
+	ids := make(map[string]bool)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".test.yaml") && !strings.HasSuffix(name, ".test.yml") {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(testsDir, name))
+		if err != nil {
+			return nil, fmt.Errorf("reading test file %s: %w", name, err)
+		}
+		var tf testFileEntry
+		if err := yaml.Unmarshal(data, &tf); err != nil {
+			return nil, fmt.Errorf("parsing test file %s: %w", name, err)
+		}
+		for _, t := range tf.Tests {
+			if t.RuleID != "" {
+				ids[t.RuleID] = true
+			}
+		}
+	}
+
+	return ids, nil
 }

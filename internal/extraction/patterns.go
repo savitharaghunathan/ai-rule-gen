@@ -13,7 +13,11 @@ type MigrationPattern struct {
 	Category         string   `json:"category"`
 	Concern          string   `json:"concern,omitempty"`
 	ProviderType     string   `json:"provider_type,omitempty"`
+	ConditionType    string   `json:"condition_type,omitempty"`
 	FilePattern      string   `json:"file_pattern,omitempty"`
+	DependencyName   string   `json:"dependency_name,omitempty"`
+	DepUpperbound    string   `json:"dep_upperbound,omitempty"`
+	DepLowerbound    string   `json:"dep_lowerbound,omitempty"`
 	ExampleBefore    string   `json:"example_before,omitempty"`
 	ExampleAfter     string   `json:"example_after,omitempty"`
 	DocumentationURL string   `json:"documentation_url,omitempty"`

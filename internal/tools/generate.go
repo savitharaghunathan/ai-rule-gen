@@ -29,7 +29,6 @@ type GenerateOutput struct {
 	OutputPath        string   `json:"output_path"`
 	FilesWritten      []string `json:"files_written"`
 	RuleCount         int      `json:"rule_count"`
-	Concerns          []string `json:"concerns"`
 	PatternsExtracted int      `json:"patterns_extracted"`
 }
 
@@ -129,7 +128,7 @@ func RunGeneratePipeline(ctx context.Context, completer llm.Completer, input Gen
 		return nil, fmt.Errorf("loading message template: %w", err)
 	}
 	generator := generation.New(completer, messageTmpl)
-	grouped, ruleset, err := generator.Generate(ctx, patterns, generation.GenerateInput{
+	ruleList, ruleset, err := generator.Generate(ctx, patterns, generation.GenerateInput{
 		Source:   input.Source,
 		Target:   input.Target,
 		Language: input.Language,
@@ -139,12 +138,8 @@ func RunGeneratePipeline(ctx context.Context, completer llm.Completer, input Gen
 	}
 
 	// 4. Validate
-	var allRules []rules.Rule
-	for _, rr := range grouped {
-		allRules = append(allRules, rr...)
-	}
-	fmt.Printf("Generated %d rules, validating...\n", len(allRules))
-	result := rules.Validate(allRules)
+	fmt.Printf("Generated %d rules, validating...\n", len(ruleList))
+	result := rules.Validate(ruleList)
 	if !result.Valid {
 		return nil, fmt.Errorf("generated rules failed validation: %v", result.Errors)
 	}
@@ -158,28 +153,15 @@ func RunGeneratePipeline(ctx context.Context, completer llm.Completer, input Gen
 	if err := rules.WriteRuleset(ws.RulesetPath(), ruleset); err != nil {
 		return nil, fmt.Errorf("writing ruleset: %w", err)
 	}
-	if err := rules.WriteRulesGrouped(ws.RulesDir(), grouped); err != nil {
+	rulesFilePath := fmt.Sprintf("%s/rules.yaml", ws.RulesDir())
+	if err := rules.WriteRulesFile(rulesFilePath, ruleList); err != nil {
 		return nil, fmt.Errorf("writing rules: %w", err)
-	}
-
-	// Build output
-	var filesWritten []string
-	var concerns []string
-	filesWritten = append(filesWritten, "ruleset.yaml")
-	for concern := range grouped {
-		name := concern
-		if name == "" {
-			name = "general"
-		}
-		filesWritten = append(filesWritten, name+".yaml")
-		concerns = append(concerns, name)
 	}
 
 	return &GenerateOutput{
 		OutputPath:        ws.Root,
-		FilesWritten:      filesWritten,
-		RuleCount:         len(allRules),
-		Concerns:          concerns,
+		FilesWritten:      []string{"ruleset.yaml", "rules.yaml"},
+		RuleCount:         len(ruleList),
 		PatternsExtracted: len(patterns),
 	}, nil
 }

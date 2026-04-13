@@ -30,24 +30,19 @@ type GenerateInput struct {
 	Language string
 }
 
-// Generate converts migration patterns into validated rules,
-// grouped by concern.
-func (g *Generator) Generate(ctx context.Context, patterns []extraction.MigrationPattern, input GenerateInput) (map[string][]rules.Rule, *rules.Ruleset, error) {
+// Generate converts migration patterns into validated rules.
+func (g *Generator) Generate(ctx context.Context, patterns []extraction.MigrationPattern, input GenerateInput) ([]rules.Rule, *rules.Ruleset, error) {
 	prefix := rulePrefix(input.Source, input.Target)
 	idGen := NewIDGenerator(prefix)
 
-	grouped := make(map[string][]rules.Rule)
+	var ruleList []rules.Rule
 
 	for _, p := range patterns {
 		rule, err := g.patternToRule(ctx, p, idGen, input)
 		if err != nil {
 			return nil, nil, fmt.Errorf("generating rule for %q: %w", p.SourcePattern, err)
 		}
-		concern := p.Concern
-		if concern == "" {
-			concern = "general"
-		}
-		grouped[concern] = append(grouped[concern], rule)
+		ruleList = append(ruleList, rule)
 	}
 
 	ruleset := &rules.Ruleset{
@@ -59,7 +54,7 @@ func (g *Generator) Generate(ctx context.Context, patterns []extraction.Migratio
 		},
 	}
 
-	return grouped, ruleset, nil
+	return ruleList, ruleset, nil
 }
 
 func (g *Generator) patternToRule(ctx context.Context, p extraction.MigrationPattern, idGen *IDGenerator, input GenerateInput) (rules.Rule, error) {
@@ -89,40 +84,70 @@ func buildCondition(p extraction.MigrationPattern) rules.Condition {
 	// If there are alternative FQNs, create an or combinator
 	if len(p.AlternativeFQNs) > 0 {
 		conditions := make([]rules.Condition, 0, len(p.AlternativeFQNs)+1)
-		conditions = append(conditions, buildSingleCondition(p.ProviderType, p.SourceFQN, p.LocationType, p.FilePattern))
+		conditions = append(conditions, buildSingleCondition(p))
 		for _, fqn := range p.AlternativeFQNs {
-			conditions = append(conditions, buildSingleCondition(p.ProviderType, fqn, p.LocationType, p.FilePattern))
+			alt := p
+			alt.SourceFQN = fqn
+			conditions = append(conditions, buildSingleCondition(alt))
 		}
 		return rules.NewOr(conditions...)
 	}
 
-	return buildSingleCondition(p.ProviderType, p.SourceFQN, p.LocationType, p.FilePattern)
+	return buildSingleCondition(p)
 }
 
-func buildSingleCondition(providerType, fqn, locationType, filePattern string) rules.Condition {
-	// Use source_fqn if available, otherwise fall back to a generic pattern
-	pattern := fqn
+func buildSingleCondition(p extraction.MigrationPattern) rules.Condition {
+	pattern := p.SourceFQN
 	if pattern == "" {
-		pattern = "TODO-set-pattern"
+		pattern = p.SourcePattern
 	}
 
-	switch providerType {
-	case "java":
-		return rules.NewJavaReferenced(pattern, locationType)
-	case "go":
-		return rules.NewGoReferenced(pattern)
-	case "nodejs":
-		return rules.NewNodejsReferenced(pattern)
-	case "csharp":
-		return rules.NewCSharpReferenced(pattern, locationType)
-	case "builtin":
-		return rules.NewBuiltinFilecontent(pattern, filePattern)
-	default:
-		// Default to java.referenced for Java-like patterns
-		if locationType != "" {
-			return rules.NewJavaReferenced(pattern, locationType)
+	// Use condition_type if specified (more precise than provider_type)
+	condType := p.ConditionType
+	if condType == "" {
+		// Fall back to provider_type for backward compatibility
+		condType = p.ProviderType + ".referenced"
+		if p.ProviderType == "builtin" {
+			condType = "builtin.filecontent"
 		}
-		return rules.NewBuiltinFilecontent(pattern, filePattern)
+	}
+
+	switch condType {
+	case "java.referenced":
+		pattern = ensureJavaPatternMatchable(pattern)
+		return rules.NewJavaReferenced(pattern, p.LocationType)
+	case "java.dependency":
+		name := p.DependencyName
+		if name == "" {
+			name = pattern
+		}
+		return rules.NewJavaDependency(name, p.DepLowerbound, p.DepUpperbound)
+	case "go.referenced":
+		return rules.NewGoReferenced(pattern)
+	case "go.dependency":
+		name := p.DependencyName
+		if name == "" {
+			name = pattern
+		}
+		return rules.NewGoDependency(name, p.DepLowerbound, p.DepUpperbound)
+	case "nodejs.referenced":
+		return rules.NewNodejsReferenced(pattern)
+	case "csharp.referenced":
+		return rules.NewCSharpReferenced(pattern, p.LocationType)
+	case "builtin.filecontent":
+		return rules.NewBuiltinFilecontent(pattern, p.FilePattern)
+	case "builtin.file":
+		return rules.NewBuiltinFile(pattern)
+	case "builtin.xml":
+		return rules.NewBuiltinXML(pattern, nil)
+	case "builtin.json":
+		return rules.NewBuiltinJSON(pattern)
+	default:
+		// Best-effort fallback
+		if p.LocationType != "" {
+			return rules.NewJavaReferenced(pattern, p.LocationType)
+		}
+		return rules.NewBuiltinFilecontent(pattern, p.FilePattern)
 	}
 }
 
@@ -186,6 +211,29 @@ func sanitize(s string) string {
 	s = strings.ReplaceAll(s, " ", "-")
 	s = strings.ReplaceAll(s, "/", "-")
 	return s
+}
+
+// ensureJavaPatternMatchable appends a wildcard to package-level patterns
+// that would otherwise not match any specific class. The analyzer requires
+// "javax.xml.bind*" (with wildcard) to match classes like javax.xml.bind.JAXBContext.
+// A bare "javax.xml.bind" only matches an exact reference to the package itself.
+func ensureJavaPatternMatchable(pattern string) string {
+	if pattern == "" || strings.HasSuffix(pattern, "*") {
+		return pattern
+	}
+	// If any segment starts with uppercase, the pattern references a specific
+	// class or method (e.g., org.junit.Assert.assertEquals) — leave it as-is.
+	for _, part := range strings.Split(pattern, ".") {
+		if len(part) > 0 && part[0] >= 'A' && part[0] <= 'Z' {
+			return pattern
+		}
+	}
+	// If it contains parens (method signature) or angle brackets, leave it.
+	if strings.ContainsAny(pattern, "(){}[]<>") {
+		return pattern
+	}
+	// All-lowercase segments: this is a package prefix — append wildcard.
+	return pattern + "*"
 }
 
 func truncate(s string, max int) string {

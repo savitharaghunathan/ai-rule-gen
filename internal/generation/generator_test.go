@@ -82,7 +82,7 @@ func TestGenerator_JavaReferenced(t *testing.T) {
 		Concern:       "ejb",
 	}}
 
-	grouped, ruleset, err := gen.Generate(context.Background(), patterns, GenerateInput{
+	ruleList, ruleset, err := gen.Generate(context.Background(), patterns, GenerateInput{
 		Source: "java-ee", Target: "quarkus", Language: "java",
 	})
 	if err != nil {
@@ -93,12 +93,11 @@ func TestGenerator_JavaReferenced(t *testing.T) {
 		t.Errorf("ruleset name: got %q", ruleset.Name)
 	}
 
-	ejbRules := grouped["ejb"]
-	if len(ejbRules) != 1 {
-		t.Fatalf("expected 1 ejb rule, got %d", len(ejbRules))
+	if len(ruleList) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(ruleList))
 	}
 
-	r := ejbRules[0]
+	r := ruleList[0]
 	if r.When.JavaReferenced == nil {
 		t.Fatal("expected java.referenced condition")
 	}
@@ -126,18 +125,17 @@ func TestGenerator_BuiltinFilecontent(t *testing.T) {
 		FilePattern:   `application.*\.properties`,
 	}}
 
-	grouped, _, err := gen.Generate(context.Background(), patterns, GenerateInput{
+	ruleList, _, err := gen.Generate(context.Background(), patterns, GenerateInput{
 		Source: "springboot", Target: "quarkus",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	rules := grouped["general"]
-	if len(rules) != 1 {
-		t.Fatalf("expected 1 rule, got %d", len(rules))
+	if len(ruleList) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(ruleList))
 	}
-	if rules[0].When.BuiltinFilecontent == nil {
+	if ruleList[0].When.BuiltinFilecontent == nil {
 		t.Fatal("expected builtin.filecontent condition")
 	}
 }
@@ -158,23 +156,22 @@ func TestGenerator_OrCombinator(t *testing.T) {
 		Concern:         "messaging",
 	}}
 
-	grouped, _, err := gen.Generate(context.Background(), patterns, GenerateInput{
+	ruleList, _, err := gen.Generate(context.Background(), patterns, GenerateInput{
 		Source: "java-ee", Target: "quarkus",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	rules := grouped["messaging"]
-	if len(rules) != 1 {
-		t.Fatalf("expected 1 rule, got %d", len(rules))
+	if len(ruleList) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(ruleList))
 	}
-	if len(rules[0].When.Or) != 2 {
-		t.Errorf("expected or with 2 conditions, got %d", len(rules[0].When.Or))
+	if len(ruleList[0].When.Or) != 2 {
+		t.Errorf("expected or with 2 conditions, got %d", len(ruleList[0].When.Or))
 	}
 }
 
-func TestGenerator_ConcernGrouping(t *testing.T) {
+func TestGenerator_MultiplePatterns(t *testing.T) {
 	mock := &mockCompleter{}
 	gen := New(mock, nil)
 
@@ -184,20 +181,49 @@ func TestGenerator_ConcernGrouping(t *testing.T) {
 		{SourcePattern: "c", SourceFQN: "c", Rationale: "r", Complexity: "low", Category: "mandatory", ProviderType: "java", Concern: "web"},
 	}
 
-	grouped, _, err := gen.Generate(context.Background(), patterns, GenerateInput{
+	ruleList, _, err := gen.Generate(context.Background(), patterns, GenerateInput{
 		Source: "java-ee", Target: "quarkus",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(grouped["security"]) != 2 {
-		t.Errorf("security: expected 2, got %d", len(grouped["security"]))
-	}
-	if len(grouped["web"]) != 1 {
-		t.Errorf("web: expected 1, got %d", len(grouped["web"]))
+	if len(ruleList) != 3 {
+		t.Errorf("expected 3 rules, got %d", len(ruleList))
 	}
 }
+
+func TestGenerator_JavaDependency(t *testing.T) {
+	mock := &mockCompleter{}
+	gen := New(mock, nil)
+
+	patterns := []extraction.MigrationPattern{{
+		SourcePattern:  "spring-boot-starter-parent",
+		DependencyName: "org.springframework.boot.spring-boot-starter-parent",
+		Rationale:      "Upgrade to Spring Boot 3",
+		Complexity:     "medium",
+		Category:       "mandatory",
+		ConditionType:  "java.dependency",
+	}}
+
+	ruleList, _, err := gen.Generate(context.Background(), patterns, GenerateInput{
+		Source: "spring-boot-2", Target: "spring-boot-3",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(ruleList) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(ruleList))
+	}
+	if ruleList[0].When.JavaDependency == nil {
+		t.Fatal("expected java.dependency condition")
+	}
+	if ruleList[0].When.JavaDependency.Name != "org.springframework.boot.spring-boot-starter-parent" {
+		t.Errorf("name: got %q", ruleList[0].When.JavaDependency.Name)
+	}
+}
+
 
 func TestRulePrefix(t *testing.T) {
 	tests := []struct {

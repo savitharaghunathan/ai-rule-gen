@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -54,11 +55,17 @@ func New(handlers ToolHandlers) *mcp.Server {
 	return server
 }
 
-// ListenAndServe starts the MCP server with SSE transport.
+// RunStdio starts the MCP server with stdio transport.
+func RunStdio(ctx context.Context, s *mcp.Server) error {
+	slog.Info("starting MCP server", "transport", "stdio")
+	return s.Run(ctx, &mcp.StdioTransport{})
+}
+
+// ListenAndServe starts the MCP server with Streamable HTTP transport.
 func ListenAndServe(cfg Config, s *mcp.Server) error {
-	handler := mcp.NewSSEHandler(func(*http.Request) *mcp.Server { return s }, nil)
+	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return s }, nil)
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	slog.Info("starting MCP server", "addr", addr, "transport", "SSE")
+	slog.Info("starting MCP server", "addr", addr, "transport", "streamable-http")
 	return http.ListenAndServe(addr, handler)
 }
 
