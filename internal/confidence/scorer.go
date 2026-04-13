@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -85,14 +86,14 @@ func (s *Scorer) ScoreRules(ctx context.Context, testsDir string, rulesDir strin
 		return nil, fmt.Errorf("collecting rule IDs: %w", err)
 	}
 
-	fmt.Printf("  Running kantra test on %d test file(s)...\n", len(testFiles))
+	slog.Info("running kantra tests", "test_files", len(testFiles))
 	var passed, failed int
 	var output string
 	passed, failed, output, err = s.runKantra(ctx, testFiles)
 	if err != nil {
 		return nil, fmt.Errorf("running kantra: %w", err)
 	}
-	fmt.Printf("  kantra result: %d/%d passed\n", passed, passed+failed)
+	slog.Info("kantra tests complete", "passed", passed, "total", passed+failed)
 
 	failedRules := parseFailedRules(output)
 
@@ -114,7 +115,7 @@ func (s *Scorer) ScoreRules(ctx context.Context, testsDir string, rulesDir strin
 
 	// Run LLM-as-judge (secondary signal, optional)
 	if s.completer != nil && s.judgeTmpl != nil && rulesDir != "" {
-		fmt.Println("  Running LLM judge on rules...")
+		slog.Info("running LLM judge")
 		ruleList, err := rules.ReadRulesDir(rulesDir)
 		if err != nil {
 			return nil, fmt.Errorf("reading rules for judge: %w", err)
@@ -129,10 +130,10 @@ func (s *Scorer) ScoreRules(ctx context.Context, testsDir string, rulesDir strin
 			if !ok {
 				continue
 			}
-			fmt.Printf("  Judging rule %d/%d: %s...\n", i+1, len(scores), sc.RuleID)
+			slog.Info("judging rule", "index", i+1, "total", len(scores), "rule_id", sc.RuleID)
 			judgeScore, judgeVerdict, reasoning, err := s.judgeRule(ctx, r)
 			if err != nil {
-				fmt.Printf("  Warning: judge failed for %s: %v\n", sc.RuleID, err)
+				slog.Warn("judge failed", "rule_id", sc.RuleID, "error", err)
 				continue
 			}
 			scores[i].JudgeScore = judgeScore

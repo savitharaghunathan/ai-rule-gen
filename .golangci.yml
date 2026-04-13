@@ -1,0 +1,21 @@
+run:
+  timeout: 3m
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - gocritic
+  disable:
+    - exhaustive
+    - wrapcheck
+    - nlreturn
+    - wsl
+
+issues:
+  exclude-dirs:
+    - vendor

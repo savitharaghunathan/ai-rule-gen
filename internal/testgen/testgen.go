@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -282,7 +282,7 @@ func (g *Generator) generateGroupTestData(ctx context.Context, ruleList []rules.
 		return fmt.Errorf("creating data dir: %w", err)
 	}
 
-	fmt.Printf("  Generating test data for %s (%d rules)...\n", groupName, len(ruleList))
+	slog.Info("generating test data", "group", groupName, "rules", len(ruleList))
 
 	buildContent, sourceContent, err := g.generateCode(ctx, ruleList, language, langConfig, input.Source, input.Target)
 	if err != nil {
@@ -307,10 +307,6 @@ func (g *Generator) generateGroupTestData(ctx context.Context, ruleList []rules.
 		return fmt.Errorf("writing source file: %w", err)
 	}
 	output.FilesWritten++
-
-	// Resolve dependencies after writing files
-	fmt.Printf("    Resolving dependencies in %s...\n", dataDir)
-	runDepResolve(language, dataDir)
 
 	// Generate .test.yaml
 	providers := detectProviders(ruleList)
@@ -534,42 +530,6 @@ func buildTestFile(ruleList []rules.Rule, ruleFilePath, dataDir, testsDir string
 	}
 }
 
-// runDepResolve runs the language-appropriate dependency resolution command.
-// For Go, it also vendors dependencies so gopls inside kantra's container can resolve them.
-func runDepResolve(language, dir string) {
-	switch language {
-	case "go":
-		tidyCmd := exec.Command("go", "mod", "tidy")
-		tidyCmd.Dir = dir
-		if out, err := tidyCmd.CombinedOutput(); err != nil {
-			fmt.Printf("    Warning: go mod tidy failed: %v\n%s\n", err, string(out))
-			return
-		}
-		vendorCmd := exec.Command("go", "mod", "vendor")
-		vendorCmd.Dir = dir
-		if out, err := vendorCmd.CombinedOutput(); err != nil {
-			fmt.Printf("    Warning: go mod vendor failed: %v\n%s\n", err, string(out))
-		}
-	case "java":
-		cmd := exec.Command("mvn", "dependency:resolve", "-q", "-B")
-		cmd.Dir = dir
-		if out, err := cmd.CombinedOutput(); err != nil {
-			fmt.Printf("    Warning: dependency resolution failed: %v\n%s\n", err, string(out))
-		}
-	case "nodejs":
-		cmd := exec.Command("npm", "install")
-		cmd.Dir = dir
-		if out, err := cmd.CombinedOutput(); err != nil {
-			fmt.Printf("    Warning: dependency resolution failed: %v\n%s\n", err, string(out))
-		}
-	case "csharp":
-		cmd := exec.Command("dotnet", "restore")
-		cmd.Dir = dir
-		if out, err := cmd.CombinedOutput(); err != nil {
-			fmt.Printf("    Warning: dependency resolution failed: %v\n%s\n", err, string(out))
-		}
-	}
-}
 
 // sanitizeXMLComments removes "--" sequences inside XML comments, which are
 // illegal in XML and break Maven's POM parser. LLMs frequently generate

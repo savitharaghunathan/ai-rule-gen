@@ -257,9 +257,10 @@ Java (`java.referenced`, `java.dependency`), Go (`go.referenced`, `go.dependency
 ## Testing
 
 ```bash
-go test ./internal/...                                    # Unit tests
-go test -tags=integration ./test/integration/...          # Integration tests (mock LLM)
-go test -tags=e2e ./test/e2e/...                          # E2E tests (real LLM + kantra)
+make test                                                 # Unit tests
+make test-all                                             # Unit tests + vet + race detector
+make test-e2e                                             # E2E tests (real LLM + kantra)
+make lint                                                 # golangci-lint
 ```
 
 ## Related Projects

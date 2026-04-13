@@ -56,6 +56,11 @@ func Validate(rules []Rule) ValidationResult {
 			result.addError("%s: missing required field 'when'", prefix)
 		}
 
+		// Description: warn if missing (production rules should have one)
+		if r.Description == "" {
+			result.addWarning("%s: missing 'description' field", prefix)
+		}
+
 		// Category validation
 		if r.Category != "" {
 			switch r.Category {
@@ -70,6 +75,18 @@ func Validate(rules []Rule) ValidationResult {
 		if r.Effort < 0 || r.Effort > 10 {
 			result.addWarning("%s: effort %d is outside expected range 1-10", prefix, r.Effort)
 		}
+		if r.Effort == 0 {
+			result.addWarning("%s: effort is 0 (likely unset)", prefix)
+		}
+
+		// Link URL validation
+		for j, link := range r.Links {
+			if link.URL == "" {
+				result.addWarning("%s: links[%d] has empty URL", prefix, j)
+			} else if !strings.HasPrefix(link.URL, "http://") && !strings.HasPrefix(link.URL, "https://") {
+				result.addWarning("%s: links[%d] URL %q should start with http:// or https://", prefix, j, link.URL)
+			}
+		}
 
 		// Label format
 		for _, label := range r.Labels {
@@ -78,6 +95,11 @@ func Validate(rules []Rule) ValidationResult {
 
 		// Condition-specific validation
 		validateCondition(r.When, prefix, &result)
+
+		// Multiple bare conditions check: only one condition type at the top level
+		if n := countConditionTypes(r.When); n > 1 {
+			result.addError("%s: when block has %d condition types set; use 'or' or 'and' combinator to combine multiple conditions", prefix, n)
+		}
 	}
 
 	return result
@@ -88,7 +110,8 @@ func validateLabel(label, prefix string, result *ValidationResult) {
 		parts := strings.SplitN(label, "=", 2)
 		key := parts[0]
 		switch key {
-		case "konveyor.io/source", "konveyor.io/target":
+		case "konveyor.io/source", "konveyor.io/target",
+			LabelGeneratedBy, LabelTestResult, LabelReview:
 			if len(parts) != 2 || parts[1] == "" {
 				result.addWarning("%s: label %q should have a value (e.g., %s=value)", prefix, label, key)
 			}
@@ -168,6 +191,50 @@ func validateRegex(pattern, context string, result *ValidationResult) {
 	if _, err := regexp.Compile(pattern); err != nil {
 		result.addError("%s: invalid regex %q: %v", context, pattern, err)
 	}
+}
+
+// countConditionTypes returns how many provider condition types are set on a Condition.
+// Combinators (or/and) and chaining fields (from/as/ignore/not) are not counted.
+// A valid top-level when block should have exactly 0 (combinator-only) or 1.
+func countConditionTypes(c Condition) int {
+	n := 0
+	if c.JavaReferenced != nil {
+		n++
+	}
+	if c.JavaDependency != nil {
+		n++
+	}
+	if c.GoReferenced != nil {
+		n++
+	}
+	if c.GoDependency != nil {
+		n++
+	}
+	if c.NodejsReferenced != nil {
+		n++
+	}
+	if c.CSharpReferenced != nil {
+		n++
+	}
+	if c.BuiltinFilecontent != nil {
+		n++
+	}
+	if c.BuiltinFile != nil {
+		n++
+	}
+	if c.BuiltinXML != nil {
+		n++
+	}
+	if c.BuiltinJSON != nil {
+		n++
+	}
+	if len(c.BuiltinHasTags) > 0 {
+		n++
+	}
+	if c.BuiltinXMLPublicID != nil {
+		n++
+	}
+	return n
 }
 
 func isEmptyCondition(c Condition) bool {

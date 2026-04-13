@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"text/template"
 
@@ -61,7 +62,7 @@ func (g *Generator) patternToRule(ctx context.Context, p extraction.MigrationPat
 	condition := buildCondition(p)
 	message, err := g.generateMessage(ctx, p, input)
 	if err != nil {
-		// Fall back to a simple message if LLM fails
+		slog.Warn("LLM message generation failed, using fallback", "pattern", p.SourcePattern, "error", err)
 		message = fmt.Sprintf("%s: %s", p.SourcePattern, p.Rationale)
 	}
 
@@ -70,10 +71,10 @@ func (g *Generator) patternToRule(ctx context.Context, p extraction.MigrationPat
 		Description: truncate(p.Rationale, 120),
 		Category:    rules.Category(p.Category),
 		Effort:      complexityToEffort(p.Complexity),
-		Labels: []string{
+		Labels: rules.InitialLabels([]string{
 			fmt.Sprintf("konveyor.io/source=%s", input.Source),
 			fmt.Sprintf("konveyor.io/target=%s", input.Target),
-		},
+		}),
 		Message: message,
 		Links:   buildLinks(p),
 		When:    condition,

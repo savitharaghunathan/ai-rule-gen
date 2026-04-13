@@ -1,56 +1,84 @@
-You are an expert {{.Language}} developer. Generate test source code that will trigger Konveyor analyzer rules.
+Generate MINIMAL test source code that will trigger Konveyor analyzer rules.
+The code does NOT need to compile or resolve dependencies. It only needs to contain
+references that match each rule's pattern for source-only static analysis.
 
 Migration: {{.Source}} → {{.Target}}
 Language: {{.Language}}
 
-Below are the rules that need to be triggered. Each rule has a `when` condition with a pattern.
-Your generated code MUST contain code that matches EACH rule's pattern.
-
 Rules:
 {{.Rules}}
 
-CRITICAL — read carefully before generating code:
-- The ONLY thing that matters is that the code contains references matching each rule's `pattern` field EXACTLY.
-- Use the EXACT fully qualified names from the rules. Do NOT substitute similar-looking APIs.
-- Every import, type, and symbol you reference MUST be a real, published API. Do NOT invent packages, classes, or methods that do not exist.
-- If a rule's pattern is "javax.ejb.Stateless", your code must use javax.ejb.Stateless — not a made-up alternative.
-- For Go rules: the import path in the pattern (e.g., "golang.org/x/crypto/md4") must appear as an actual import in your code. Use a real function or type from that package.
-- Dependencies in {{.BuildFile}} MUST use real, published versions. Do NOT guess version numbers — use well-known stable versions.
+CRITICAL:
+- Use the EXACT fully qualified names from each rule's `pattern` field.
+- Do NOT substitute similar-looking APIs or invent packages/classes.
+- The source file goes at {{.SourceDir}}/{{.MainFile}} — use the matching package declaration.
+- For XML files (pom.xml, .csproj): do NOT use `--` inside XML comments.
 
-REQUIREMENTS:
-1. Create a COMPLETE, COMPILABLE {{.Language}} project
-2. For EACH rule, include code that EXACTLY matches the pattern in the `when` condition
-3. Add a comment before each pattern: // Rule: <ruleID>
-4. Keep code minimal — one example per rule, just enough to trigger the pattern
-5. All imports/dependencies must be valid and resolve
-6. The source file will be placed at {{.SourceDir}}/{{.MainFile}} — your code MUST use the matching package declaration. For Java, if the path is src/main/java/com/example, use `package com.example;`
-7. Do NOT use test-scoped dependencies (JUnit, Mockito, etc.) in main source code. If rules target test libraries, declare them with `<scope>compile</scope>` in pom.xml so they are available in src/main/java.
-8. For XML files (pom.xml, .csproj): do NOT use double dashes `--` inside XML comments. `<!-- comment with -- breaks XML -->` is INVALID. Use spaces or reword the comment.
+KEEP IT MINIMAL:
+- Source file: just imports + one class with rule-triggering code (15-30 lines).
+- {{.BuildFile}}: bare minimum metadata + dependencies only. No plugins, no build config.
+- Add a comment before each pattern: // Rule: <ruleID>
 
-How the Konveyor analyzer matches patterns:
-- `java.referenced` with location ANNOTATION: use the annotation (e.g., `@Stateless`). The class must be imported AND the annotation applied to a class, method, or field.
-- `java.referenced` with location IMPORT: the import statement alone is sufficient (e.g., `import javax.xml.bind.JAXBContext;`)
-- `java.referenced` with location TYPE: declare a variable or field of that type (e.g., `Unsafe unsafe = null;`)
-- `java.referenced` with location METHOD_CALL: call the method (e.g., `Assert.assertEquals(...)`)
-- `java.referenced` with location CONSTRUCTOR_CALL: use `new` (e.g., `new Date()`)
-- `java.referenced` with location IMPLEMENTS_TYPE: implement the interface (e.g., `class Foo implements Servlet`)
-- `java.referenced` with location INHERITANCE: extend the class
-- `java.dependency`: the dependency MUST exist in pom.xml with the correct groupId and artifactId. The `name` field uses "groupId.artifactId" format — convert dots to the appropriate Maven coordinates. Version bounds in the rule determine which versions trigger it.
-- `go.referenced`: import and use the package/symbol (e.g., `crypto/md5`)
+How the analyzer matches patterns:
+- `java.referenced` ANNOTATION: import + apply annotation to class/method/field
+- `java.referenced` IMPORT: import statement alone is sufficient
+- `java.referenced` TYPE: declare a variable of that type
+- `java.referenced` METHOD_CALL: call the method
+- `java.referenced` CONSTRUCTOR_CALL: use `new`
+- `java.referenced` IMPLEMENTS_TYPE: implement the interface
+- `java.referenced` INHERITANCE: extend the class
+- `java.dependency`: dependency in pom.xml with correct groupId:artifactId (name uses "groupId.artifactId" format)
+- `go.referenced`: import and reference the package
 - `nodejs.referenced`: import the module/symbol
 - `csharp.referenced`: use the namespace/type
-- `builtin.filecontent`: include text matching the regex pattern in the appropriate file
+- `builtin.filecontent`: include text matching the regex pattern
+
+EXAMPLE — a minimal Java pom.xml (no build section, no plugins):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.sample</groupId>
+    <artifactId>sample-project</artifactId>
+    <version>0.0.1</version>
+    <dependencies>
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>8.0</version>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+EXAMPLE — a minimal Java source file:
+```java
+package com.example;
+
+import javax.ejb.Stateless;
+import javax.inject.Inject;
+
+// Rule: java-ee-to-quarkus-00010
+@Stateless
+public class Application {
+    // Rule: java-ee-to-quarkus-00020
+    @Inject
+    private String value;
+}
+```
 
 Format your response with EXACTLY TWO fenced code blocks:
 
-FIRST block: {{.BuildFile}} contents (type: {{.BuildFileType}})
+FIRST block: {{.BuildFile}} (type: {{.BuildFileType}})
 ```{{.BuildFileType}}
-... {{.BuildFile}} content ...
+...
 ```
 
-SECOND block: {{.MainFile}} contents (type: {{.MainFileType}})
+SECOND block: {{.MainFile}} (type: {{.MainFileType}})
 ```{{.MainFileType}}
-... source code content ...
+...
 ```
 
 Do NOT include any other text or code blocks.

@@ -215,6 +215,119 @@ func searchString(s, substr string) bool {
 	return false
 }
 
+func TestValidate_MissingDescription(t *testing.T) {
+	rules := []Rule{{
+		RuleID:  "test-00010",
+		Effort:  5,
+		Message: "test",
+		When:    NewJavaReferenced("foo", ""),
+	}}
+
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid (description is a warning, not error), got errors: %v", result.Errors)
+	}
+	if len(result.Warnings) == 0 {
+		t.Error("expected a warning about missing description")
+	}
+	assertContains(t, result.Warnings, "missing 'description'")
+}
+
+func TestValidate_EffortZero(t *testing.T) {
+	rules := []Rule{{
+		RuleID:      "test-00010",
+		Description: "test rule",
+		Message:     "test",
+		When:        NewJavaReferenced("foo", ""),
+		// Effort defaults to 0
+	}}
+
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid (effort 0 is a warning, not error), got errors: %v", result.Errors)
+	}
+	assertContains(t, result.Warnings, "effort is 0")
+}
+
+func TestValidate_LinkURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		wantWarn bool
+	}{
+		{"valid https", "https://example.com", false},
+		{"valid http", "http://example.com", false},
+		{"empty url", "", true},
+		{"no scheme", "example.com/docs", true},
+		{"ftp scheme", "ftp://example.com", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rules := []Rule{{
+				RuleID:      "test-00010",
+				Description: "test",
+				Effort:      5,
+				Message:     "test",
+				Links:       []Link{{URL: tt.url, Title: "docs"}},
+				When:        NewJavaReferenced("foo", ""),
+			}}
+
+			result := Validate(rules)
+			hasLinkWarning := false
+			for _, w := range result.Warnings {
+				if searchString(w, "links[0]") {
+					hasLinkWarning = true
+					break
+				}
+			}
+			if tt.wantWarn && !hasLinkWarning {
+				t.Errorf("expected link warning for URL %q", tt.url)
+			}
+			if !tt.wantWarn && hasLinkWarning {
+				t.Errorf("unexpected link warning for URL %q: %v", tt.url, result.Warnings)
+			}
+		})
+	}
+}
+
+func TestValidate_MultipleBareConditions(t *testing.T) {
+	rules := []Rule{{
+		RuleID:      "test-00010",
+		Description: "test",
+		Effort:      5,
+		Message:     "test",
+		When: Condition{
+			JavaReferenced:    &JavaReferenced{Pattern: "foo"},
+			BuiltinFilecontent: &BuiltinFilecontent{Pattern: "bar"},
+		},
+	}}
+
+	result := Validate(rules)
+	if result.Valid {
+		t.Error("expected invalid — two bare conditions without combinator")
+	}
+	assertContains(t, result.Errors, "condition types set")
+}
+
+func TestValidate_OrCombinatorMixedTypes_Valid(t *testing.T) {
+	rules := []Rule{{
+		RuleID:      "test-00010",
+		Description: "test",
+		Effort:      5,
+		Message:     "test",
+		When: NewOr(
+			NewJavaReferenced("foo.Bar", ""),
+			Condition{JavaDependency: &Dependency{Name: "foo.bar"}},
+		),
+	}}
+
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid — mixed types in or combinator is fine, got errors: %v", result.Errors)
+	}
+}
+
 func TestValidateConsistency_AllMatched(t *testing.T) {
 	rulesDir, testsDir := setupConsistencyDirs(t,
 		[]Rule{
