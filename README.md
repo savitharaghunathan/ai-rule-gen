@@ -1,228 +1,118 @@
 # ai-rule-gen
 
-An MCP server and CLI for generating [Konveyor](https://www.konveyor.io/) analyzer rules using AI. Point it at a migration guide, code snippets, or any description of migration concerns — it generates validated rules ready for the [konveyor/rulesets](https://github.com/konveyor/rulesets) repo.
+Generate [Konveyor](https://www.konveyor.io/) analyzer migration rules from any migration guide. Point your AI coding agent at a guide and get validated, tested rules ready for the [konveyor/rulesets](https://github.com/konveyor/rulesets) repo.
 
-Two entry points, shared internals:
-- **MCP server** — 4 deterministic tools for interactive rule construction from Claude Code, Cursor, Kai, or any MCP client. No server-side LLM needed.
-- **CLI** — E2E pipeline for CI/CD automation with server-side LLM. Auto-detects source/target/language from content.
+## Install
 
-## MCP Tools
+### Prerequisites
 
-| Tool | Description |
-|------|-------------|
-| `construct_rule` | Takes rule parameters (ruleID, condition type, pattern, location, message, etc.), validates, returns valid YAML |
-| `construct_ruleset` | Takes name, description, labels, returns ruleset metadata YAML |
-| `validate_rules` | Structural validation: required fields, category, effort, regex, labels, duplicates |
-| `get_help` | Documentation on condition types, valid locations, label format, categories, examples |
+- [Go 1.25+](https://go.dev/dl/)
+- [kantra](https://github.com/konveyor-ecosystem/kantra) (for rule testing)
+- An AI coding agent ([Claude Code](https://claude.ai/code), [Cursor](https://cursor.sh), [Goose](https://github.com/block/goose), or similar)
 
-## CLI Commands
-
-| Command | Description | Status |
-|---------|-------------|--------|
-| `rulegen generate` | Ingest input (URL, file, text) → extract patterns via LLM → construct rules → validate → save | Implemented |
-| `rulegen test` | Generate test data, run `kantra test`, fix failing rules (up to `--max-iterations`) | Implemented |
-| `rulegen score` | Run kantra tests for functional confidence + optional LLM-as-judge | Implemented |
-
-## Prerequisites
-
-- **Go 1.22+**
-- **kantra** — required for `rulegen test` (must be on PATH)
-
-## Build
+### Add the skill to Claude Code
 
 ```bash
-go build -o rulegen ./cmd/rulegen/
+# Clone the repo
+git clone https://github.com/konveyor/ai-rule-gen.git
+cd ai-rule-gen
+
+# Add as a project skill (from inside your target project)
+claude project add-skill /path/to/ai-rule-gen/.claude/commands/generate-rules.md
 ```
+
+Or copy `.claude/commands/generate-rules.md` into your project's `.claude/commands/` directory.
 
 ## Usage
 
-### MCP Server
-
-Start the server — no API key needed:
-
-```bash
-./rulegen serve --port 8080
-```
-
-#### Connect from Claude Code
-
-Add `.mcp.json` to your project root:
-
-```json
-{
-  "mcpServers": {
-    "rulegen": {
-      "type": "sse",
-      "url": "http://localhost:8080/sse"
-    }
-  }
-}
-```
-
-#### Connect from Cursor
-
-Add `.cursor/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "rulegen": {
-      "url": "http://localhost:8080/sse"
-    }
-  }
-}
-```
-
-#### Example: Generate rules interactively
-
-Once connected, ask your MCP client:
+From Claude Code, invoke the skill:
 
 ```
-Use the rulegen MCP server to generate Konveyor analyzer rules for this migration guide:
-https://gist.github.com/savitharaghunathan/52198c722b807f3862af38b72e6d7331
-
-Save the rules to the output folder with source and target labels.
+/generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
 ```
 
-The client LLM will:
-1. Call `get_help` to learn about condition types and locations
-2. Read the migration guide content
-3. Call `construct_rule` for each migration pattern it identifies
-4. Call `construct_ruleset` to create ruleset metadata
-5. Call `validate_rules` to verify the output
+The input can be a URL, a file path, or pasted migration guide text.
 
-No server-side LLM or API key is needed — the client's LLM does all the thinking.
+The agent runs the full pipeline automatically:
 
-### CLI
+1. **Ingest** the migration guide into clean markdown
+2. **Extract** every migration pattern (API changes, dependency updates, config renames, POM structure)
+3. **Construct** Konveyor rule YAML files from the patterns
+4. **Scaffold** test directories and generate test source code
+5. **Run kantra** to validate every rule finds incidents
+6. **Fix** any failing rules (up to 3 iterations)
+7. **Report** final pass rate and output locations
 
-Set your LLM provider and API key:
-
-```bash
-export GEMINI_API_KEY=your-key
-```
-
-Generate rules (source/target/language auto-detected from content):
-
-```bash
-./rulegen generate \
-  --input "https://gist.github.com/savitharaghunathan/52198c722b807f3862af38b72e6d7331" \
-  --provider gemini
-```
-
-Or specify everything explicitly:
-
-```bash
-./rulegen generate \
-  --input "https://spring.io/blog/migration-guide" \
-  --source spring-boot-3 \
-  --target spring-boot-4 \
-  --language java \
-  --output ./output \
-  --provider anthropic
-```
-
-### Test Rules
-
-Generate test data, run kantra tests, and auto-fix failing tests:
-
-```bash
-./rulegen test \
-  --rules output/golang-non-fips-crypto-to-golang-fips-crypto/rules \
-  --output output/golang-non-fips-crypto-to-golang-fips-crypto \
-  --provider gemini \
-  --max-iterations 3
-```
-
-The test-fix loop:
-1. Generates test source code that should trigger each rule
-2. **Phase A — Compile fix**: Checks compilation (`go build`, `mvn compile`, `npx tsc`, `dotnet build`), feeds errors + API docs back to the LLM, retries up to 5 times
-3. **Phase B — Kantra test**: Detects the provider from test files. For Go rules, uses `kantra analyze --run-local` directly (container lacks Go toolchain). For other providers, uses `kantra test`. A 0/total safety-net fallback to `--run-local` is kept for unrecognized providers.
-4. For failing rules, asks the LLM for code hints, regenerates test data, and re-runs (up to `--max-iterations`)
-
-> **Note**: As of kantra v0.9.0-alpha.6, the container image does not include a Go toolchain. The `go.referenced` provider requires gopls + `go` to resolve modules. The runner detects Go provider from test files and uses `kantra analyze --run-local` (host toolchain) automatically — no extra flags needed.
-
-### Score Confidence
-
-Score rules by running kantra tests (primary signal — does the rule actually work?):
-
-```bash
-./rulegen score \
-  --tests output/go-non-fips-crypto-to-go-fips-140-compliance/tests
-```
-
-Add LLM-as-judge as a secondary quality signal:
-
-```bash
-./rulegen score \
-  --tests output/go-non-fips-crypto-to-go-fips-140-compliance/tests \
-  --rules output/go-non-fips-crypto-to-go-fips-140-compliance/rules \
-  --provider gemini
-```
-
-Verdict logic:
-- kantra fail → **reject** (rule doesn't match test data)
-- kantra pass + judge reject → **review** (works but quality concerns)
-- kantra pass + judge accept → **accept**
-
-#### CLI Flags
-
-| Flag | Description | Required |
-|------|-------------|----------|
-| `--input` | URL, file path, or text content | Yes |
-| `--source` | Source technology (auto-detected if omitted) | No |
-| `--target` | Target technology (auto-detected if omitted) | No |
-| `--language` | Programming language: java, go, nodejs, csharp (auto-detected if omitted) | No |
-| `--output` | Output directory (default: `output`) | No |
-| `--provider` | LLM provider: `anthropic`, `openai`, `gemini`, `ollama` (overrides `RULEGEN_LLM_PROVIDER` env var) | Yes |
-
-#### LLM Provider Configuration
-
-| Provider | API Key Env Var | Model Env Var | Default Model |
-|----------|----------------|---------------|---------------|
-| `anthropic` | `ANTHROPIC_API_KEY` | `ANTHROPIC_MODEL` | `claude-sonnet-4-5` |
-| `openai` | `OPENAI_API_KEY` | `OPENAI_MODEL` | `gpt-4o` |
-| `gemini` | `GEMINI_API_KEY` | `GEMINI_MODEL` | `gemini-2.5-flash` |
-| `ollama` | — | `OLLAMA_MODEL` | `llama3` |
-
-## Output
-
-Output matches the [konveyor/rulesets](https://github.com/konveyor/rulesets) layout — directly submittable as a PR.
+### Output
 
 ```
-output/spring-boot-3-to-spring-boot-4/
-├── rules/
+output/
+├── rules/                # Rule YAML files ready for konveyor/rulesets
 │   ├── ruleset.yaml
 │   ├── web.yaml
-│   └── security.yaml
-├── tests/
-│   ├── web.test.yaml
-│   └── data/web/
-│       ├── pom.xml
-│       └── src/main/java/com/example/App.java
-└── confidence/
-    └── scores.yaml  # kantra test results + optional LLM judge scores
+│   └── ...
+├── tests/                # Kantra test suites
+├── patterns.json         # Extracted migration patterns
+├── guide.md              # Ingested migration guide
+└── report.yaml           # Summary report
 ```
 
-## Supported Condition Types
+## Architecture
 
-Java (`java.referenced`, `java.dependency`), Go (`go.referenced`, `go.dependency`), Node.js (`nodejs.referenced`), C# (`csharp.referenced`), and builtin (`filecontent`, `file`, `xml`, `json`, `hasTags`, `xmlPublicID`), plus `and`/`or` combinators.
+All LLM orchestration lives in agent skills. The Go CLI is purely deterministic — no LLM calls, no API keys, no prompt templates.
 
-## Testing
+```
+Migration Guide → Agent extracts patterns → CLI constructs rules → CLI scaffolds tests
+    → Agent generates test code → kantra validates → Agent fixes failures → Tested rules
+```
+
+| Layer | What | LLM? |
+|-------|------|------|
+| **Agent skills** (`agents/`) | Read guides, extract patterns, generate test code, fix failures | Yes |
+| **CLI commands** (`cmd/`) | Ingest, construct, validate, scaffold, sanitize, stamp, report | No |
+
+### CLI commands
+
+Each command is a standalone Go file. No build step required — use `go run` directly.
+
+| Command | Description |
+|---------|-------------|
+| `go run ./cmd/ingest --input <url-or-file> --output guide.md` | Fetch migration guide, output clean markdown |
+| `go run ./cmd/construct --patterns patterns.json --output rules/` | Convert patterns to rule YAML + ruleset.yaml |
+| `go run ./cmd/validate --rules rules/` | Validate rule YAML structure |
+| `go run ./cmd/scaffold --rules rules/ --output tests/` | Create test dirs, .test.yaml, manifest.json |
+| `go run ./cmd/sanitize --dir tests/data/` | Fix illegal XML comments |
+| `go run ./cmd/stamp --rules rules/ --kantra-output "..."` | Stamp pass/fail labels on rules |
+| `go run ./cmd/report --source src --target tgt --output report.yaml` | Generate summary report |
+
+### Agent skills
+
+| Skill | Role |
+|-------|------|
+| **rule-writer** | Reads migration guide, extracts migration patterns into `patterns.json` |
+| **test-generator** | Reads `manifest.json`, generates compilable test source code |
+| **rule-validator** | Runs kantra, interprets results, generates fix hints |
+| **orchestrator** | Coordinates the full end-to-end pipeline |
+
+Each skill has reference docs in its `references/` directory.
+
+## Supported Languages
+
+Java (`java.referenced`, `java.dependency`), Go (`go.referenced`, `go.dependency`), Node.js (`nodejs.referenced`), C# (`csharp.referenced`), and builtin matchers (`filecontent`, `file`, `xml`, `json`).
+
+## Development
 
 ```bash
-go test ./internal/...                                    # Unit tests
-go test -tags=integration ./test/integration/...          # Integration tests (mock LLM)
-go test -tags=e2e ./test/e2e/...                          # E2E tests (real LLM + kantra)
+make test        # Unit tests
+make lint        # golangci-lint
+make coverage    # Coverage report
 ```
 
 ## Related Projects
 
-| Project | Description |
-|---------|-------------|
-| [analyzer-rule-generator (ARG)](https://github.com/konveyor-ecosystem/analyzer-rule-generator) | Python, LLM-powered rule generation pipeline |
-| [Scribe](https://github.com/sshaaf/scribe) | Java/Quarkus MCP server for rule construction |
-| [analyzer-lsp](https://github.com/konveyor/analyzer-lsp) | Rule engine and analyzer |
-| [kantra](https://github.com/konveyor-ecosystem/kantra) | Rule testing CLI |
+- [analyzer-rule-generator (ARG)](https://github.com/konveyor-ecosystem/analyzer-rule-generator) — Python rule generation pipeline
+- [kantra](https://github.com/konveyor-ecosystem/kantra) — Rule testing CLI
+- [analyzer-lsp](https://github.com/konveyor/analyzer-lsp) — Rule engine and analyzer
 
 ## License
 

@@ -1,71 +1,79 @@
 # ai-rule-gen Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-19
+Skill-first architecture. Last updated: 2026-04-15
+
+## Architecture
+
+**Skill-first design**: All LLM orchestration lives in agent skills (subagents).
+Go code is purely deterministic — no LLM calls, no API keys, no prompt templates.
+
+The agent (Claude Code, Cursor, Goose, etc.) reads migration guides, calls CLI
+commands, and orchestrates the pipeline. The CLI does the deterministic heavy
+lifting.
 
 ## Active Technologies
 
-- Go 1.22+ + `github.com/modelcontextprotocol/go-sdk` (official MCP SDK, SSE + Streamable HTTP), `gopkg.in/yaml.v3`, `github.com/JohannesKaufmann/html-to-markdown`, `github.com/spf13/cobra` (CLI), `github.com/anthropics/anthropic-sdk-go` (001-mcp-rule-gen)
+- Go 1.25+ with stdlib `flag` (CLI), `gopkg.in/yaml.v3`, `github.com/JohannesKaufmann/html-to-markdown`
 
 ## Project Structure
 
 ```text
-cmd/rulegen/        # Entry point (Cobra CLI + MCP server)
-internal/           # All internal packages
-  server/           # MCP server setup, 4 tool registrations
-  tools/            # Tool handlers (construct, validate, help, generate, test, confidence)
-  llm/              # Completer interface, LLM providers (Anthropic, OpenAI, Gemini, Ollama)
-  rules/            # Rule/Condition types, builders, serializer, validator
-  ingestion/        # URL/file/text ingestion, HTML→markdown, chunking
-  extraction/       # MigrationPattern type, LLM pattern extraction
-  generation/       # Pattern→Rule construction, rule ID generation
-  testgen/          # Test data generation, kantra runner, ARG-style fix loop
-  confidence/       # Functional scoring (kantra test) + optional LLM-as-judge
-  workspace/        # Output directory management
-templates/          # LLM prompt templates (extraction, generation, testing, confidence)
-test/
-  integration/      # Integration tests (mock LLM, -tags=integration)
-  e2e/              # E2E tests (real LLM + kantra, -tags=e2e)
+cmd/
+  construct/main.go       # patterns.json → rule YAML + ruleset.yaml
+  validate/main.go        # Validate rule YAML files
+  ingest/main.go          # Fetch migration guide → clean markdown
+  scaffold/main.go        # Create test dirs, .test.yaml, manifest.json
+  sanitize/main.go        # Fix illegal XML comments in a directory
+  stamp/main.go           # Update rule files with kantra pass/fail labels
+  report/main.go          # Generate YAML summary report
+  internal/cli/           # Shared JSON output helper
+internal/
+  construct/              # patterns.json → rule YAML + ruleset.yaml
+  ingestion/              # URL/file/text → clean markdown, chunking
+  kantraparser/           # Parse kantra test/analyze output
+  rules/                  # Rule/Condition types, builders, serializer, validator,
+                          #   patterns.go (ExtractOutput/MigrationPattern),
+                          #   labels.go (StampTestResults), ruleid.go (IDGenerator)
+  sanitize/               # Fix illegal XML comments (LLM-generated '--')
+  scaffold/               # test-scaffold: create dirs, .test.yaml, manifest.json
+  workspace/              # Output directory management, report generation
+agents/                   # Agent skill definitions + reference docs
 ```
 
-## Commands
+## CLI Commands
+
+Each command is a standalone Go file invoked via `go run cmd/<name>.go`.
+All commands are deterministic. No LLM, no API keys required.
 
 ```bash
-# Build
-go build -o rulegen ./cmd/rulegen/
+# Run individual commands (no build step needed)
+go run ./cmd/ingest    --input <url-or-file> --output guide.md
+go run ./cmd/construct --patterns patterns.json --output rules/
+go run ./cmd/validate  --rules rules/
+go run ./cmd/scaffold  --rules rules/ --output tests/
+go run ./cmd/sanitize  --dir tests/data/
+go run ./cmd/stamp     --rules rules/ --kantra-output "..."
+go run ./cmd/report    --source src --target tgt --output report.yaml
 
-# Unit tests (fast, no external deps)
-go test ./internal/...
-
-# Integration tests (mock LLM, no API key)
-go test -tags=integration ./test/integration/...
-
-# E2E tests (real LLM + kantra required)
-go test -tags=e2e ./test/e2e/...
+# Tests
+go test ./internal/...  # Unit tests
 
 # Coverage
-go test -coverprofile=coverage.out ./...
-
-# Lint
-golangci-lint run ./...
-
-# Run MCP server
-./rulegen serve --port 8080
+go test -coverprofile=coverage.out ./internal/...
 ```
+
+## Key Concepts
+
+### patterns.json (ExtractOutput)
+Intermediate JSON format between agent pattern extraction and `go run ./cmd/construct`.
+Agent writes this; CLI reads it. Contains source, target, language, and a list of
+MigrationPattern objects with fields like source_fqn, provider_type, location_type,
+alternative_fqns, complexity, category, concern.
+
+### manifest.json
+Output of `go run ./cmd/scaffold`. Tells the agent what source files to generate
+per test group (build file + main source file per group, with language config).
 
 ## Code Style
 
-Go 1.22+: Follow standard conventions
-
-## Architecture
-
-Two entry points, shared internals:
-- **MCP server** (`rulegen serve`): 4 deterministic tools (construct_rule, construct_ruleset, validate_rules, get_help). No server LLM needed.
-- **CLI** (`rulegen generate/test/score`): Pipeline commands. `generate` and `test` require RULEGEN_LLM_PROVIDER + API key. `score` runs kantra tests (no LLM needed) with optional LLM-as-judge via `--provider`. Not exposed as MCP tools.
-- LLM providers: Anthropic, OpenAI, Gemini, Ollama (local models)
-
-## Recent Changes
-
-- 001-mcp-rule-gen: Official MCP SDK (`modelcontextprotocol/go-sdk`), dual tool approach (constructor + pipeline), multi-provider LLM support, own YAML rule types (not engine.Rule)
-- Confidence scoring: Primary signal is functional (kantra test pass/fail, matching ARG's approach). Optional secondary signal is LLM-as-judge with adversarial rubric. `rulegen score --tests <dir>` runs kantra; add `--provider` + `--rules` for LLM judge.
-- Test-fix loop: `rulegen test` now generates data, runs kantra, and auto-fixes failing test data (not rules) via LLM code hints, up to `--max-iterations` (default 3). Matches ARG's pipeline. Two-phase fix: Phase A checks compilation (Go/Java/Node.js/C#) with API doc lookup, Phase B runs kantra and generates code hints for failing rules.
-- Kantra Go workaround: kantra v0.9.0-alpha.6 container lacks Go toolchain, so `go.referenced` rules fail with "no views". Both `testgen/runner.go` and `confidence/scorer.go` detect the Go provider from test files upfront and use `kantra analyze --run-local` (host toolchain) directly — no wasted container run. A 0/total safety-net fallback is kept for unrecognized providers. TODO: remove once kantra ships Go in the container.
+Go 1.25+: Follow standard conventions. No LLM dependencies anywhere in Go code.

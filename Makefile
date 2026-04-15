@@ -1,11 +1,4 @@
-BINARY := rulegen
-MODULE := github.com/konveyor/ai-rule-gen
-GOFLAGS := -trimpath
-
-.PHONY: build test test-integration test-e2e lint clean
-
-build:
-	go build $(GOFLAGS) -o $(BINARY) ./cmd/rulegen/
+.PHONY: test test-integration test-e2e coverage lint clean
 
 test:
 	go test ./internal/...
@@ -17,11 +10,11 @@ test-e2e:
 	go test -tags=e2e ./test/e2e/...
 
 coverage:
-	go test -coverprofile=coverage.out ./...
+	go test -coverprofile=coverage.out ./internal/...
 	go tool cover -func=coverage.out
 
 lint:
-	golangci-lint run ./...
+	golangci-lint run ./internal/... ./cmd/...
 
 clean:
-	rm -f $(BINARY) coverage.out
+	rm -rf coverage.out

@@ -3,7 +3,9 @@ package ingestion
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -71,20 +73,24 @@ func detectType(input string) InputType {
 	return InputText
 }
 
-func fetchURL(url string) (string, error) {
-	resp, err := http.Get(url)
+func fetchURL(rawURL string) (string, error) {
+	if err := validateURL(rawURL); err != nil {
+		return "", err
+	}
+
+	resp, err := http.Get(rawURL)
 	if err != nil {
-		return "", fmt.Errorf("fetching %s: %w", url, err)
+		return "", fmt.Errorf("fetching %s: %w", rawURL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("fetching %s: HTTP %d", url, resp.StatusCode)
+		return "", fmt.Errorf("fetching %s: HTTP %d", rawURL, resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("reading response from %s: %w", url, err)
+		return "", fmt.Errorf("reading response from %s: %w", rawURL, err)
 	}
 
 	contentType := resp.Header.Get("Content-Type")
@@ -93,6 +99,32 @@ func fetchURL(url string) (string, error) {
 	}
 
 	return string(body), nil
+}
+
+// validateURL checks for SSRF: blocks loopback and private IP addresses.
+func validateURL(rawURL string) error {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL: %w", err)
+	}
+	host := parsed.Hostname()
+
+	// Resolve the host to check for private/loopback IPs
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return fmt.Errorf("resolving %s: %w", host, err)
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return fmt.Errorf("blocked: %s resolves to private/loopback address %s", host, ip)
+		}
+	}
+	return nil
+}
+
+// WriteMarkdown writes content to a markdown file.
+func WriteMarkdown(path, content string) error {
+	return os.WriteFile(path, []byte(content), 0o644)
 }
 
 func readFile(path string) (string, error) {

@@ -1,0 +1,116 @@
+- ruleID: java-ee-to-jakarta-00010
+  description: Replace @Stateless with CDI-managed beans
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee-8
+    - konveyor.io/target=jakarta-ee-9
+    - konveyor.io/generated-by=ai-rule-gen
+    - konveyor.io/test-result=untested
+    - konveyor.io/review=unreviewed
+  message: |
+    The `javax.ejb.Stateless` annotation has been removed in Jakarta EE 9+.
+    Replace EJB session beans with CDI-managed beans using `@ApplicationScoped`.
+
+    ## Before
+    ```java
+    import javax.ejb.Stateless;
+
+    @Stateless
+    public class MyService {
+    }
+    ```
+
+    ## After
+    ```java
+    import jakarta.enterprise.context.ApplicationScoped;
+
+    @ApplicationScoped
+    public class MyService {
+    }
+    ```
+  links:
+    - title: Jakarta EE 9 Migration Guide
+      url: https://jakarta.ee/resources/
+  when:
+    java.referenced:
+      pattern: javax.ejb.Stateless
+      location: ANNOTATION
+
+- ruleID: java-ee-to-jakarta-00020
+  description: javax.servlet renamed to jakarta.servlet
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee-8
+    - konveyor.io/target=jakarta-ee-9
+    - konveyor.io/generated-by=ai-rule-gen
+    - konveyor.io/test-result=untested
+    - konveyor.io/review=unreviewed
+  message: |
+    The `javax.servlet` namespace was renamed to `jakarta.servlet` in Jakarta EE 9+.
+    Update all imports.
+
+    ## Before
+    ```java
+    import javax.servlet.http.HttpServlet;
+    ```
+
+    ## After
+    ```java
+    import jakarta.servlet.http.HttpServlet;
+    ```
+  when:
+    java.referenced:
+      pattern: javax.servlet.http.HttpServlet
+      location: IMPORT
+
+- ruleID: java-ee-to-jakarta-00030
+  description: javax.inject renamed to jakarta.inject
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee-8
+    - konveyor.io/target=jakarta-ee-9
+    - konveyor.io/generated-by=ai-rule-gen
+    - konveyor.io/test-result=untested
+    - konveyor.io/review=unreviewed
+  message: |
+    The `javax.inject.Inject` annotation was renamed to `jakarta.inject.Inject`.
+
+    ## Before
+    ```java
+    @javax.inject.Inject
+    private DataSource ds;
+    ```
+
+    ## After
+    ```java
+    @jakarta.inject.Inject
+    private DataSource ds;
+    ```
+  when:
+    java.referenced:
+      pattern: javax.inject.Inject
+      location: ANNOTATION
+
+- ruleID: java-ee-to-jakarta-00040
+  description: Replace javax.ejb.Stateless or javax.ejb.Stateful
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee-8
+    - konveyor.io/target=jakarta-ee-9
+    - konveyor.io/generated-by=ai-rule-gen
+    - konveyor.io/test-result=untested
+    - konveyor.io/review=unreviewed
+  message: |
+    Both `@Stateless` and `@Stateful` EJB annotations must be replaced.
+  when:
+    or:
+      - java.referenced:
+          pattern: javax.ejb.Stateless
+          location: ANNOTATION
+      - java.referenced:
+          pattern: javax.ejb.Stateful
+          location: ANNOTATION

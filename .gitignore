@@ -3,10 +3,10 @@
 *.test
 *.out
 vendor/
-/rulegen
+/bin/
 
 # Output
-output/
+output*/
 
 # IDE
 .vscode/

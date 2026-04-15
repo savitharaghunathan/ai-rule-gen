@@ -1,0 +1,43 @@
+- ruleID: go-non-fips-to-go-fips-00010
+  description: Replace golang.org/x/crypto/md4
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=go-non-fips
+    - konveyor.io/target=go-fips
+    - konveyor.io/generated-by=ai-rule-gen
+    - konveyor.io/test-result=untested
+    - konveyor.io/review=unreviewed
+  message: |
+    Replace non-FIPS compliant `golang.org/x/crypto/md4` with a FIPS-compliant
+    hash from the standard library.
+
+    ## Before
+    ```go
+    import "golang.org/x/crypto/md4"
+    ```
+
+    ## After
+    ```go
+    import "crypto/md5"
+    ```
+  when:
+    go.referenced:
+      pattern: golang.org/x/crypto/md4
+
+- ruleID: go-non-fips-to-go-fips-00020
+  description: Replace golang.org/x/crypto/bcrypt
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=go-non-fips
+    - konveyor.io/target=go-fips
+    - konveyor.io/generated-by=ai-rule-gen
+    - konveyor.io/test-result=untested
+    - konveyor.io/review=unreviewed
+  message: |
+    Replace `golang.org/x/crypto/bcrypt` with `crypto/sha256` based hashing
+    for FIPS 140-2 compliance.
+  when:
+    go.referenced:
+      pattern: golang.org/x/crypto/bcrypt
