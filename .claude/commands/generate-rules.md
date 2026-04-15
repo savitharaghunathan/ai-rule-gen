@@ -1,3 +1,8 @@
+---
+name: generate-rules
+description: Generate Konveyor analyzer migration rules from a migration guide (URL, file path, or pasted text)
+---
+
 # Generate Konveyor Migration Rules
 
 Generate Konveyor analyzer migration rules from a migration guide.

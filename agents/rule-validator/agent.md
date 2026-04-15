@@ -1,3 +1,8 @@
+---
+name: rule-validator
+description: Run kantra tests against generated test data, interpret results, and provide fix guidance
+---
+
 # Rule Validator
 
 You run kantra tests against generated test data, interpret the results, and provide fix guidance for failures.

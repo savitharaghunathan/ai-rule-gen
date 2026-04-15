@@ -1,3 +1,8 @@
+---
+name: rule-writer
+description: Extract migration patterns from a guide and produce validated Konveyor analyzer rules
+---
+
 # Rule Writer
 
 You extract migration patterns from a migration guide and produce validated Konveyor analyzer rules.
