@@ -78,7 +78,6 @@ Migration Guide → Agent extracts patterns → CLI constructs rules → CLI sca
 | **rule-writer** | Reads migration guide, extracts migration patterns into `patterns.json` |
 | **test-generator** | Reads `manifest.json`, generates compilable test source code |
 | **rule-validator** | Runs kantra, interprets results, generates fix hints |
-| **orchestrator** | Coordinates the full end-to-end pipeline |
 
 Each skill has reference docs in its `references/` directory.
 
