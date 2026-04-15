@@ -71,20 +71,6 @@ Migration Guide → Agent extracts patterns → CLI constructs rules → CLI sca
 | **Agent skills** (`agents/`) | Read guides, extract patterns, generate test code, fix failures | Yes |
 | **CLI commands** (`cmd/`) | Ingest, construct, validate, scaffold, sanitize, stamp, report | No |
 
-### CLI commands
-
-Each command is a standalone Go file. No build step required — use `go run` directly.
-
-| Command | Description |
-|---------|-------------|
-| `go run ./cmd/ingest --input <url-or-file> --output guide.md` | Fetch migration guide, output clean markdown |
-| `go run ./cmd/construct --patterns patterns.json --output rules/` | Convert patterns to rule YAML + ruleset.yaml |
-| `go run ./cmd/validate --rules rules/` | Validate rule YAML structure |
-| `go run ./cmd/scaffold --rules rules/ --output tests/` | Create test dirs, .test.yaml, manifest.json |
-| `go run ./cmd/sanitize --dir tests/data/` | Fix illegal XML comments |
-| `go run ./cmd/stamp --rules rules/ --kantra-output "..."` | Stamp pass/fail labels on rules |
-| `go run ./cmd/report --source src --target tgt --output report.yaml` | Generate summary report |
-
 ### Agent skills
 
 | Skill | Role |
@@ -95,18 +81,6 @@ Each command is a standalone Go file. No build step required — use `go run` di
 | **orchestrator** | Coordinates the full end-to-end pipeline |
 
 Each skill has reference docs in its `references/` directory.
-
-## Supported Languages
-
-Java (`java.referenced`, `java.dependency`), Go (`go.referenced`, `go.dependency`), Node.js (`nodejs.referenced`), C# (`csharp.referenced`), and builtin matchers (`filecontent`, `file`, `xml`, `json`).
-
-## Development
-
-```bash
-make test        # Unit tests
-make lint        # golangci-lint
-make coverage    # Coverage report
-```
 
 ## Related Projects
 
