@@ -37,7 +37,7 @@ internal/
   sanitize/               # Fix illegal XML comments (LLM-generated '--')
   scaffold/               # test-scaffold: create dirs, .test.yaml, manifest.json
   workspace/              # Output directory management, report generation
-agents/                   # Agent skill definitions + reference docs
+agents/                   # Agent skills (agentskills.io format, SKILL.md + references/)
 ```
 
 ## CLI Commands

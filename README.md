@@ -10,7 +10,7 @@ Generate [Konveyor](https://www.konveyor.io/) analyzer migration rules from any 
 - [kantra](https://github.com/konveyor-ecosystem/kantra) (for rule testing)
 - An AI coding agent ([Claude Code](https://claude.ai/code), [Cursor](https://cursor.sh), [Goose](https://github.com/block/goose), or similar)
 
-### Add the skill to Claude Code
+### Add the skill
 
 ```bash
 # Clone the repo
@@ -18,10 +18,10 @@ git clone https://github.com/konveyor/ai-rule-gen.git
 cd ai-rule-gen
 
 # Add as a project skill (from inside your target project)
-claude project add-skill /path/to/ai-rule-gen/.claude/commands/generate-rules.md
+claude project add-skill /path/to/ai-rule-gen/agents/generate-rules/SKILL.md
 ```
 
-Or copy `.claude/commands/generate-rules.md` into your project's `.claude/commands/` directory.
+Skills follow the [Agent Skills](https://agentskills.io) format and work with any compatible agent.
 
 ## Usage
 
@@ -75,11 +75,12 @@ Migration Guide → Agent extracts patterns → CLI constructs rules → CLI sca
 
 | Skill | Role |
 |-------|------|
+| **generate-rules** | Orchestrates the full end-to-end pipeline |
 | **rule-writer** | Reads migration guide, extracts migration patterns into `patterns.json` |
 | **test-generator** | Reads `manifest.json`, generates compilable test source code |
 | **rule-validator** | Runs kantra, interprets results, generates fix hints |
 
-Each skill has reference docs in its `references/` directory.
+Each skill follows the [Agent Skills](https://agentskills.io) format with a `SKILL.md` and optional `references/` directory.
 
 ## Related Projects
 

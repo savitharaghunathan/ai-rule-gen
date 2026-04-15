@@ -33,7 +33,7 @@ Read the ingested guide content before proceeding.
 
 ## Step 1: Extract Migration Patterns (Rule Writer)
 
-Read `agents/rule-writer/agent.md` and its `references/` directory for the full extraction contract.
+Read `agents/rule-writer/SKILL.md` and its `references/` directory for the full extraction contract.
 
 From the migration guide content:
 
@@ -85,7 +85,7 @@ If validation fails, fix patterns.json and re-run. Common issues:
 
 ## Step 3: Scaffold Tests (Test Generator)
 
-Read `agents/test-generator/agent.md` and its `references/` directory for test data generation details.
+Read `agents/test-generator/SKILL.md` and its `references/` directory for test data generation details.
 
 ```bash
 go run ./cmd/scaffold --rules output/rules --output output/tests
@@ -116,7 +116,7 @@ go run ./cmd/sanitize --dir output/tests/data
 
 ## Step 4: Run Kantra Tests (Rule Validator)
 
-Read `agents/rule-validator/agent.md` and its `references/` directory for test interpretation details.
+Read `agents/rule-validator/SKILL.md` and its `references/` directory for test interpretation details.
 
 Check kantra is installed: `which kantra`
 
