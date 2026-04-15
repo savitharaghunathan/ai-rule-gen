@@ -54,7 +54,7 @@ For each migration pattern found in the content, provide:
 4. source_fqn: Fully qualified name or regex pattern for matching. ONLY if explicitly stated in the content. Leave empty if unsure.
 5. location_type: For java.referenced and csharp.referenced only. One of: TYPE, INHERITANCE, METHOD_CALL, CONSTRUCTOR_CALL, ANNOTATION, IMPLEMENTS_TYPE, ENUM, RETURN_TYPE, IMPORT, VARIABLE_DECLARATION, PACKAGE, FIELD, METHOD, CLASS
 6. dependency_name: For java.dependency and go.dependency only. The dependency coordinate in "groupId.artifactId" format (e.g., "org.springframework.boot.spring-boot-starter-parent" or "github.com/example/pkg").
-7. dep_upperbound: For dependency rules. The version upper bound (exclusive) — the version to upgrade FROM. E.g., if migrating from Spring Boot 2.x to 3.x, set dep_upperbound to "3.0.0" to flag all 2.x versions.
+7. dep_upperbound: REQUIRED for all dependency rules. The version upper bound (exclusive) — the version to upgrade FROM. E.g., if migrating from Spring Boot 2.x to 3.x, set dep_upperbound to "3.0.0" to flag all 2.x versions. Without bounds, the rule will NOT match anything at runtime.
 8. dep_lowerbound: For dependency rules. The version lower bound (inclusive), if applicable.
 9. alternative_fqns: Alternative FQNs ONLY if the content explicitly lists alternatives
 10. rationale: Why this migration is needed — paraphrase the content, do not add unsupported reasoning

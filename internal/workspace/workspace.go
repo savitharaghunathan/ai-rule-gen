@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Workspace manages the output directory for a migration path.
@@ -14,7 +15,20 @@ type Workspace struct {
 // New creates a workspace for the given source→target migration.
 // The root directory is output/<source>-to-<target>/.
 func New(outputBase, source, target string) (*Workspace, error) {
-	root := filepath.Join(outputBase, source+"-to-"+target)
+	dirName := sanitizePath(source) + "-to-" + sanitizePath(target)
+	root := filepath.Join(outputBase, dirName)
+	// Ensure the resolved path stays within outputBase to prevent traversal.
+	absBase, err := filepath.Abs(outputBase)
+	if err != nil {
+		return nil, fmt.Errorf("resolving output base: %w", err)
+	}
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("resolving workspace root: %w", err)
+	}
+	if !strings.HasPrefix(absRoot, absBase+string(filepath.Separator)) && absRoot != absBase {
+		return nil, fmt.Errorf("workspace path %q escapes output base %q", absRoot, absBase)
+	}
 	w := &Workspace{Root: root}
 	if err := w.init(); err != nil {
 		return nil, err
@@ -44,6 +58,16 @@ func (w *Workspace) init() error {
 		}
 	}
 	return nil
+}
+
+// sanitizePath strips directory separators and traversal sequences from a path component.
+func sanitizePath(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, "..", "")
+	s = strings.ReplaceAll(s, "/", "-")
+	s = strings.ReplaceAll(s, "\\", "-")
+	s = strings.ReplaceAll(s, " ", "-")
+	return s
 }
 
 // RulesDir returns the path to the rules directory.

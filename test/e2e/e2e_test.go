@@ -338,6 +338,95 @@ func TestE2E_ConfidenceScore(t *testing.T) {
 	}
 }
 
+// TestE2E_ExtractAndConstruct tests the composable extract → construct pipeline.
+// extract outputs ExtractOutput JSON, construct reads it and writes valid YAML rules.
+func TestE2E_ExtractAndConstruct(t *testing.T) {
+	completer := skipIfNoLLM(t)
+	outputDir := t.TempDir()
+	ctx := context.Background()
+
+	// Step 1: Extract patterns from the Java migration guide
+	t.Log("Step 1: Extracting patterns from java8-to-java17-guide.md...")
+	extractResult, err := tools.RunExtractPipeline(ctx, completer, tools.GenerateInput{
+		Input: "../../java8-to-java17-guide.md",
+	})
+	if err != nil {
+		t.Fatalf("extract pipeline failed: %v", err)
+	}
+
+	t.Logf("  Extracted %d patterns (source=%s, target=%s, language=%s)",
+		len(extractResult.Patterns), extractResult.Source, extractResult.Target, extractResult.Language)
+
+	if len(extractResult.Patterns) == 0 {
+		t.Fatal("no patterns extracted")
+	}
+	if extractResult.Source == "" || extractResult.Target == "" {
+		t.Errorf("auto-detection should have set source/target, got source=%q target=%q",
+			extractResult.Source, extractResult.Target)
+	}
+
+	// Step 2: Marshal to JSON (simulates pipe between extract and construct)
+	extractJSON, err := json.Marshal(extractResult)
+	if err != nil {
+		t.Fatalf("marshaling extract output: %v", err)
+	}
+	t.Logf("  ExtractOutput JSON: %d bytes", len(extractJSON))
+
+	// Step 3: Construct rules from extract output
+	t.Log("Step 2: Constructing rules from extract output...")
+	constructResult, err := tools.ConstructRules(extractJSON, outputDir)
+	if err != nil {
+		t.Fatalf("construct failed: %v", err)
+	}
+
+	t.Logf("  Constructed %d rules, %d files written", constructResult.RuleCount, len(constructResult.FilesWritten))
+
+	if constructResult.RuleCount == 0 {
+		t.Fatal("no rules constructed")
+	}
+	if !constructResult.Validation.Valid {
+		t.Errorf("validation failed: %v", constructResult.Validation.Errors)
+	}
+
+	// Step 4: Verify the output
+	rulesPath := filepath.Join(outputDir, "rules", "rules.yaml")
+	data, err := os.ReadFile(rulesPath)
+	if err != nil {
+		t.Fatalf("cannot read rules.yaml: %v", err)
+	}
+	var ruleList []rules.Rule
+	if err := yaml.Unmarshal(data, &ruleList); err != nil {
+		t.Fatalf("cannot parse rules.yaml: %v", err)
+	}
+	if len(ruleList) == 0 {
+		t.Fatal("no rules in output YAML")
+	}
+
+	// Verify rules have expected structure
+	for _, r := range ruleList {
+		if r.RuleID == "" {
+			t.Error("rule has empty ruleID")
+		}
+		if r.Message == "" {
+			t.Error("rule has empty message")
+		}
+		if r.Category == "" {
+			t.Error("rule has empty category")
+		}
+		if r.Effort < 1 || r.Effort > 10 {
+			t.Errorf("rule %s: effort %d outside range 1-10", r.RuleID, r.Effort)
+		}
+	}
+
+	// Verify ruleset was generated
+	rulesetPath := filepath.Join(outputDir, "rules", "ruleset.yaml")
+	if _, err := os.Stat(rulesetPath); err != nil {
+		t.Errorf("ruleset.yaml should exist: %v", err)
+	}
+
+	t.Logf("  Pipeline complete: %d rules written to %s", len(ruleList), rulesPath)
+}
+
 // TestE2E_FullPipeline runs the complete pipeline: generate → test → score.
 // This is the most comprehensive E2E test.
 func TestE2E_FullPipeline(t *testing.T) {

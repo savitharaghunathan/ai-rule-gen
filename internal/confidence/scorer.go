@@ -8,12 +8,11 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/konveyor/ai-rule-gen/internal/kantraparser"
 	"github.com/konveyor/ai-rule-gen/internal/llm"
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 	"gopkg.in/yaml.v3"
@@ -54,7 +53,7 @@ type Scorer struct {
 }
 
 // New creates a Scorer. kantraPath defaults to "kantra" on PATH.
-// completer and judgeTmpl are optional — if provided, LLM-as-judge runs after kantra.
+// completer and judgeTmpl are optional — if provided, LLM-as-judge runs after kantraparser.
 func New(kantraPath string, timeoutSeconds int, completer llm.Completer, judgeTmpl *template.Template) *Scorer {
 	if kantraPath == "" {
 		kantraPath = "kantra"
@@ -73,7 +72,7 @@ func New(kantraPath string, timeoutSeconds int, completer llm.Completer, judgeTm
 // ScoreRules runs kantra test on .test.yaml files in testsDir, optionally runs LLM judge,
 // and returns a report. rulesDir is needed only if completer is set (for LLM judge).
 func (s *Scorer) ScoreRules(ctx context.Context, testsDir string, rulesDir string) (*ScoreReport, error) {
-	testFiles, err := findTestFiles(testsDir)
+	testFiles, err := kantraparser.FindTestFiles(testsDir)
 	if err != nil {
 		return nil, fmt.Errorf("finding test files: %w", err)
 	}
@@ -95,7 +94,10 @@ func (s *Scorer) ScoreRules(ctx context.Context, testsDir string, rulesDir strin
 	}
 	slog.Info("kantra tests complete", "passed", passed, "total", passed+failed)
 
-	failedRules := parseFailedRules(output)
+	failedRules := make(map[string]string)
+	for _, f := range kantraparser.ParseFailures(output) {
+		failedRules[f.RuleID] = "rule did not match any incidents in test data"
+	}
 
 	// Build per-rule scores from kantra results
 	scores := make([]Score, 0, len(allRuleIDs))
@@ -210,23 +212,6 @@ func parseJudgeResponse(response string) (score float64, verdict, reasoning stri
 
 // --- kantra integration ---
 
-func findTestFiles(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-	var files []string
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		if strings.HasSuffix(e.Name(), ".test.yaml") || strings.HasSuffix(e.Name(), ".test.yml") {
-			files = append(files, filepath.Join(dir, e.Name()))
-		}
-	}
-	return files, nil
-}
-
 type testFileSpec struct {
 	Tests []struct {
 		RuleID string `yaml:"ruleID"`
@@ -266,7 +251,9 @@ func (s *Scorer) runKantra(ctx context.Context, testFiles []string) (passed, fai
 	out, runErr := cmd.CombinedOutput()
 	output = string(out)
 
-	passed, failed = parseSummary(output)
+	p, total := kantraparser.ParseSummary(output)
+	passed = p
+	failed = total - p
 
 	if ctx.Err() != nil {
 		return passed, failed, output, fmt.Errorf("kantra timed out after %s", s.timeout)
@@ -280,28 +267,6 @@ func (s *Scorer) runKantra(ctx context.Context, testFiles []string) (passed, fai
 	return passed, failed, output, nil
 }
 
-var reSummary = regexp.MustCompile(`Rules Summary:\s+(\d+)/(\d+)`)
-var reRuleFail = regexp.MustCompile(`([\w-]+-\d{5})\s+0/\d+\s+PASSED`)
-
-func parseSummary(output string) (passed, failed int) {
-	m := reSummary.FindStringSubmatch(output)
-	if len(m) == 3 {
-		fmt.Sscanf(m[1], "%d", &passed)
-		var total int
-		fmt.Sscanf(m[2], "%d", &total)
-		failed = total - passed
-	}
-	return
-}
-
-func parseFailedRules(output string) map[string]string {
-	failed := make(map[string]string)
-	matches := reRuleFail.FindAllStringSubmatch(output, -1)
-	for _, m := range matches {
-		failed[m[1]] = "rule did not match any incidents in test data"
-	}
-	return failed
-}
 
 func computeSummary(scores []Score) Summary {
 	s := Summary{TotalRules: len(scores)}

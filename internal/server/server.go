@@ -142,6 +142,16 @@ Workflow: 1) Use get_help to learn condition types and locations, 2) Call constr
 					"type":        "string",
 					"description": "XPath expression for builtin.xml or builtin.json",
 				},
+				"namespaces": map[string]any{
+					"type":                 "object",
+					"additionalProperties": map[string]any{"type": "string"},
+					"description":          "XML namespace prefix-to-URI mappings for builtin.xml or builtin.xmlPublicID (e.g., {\"m\": \"http://maven.apache.org/POM/4.0.0\"})",
+				},
+				"filepaths": map[string]any{
+					"type":        "array",
+					"items":       map[string]any{"type": "string"},
+					"description": "Restrict matching to specific file paths (for builtin.xml, builtin.json, builtin.filecontent, builtin.xmlPublicID)",
+				},
 				"regex": map[string]any{
 					"type":        "string",
 					"description": "Regex pattern for builtin.xmlPublicID",

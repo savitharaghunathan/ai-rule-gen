@@ -8,9 +8,16 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
-// OllamaProvider implements Provider using a local Ollama server.
+var ollamaHTTPClient = &http.Client{
+	Timeout: 120 * time.Second,
+}
+
+const ollamaMaxResponseBody = 10 << 20 // 10 MB
+
+// OllamaProvider implements Completer using a local Ollama server.
 // Ollama REST API: POST /api/generate
 type OllamaProvider struct {
 	host  string
@@ -58,13 +65,13 @@ func (p *OllamaProvider) Complete(ctx context.Context, prompt string) (string, e
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := ollamaHTTPClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("ollama API: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, ollamaMaxResponseBody))
 	if err != nil {
 		return "", fmt.Errorf("reading response: %w", err)
 	}

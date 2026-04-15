@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -37,11 +38,13 @@ func (g *Generator) RunWithTests(ctx context.Context, input GenerateInput, fixTm
 	}
 	slog.Info("test data generation complete", "groups", len(genOutput.DataDirs), "rules", genOutput.RulesTested, "duration", time.Since(stepStart).Round(time.Millisecond))
 
-	testsDir := input.OutputDir + "/tests"
+	testsDir := filepath.Join(input.OutputDir, "tests")
 
 	// Step 2: Run kantra tests, iterate with fix hints on failures
 	var testResult *TestResult
+	var iterationsRun int
 	for iteration := 1; iteration <= maxIterations; iteration++ {
+		iterationsRun = iteration
 		stepStart = time.Now()
 		slog.Info("running kantra tests", "iteration", iteration, "max_iterations", maxIterations)
 		testResult, err = RunKantraTests(ctx, testsDir, 900)
@@ -94,7 +97,7 @@ func (g *Generator) RunWithTests(ctx context.Context, input GenerateInput, fixTm
 	return &FixLoopResult{
 		GenerateOutput: genOutput,
 		TestResult:     testResult,
-		Iterations:     maxIterations,
+		Iterations:     iterationsRun,
 	}, nil
 }
 

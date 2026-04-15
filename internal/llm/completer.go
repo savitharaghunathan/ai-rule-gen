@@ -4,64 +4,58 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 )
+
+const llmCallTimeout = 5 * time.Minute
 
 // Completer abstracts LLM inference for both MCP sampling and server-side LLM paths.
 type Completer interface {
 	Complete(ctx context.Context, prompt string) (string, error)
 }
 
-// Provider is a server-side LLM API client (Anthropic, OpenAI, Gemini, Ollama).
-type Provider interface {
-	Complete(ctx context.Context, prompt string) (string, error)
-}
-
-// LLMCompleter calls a server-side LLM provider directly.
-type LLMCompleter struct {
-	provider Provider
-}
-
-// NewLLMCompleter creates a Completer that uses a server-side LLM provider.
-func NewLLMCompleter(provider Provider) *LLMCompleter {
-	return &LLMCompleter{provider: provider}
-}
-
-func (c *LLMCompleter) Complete(ctx context.Context, prompt string) (string, error) {
-	return c.provider.Complete(ctx, prompt)
-}
-
 // NewCompleter creates a Completer for the given provider name.
 // Returns nil if providerName is empty (deterministic-only mode).
 // Returns an error if the provider is unknown or misconfigured (e.g., missing API key).
-func NewCompleter(providerName string) (*LLMCompleter, error) {
+func NewCompleter(providerName string) (Completer, error) {
 	if providerName == "" {
 		return nil, nil
 	}
 
-	var provider Provider
+	var c Completer
 	var err error
-
 	switch providerName {
 	case "anthropic":
-		provider, err = NewAnthropicProvider()
+		c, err = NewAnthropicProvider()
 	case "openai":
-		provider, err = NewOpenAIProvider()
+		c, err = NewOpenAIProvider()
 	case "gemini":
-		provider, err = NewGeminiProvider()
+		c, err = NewGeminiProvider()
 	case "ollama":
-		provider, err = NewOllamaProvider()
+		c, err = NewOllamaProvider()
 	default:
 		return nil, fmt.Errorf("unknown LLM provider %q. Valid: anthropic, openai, gemini, ollama", providerName)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("configuring %s provider: %w", providerName, err)
+		return nil, err
 	}
+	return &timeoutCompleter{inner: c, timeout: llmCallTimeout}, nil
+}
 
-	return NewLLMCompleter(provider), nil
+// timeoutCompleter wraps a Completer with a per-call deadline.
+type timeoutCompleter struct {
+	inner   Completer
+	timeout time.Duration
+}
+
+func (t *timeoutCompleter) Complete(ctx context.Context, prompt string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, t.timeout)
+	defer cancel()
+	return t.inner.Complete(ctx, prompt)
 }
 
 // NewCompleterFromEnv creates a Completer based on the RULEGEN_LLM_PROVIDER env var.
 // Returns nil if no provider is configured (deterministic-only mode).
-func NewCompleterFromEnv() (*LLMCompleter, error) {
+func NewCompleterFromEnv() (Completer, error) {
 	return NewCompleter(os.Getenv("RULEGEN_LLM_PROVIDER"))
 }

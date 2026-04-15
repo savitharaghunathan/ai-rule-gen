@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 )
 
 // OpenAIProvider implements Provider using the OpenAI API.
@@ -26,7 +27,7 @@ func NewOpenAIProvider() (*OpenAIProvider, error) {
 		model = string(openai.ChatModelGPT4o)
 	}
 
-	client := openai.NewClient()
+	client := openai.NewClient(option.WithAPIKey(key))
 	return &OpenAIProvider{client: client, model: openai.ChatModel(model)}, nil
 }
 

@@ -534,7 +534,7 @@ func buildTestFile(ruleList []rules.Rule, ruleFilePath, dataDir, testsDir string
 // sanitizeXMLComments removes "--" sequences inside XML comments, which are
 // illegal in XML and break Maven's POM parser. LLMs frequently generate
 // comments like <!-- --add-opens flag --> which is invalid XML.
-var reXMLComment = regexp.MustCompile(`<!--(.*?)-->`)
+var reXMLComment = regexp.MustCompile(`(?s)<!--(.*?)-->`)
 
 func sanitizeXMLComments(content string) string {
 	return reXMLComment.ReplaceAllStringFunc(content, func(match string) string {

@@ -132,3 +132,65 @@ func RunGeneratePipeline(ctx context.Context, completer llm.Completer, input Gen
 		PatternsExtracted: len(patterns),
 	}, nil
 }
+
+// RunExtractPipeline extracts migration patterns from input and returns them
+// as ExtractOutput JSON (no rule generation, no file writing).
+func RunExtractPipeline(ctx context.Context, completer llm.Completer, input GenerateInput) (*ExtractOutput, error) {
+	pipelineStart := time.Now()
+
+	// 1. Ingest
+	stepStart := time.Now()
+	ingested, err := ingestion.Ingest(ctx, input.Input, ingestion.DefaultMaxChunkSize)
+	if err != nil {
+		return nil, fmt.Errorf("ingestion: %w", err)
+	}
+	slog.Info("ingestion complete", "chunks", len(ingested.Chunks), "duration", time.Since(stepStart).Round(time.Millisecond))
+
+	// 1b. Auto-detect source/target/language if not provided
+	if input.Source == "" || input.Target == "" {
+		stepStart = time.Now()
+		detectTmpl, err := templates.Load("extraction/detect_metadata.tmpl")
+		if err != nil {
+			return nil, fmt.Errorf("loading detect template: %w", err)
+		}
+		content := ingested.Chunks[0]
+		meta, err := extraction.DetectMetadata(ctx, completer, detectTmpl, content)
+		if err != nil {
+			return nil, fmt.Errorf("auto-detection: %w", err)
+		}
+		if input.Source == "" {
+			input.Source = meta.Source
+		}
+		if input.Target == "" {
+			input.Target = meta.Target
+		}
+		if input.Language == "" {
+			input.Language = meta.Language
+		}
+		slog.Info("auto-detection complete", "source", input.Source, "target", input.Target, "language", input.Language, "duration", time.Since(stepStart).Round(time.Millisecond))
+	}
+
+	// 2. Extract patterns (LLM)
+	stepStart = time.Now()
+	slog.Info("extracting patterns", "chunks", len(ingested.Chunks))
+	extractTmpl, err := templates.Load("extraction/extract_patterns.tmpl")
+	if err != nil {
+		return nil, fmt.Errorf("loading extraction template: %w", err)
+	}
+	extractor := extraction.New(completer, extractTmpl)
+	patterns, err := extractor.Extract(ctx, ingested.Chunks, input.Source, input.Target, input.Language)
+	if err != nil {
+		return nil, fmt.Errorf("extraction: %w", err)
+	}
+	slog.Info("extraction complete", "patterns", len(patterns), "duration", time.Since(stepStart).Round(time.Millisecond))
+
+	slog.Info("extract pipeline complete", "total_duration", time.Since(pipelineStart).Round(time.Millisecond))
+
+	return &ExtractOutput{
+		Source:   input.Source,
+		Target:   input.Target,
+		Language: input.Language,
+		Patterns: patterns,
+	}, nil
+}
+

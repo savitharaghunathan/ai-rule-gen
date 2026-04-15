@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/konveyor/ai-rule-gen/internal/kantraparser"
 )
 
 func TestParseSummary(t *testing.T) {
@@ -22,7 +24,7 @@ func TestParseSummary(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			passed, total := parseSummary(tt.output)
+			passed, total := kantraparser.ParseSummary(tt.output)
 			if passed != tt.wantPass {
 				t.Errorf("passed = %d, want %d", passed, tt.wantPass)
 			}
@@ -65,7 +67,7 @@ spring-boot-00030  0/1  PASSED  find debug data in /tmp/b`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			failures := parseFailures(tt.output)
+			failures := kantraparser.ParseFailures(tt.output)
 			if len(failures) != len(tt.wantIDs) {
 				t.Fatalf("got %d failures, want %d", len(failures), len(tt.wantIDs))
 			}
@@ -80,7 +82,7 @@ spring-boot-00030  0/1  PASSED  find debug data in /tmp/b`,
 
 func TestParseFailures_DebugPath(t *testing.T) {
 	output := "golang-fips-00010  0/1  PASSED  find debug data in /tmp/kantra-debug-abc123"
-	failures := parseFailures(output)
+	failures := kantraparser.ParseFailures(output)
 	if len(failures) != 1 {
 		t.Fatalf("got %d failures, want 1", len(failures))
 	}
@@ -96,7 +98,7 @@ func TestFindTestFiles(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "not-test.yaml"), []byte("nope"), 0o644)
 	os.MkdirAll(filepath.Join(dir, "data"), 0o755)
 
-	files, err := findTestFiles(dir)
+	files, err := kantraparser.FindTestFiles(dir)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

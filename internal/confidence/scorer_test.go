@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/konveyor/ai-rule-gen/internal/kantraparser"
 )
 
 func TestParseSummary(t *testing.T) {
@@ -11,48 +13,48 @@ func TestParseSummary(t *testing.T) {
 		name       string
 		output     string
 		wantPassed int
-		wantFailed int
+		wantTotal  int
 	}{
 		{
 			name:       "all passed",
 			output:     "Rules Summary: 5/5 PASSED",
 			wantPassed: 5,
-			wantFailed: 0,
+			wantTotal:  5,
 		},
 		{
 			name:       "some failed",
 			output:     "some output\nRules Summary: 3/5 PASSED\nmore output",
 			wantPassed: 3,
-			wantFailed: 2,
+			wantTotal:  5,
 		},
 		{
 			name:       "none passed",
 			output:     "Rules Summary: 0/10 PASSED",
 			wantPassed: 0,
-			wantFailed: 10,
+			wantTotal:  10,
 		},
 		{
 			name:       "no summary line",
 			output:     "some random output with no summary",
 			wantPassed: 0,
-			wantFailed: 0,
+			wantTotal:  0,
 		},
 		{
 			name:       "empty output",
 			output:     "",
 			wantPassed: 0,
-			wantFailed: 0,
+			wantTotal:  0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			passed, failed := parseSummary(tt.output)
+			passed, total := kantraparser.ParseSummary(tt.output)
 			if passed != tt.wantPassed {
 				t.Errorf("passed = %d, want %d", passed, tt.wantPassed)
 			}
-			if failed != tt.wantFailed {
-				t.Errorf("failed = %d, want %d", failed, tt.wantFailed)
+			if total != tt.wantTotal {
+				t.Errorf("total = %d, want %d", total, tt.wantTotal)
 			}
 		})
 	}
@@ -90,18 +92,22 @@ spring-boot-00030  0/1  PASSED  find debug data in /tmp/b`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			failed := parseFailedRules(tt.output)
-			if tt.wantFail == nil && len(failed) != 0 {
-				t.Errorf("expected no failures, got %v", failed)
+			failures := kantraparser.ParseFailures(tt.output)
+			if tt.wantFail == nil && len(failures) != 0 {
+				t.Errorf("expected no failures, got %v", failures)
 				return
 			}
+			failedIDs := make(map[string]bool, len(failures))
+			for _, f := range failures {
+				failedIDs[f.RuleID] = true
+			}
 			for _, id := range tt.wantFail {
-				if _, ok := failed[id]; !ok {
+				if !failedIDs[id] {
 					t.Errorf("expected %s in failed rules", id)
 				}
 			}
-			if len(failed) != len(tt.wantFail) {
-				t.Errorf("got %d failures, want %d", len(failed), len(tt.wantFail))
+			if len(failures) != len(tt.wantFail) {
+				t.Errorf("got %d failures, want %d", len(failures), len(tt.wantFail))
 			}
 		})
 	}
@@ -288,7 +294,7 @@ func TestFindTestFiles(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "not-a-test.yaml"), []byte("nope"), 0o644)
 	os.MkdirAll(filepath.Join(dir, "data"), 0o755)
 
-	files, err := findTestFiles(dir)
+	files, err := kantraparser.FindTestFiles(dir)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

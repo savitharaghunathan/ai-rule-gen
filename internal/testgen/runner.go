@@ -6,10 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"time"
 
+	"github.com/konveyor/ai-rule-gen/internal/kantraparser"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,7 +36,7 @@ type FailureInfo struct {
 
 // RunKantraTests runs kantra test on all .test.yaml files in testsDir.
 func RunKantraTests(ctx context.Context, testsDir string, timeoutSeconds int) (*TestResult, error) {
-	testFiles, err := findTestFiles(testsDir)
+	testFiles, err := kantraparser.FindTestFiles(testsDir)
 	if err != nil {
 		return nil, fmt.Errorf("finding test files: %w", err)
 	}
@@ -68,8 +67,14 @@ func runKantraTest(ctx context.Context, testFiles []string, timeoutSeconds int) 
 		return nil, fmt.Errorf("kantra timed out after %d seconds", timeoutSeconds)
 	}
 
-	passed, total := parseSummary(output)
-	failures := parseFailures(output)
+	passed, total := kantraparser.ParseSummary(output)
+	kFailures := kantraparser.ParseFailures(output)
+
+	// Convert kantraparser.Failure to testgen.Failure
+	failures := make([]Failure, len(kFailures))
+	for i, f := range kFailures {
+		failures[i] = Failure{RuleID: f.RuleID, DebugPath: f.DebugPath}
+	}
 
 	// kantra returns non-zero when tests fail — only error if we can't parse anything
 	if runErr != nil && passed == 0 && total == 0 {
@@ -88,50 +93,6 @@ func runKantraTest(ctx context.Context, testFiles []string, timeoutSeconds int) 
 		Failures:  failures,
 		RawOutput: output,
 	}, nil
-}
-
-
-// findTestFiles returns .test.yaml/.test.yml files in a directory.
-func findTestFiles(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-	var files []string
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		if strings.HasSuffix(e.Name(), ".test.yaml") || strings.HasSuffix(e.Name(), ".test.yml") {
-			files = append(files, filepath.Join(dir, e.Name()))
-		}
-	}
-	return files, nil
-}
-
-var reSummary = regexp.MustCompile(`Rules Summary:\s+(\d+)/(\d+)`)
-var reFailure = regexp.MustCompile(`([\w-]+-\d{5})\s+0/\d+\s+PASSED(?:.*?find debug data in (/[^\s]+))?`)
-
-func parseSummary(output string) (passed, total int) {
-	m := reSummary.FindStringSubmatch(output)
-	if len(m) == 3 {
-		fmt.Sscanf(m[1], "%d", &passed)
-		fmt.Sscanf(m[2], "%d", &total)
-	}
-	return
-}
-
-func parseFailures(output string) []Failure {
-	var failures []Failure
-	matches := reFailure.FindAllStringSubmatch(output, -1)
-	for _, m := range matches {
-		f := Failure{RuleID: m[1]}
-		if len(m) > 2 {
-			f.DebugPath = m[2]
-		}
-		failures = append(failures, f)
-	}
-	return failures
 }
 
 // AnalyzeFailure reads kantra debug output to extract pattern and provider info.

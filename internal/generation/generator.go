@@ -33,7 +33,7 @@ type GenerateInput struct {
 
 // Generate converts migration patterns into validated rules.
 func (g *Generator) Generate(ctx context.Context, patterns []extraction.MigrationPattern, input GenerateInput) ([]rules.Rule, *rules.Ruleset, error) {
-	prefix := rulePrefix(input.Source, input.Target)
+	prefix := RulePrefix(input.Source, input.Target)
 	idGen := NewIDGenerator(prefix)
 
 	var ruleList []rules.Rule
@@ -68,15 +68,15 @@ func (g *Generator) patternToRule(ctx context.Context, p extraction.MigrationPat
 
 	return rules.Rule{
 		RuleID:      idGen.Next(),
-		Description: truncate(p.Rationale, 120),
+		Description: Truncate(p.Rationale, 120),
 		Category:    rules.Category(p.Category),
-		Effort:      complexityToEffort(p.Complexity),
+		Effort:      ComplexityToEffort(p.Complexity),
 		Labels: rules.InitialLabels([]string{
 			fmt.Sprintf("konveyor.io/source=%s", input.Source),
 			fmt.Sprintf("konveyor.io/target=%s", input.Target),
 		}),
 		Message: message,
-		Links:   buildLinks(p),
+		Links:   BuildLinks(p),
 		When:    condition,
 	}, nil
 }
@@ -115,7 +115,7 @@ func buildSingleCondition(p extraction.MigrationPattern) rules.Condition {
 
 	switch condType {
 	case "java.referenced":
-		pattern = ensureJavaPatternMatchable(pattern)
+		pattern = EnsureJavaPatternMatchable(pattern)
 		return rules.NewJavaReferenced(pattern, p.LocationType)
 	case "java.dependency":
 		name := p.DependencyName
@@ -182,7 +182,8 @@ func (g *Generator) generateMessage(ctx context.Context, p extraction.MigrationP
 	return g.completer.Complete(ctx, buf.String())
 }
 
-func buildLinks(p extraction.MigrationPattern) []rules.Link {
+// BuildLinks creates documentation links from a MigrationPattern.
+func BuildLinks(p extraction.MigrationPattern) []rules.Link {
 	if p.DocumentationURL == "" {
 		return nil
 	}
@@ -192,7 +193,8 @@ func buildLinks(p extraction.MigrationPattern) []rules.Link {
 	}}
 }
 
-func complexityToEffort(complexity string) int {
+// ComplexityToEffort converts a complexity string to an effort integer (1-10).
+func ComplexityToEffort(complexity string) int {
 	switch strings.ToLower(complexity) {
 	case "trivial":
 		return 1
@@ -209,24 +211,26 @@ func complexityToEffort(complexity string) int {
 	}
 }
 
-func rulePrefix(source, target string) string {
-	s := sanitize(source)
-	t := sanitize(target)
+// RulePrefix generates a rule ID prefix from source and target technologies.
+func RulePrefix(source, target string) string {
+	s := Sanitize(source)
+	t := Sanitize(target)
 	return fmt.Sprintf("%s-to-%s", s, t)
 }
 
-func sanitize(s string) string {
+// Sanitize lowercases and replaces spaces/slashes with hyphens.
+func Sanitize(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")
 	s = strings.ReplaceAll(s, "/", "-")
 	return s
 }
 
-// ensureJavaPatternMatchable appends a wildcard to package-level patterns
+// EnsureJavaPatternMatchable appends a wildcard to package-level patterns
 // that would otherwise not match any specific class. The analyzer requires
 // "javax.xml.bind*" (with wildcard) to match classes like javax.xml.bind.JAXBContext.
 // A bare "javax.xml.bind" only matches an exact reference to the package itself.
-func ensureJavaPatternMatchable(pattern string) string {
+func EnsureJavaPatternMatchable(pattern string) string {
 	if pattern == "" || strings.HasSuffix(pattern, "*") {
 		return pattern
 	}
@@ -245,7 +249,8 @@ func ensureJavaPatternMatchable(pattern string) string {
 	return pattern + "*"
 }
 
-func truncate(s string, max int) string {
+// Truncate shortens a string to max length, adding "..." if truncated.
+func Truncate(s string, max int) string {
 	if len(s) <= max {
 		return s
 	}

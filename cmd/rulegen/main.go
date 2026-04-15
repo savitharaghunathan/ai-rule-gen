@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/url"
 	"os"
@@ -127,9 +128,34 @@ func main() {
 	pipelineCmd.Flags().StringVar(&pipProvider, "provider", "", "LLM provider: anthropic, openai, gemini, ollama")
 	pipelineCmd.Flags().IntVar(&pipMaxIterations, "max-iterations", 3, "Max test-fix iterations")
 
+	var constInput, constOutput string
+	constructCmd := &cobra.Command{
+		Use:   "construct",
+		Short: "Construct validated rule YAML from JSON input (no LLM needed)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runConstruct(constInput, constOutput)
+		},
+	}
+	constructCmd.Flags().StringVar(&constInput, "input", "-", "Path to JSON input file, or \"-\" for stdin")
+	constructCmd.Flags().StringVar(&constOutput, "output", "output", "Output directory path")
+
+	var extInput, extSource, extTarget, extLanguage, extProvider string
+	extractCmd := &cobra.Command{
+		Use:   "extract",
+		Short: "Extract migration patterns from a document and output ConstructInput JSON",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runExtract(extInput, extSource, extTarget, extLanguage, extProvider)
+		},
+	}
+	extractCmd.Flags().StringVar(&extInput, "input", "", "URL, file path, or text content to extract patterns from")
+	extractCmd.Flags().StringVar(&extSource, "source", "", "Source technology (e.g., spring-boot-3)")
+	extractCmd.Flags().StringVar(&extTarget, "target", "", "Target technology (e.g., spring-boot-4)")
+	extractCmd.Flags().StringVar(&extLanguage, "language", "", "Programming language (java, go, nodejs, csharp)")
+	extractCmd.Flags().StringVar(&extProvider, "provider", "", "LLM provider: anthropic, openai, gemini, ollama")
+
 	rootCmd.PersistentFlags().BoolVar(&experimental, "experimental", false, "Enable experimental commands (score)")
 
-	rootCmd.AddCommand(serveCmd, generateCmd, validateCmd, testCmd, pipelineCmd)
+	rootCmd.AddCommand(serveCmd, generateCmd, validateCmd, testCmd, pipelineCmd, constructCmd, extractCmd)
 
 	// Experimental commands — hidden unless --experimental is set
 	scoreCmd.Hidden = true
@@ -269,13 +295,97 @@ func runValidate(rulesPath string) error {
 	return nil
 }
 
+func runConstruct(input, output string) error {
+	var data []byte
+	var err error
+
+	if input == "-" || input == "" {
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("reading stdin: %w", err)
+		}
+	} else {
+		data, err = os.ReadFile(input)
+		if err != nil {
+			return fmt.Errorf("reading input file %s: %w", input, err)
+		}
+	}
+
+	if len(data) == 0 {
+		return fmt.Errorf("empty input")
+	}
+
+	result, err := tools.ConstructRules(data, output)
+	if err != nil {
+		if result != nil {
+			printResult(result)
+		}
+		return err
+	}
+
+	printResult(result)
+	return nil
+}
+
+func runExtract(input, source, target, language, provider string) error {
+	if input == "" {
+		return fmt.Errorf("--input is required")
+	}
+
+	providerName := resolveProvider(provider)
+	completer, err := llm.NewCompleter(providerName)
+	if err != nil {
+		return fmt.Errorf("LLM configuration error: %v", err)
+	}
+	if completer == nil {
+		return fmt.Errorf("--provider is required (anthropic, openai, gemini, ollama)")
+	}
+
+	slog.Info("starting extraction",
+		"input_type", describeInput(input),
+		"source", source,
+		"target", target,
+		"language", language,
+		"provider", providerName,
+	)
+
+	ctx, cancel := signalContext()
+	defer cancel()
+
+	ci, err := tools.RunExtractPipeline(ctx, completer, tools.GenerateInput{
+		Input:    input,
+		Source:   source,
+		Target:   target,
+		Language: language,
+	})
+	if err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(ci, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling result: %w", err)
+	}
+	fmt.Println(string(data))
+	return nil
+}
+
+func printResult(v any) {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error marshaling JSON: %v\n", err)
+		return
+	}
+	fmt.Println(string(data))
+}
+
 func runTest(rulesDir, outputDir, language, source, target, provider string, maxIterations int) error {
 	if rulesDir == "" {
 		return fmt.Errorf("--rules is required")
 	}
 	if outputDir == "" {
 		// Infer output dir: go up from rules/ to parent
-		outputDir = fmt.Sprintf("%s/..", rulesDir)
+		outputDir = filepath.Dir(filepath.Clean(rulesDir))
 	}
 
 	providerName := resolveProvider(provider)
@@ -542,12 +652,17 @@ func runPipeline(input, source, target, language, output, provider string, maxIt
 	}
 
 	// Print summary
+	var testPassed, testTotal int
+	if testResult.TestResult != nil {
+		testPassed = testResult.TestResult.Passed
+		testTotal = testResult.TestResult.Total
+	}
 	summary := map[string]any{
 		"output":      genResult.OutputPath,
 		"rules":       genResult.RuleCount,
 		"patterns":    genResult.PatternsExtracted,
-		"test_passed": testResult.TestResult.Passed,
-		"test_total":  testResult.TestResult.Total,
+		"test_passed": testPassed,
+		"test_total":  testTotal,
 		"iterations":  testResult.Iterations,
 	}
 	data, err := json.MarshalIndent(summary, "", "  ")

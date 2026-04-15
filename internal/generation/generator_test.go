@@ -56,12 +56,12 @@ func TestComplexityToEffort(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := complexityToEffort(tt.complexity)
+		got := ComplexityToEffort(tt.complexity)
 		if got != tt.want {
-			t.Errorf("complexityToEffort(%q): got %d, want %d", tt.complexity, got, tt.want)
+			t.Errorf("ComplexityToEffort(%q): got %d, want %d", tt.complexity, got, tt.want)
 		}
 		if got < 1 || got > 10 {
-			t.Errorf("complexityToEffort(%q): %d outside range 1-10", tt.complexity, got)
+			t.Errorf("ComplexityToEffort(%q): %d outside range 1-10", tt.complexity, got)
 		}
 	}
 }
@@ -232,9 +232,9 @@ func TestRulePrefix(t *testing.T) {
 		{"Spring Boot", "Quarkus", "spring-boot-to-quarkus"},
 	}
 	for _, tt := range tests {
-		got := rulePrefix(tt.source, tt.target)
+		got := RulePrefix(tt.source, tt.target)
 		if got != tt.want {
-			t.Errorf("rulePrefix(%q, %q): got %q, want %q", tt.source, tt.target, got, tt.want)
+			t.Errorf("RulePrefix(%q, %q): got %q, want %q", tt.source, tt.target, got, tt.want)
 		}
 	}
 }
@@ -359,7 +359,7 @@ func TestBuildSingleCondition_FallsBackToSourcePattern(t *testing.T) {
 	}
 }
 
-// ---------- ensureJavaPatternMatchable ----------
+// ---------- EnsureJavaPatternMatchable ----------
 
 func TestEnsureJavaPatternMatchable_PackageLevel(t *testing.T) {
 	// All-lowercase package prefix → should get wildcard appended
@@ -371,9 +371,9 @@ func TestEnsureJavaPatternMatchable_PackageLevel(t *testing.T) {
 		{"com.example.service", "com.example.service*"},
 	}
 	for _, tt := range tests {
-		got := ensureJavaPatternMatchable(tt.input)
+		got := EnsureJavaPatternMatchable(tt.input)
 		if got != tt.want {
-			t.Errorf("ensureJavaPatternMatchable(%q) = %q, want %q", tt.input, got, tt.want)
+			t.Errorf("EnsureJavaPatternMatchable(%q) = %q, want %q", tt.input, got, tt.want)
 		}
 	}
 }
@@ -386,65 +386,65 @@ func TestEnsureJavaPatternMatchable_ClassLevel(t *testing.T) {
 		"javax.xml.bind.JAXBContext",
 	}
 	for _, input := range tests {
-		got := ensureJavaPatternMatchable(input)
+		got := EnsureJavaPatternMatchable(input)
 		if got != input {
-			t.Errorf("ensureJavaPatternMatchable(%q) = %q, want unchanged", input, got)
+			t.Errorf("EnsureJavaPatternMatchable(%q) = %q, want unchanged", input, got)
 		}
 	}
 }
 
 func TestEnsureJavaPatternMatchable_WildcardAlreadyPresent(t *testing.T) {
 	input := "javax.ejb*"
-	got := ensureJavaPatternMatchable(input)
+	got := EnsureJavaPatternMatchable(input)
 	if got != input {
-		t.Errorf("ensureJavaPatternMatchable(%q) = %q, want unchanged", input, got)
+		t.Errorf("EnsureJavaPatternMatchable(%q) = %q, want unchanged", input, got)
 	}
 }
 
 func TestEnsureJavaPatternMatchable_Empty(t *testing.T) {
-	got := ensureJavaPatternMatchable("")
+	got := EnsureJavaPatternMatchable("")
 	if got != "" {
-		t.Errorf("ensureJavaPatternMatchable(%q) = %q, want empty", "", got)
+		t.Errorf("EnsureJavaPatternMatchable(%q) = %q, want empty", "", got)
 	}
 }
 
 func TestEnsureJavaPatternMatchable_MethodSignature(t *testing.T) {
 	// Contains parens → leave as-is
 	input := "javax.ejb.Stateless.create()"
-	got := ensureJavaPatternMatchable(input)
+	got := EnsureJavaPatternMatchable(input)
 	if got != input {
-		t.Errorf("ensureJavaPatternMatchable(%q) = %q, want unchanged", input, got)
+		t.Errorf("EnsureJavaPatternMatchable(%q) = %q, want unchanged", input, got)
 	}
 }
 
-// ---------- truncate ----------
+// ---------- Truncate ----------
 
 func TestTruncate_ShortString(t *testing.T) {
-	got := truncate("hello", 10)
+	got := Truncate("hello", 10)
 	if got != "hello" {
-		t.Errorf("truncate(%q, 10) = %q, want %q", "hello", got, "hello")
+		t.Errorf("Truncate(%q, 10) = %q, want %q", "hello", got, "hello")
 	}
 }
 
 func TestTruncate_ExactLength(t *testing.T) {
-	got := truncate("hello", 5)
+	got := Truncate("hello", 5)
 	if got != "hello" {
-		t.Errorf("truncate(%q, 5) = %q, want %q", "hello", got, "hello")
+		t.Errorf("Truncate(%q, 5) = %q, want %q", "hello", got, "hello")
 	}
 }
 
 func TestTruncate_LongString(t *testing.T) {
-	got := truncate("hello world", 8)
+	got := Truncate("hello world", 8)
 	if got != "hello..." {
-		t.Errorf("truncate(%q, 8) = %q, want %q", "hello world", got, "hello...")
+		t.Errorf("Truncate(%q, 8) = %q, want %q", "hello world", got, "hello...")
 	}
 }
 
-// ---------- buildLinks ----------
+// ---------- BuildLinks ----------
 
 func TestBuildLinks_WithURL(t *testing.T) {
 	p := extraction.MigrationPattern{DocumentationURL: "https://spring.io/migration"}
-	links := buildLinks(p)
+	links := BuildLinks(p)
 	if len(links) != 1 {
 		t.Fatalf("expected 1 link, got %d", len(links))
 	}
@@ -455,7 +455,7 @@ func TestBuildLinks_WithURL(t *testing.T) {
 
 func TestBuildLinks_NoURL(t *testing.T) {
 	p := extraction.MigrationPattern{}
-	links := buildLinks(p)
+	links := BuildLinks(p)
 	if links != nil {
 		t.Errorf("expected nil links for empty URL, got %v", links)
 	}

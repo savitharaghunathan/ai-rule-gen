@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/konveyor/ai-rule-gen/internal/extraction"
+	"github.com/konveyor/ai-rule-gen/internal/generation"
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"gopkg.in/yaml.v3"
@@ -233,6 +235,27 @@ func TestBuildConditionFromInput_BuiltinXML(t *testing.T) {
 	}
 	if c.BuiltinXML == nil {
 		t.Fatal("expected builtin.xml condition")
+	}
+}
+
+func TestBuildConditionFromInput_BuiltinXML_WithNamespacesAndFilepaths(t *testing.T) {
+	c, err := buildConditionFromInput(constructRuleInput{
+		ConditionType: "builtin.xml",
+		XPath:         "//m:project/m:parent/m:groupId[text()='org.springframework.boot']",
+		Namespaces:    map[string]string{"m": "http://maven.apache.org/POM/4.0.0"},
+		Filepaths:     []string{"pom.xml"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.BuiltinXML == nil {
+		t.Fatal("expected builtin.xml condition")
+	}
+	if len(c.BuiltinXML.Namespaces) != 1 || c.BuiltinXML.Namespaces["m"] != "http://maven.apache.org/POM/4.0.0" {
+		t.Errorf("namespaces = %v", c.BuiltinXML.Namespaces)
+	}
+	if len(c.BuiltinXML.Filepaths) != 1 || c.BuiltinXML.Filepaths[0] != "pom.xml" {
+		t.Errorf("filepaths = %v", c.BuiltinXML.Filepaths)
 	}
 }
 
@@ -683,3 +706,390 @@ func TestErrorResult(t *testing.T) {
 		t.Errorf("text = %q, want %q", tc.Text, "something went wrong")
 	}
 }
+
+// ---------- ConstructRules ----------
+
+func TestConstructRules_ValidWithRuleset(t *testing.T) {
+	dir := t.TempDir()
+	input := `{
+		"ruleset": {"name": "java8-to-java17", "description": "Java 8 to 17 migration", "labels": ["konveyor.io/source=java8", "konveyor.io/target=java17"]},
+		"rules": [{
+			"ruleID": "java8-00010",
+			"condition_type": "java.referenced",
+			"pattern": "javax.xml.bind.JAXBContext",
+			"location": "IMPORT",
+			"message": "Replace javax.xml.bind with jakarta.xml.bind",
+			"category": "mandatory",
+			"effort": 3,
+			"labels": ["konveyor.io/source=java8", "konveyor.io/target=java17"]
+		}]
+	}`
+	result, err := ConstructRules([]byte(input), dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.RuleCount != 1 {
+		t.Errorf("rule_count = %d, want 1", result.RuleCount)
+	}
+	if len(result.FilesWritten) != 2 {
+		t.Errorf("files_written = %d, want 2", len(result.FilesWritten))
+	}
+	// Verify YAML is parseable
+	rulesPath := filepath.Join(dir, "rules", "rules.yaml")
+	data, err := os.ReadFile(rulesPath)
+	if err != nil {
+		t.Fatalf("cannot read rules.yaml: %v", err)
+	}
+	var ruleList []rules.Rule
+	if err := yaml.Unmarshal(data, &ruleList); err != nil {
+		t.Fatalf("cannot parse rules.yaml: %v", err)
+	}
+	if len(ruleList) != 1 {
+		t.Errorf("parsed %d rules, want 1", len(ruleList))
+	}
+	// Verify ruleset exists
+	rulesetPath := filepath.Join(dir, "rules", "ruleset.yaml")
+	if _, err := os.Stat(rulesetPath); err != nil {
+		t.Errorf("ruleset.yaml should exist: %v", err)
+	}
+}
+
+func TestConstructRules_ValidNoRuleset(t *testing.T) {
+	dir := t.TempDir()
+	input := `{
+		"rules": [{
+			"ruleID": "go-fips-00010",
+			"condition_type": "go.referenced",
+			"pattern": "crypto/md5",
+			"message": "Use FIPS-approved crypto",
+			"category": "mandatory",
+			"effort": 3,
+			"labels": ["konveyor.io/source=go", "konveyor.io/target=go-fips"]
+		}]
+	}`
+	result, err := ConstructRules([]byte(input), dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.FilesWritten) != 1 {
+		t.Errorf("files_written = %d, want 1", len(result.FilesWritten))
+	}
+	rulesetPath := filepath.Join(dir, "rules", "ruleset.yaml")
+	if _, err := os.Stat(rulesetPath); !os.IsNotExist(err) {
+		t.Error("ruleset.yaml should not exist when no ruleset provided")
+	}
+}
+
+func TestConstructRules_MultipleRules(t *testing.T) {
+	dir := t.TempDir()
+	input := `{
+		"rules": [
+			{"ruleID": "r-00010", "condition_type": "go.referenced", "pattern": "crypto/md5", "message": "msg1", "category": "mandatory", "effort": 3, "labels": ["konveyor.io/source=a", "konveyor.io/target=b"]},
+			{"ruleID": "r-00020", "condition_type": "go.referenced", "pattern": "crypto/sha1", "message": "msg2", "category": "mandatory", "effort": 3, "labels": ["konveyor.io/source=a", "konveyor.io/target=b"]}
+		]
+	}`
+	result, err := ConstructRules([]byte(input), dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.RuleCount != 2 {
+		t.Errorf("rule_count = %d, want 2", result.RuleCount)
+	}
+}
+
+func TestConstructRules_ValidationFailure(t *testing.T) {
+	dir := t.TempDir()
+	input := `{
+		"rules": [{
+			"ruleID": "bad-rule",
+			"condition_type": "go.referenced",
+			"pattern": "crypto/md5",
+			"message": "msg",
+			"category": "invalid-category",
+			"effort": 3,
+			"labels": ["konveyor.io/source=a", "konveyor.io/target=b"]
+		}]
+	}`
+	result, err := ConstructRules([]byte(input), dir)
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+	if result == nil {
+		t.Fatal("expected non-nil result with validation errors")
+	}
+	if result.Validation.Valid {
+		t.Error("expected Valid=false")
+	}
+}
+
+func TestConstructRules_EmptyRules(t *testing.T) {
+	dir := t.TempDir()
+	_, err := ConstructRules([]byte(`{"rules":[]}`), dir)
+	if err == nil {
+		t.Error("expected error for empty rules")
+	}
+}
+
+func TestConstructRules_InvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	_, err := ConstructRules([]byte(`{not valid`), dir)
+	if err == nil {
+		t.Error("expected error for invalid JSON")
+	}
+}
+
+func TestConstructRules_MissingRequiredFields(t *testing.T) {
+	dir := t.TempDir()
+	// Missing ruleID
+	_, err := ConstructRules([]byte(`{"rules":[{"condition_type":"go.referenced","pattern":"x","message":"m","category":"mandatory","effort":1,"labels":["konveyor.io/source=a","konveyor.io/target=b"]}]}`), dir)
+	if err == nil {
+		t.Error("expected error for missing ruleID")
+	}
+	// Missing condition_type
+	_, err = ConstructRules([]byte(`{"rules":[{"ruleID":"r-001","pattern":"x","message":"m","category":"mandatory","effort":1,"labels":["konveyor.io/source=a","konveyor.io/target=b"]}]}`), dir)
+	if err == nil {
+		t.Error("expected error for missing condition_type")
+	}
+}
+
+// ---------- ConstructRules with ExtractOutput format ----------
+
+func TestConstructRules_ExtractOutputFormat(t *testing.T) {
+	dir := t.TempDir()
+	input := `{
+		"source": "java8",
+		"target": "java17",
+		"language": "java",
+		"patterns": [{
+			"source_pattern": "javax.xml.bind usage",
+			"source_fqn": "javax.xml.bind",
+			"location_type": "IMPORT",
+			"condition_type": "java.referenced",
+			"rationale": "javax.xml.bind module removed in Java 11+",
+			"complexity": "medium",
+			"category": "mandatory"
+		}]
+	}`
+	result, err := ConstructRules([]byte(input), dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.RuleCount != 1 {
+		t.Errorf("rule_count = %d, want 1", result.RuleCount)
+	}
+	// Should have both rules.yaml and ruleset.yaml (auto-generated from source/target)
+	if len(result.FilesWritten) != 2 {
+		t.Errorf("files_written = %d, want 2", len(result.FilesWritten))
+	}
+	// Verify the rules YAML is valid
+	rulesPath := filepath.Join(dir, "rules", "rules.yaml")
+	data, err := os.ReadFile(rulesPath)
+	if err != nil {
+		t.Fatalf("cannot read rules.yaml: %v", err)
+	}
+	var ruleList []rules.Rule
+	if err := yaml.Unmarshal(data, &ruleList); err != nil {
+		t.Fatalf("cannot parse rules.yaml: %v", err)
+	}
+	if len(ruleList) != 1 {
+		t.Fatalf("parsed %d rules, want 1", len(ruleList))
+	}
+	r := ruleList[0]
+	if !strings.HasPrefix(r.RuleID, "java8-to-java17-") {
+		t.Errorf("ruleID = %q, want prefix 'java8-to-java17-'", r.RuleID)
+	}
+	if r.When.JavaReferenced == nil {
+		t.Fatal("expected java.referenced condition")
+	}
+	// Package-level pattern should get wildcard appended
+	if r.When.JavaReferenced.Pattern != "javax.xml.bind*" {
+		t.Errorf("pattern = %q, want 'javax.xml.bind*'", r.When.JavaReferenced.Pattern)
+	}
+	if r.Effort != 5 {
+		t.Errorf("effort = %d, want 5 (medium complexity)", r.Effort)
+	}
+}
+
+func TestConstructRules_ExtractOutputFormat_EmptyPatterns(t *testing.T) {
+	dir := t.TempDir()
+	_, err := ConstructRules([]byte(`{"source":"a","target":"b","patterns":[]}`), dir)
+	if err == nil {
+		t.Error("expected error for empty patterns")
+	}
+}
+
+// ---------- convertPatternsToRules ----------
+
+func TestConvertPatternsToRules_JavaReferenced(t *testing.T) {
+	ext := &ExtractOutput{
+		Source:   "java8",
+		Target:   "java17",
+		Language: "java",
+		Patterns: []extraction.MigrationPattern{{
+			SourcePattern: "javax.ejb.Stateless annotation",
+			SourceFQN:     "javax.ejb.Stateless",
+			LocationType:  "ANNOTATION",
+			ConditionType: "java.referenced",
+			Rationale:     "EJB @Stateless removed in Jakarta EE 10",
+			Complexity:    "medium",
+			Category:      "mandatory",
+		}},
+	}
+	ci := convertPatternsToRules(ext)
+	if len(ci.Rules) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(ci.Rules))
+	}
+	r := ci.Rules[0]
+	if r.ConditionType != "java.referenced" {
+		t.Errorf("condition_type = %q", r.ConditionType)
+	}
+	// Stateless has an uppercase segment — should NOT get wildcard
+	if r.Pattern != "javax.ejb.Stateless" {
+		t.Errorf("pattern = %q, want 'javax.ejb.Stateless'", r.Pattern)
+	}
+	if r.Location != "ANNOTATION" {
+		t.Errorf("location = %q", r.Location)
+	}
+	if r.Effort != 5 {
+		t.Errorf("effort = %d, want 5", r.Effort)
+	}
+	if !strings.HasPrefix(r.RuleID, "java8-to-java17-") {
+		t.Errorf("ruleID = %q", r.RuleID)
+	}
+}
+
+func TestConvertPatternsToRules_GoDependency(t *testing.T) {
+	ext := &ExtractOutput{
+		Source: "go1.18", Target: "go1.22", Language: "go",
+		Patterns: []extraction.MigrationPattern{{
+			SourcePattern:  "gin dependency",
+			ConditionType:  "go.dependency",
+			DependencyName: "github.com/gin-gonic/gin",
+			DepLowerbound:  "1.0.0",
+			DepUpperbound:  "2.0.0",
+			Rationale:      "Upgrade gin",
+			Complexity:     "low",
+			Category:       "mandatory",
+		}},
+	}
+	ci := convertPatternsToRules(ext)
+	r := ci.Rules[0]
+	if r.Name != "github.com/gin-gonic/gin" {
+		t.Errorf("name = %q", r.Name)
+	}
+	if r.Lowerbound != "1.0.0" {
+		t.Errorf("lowerbound = %q", r.Lowerbound)
+	}
+	if r.Upperbound != "2.0.0" {
+		t.Errorf("upperbound = %q", r.Upperbound)
+	}
+	if r.Effort != 3 {
+		t.Errorf("effort = %d, want 3 (low complexity)", r.Effort)
+	}
+}
+
+func TestConvertPatternsToRules_IDGeneration(t *testing.T) {
+	ext := &ExtractOutput{
+		Source: "a", Target: "b",
+		Patterns: []extraction.MigrationPattern{
+			{SourcePattern: "p1", ConditionType: "go.referenced", SourceFQN: "x", Rationale: "r", Complexity: "low", Category: "mandatory"},
+			{SourcePattern: "p2", ConditionType: "go.referenced", SourceFQN: "y", Rationale: "r", Complexity: "low", Category: "mandatory"},
+			{SourcePattern: "p3", ConditionType: "go.referenced", SourceFQN: "z", Rationale: "r", Complexity: "low", Category: "mandatory"},
+		},
+	}
+	ci := convertPatternsToRules(ext)
+	expected := []string{"a-to-b-00010", "a-to-b-00020", "a-to-b-00030"}
+	for i, want := range expected {
+		if ci.Rules[i].RuleID != want {
+			t.Errorf("rules[%d].ruleID = %q, want %q", i, ci.Rules[i].RuleID, want)
+		}
+	}
+}
+
+func TestConvertPatternsToRules_DefaultConditionType(t *testing.T) {
+	ext := &ExtractOutput{
+		Source: "a", Target: "b",
+		Patterns: []extraction.MigrationPattern{{
+			SourcePattern: "some pattern",
+			SourceFQN:     "some.Pattern",
+			ProviderType:  "java",
+			Rationale:     "reason",
+			Complexity:    "low",
+			Category:      "mandatory",
+		}},
+	}
+	ci := convertPatternsToRules(ext)
+	if ci.Rules[0].ConditionType != "java.referenced" {
+		t.Errorf("condition_type = %q, want 'java.referenced' (from ProviderType fallback)", ci.Rules[0].ConditionType)
+	}
+}
+
+func TestConvertPatternsToRules_Labels(t *testing.T) {
+	ext := &ExtractOutput{
+		Source: "spring-boot-3", Target: "spring-boot-4",
+		Patterns: []extraction.MigrationPattern{{
+			SourcePattern: "p", SourceFQN: "p", ConditionType: "java.referenced",
+			Rationale: "r", Complexity: "low", Category: "mandatory",
+		}},
+	}
+	ci := convertPatternsToRules(ext)
+	r := ci.Rules[0]
+	// Should have 5 labels: source, target, generated-by, test-result, review
+	if len(r.Labels) != 5 {
+		t.Fatalf("labels count = %d, want 5; got %v", len(r.Labels), r.Labels)
+	}
+	if r.Labels[0] != "konveyor.io/source=spring-boot-3" {
+		t.Errorf("labels[0] = %q", r.Labels[0])
+	}
+	if r.Labels[1] != "konveyor.io/target=spring-boot-4" {
+		t.Errorf("labels[1] = %q", r.Labels[1])
+	}
+	// Verify generated-by label is present
+	found := false
+	for _, l := range r.Labels {
+		if l == "konveyor.io/generated-by=ai-rule-gen" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("missing generated-by label; got %v", r.Labels)
+	}
+}
+
+func TestConvertPatternsToRules_Links(t *testing.T) {
+	ext := &ExtractOutput{
+		Source: "a", Target: "b",
+		Patterns: []extraction.MigrationPattern{{
+			SourcePattern:    "p", SourceFQN: "p", ConditionType: "go.referenced",
+			Rationale:        "r", Complexity: "low", Category: "mandatory",
+			DocumentationURL: "https://example.com/migration",
+		}},
+	}
+	ci := convertPatternsToRules(ext)
+	if len(ci.Rules[0].Links) != 1 {
+		t.Fatalf("expected 1 link, got %d", len(ci.Rules[0].Links))
+	}
+	if ci.Rules[0].Links[0].URL != "https://example.com/migration" {
+		t.Errorf("link URL = %q", ci.Rules[0].Links[0].URL)
+	}
+}
+
+func TestConvertPatternsToRules_Ruleset(t *testing.T) {
+	ext := &ExtractOutput{Source: "java8", Target: "java17"}
+	ci := convertPatternsToRules(ext)
+	if ci.Ruleset == nil {
+		t.Fatal("expected ruleset to be generated")
+	}
+	if ci.Ruleset.Name != "java17/java8" {
+		t.Errorf("ruleset.name = %q", ci.Ruleset.Name)
+	}
+}
+
+// Ensure generation package exports work (compile-time check)
+var _ = generation.ComplexityToEffort
+var _ = generation.Truncate
+var _ = generation.EnsureJavaPatternMatchable
+var _ = generation.RulePrefix
+var _ = generation.Sanitize
+var _ = generation.BuildLinks
