@@ -109,7 +109,8 @@ go run ./cmd/validate --rules <rules-dir>
 If validation fails, fix the patterns.json and re-run construct. Common issues:
 - Missing `source_fqn` → the rule condition has no pattern to match
 - Invalid `location_type` → not one of the 14 valid Java locations
-- Invalid regex in `file_pattern` → fix the regex syntax
+- Invalid regex in `file_pattern` → `file_pattern` must be valid Go regex, NOT glob syntax. Use `.*\\.properties` not `*.properties`
+- Duplicate `source_fqn` → same FQN appears in multiple patterns. Merge them into one
 
 ### 8. Return
 

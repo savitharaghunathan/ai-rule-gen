@@ -11,6 +11,16 @@ Generate Konveyor analyzer migration rules from a migration guide.
 
 If no argument is provided, ask the user for the migration guide source.
 
+## Progress Updates
+
+Print a short status line at the start and end of every major step so the user can follow along. Use this format:
+
+```
+--- Step N: <title> ---
+```
+
+At key milestones, print a one-line summary of what was produced (e.g., pattern count, rule count, test group count, pass/fail counts). The user should never wait more than a few seconds without visible output.
+
 ## Workspace Setup
 
 Create an output directory for this run:
@@ -31,6 +41,8 @@ Determine the input type and ingest:
 
 Read the ingested guide content before proceeding.
 
+Print: `Guide ingested: output/guide.md (<N> lines)`
+
 ## Step 1: Rule Writer
 
 Delegate to the **rule-writer** skill (`agents/rule-writer/SKILL.md`).
@@ -42,7 +54,21 @@ Provide:
 
 The rule-writer extracts patterns, writes `patterns.json`, constructs rule YAML, and validates.
 
-## Step 2: Test Generator
+Print: `Extracted <N> patterns → <M> rule files in output/rules/`
+
+## Step 2: Test & Validate (optional)
+
+After rule generation, ask the user:
+
+> **N rules generated in `output/rules/`. Do you want to generate tests and run kantra validation?**
+> 1. Yes — generate tests and validate with kantra
+> 2. Skip — finalize with rules only (no test data, no kantra)
+
+If the user chooses **Skip**, jump directly to **Step 5: Finalize** (stamp all rules as `untested`, skip the report or generate it with `passed: 0, failed: 0`).
+
+If the user chooses **Yes**, continue with Steps 2a–4.
+
+### Step 2a: Test Generator
 
 Delegate to the **test-generator** skill (`agents/test-generator/SKILL.md`).
 
@@ -52,7 +78,9 @@ Provide:
 
 The test-generator scaffolds test structure, generates test source code, resolves dependencies, and sanitizes XML.
 
-## Step 3: Rule Validator
+Print: `Test data generated: <N> groups across <M> test files`
+
+### Step 2b: Rule Validator
 
 Delegate to the **rule-validator** skill (`agents/rule-validator/SKILL.md`).
 
@@ -62,7 +90,9 @@ Provide:
 
 The rule-validator runs kantra, parses results, and returns pass/fail status with fix hints for failures.
 
-## Step 4: Fix Loop (max 3 iterations)
+Print: `Kantra results: <P>/<T> passed`
+
+## Step 3: Fix Loop (max 3 iterations)
 
 If the rule-validator reports failures and iterations remain:
 
@@ -72,9 +102,13 @@ If the rule-validator reports failures and iterations remain:
 
 2. Delegate back to the **rule-validator** to re-test
 
-3. Repeat until all pass or 3 iterations exhausted
+3. Print: `Fix iteration <I>: <P>/<T> passed`
 
-## Step 5: Finalize
+4. Repeat until all pass or 3 iterations exhausted
+
+**Rule integrity:** If a test fails because the test data can't properly trigger the rule, fix the test data — NEVER change the rule's condition type or pattern. If the test still fails after fixing test data, mark the rule as failed.
+
+## Step 4: Finalize
 
 ```bash
 # Stamp pass/fail labels on rules
@@ -91,10 +125,12 @@ go run ./cmd/report \
   --failed-rules <comma-separated-failing-ids>
 ```
 
-## Step 6: Report to User
+If tests were skipped, stamp all rules as `untested` and generate the report with test counts set to 0.
+
+## Step 5: Report to User
 
 Present:
 - Number of rules generated
-- Test pass rate (passed/total)
+- Test pass rate (passed/total), or "tests skipped" if the user chose to skip
 - List of any failing rules with their patterns
-- Paths to output files: `output/rules/`, `output/tests/`, `output/report.yaml`
+- Paths to output files: `output/rules/`, `output/tests/` (if generated), `output/report.yaml`

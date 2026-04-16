@@ -32,19 +32,15 @@ If Go provider is detected: kantra v0.9.0-alpha.6 container does NOT include a G
 
 ### 3. Run kantra tests
 
-Find all `.test.yaml` files in the tests directory and run kantra:
+Find all `.test.yaml` files in the tests directory. Run kantra **one test file at a time** to avoid container memory pressure:
 
-**For Go-provider rules (or mixed with Go):**
 ```bash
-kantra test --run-local <test-file-1> <test-file-2> ...
+kantra test <test-file>
 ```
 
-**For Java/Node.js/C# (container has these toolchains):**
-```bash
-kantra test <test-file-1> <test-file-2> ...
-```
+**For Go-provider rules:** add `--run-local` flag.
 
-Save the complete stdout to `kantra-output.txt` in the workspace for later use by `go run ./cmd/stamp` and `go run ./cmd/report`.
+Run each group individually. If a group passes, move on. If it fails, record the failures for fix iterations. Append all output to `kantra-output.txt` in the workspace for later use by `go run ./cmd/stamp` and `go run ./cmd/report`.
 
 ### 4. Parse results
 
@@ -125,3 +121,7 @@ Then parse `<temp-dir>/output.yaml` for violations:
 Rules appearing under `violations` with incidents = passed. Rules absent from violations = failed.
 
 Compare against the list of expected rule IDs from the `.test.yaml` files to determine passed vs failed.
+
+## Rule Integrity
+
+**NEVER suggest changing a rule's condition type, provider_type, or pattern to fix a test failure.** The rule is authoritative. Fix guidance must always target the test data — un-chain calls, add annotation usage, fix build files, add dependencies. If the test cannot be fixed, report the rule as failed.

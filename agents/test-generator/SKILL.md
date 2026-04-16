@@ -68,21 +68,23 @@ For each group in the manifest:
 - All imports/dependencies must be valid and resolve
 
 **How the analyzer matches each condition type:**
-- `java.referenced` with location `ANNOTATION`: use the annotation (e.g., `@Stateless`)
+- `java.referenced` with location `ANNOTATION`: USE the annotation on a class, method, or field (e.g., `@MockBean private Object svc;`). **An import alone is NOT enough** — the annotation must appear as `@Name` on an actual element.
 - `java.referenced` with location `IMPORT`: use the import statement
 - `java.referenced` with location `TYPE`: declare or use the type
-- `java.referenced` with location `METHOD_CALL`: call the method (pattern must be FQN including class)
+- `java.referenced` with location `METHOD_CALL`: call the method on an explicitly typed variable. **Do NOT chain calls** — `Foo.get().bar()` fails in source-only mode because JDTLS can't resolve intermediate return types. Instead: `Foo f = Foo.get(); f.bar();`
 - `go.referenced`: import and use the package/symbol (e.g., `import "golang.org/x/crypto/md4"`)
 - `nodejs.referenced`: import and use the symbol
 - `builtin.filecontent`: include text matching the regex pattern in the appropriate file
 
-### 4. Resolve dependencies
+### 4. Resolve dependencies (only when needed)
 
-After writing all files:
-- **Go:** Run `go mod tidy` then `go mod vendor` (vendoring needed for kantra container)
-- **Java:** Run `mvn dependency:resolve -q -B`
-- **Node.js:** Run `npm install`
-- **C#:** Run `dotnet restore`
+Most rules use source-only analysis and do NOT need dependency resolution. Only resolve when required:
+
+- **Go:** Always run `go mod tidy` then `go mod vendor` (gopls in kantra container can't download modules)
+- **Java `java.referenced` (source-only):** Do NOT run `mvn dependency:resolve`. Source-only analysis resolves IMPORT, ANNOTATION, TYPE patterns without downloaded JARs.
+- **Java `java.dependency`:** DO run `mvn dependency:resolve -q -B`. These rules use Maven dependency resolution, not JDTLS.
+- **Node.js:** `npm install` only if needed for type resolution
+- **C#:** `dotnet restore` only if needed for type resolution
 
 ### 5. Sanitize XML
 

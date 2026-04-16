@@ -71,7 +71,7 @@ This is the contract between the agent (which extracts migration patterns) and `
 | `category` | yes | One of: `mandatory`, `optional`, `potential` |
 | `concern` | no | Grouping key (e.g., `web`, `security`, `config`). Rules with the same concern go in the same YAML file |
 | `provider_type` | no | One of: `java`, `go`, `nodejs`, `csharp`, `builtin`. Determines condition type |
-| `file_pattern` | no | File pattern for `builtin.filecontent` matches (e.g., `application.*\\.properties`) |
+| `file_pattern` | no | Go regex restricting which files `builtin.filecontent` searches (e.g., `.*\\.properties`, `application.*\\.yml`). Must be valid Go regex — do NOT use glob syntax (`*.properties` is invalid; use `.*\\.properties`) |
 | `example_before` | no | Short code example showing the source pattern |
 | `example_after` | no | Short code example showing the target pattern |
 | `documentation_url` | no | URL to relevant migration documentation |

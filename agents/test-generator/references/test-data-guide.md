@@ -20,7 +20,7 @@ This is CRITICAL — the analyzer matches patterns against fully qualified names
 
 | Condition Type | Location | What the Test Code Must Do |
 |---|---|---|
-| `java.referenced` | `ANNOTATION` | Use the annotation on a class, method, or field (e.g., `@Stateless`) |
+| `java.referenced` | `ANNOTATION` | USE the annotation on a class, method, or field (e.g., `@MockBean private Object svc;`). **An `import` statement alone is NOT enough** — the annotation must appear as `@AnnotationName` on an actual element. |
 | `java.referenced` | `IMPORT` | Include the import statement (e.g., `import javax.servlet.http.HttpServlet;`) |
 | `java.referenced` | `TYPE` | Declare or use the type (e.g., `HttpServlet servlet;` or a cast) |
 | `java.referenced` | `METHOD_CALL` | Call the method on an explicitly typed variable — do NOT chain calls (e.g., use `Foo f = Foo.get(); f.bar();` not `Foo.get().bar()`). JDTLS in source-only mode cannot resolve return types of chained calls without the dependency JAR. |
@@ -33,7 +33,7 @@ This is CRITICAL — the analyzer matches patterns against fully qualified names
 | `go.referenced` | — | Import and use the package/symbol (e.g., `import "golang.org/x/crypto/md4"` then use `md4.New()`) |
 | `nodejs.referenced` | — | Import and use the symbol (e.g., `import { Button } from '@patternfly/react-core';`) |
 | `csharp.referenced` | — | Use the fully qualified type/symbol |
-| `builtin.filecontent` | — | Include text in the appropriate file that matches the regex pattern. Check the `filePattern` field to know which file type |
+| `builtin.filecontent` | — | Include text in the appropriate file that matches the regex pattern. Check the `filePattern` field to know which file type. Note: `filePattern` is a Go regex, not a glob. |
 | `java.dependency` | — | The `pom.xml` must declare the dependency with a version within the rule's bounds. Use the `name` field as `groupId.artifactId` (dot-separated). E.g., name `org.springframework.boot.spring-boot-starter-undertow` + upperbound `4.0.0` → pom.xml needs `<artifactId>spring-boot-starter-undertow</artifactId>` with a version below 4.0.0. **No source code needed** — only the pom.xml matters. |
 | `go.dependency` | — | The `go.mod` must declare the module dependency with a version within the rule's bounds |
 | `builtin.xml` | — | The XML file (usually `pom.xml`) must contain elements matching the XPath expression. If `filepaths` is set, the file must be at that path. If `namespaces` is set, ensure the XML uses those namespace URIs |
@@ -141,6 +141,16 @@ These condition types do not use JDTLS. Test YAML files for `java.dependency` an
 
 After generating all test files, run `go run ./cmd/sanitize --dir <tests-dir>` to clean XML files. LLMs frequently generate comments like `<!-- --add-opens flag -->` which contains `--` inside a comment — this is illegal XML and breaks Maven's POM parser. The sanitizer replaces `--` sequences inside XML comments with spaces.
 
+## Merging Small Test Groups
+
+When many small test groups use the same provider (e.g., multiple groups with 1-3 `java.referenced` rules each), consider merging them into fewer groups. Each group runs a separate JDTLS session in the kantra container, and too many sessions cause OOM failures. For example, merge `jackson-1` (8 rules) and `jackson-2` (3 rules) into a single `jackson-1` group with 11 rules — one JDTLS session instead of two.
+
+The scaffold command groups by concern automatically, but manual merging may be needed when:
+- Multiple concerns share the same provider and have few rules each
+- Kantra tests fail with container memory errors
+
+To merge: edit the `.test.yaml` file to add the extra rule entries, and add the corresponding test code to the shared source file. Update the `rulesPath` in the `.test.yaml` if rules are in different YAML files (you can list multiple rules paths or restructure).
+
 ## Fix Iterations
 
 When a rule fails kantra tests, you'll receive:
@@ -152,3 +162,5 @@ On fix iterations:
 - Regenerate ONLY the failing test groups (preserve passing groups)
 - Use the fix guidance to understand what the test code is missing
 - The most common failure is: the test code doesn't actually use the API that the rule pattern matches
+
+**Rule integrity:** NEVER change a rule's condition type or pattern to make a test pass. If test data can't be made to trigger the rule correctly, mark the rule as failed. The fix always belongs in the test data, not the rule.

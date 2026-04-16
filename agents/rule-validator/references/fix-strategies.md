@@ -27,6 +27,21 @@ Kantra test output contains:
 - TypeScript: `import { Button } from '@patternfly/react-core';`
 - Java: `import javax.ejb.Stateless;`
 
+### 0 incidents for ANNOTATION (import but no usage)
+
+**Cause:** The test code imports the annotation class but doesn't actually USE it as an annotation. JDTLS matches `ANNOTATION` location only when the annotation is applied to a class, method, or field — `import` alone does not count.
+
+**Fix guidance:** Add actual annotation usage to the test code:
+```java
+// FAILS: import-only
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+// WORKS: annotation applied to a field
+import org.springframework.boot.test.mock.mockito.MockBean;
+@MockBean
+private Object mockService;
+```
+
 ### 0 incidents for METHOD_CALL with chained calls
 
 **Cause:** JDTLS in source-only mode cannot resolve return types of chained method calls without the dependency JAR. For example, `Foo.get().bar()` — JDTLS doesn't know the return type of `get()`, so it can't confirm `bar()` is on type `Foo`.
@@ -41,17 +56,22 @@ PropertyMapper mapper = PropertyMapper.get();
 PropertyMapper nonNullMapper = mapper.alwaysApplyingWhenNonNull();
 ```
 
+### 0 incidents for builtin.filecontent (filePattern is invalid regex)
+
+**Cause:** The `filePattern` field in the rule uses glob syntax (e.g., `*.properties`) instead of valid Go regex (e.g., `.*\\.properties`). `*` alone is not valid regex — it means "zero or more of the preceding token" and fails when there's no preceding token.
+
+**Fix guidance:** This is a patterns.json issue, not a test data issue. Fix the `file_pattern` field in patterns.json to be valid Go regex:
+- `*.properties` → `.*\\.properties`
+- `*.gradle` → `.*\\.gradle`
+- `*.xml` → `.*\\.xml`
+
+Then re-run `go run ./cmd/construct` and re-test.
+
 ### Too many incidents (pattern too broad)
 
 **Cause:** The rule pattern is matching more code than intended — the pattern may be too generic.
 
 **Fix guidance:** This is a rule quality issue, not a test data issue. Report back that the rule pattern may need to be more specific.
-
-### Go provider — "no views" error
-
-**Cause:** kantra v0.9.0-alpha.6 container does NOT include a Go toolchain — only gopls. `go.referenced` rules fail because gopls can't resolve modules without `go`.
-
-**Fix guidance:** Use `kantra test --run-local` or `kantra analyze --run-local` instead of the default container mode. The `--run-local` flag uses the host machine's Go toolchain.
 
 ### Compilation errors in test code
 
@@ -139,3 +159,13 @@ When using `kantra analyze --run-local`, results are in `output.yaml`:
 ```
 
 Rules appearing under `violations` with incidents = passed. Rules in `unmatched` or absent = failed.
+
+## Rule Integrity Principle
+
+**NEVER change a rule's condition type, provider_type, location_type, or source_fqn to make a test pass.** The rule definition represents the correct migration pattern. If a test fails:
+
+1. First, fix the test data (un-chain calls, add annotation usage, add dependencies, fix build file)
+2. If the test still fails after fixing test data, mark the rule as failed
+3. The fix ALWAYS belongs in the test data, not the rule
+
+Example: if a `java.referenced METHOD_CALL` rule fails because JDTLS can't resolve a chained call, un-chain the call in the test data — do NOT downgrade the rule to `builtin.filecontent`.

@@ -16,8 +16,8 @@ Matches Java type, class, or annotation references by fully qualified name.
 |---|---|---|
 | `TYPE` | Type usage (variable types, generics, casts) | `Stateless s;` or `(Stateless) obj` — the type must appear as a declared/used type |
 | `IMPORT` | Import statement | `import javax.servlet.http.HttpServlet;` |
-| `ANNOTATION` | Annotation usage | `@Stateless` on a class/method/field |
-| `METHOD_CALL` | Method invocation | `initialContext.lookup("java:comp/env")` — pattern must be FQN including class: `javax.naming.InitialContext.lookup` |
+| `ANNOTATION` | Annotation usage (not just import) | `@Stateless` on a class/method/field — must USE the annotation, `import` alone is not enough |
+| `METHOD_CALL` | Method invocation | `initialContext.lookup("java:comp/env")` — pattern must be FQN including class: `javax.naming.InitialContext.lookup`. In source-only mode, the call must be on an explicitly typed variable (no chained calls). |
 | `CONSTRUCTOR_CALL` | `new` expression | `new InitialContext()` |
 | `INHERITANCE` | `extends` clause | `class MyServlet extends HttpServlet` |
 | `IMPLEMENTS_TYPE` | `implements` clause | `class MyBean implements SessionBean` |
@@ -93,7 +93,7 @@ Matches regex patterns in file contents. Use this for config files, properties, 
 
 **Fields:**
 - `pattern` (required) — Regex pattern to match in file contents (e.g., `javax\.servlet`, `spring\.jpa\.hibernate\.ddl-auto`). Must be a valid Go regex.
-- `filePattern` (optional) — Glob restricting which files to search (e.g., `*.properties`, `*.xml`, `application.*\\.yml`). Omit to search all files.
+- `filePattern` (optional) — Regex restricting which files to search (e.g., `.*\\.properties`, `.*\\.xml`, `application.*\\.yml`). Must be a valid Go regex — do NOT use glob syntax (`*.properties` is invalid regex; use `.*\\.properties`). Omit to search all files.
 - `filepaths` (optional) — Restrict to specific file paths.
 
 ### builtin.file
