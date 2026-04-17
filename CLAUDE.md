@@ -1,6 +1,6 @@
 # ai-rule-gen Development Guidelines
 
-Skill-first architecture. Last updated: 2026-04-15
+Skill-first architecture. Last updated: 2026-04-16
 
 ## Architecture
 
@@ -24,6 +24,7 @@ cmd/
   ingest/main.go          # Fetch migration guide → clean markdown
   scaffold/main.go        # Create test dirs, .test.yaml, manifest.json
   sanitize/main.go        # Fix illegal XML comments in a directory
+  test/main.go            # Run kantra tests, stamp rules, generate report (all-in-one)
   stamp/main.go           # Update rule files with kantra pass/fail labels
   report/main.go          # Generate YAML summary report
   internal/cli/           # Shared JSON output helper
@@ -31,6 +32,7 @@ internal/
   construct/              # patterns.json → rule YAML + ruleset.yaml
   ingestion/              # URL/file/text → clean markdown, chunking
   kantraparser/           # Parse kantra test/analyze output
+  testrunner/             # Run kantra tests per group, stamp, report (used by cmd/test)
   rules/                  # Rule/Condition types, builders, serializer, validator,
                           #   patterns.go (ExtractOutput/MigrationPattern),
                           #   labels.go (StampTestResults), ruleid.go (IDGenerator)
@@ -52,6 +54,7 @@ go run ./cmd/construct --patterns patterns.json --output rules/
 go run ./cmd/validate  --rules rules/
 go run ./cmd/scaffold  --rules rules/ --output tests/
 go run ./cmd/sanitize  --dir tests/data/
+go run ./cmd/test      --rules rules/ --tests tests/ [--files a.test.yaml,b.test.yaml]
 go run ./cmd/stamp     --rules rules/ --kantra-output "..."
 go run ./cmd/report    --source src --target tgt --output report.yaml
 

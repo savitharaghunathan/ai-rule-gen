@@ -27,9 +27,44 @@ If the orchestrator didn't provide source, target, or language, detect them from
 
 Use lowercase, hyphenated names (e.g., `spring-boot-3` not `Spring Boot 3`).
 
-### 2. Extract migration patterns
+### 2. Index all sections
 
-Read the migration guide and extract every migration pattern. For each pattern, provide these fields:
+Scan the migration guide and build a **section index** — a numbered list of every heading (`##`, `###`, `####`) with its line range. This ensures no section is skipped during extraction.
+
+Output format:
+
+```
+Section Index:
+1. [lines 1-50]   "## Before You Start"
+2. [lines 51-80]  "### Upgrade to the Latest 3.5.x Version"
+3. [lines 81-120] "### Review Dependencies"
+...
+```
+
+This index drives the per-section extraction in the next step. Every section must be visited.
+
+### 3. Extract patterns per section
+
+Process **each section from the index individually**. For each section:
+
+1. Read the section content
+2. Determine if it contains actionable migration items (API changes, dependency renames, property renames, config changes, feature removals, etc.)
+3. If yes: extract one or more patterns with the fields described below
+4. If no: record a skip reason (e.g., "informational table", "prerequisite guidance", "no code change required")
+
+**Do not skip sections silently.** Every section must produce either patterns or an explicit skip reason.
+
+**Before skipping a section**, apply this checklist — if ANY answer is "yes", extract a pattern:
+
+1. Does the section mention a removed feature, library, or integration? → Detect via `*.dependency` on the removed artifact
+2. Does the section mention a class, annotation, or interface that was removed or relocated? → Detect via `*.referenced` on the old FQN
+3. Does the section mention a dependency that changed scope, was renamed, or now requires explicit versioning? → Detect via `*.dependency`
+4. Does the section contain a reference table with old→new mappings? → Each row may be a separate pattern
+5. Does a behavioral default change affect users of a specific class or dependency? → Detect the affected class/dependency and warn about the new behavior
+
+**Only skip if the section contains zero code artifacts** (no classes, dependencies, properties, annotations, or config elements that could appear in user code). Sections that are purely introductory headers, prerequisite checklists, or links to external docs may be skipped.
+
+For each pattern, provide these fields:
 
 1. `source_pattern` — What to detect in the source code (API, annotation, class, config, dependency, etc.)
 2. `target_pattern` — The replacement in the target technology (null if simply removed)
@@ -54,6 +89,16 @@ Read the migration guide and extract every migration pattern. For each pattern, 
 
 Each pattern must have at minimum: `source_pattern`, `rationale`, `complexity`, `category`.
 
+### Detection strategy: detect the affected artifact, not the missing fix
+
+When a migration requires users to ADD something (a new annotation, a new dependency, a new config), you cannot detect its absence. Instead, detect the **artifact that is affected** and warn about the required change.
+
+For example: if `@SpringBootTest` no longer auto-configures `MockMvc`, don't try to detect "missing `@AutoConfigureMockMvc`." Instead, detect `MockMvc` class usage (IMPORT) and warn that `@AutoConfigureMockMvc` is now required.
+
+### Read section lead paragraphs carefully
+
+The most impactful change in a section is often stated in the **first paragraph** before the details. Don't skip straight to bullet lists and code examples — the opening text may describe a foundational change (e.g., an entire package rename) that the rest of the section merely elaborates on.
+
 ### Choosing the right condition type
 
 - **API/annotation/import changes** → Set `source_fqn` + `location_type` + `provider_type` (produces `*.referenced`)
@@ -61,11 +106,47 @@ Each pattern must have at minimum: `source_pattern`, `rationale`, `complexity`, 
 - **POM/XML structure changes** (parent version, plugin config, properties) → Set `xpath` + `namespaces` + `xpath_filepaths` (produces `builtin.xml`)
 - **Config property renames** → Set `source_fqn` (regex) + `file_pattern` + `provider_type: builtin` (produces `builtin.filecontent`)
 
-### 3. Deduplicate
+### What counts as an extractable migration item
 
-Same `source_fqn` should only appear once. If the guide mentions the same API multiple times with different context, merge into a single pattern with the most complete information.
+Be thorough. These are ALL extractable:
 
-### 4. Generate messages
+- **API renames/moves** — class, interface, or annotation moved to a new package → `*.referenced`
+- **Method removals** — removed or renamed method on a known class → `*.referenced` with METHOD_CALL
+- **Annotation renames** — `@OldName` → `@NewName` → `*.referenced` with ANNOTATION
+- **Dependency renames** — artifactId changed → `*.dependency`
+- **Dependency removals** — artifact no longer available → `*.dependency`
+- **New required dependencies** — feature now requires an explicit starter/dependency → `*.dependency` on the OLD artifact with an upper bound
+- **Property renames** — `old.prop.name` → `new.prop.name` → `builtin.filecontent`
+- **Property removals** — property no longer supported → `builtin.filecontent`
+- **Build config removals** — POM element or Gradle config no longer valid → `builtin.xml` or `builtin.filecontent`
+- **Feature removals** — if the removed feature had a dependency, detect via `*.dependency`
+- **Test framework changes** — test annotation/class moves → `*.referenced`
+- **Version property renames** — `old.version` property no longer works → `builtin.filecontent`
+
+### 4. Coverage report
+
+After processing all sections, print a coverage report:
+
+```
+Coverage Report:
+  Sections processed: N
+  Sections with patterns: M
+  Sections skipped: K
+  Total patterns extracted: P
+
+  Skipped sections:
+  - "## Before You Start" — prerequisite guidance, no code change
+  - "### Starters" — informational reference table
+  ...
+```
+
+This makes extraction visible and auditable. If a section was skipped, the reason is on record.
+
+### 5. Deduplicate
+
+Same `source_fqn` or `dependency_name` should only appear once. If the guide mentions the same API multiple times with different context, merge into a single pattern with the most complete information.
+
+### 6. Generate messages
 
 For each pattern, generate a clear, actionable migration message (2-4 sentences) explaining:
 1. What needs to change and why
@@ -75,7 +156,7 @@ If before/after examples are available, include them formatted as markdown code 
 
 The message should be just the text — no headers, no labels wrapping it.
 
-### 5. Write patterns.json
+### 7. Write patterns.json
 
 Assemble the complete patterns.json with all extracted patterns and write it to the workspace:
 
@@ -88,7 +169,7 @@ Assemble the complete patterns.json with all extracted patterns and write it to 
 }
 ```
 
-### 6. Construct rules
+### 8. Construct rules
 
 Run the CLI to convert patterns to validated rule YAML:
 
@@ -98,7 +179,7 @@ go run ./cmd/construct --patterns patterns.json --output <rules-dir>
 
 This produces rule YAML files grouped by concern + ruleset.yaml.
 
-### 7. Validate rules
+### 9. Validate rules
 
 Run validation:
 
@@ -112,13 +193,6 @@ If validation fails, fix the patterns.json and re-run construct. Common issues:
 - Invalid regex in `file_pattern` → `file_pattern` must be valid Go regex, NOT glob syntax. Use `.*\\.properties` not `*.properties`
 - Duplicate `source_fqn` → same FQN appears in multiple patterns. Merge them into one
 
-### 8. Return
+### 10. Return
 
-Return the path to the rules directory to the orchestrator.
-
-## Chunking for Large Guides
-
-If the migration guide is very large, process it in sections:
-- Extract patterns from each section separately
-- Deduplicate across sections (same `source_fqn` = same pattern)
-- Merge into a single patterns.json before calling construct
+Return the path to the rules directory and the coverage report to the orchestrator.

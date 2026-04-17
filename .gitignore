@@ -4,6 +4,7 @@
 *.out
 vendor/
 /bin/
+/test
 
 # Output
 output*/

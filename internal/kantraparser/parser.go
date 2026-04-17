@@ -75,7 +75,7 @@ func ParseAnalyzeViolations(outputFile string) map[string]bool {
 		return matched
 	}
 	var rulesets []struct {
-		Violations map[string]interface{} `yaml:"violations"`
+		Violations map[string]any `yaml:"violations"`
 	}
 	if err := yaml.Unmarshal(data, &rulesets); err != nil {
 		return matched
@@ -90,13 +90,21 @@ func ParseAnalyzeViolations(outputFile string) map[string]bool {
 
 // PassedAndFailed categorizes rule IDs into passed and failed lists
 // based on kantra test output and the known set of all rule IDs.
-func PassedAndFailed(output string, allRuleIDs []string) (passed, failed []string) {
+// erroredRuleIDs are rules from groups that errored before any rules ran
+// (e.g., "unable to get build tool"). These are always marked as failed.
+func PassedAndFailed(output string, allRuleIDs []string, erroredRuleIDs ...string) (passed, failed []string) {
 	failures := ParseFailures(output)
 
 	failedSet := make(map[string]bool)
 	for _, f := range failures {
 		failedSet[f.RuleID] = true
 		failed = append(failed, f.RuleID)
+	}
+	for _, id := range erroredRuleIDs {
+		if !failedSet[id] {
+			failedSet[id] = true
+			failed = append(failed, id)
+		}
 	}
 
 	for _, id := range allRuleIDs {
@@ -106,4 +114,27 @@ func PassedAndFailed(output string, allRuleIDs []string) (passed, failed []strin
 	}
 
 	return passed, failed
+}
+
+// TestFileRuleIDs extracts rule IDs from a .test.yaml file.
+func TestFileRuleIDs(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var tf struct {
+		Tests []struct {
+			RuleID string `yaml:"ruleID"`
+		} `yaml:"tests"`
+	}
+	if err := yaml.Unmarshal(data, &tf); err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, t := range tf.Tests {
+		if t.RuleID != "" {
+			ids = append(ids, t.RuleID)
+		}
+	}
+	return ids, nil
 }
