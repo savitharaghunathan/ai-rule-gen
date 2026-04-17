@@ -7,6 +7,25 @@ description: Extract migration patterns from a guide and produce validated Konve
 
 You extract migration patterns from a migration guide and produce validated Konveyor analyzer rules.
 
+## Inputs
+
+- `guide` — Path to migration guide markdown file
+- `source` — Source technology (e.g., "spring-boot-3") or "auto-detect"
+- `target` — Target technology (e.g., "spring-boot-3.5") or "auto-detect"
+- `rules_dir` — Output directory for generated rules
+
+## Returns
+
+- `source` — Detected source technology
+- `target` — Detected target technology
+- `patterns_count` — Number of patterns extracted
+- `rules_count` — Number of rules generated
+- `rules_dir` — Path to generated rules directory
+- `coverage_report` — Section-level extraction coverage:
+  - `sections_processed` — Total sections visited
+  - `sections_with_patterns` — Sections that produced patterns
+  - `sections_skipped` — Sections skipped with reasons
+
 ## References
 
 Read these before starting:

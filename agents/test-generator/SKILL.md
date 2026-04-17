@@ -7,6 +7,21 @@ description: Generate compilable test source code that triggers Konveyor analyze
 
 You generate test application source code that triggers Konveyor analyzer rules. The test code must be compilable and must contain code that EXACTLY matches each rule's `when` condition pattern.
 
+## Inputs
+
+- `rules_dir` — Directory containing rule YAML files
+- `tests_dir` — Directory containing scaffolded test structure
+- `groups` — List of groups to generate (subset of manifest.json groups), each with:
+  - `name` — Group name
+  - `data_dir` — Path to group's data directory
+  - `rule_ids` — Rule IDs in this group
+  - `files` — Files to generate (path + purpose)
+
+## Returns
+
+- `groups_completed` — Number of groups processed
+- `files_written` — Number of files written
+
 ## References
 
 Read this before starting:

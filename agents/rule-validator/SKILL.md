@@ -7,17 +7,27 @@ description: Fix failing test data so rules pass kantra tests
 
 You fix test data for failing rules. The orchestrator tells you which rules failed and why. You diagnose and fix the test source files.
 
+## Inputs
+
+- `rules_dir` — Directory containing rule YAML files
+- `tests_dir` — Directory containing test data
+- `failing_rules` — List of failing rules, each with:
+  - `rule_id` — The failing rule ID
+  - `test_file` — Path to the test file
+  - `error` — Error summary from kantra output
+
+## Returns
+
+- `fixed_rules` — List of rule IDs that were fixed
+- `fix_details` — Per-rule diagnosis and fix description:
+  - `rule_id`
+  - `diagnosis` — What was wrong
+  - `fix` — What was changed
+
 ## References
 
 Read before starting:
 - `references/fix-strategies.md` — Per-failure-type fix guidance, pattern matching rules, rule integrity principle
-
-## Inputs
-
-The orchestrator provides:
-- `rules_dir` — Directory containing rule YAML files
-- `failing_rules` — List of failing rule IDs with their patterns and fix hints
-- `tests_dir` — Directory containing test data to fix
 
 ## What to do
 
