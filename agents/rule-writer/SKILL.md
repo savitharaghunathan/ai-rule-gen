@@ -75,13 +75,21 @@ Process **each section from the index individually**. For each section:
 
 **Before skipping a section**, apply this checklist — if ANY answer is "yes", extract a pattern:
 
-1. Does the section mention a removed feature, library, or integration? → Detect via `*.dependency` on the removed artifact
+1. Does the section mention a removed feature, library, or integration? → Detect via `*.dependency` on the removed artifact. "Removed" always means detectable.
 2. Does the section mention a class, annotation, or interface that was removed or relocated? → Detect via `*.referenced` on the old FQN
 3. Does the section mention a dependency that changed scope, was renamed, or now requires explicit versioning? → Detect via `*.dependency`
-4. Does the section contain a reference table with old→new mappings? → Each row may be a separate pattern
-5. Does a behavioral default change affect users of a specific class or dependency? → Detect the affected class/dependency and warn about the new behavior
+4. Does the section contain a reference table with old→new mappings? → Process **every row** — each row is a separate pattern, not decoration
+5. Does a behavioral default change affect users of a specific class or dependency? → Detect the affected class/dependency and warn about the new behavior (category: `potential`)
+6. Does the section mention deprecated starters, modules, or artifacts? → Deprecated = detectable dependency rename. Extract a pattern for each old→new mapping.
+7. Does the section name any specific artifact (class, dependency, property, annotation)? → If it names it, detect it.
 
-**Only skip if the section contains zero code artifacts** (no classes, dependencies, properties, annotations, or config elements that could appear in user code). Sections that are purely introductory headers, prerequisite checklists, or links to external docs may be skipped.
+**These are NOT valid skip reasons:**
+- "Informational" — tables with old→new mappings are patterns, not decoration
+- "Deprecated" — deprecated starters are detectable dependency renames
+- "Advisory" — if it names a specific artifact, detect it
+- "Not detectable" — ask: can I detect the *affected artifact* instead of the *missing fix*?
+
+**The ONLY valid skip reason** is: the section contains zero code artifacts — no classes, dependencies, properties, annotations, or config elements that could appear in user code. Sections that are purely introductory headers, prerequisite checklists, or links to external docs may be skipped.
 
 For each pattern, provide these fields:
 

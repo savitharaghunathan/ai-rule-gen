@@ -53,15 +53,13 @@ That's the entire user-visible output. Everything else happens silently in sub-a
 
 ## Sub-agent Protocol
 
-This orchestrator uses the **Agent tool** to run sub-agents for heavy LLM work. Each sub-agent invocation uses an **invoke block** — the orchestrator names the skill, passes inputs, and states what it expects back.
+This orchestrator delegates heavy LLM work to sub-agents using **invoke blocks**. Each block names the skill, passes inputs, and states what it expects back.
 
-The orchestrating agent translates each invoke block into an Agent tool call with a lean prompt:
+The runtime translates each invoke block into a sub-agent call:
+1. "Read and follow `agents/<skill-name>/SKILL.md`."
+2. Inputs from the invoke block, with actual values substituted.
 
-1. One-line purpose (from the invoke block's **Purpose** field)
-2. "Read and follow `agents/<skill-name>/SKILL.md`."
-3. Inputs (from the invoke block's **Inputs** field, with actual values substituted)
-
-The sub-agent reads its own SKILL.md, reads the references the skill points to, follows the workflow, and returns the expected fields.
+If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes` should be dispatched concurrently.
 
 **Single agent for extraction:** One agent processing the full guide is faster than batching across multiple agents (avoids duplicated reference reads and merge overhead).
 
@@ -157,7 +155,7 @@ Split the groups into **3 roughly equal batches** by rule count.
   - rules_dir: output/rules
   - tests_dir: output/tests
   - groups: {batch subset from manifest.json — include name, data_dir, rule_ids, files}
-**Parallel:** yes (send all 3 Agent calls in a single message)
+**Parallel:** yes
 **Expect:**
   - groups_completed, files_written
 
@@ -221,14 +219,10 @@ Or if failures:
 
 If all passed, skip to step 5.
 
-**4b. Fix loop (max 3 iterations, only if failures):**
-
-For each iteration:
-
-Print what's being fixed:
+**4b. Fix (only if failures):**
 
 ```
-[fix <I>/3] Fixing: <rule_id_1>, <rule_id_2> ...
+[fix] Fixing <F> failures: <rule_id_1>, <rule_id_2> ...
 ```
 
 **Invoke:** `rule-validator`
@@ -237,36 +231,27 @@ Print what's being fixed:
   - rules_dir: output/rules
   - tests_dir: output/tests/tests
   - failing_rules: {list with rule_id, test_file, error for each failure}
+  - max_iterations: 1
 **Parallel:** no
 **Expect:**
-  - fixed_rules, fix_details
+  - fixed_rules, still_failing, iterations_used, fix_details
 
-After the fix agent returns, re-run ONLY the failing test groups (not the full suite):
+The validator agent owns the fix-verify loop — it fixes files, re-runs tests via `cmd/test`, and iterates up to `max_iterations`. Default is 1 iteration; pass up to 3 if the user requests more attempts.
 
-```bash
-go run ./cmd/test --rules output/rules --tests output/tests/tests --files <comma-separated failing .test.yaml filenames>
-```
-
-Parse and print:
+Print the result:
 
 ```
-[fix <I>/3] <passed>/<total> passed
+[fix] <fixed_count> fixed, <still_failing_count> still failing
 ```
 
-If all passed, stop. If still failing, next iteration. After 3 iterations, move on with remaining failures.
+If still_failing is non-empty, move on — don't block the pipeline.
 
 ### 5. Stamp + Report
 
-After all batches and fix loops are done, run a **full test** (no `--files`) to generate the combined `kantra-output.txt` needed for stamping:
+Collate pass/fail results from all batch runs and the fix loop. No need to re-run the full test suite — stamp directly from results:
 
 ```bash
-go run ./cmd/test --rules output/rules --tests output/tests/tests
-```
-
-Then stamp and report:
-
-```bash
-go run ./cmd/stamp --rules output/rules --kantra-output "$(cat output/tests/tests/kantra-output.txt)"
+go run ./cmd/stamp --rules output/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs>
 go run ./cmd/report --source <source> --target <target> --output output/report.yaml --rules-total <N> --passed <P> --failed <F> --failed-rules <comma-separated>
 ```
 

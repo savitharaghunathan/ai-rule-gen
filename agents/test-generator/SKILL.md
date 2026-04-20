@@ -29,9 +29,11 @@ Read this before starting:
 
 ## Workflow
 
-### 1. Scaffold test directories
+### 1. Scaffold (skip if groups provided)
 
-Run the CLI to create test structure and manifest:
+If the orchestrator provided `groups` in the inputs, skip directly to step 3. The scaffold and manifest were already handled.
+
+Otherwise, run the CLI to create test structure and manifest:
 
 ```bash
 go run ./cmd/scaffold --rules <rules-dir> --output <output-dir>

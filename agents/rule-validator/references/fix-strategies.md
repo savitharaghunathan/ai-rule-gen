@@ -111,20 +111,18 @@ Test code must compile before kantra can analyze it. Two-phase fix approach:
 
 ## Fix Loop Flow
 
-```
-for iteration = 1 to max_iterations (3):
-    Phase A: Fix compilation errors (up to 5 attempts)
-        1. Check compilation
-        2. If errors: gather API docs, fix code, re-resolve deps
-        3. Repeat until compiles or 5 attempts exhausted
+This agent owns the fix-verify loop:
 
-    Phase B: Run kantra tests
-        1. Run kantra test
-        2. If all pass: done
-        3. If failures: generate code hints for failing rules
-        4. Regenerate failing test groups with hints
-        5. Next iteration
 ```
+for iteration = 1 to max_iterations:
+    1. Diagnose each failing rule (read rule YAML + test source)
+    2. Fix test source files
+    3. Verify via: go run ./cmd/test --rules <dir> --tests <dir> --files <failing .test.yaml files>
+    4. If all pass: done
+    5. If failures remain: next iteration with only remaining failures
+```
+
+**Always use `go run ./cmd/test`** to verify — never run `kantra` directly. The `cmd/test` wrapper handles Docker, output parsing, and stamping.
 
 ## Extracting Pattern Info from Rules
 
