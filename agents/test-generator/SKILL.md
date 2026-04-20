@@ -70,7 +70,7 @@ The manifest tells you exactly what files to generate:
 
 ### 3. Generate source code for each group
 
-For each group in the manifest:
+For each group:
 
 1. Read the rules referenced by `rule_ids` from the rules directory
 2. Look at each rule's `when` condition to understand what pattern must be matched
@@ -103,7 +103,7 @@ Most rules use source-only analysis and do NOT need dependency resolution. Only 
 - **Node.js:** `npm install` only if needed for type resolution
 - **C#:** `dotnet restore` only if needed for type resolution
 
-### 5. Sanitize XML
+### 5. Sanitize XML (skip if invoked from orchestrator — orchestrator handles sanitize)
 
 Run the sanitizer to fix any illegal XML comments:
 

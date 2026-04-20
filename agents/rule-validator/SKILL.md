@@ -44,6 +44,8 @@ For each failing rule, read the rule YAML from `rules_dir`. Extract:
 - **Location** (for `*.referenced`): `ANNOTATION`, `IMPORT`, `METHOD_CALL`, `TYPE`, etc.
 - **Pattern**: the regex or FQN the rule matches against
 
+The provider language comes from the condition type prefix (e.g., `java.referenced` → `java`, `go.referenced` → `go`, `builtin.*` → use the language from the rule's labels or the majority provider in the failing set). Read only the matching `references/providers/<language>.md` — not all four.
+
 ### Step 2. Look up the fix
 
 Open `references/providers/<language>.md` for the relevant provider. Find the section for the condition type from step 1. It lists the known failure mode and the fix.

@@ -81,6 +81,8 @@ If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes
 
 ## Pipeline
 
+**Error handling:** If any CLI command (`ingest`, `construct`, `validate`, `scaffold`, `sanitize`, `test`, `stamp`, `report`) exits non-zero, print `[step] FAILED — <error>` and stop the pipeline. Do not proceed to the next step.
+
 ### 1. Ingest
 
 ```
@@ -157,15 +159,15 @@ This creates all directories, `.test.yaml` files, and `manifest.json`. No LLM ne
 
 Read `output/tests/manifest.json`. It contains a `groups` array — each group has `name`, `data_dir`, `files` (paths to generate), and `rule_ids`.
 
-Split the groups into **3 roughly equal batches** by rule count.
+Split the groups into **batches of ~5 groups each** (minimum 1 batch, maximum 5 batches), balanced by rule count.
 
 **3c. Spawn test-generator agents:**
 
 ```
-[test-gen] Generating test data for <rules_count> rules (3 parallel agents)...
+[test-gen] Generating test data for <rules_count> rules (<B> parallel agents)...
 ```
 
-**Invoke:** `test-generator` (one per batch, 3 in parallel)
+**Invoke:** `test-generator` (one per batch, up to 5 in parallel)
 **Purpose:** Generate compilable test source code that triggers the assigned rules.
 **Inputs per invocation:**
   - rules_dir: output/rules
@@ -175,7 +177,7 @@ Split the groups into **3 roughly equal batches** by rule count.
 **Expect:**
   - groups_completed, files_written
 
-**3d. Collect results and sanitize.** After all 3 agents complete:
+**3d. Collect results and sanitize.** After all agents complete:
 
 ```bash
 go run ./cmd/sanitize --dir output/tests/tests/data
@@ -191,31 +193,17 @@ The orchestrator runs tests directly in **batched sequential runs** to avoid OOM
 
 **4a. Batch and run tests:**
 
-Split the groups from `manifest.json` into **3 roughly equal batches** by rule count (same batching as test-gen). Run each batch sequentially using `--files`:
+Split the groups from `manifest.json` into **batches of ~5 groups each** (minimum 1 batch, maximum 5 batches), balanced by rule count — same batching logic as test-gen. Run each batch sequentially using `--files`:
 
 ```
-[validate] Running batch 1/3: <group_names> (<N> rules)...
-```
-
-```bash
-go run ./cmd/test --rules output/rules --tests output/tests/tests --files <batch1.test.yaml>,<batch2.test.yaml>,...
-```
-
-```
-[validate] Running batch 2/3: <group_names> (<N> rules)...
+[validate] Running batch 1/<B>: <group_names> (<N> rules)...
 ```
 
 ```bash
-go run ./cmd/test --rules output/rules --tests output/tests/tests --files <batch3.test.yaml>,<batch4.test.yaml>,...
+go run ./cmd/test --rules output/rules --tests output/tests/tests --files <test1.test.yaml>,<test2.test.yaml>,...
 ```
 
-```
-[validate] Running batch 3/3: <group_names> (<N> rules)...
-```
-
-```bash
-go run ./cmd/test --rules output/rules --tests output/tests/tests --files <batch5.test.yaml>,<batch6.test.yaml>,...
-```
+Repeat for each batch.
 
 **Why batched sequential, not parallel agents:** `kantra test` runs Docker containers. Multiple kantra instances running simultaneously cause Docker contention and hangs. Sequential batches keep each kantra run small (avoids OOM) while avoiding contention.
 
