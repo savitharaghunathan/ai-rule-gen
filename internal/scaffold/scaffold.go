@@ -73,13 +73,13 @@ type TestEntry struct {
 // TestCase is a single test case within a test entry.
 type TestCase struct {
 	Name           string         `yaml:"name"`
-	AnalysisParams AnalysisParams `yaml:"analysisParams"`
+	AnalysisParams AnalysisParams `yaml:"analysisParams,omitempty"`
 	HasIncidents   HasIncidents   `yaml:"hasIncidents"`
 }
 
 // AnalysisParams holds analysis parameters for a test case.
 type AnalysisParams struct {
-	Mode string `yaml:"mode"`
+	Mode string `yaml:"mode,omitempty"`
 }
 
 // HasIncidents specifies expected incident counts.
@@ -383,19 +383,18 @@ func buildTestFile(ruleList []rules.Rule, ruleFilePath, dataDir, testsDir string
 
 	var tests []TestEntry
 	for _, r := range ruleList {
-		tests = append(tests, TestEntry{
-			RuleID: r.RuleID,
-			TestCases: []TestCase{
-				{
-					Name: "tc-1",
-					AnalysisParams: AnalysisParams{
-						Mode: "source-only",
-					},
-					HasIncidents: HasIncidents{
-						AtLeast: 1,
-					},
-				},
+		tc := TestCase{
+			Name: "tc-1",
+			HasIncidents: HasIncidents{
+				AtLeast: 1,
 			},
+		}
+		if needsSourceOnly(r.When) {
+			tc.AnalysisParams = AnalysisParams{Mode: "source-only"}
+		}
+		tests = append(tests, TestEntry{
+			RuleID:    r.RuleID,
+			TestCases: []TestCase{tc},
 		})
 	}
 
@@ -404,6 +403,28 @@ func buildTestFile(ruleList []rules.Rule, ruleFilePath, dataDir, testsDir string
 		Providers: testProviders,
 		Tests:     tests,
 	}
+}
+
+// needsSourceOnly returns true if the rule uses a *.referenced condition
+// (JDTLS/gopls source analysis). Dependency, XML, filecontent, and other
+// builtin conditions do NOT use source-only mode.
+func needsSourceOnly(c rules.Condition) bool {
+	if c.JavaReferenced != nil || c.GoReferenced != nil ||
+		c.NodejsReferenced != nil || c.CSharpReferenced != nil {
+		return true
+	}
+	// For or/and combinators, check if ANY child needs source-only
+	for _, entry := range c.Or {
+		if needsSourceOnly(entry.Condition) {
+			return true
+		}
+	}
+	for _, entry := range c.And {
+		if needsSourceOnly(entry.Condition) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetLanguageConfig returns the LanguageConfig for a given language.

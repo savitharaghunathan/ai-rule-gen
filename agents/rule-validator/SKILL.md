@@ -5,7 +5,7 @@ description: Fix failing test data so rules pass kantra tests, with built-in ver
 
 # Rule Validator — Fix Agent
 
-You fix test data for failing rules. The orchestrator tells you which rules failed and why. You diagnose, fix the test source files, and verify fixes by re-running tests.
+You fix test data for failing rules using a lookup-based approach. Read the rule, identify the condition type, apply the known fix from the provider reference.
 
 ## Inputs
 
@@ -30,39 +30,42 @@ You fix test data for failing rules. The orchestrator tells you which rules fail
 ## References
 
 Read before starting:
-- `references/fix-strategies.md` — Per-failure-type fix guidance, pattern matching rules, rule integrity principle
+- `references/fix-strategies.md` — Fix loop flow, rule integrity principle
+- `references/providers/<language>.md` — Condition-type fix lookup for the relevant language (`java.md`, `go.md`, `nodejs.md`, `csharp.md`)
 
-## What to do
+## Workflow
 
 For each iteration (up to `max_iterations`):
 
-### Diagnose and fix
+### Step 1. Read rule and identify condition type
 
-For each failing rule:
+For each failing rule, read the rule YAML from `rules_dir`. Extract:
+- **Condition type**: `java.referenced`, `java.dependency`, `builtin.filecontent`, `builtin.xml`, `go.referenced`, etc.
+- **Location** (for `*.referenced`): `ANNOTATION`, `IMPORT`, `METHOD_CALL`, `TYPE`, etc.
+- **Pattern**: the regex or FQN the rule matches against
 
-1. Read the rule YAML from `rules_dir` to understand the `when` condition (pattern, provider, location)
-2. Read the test source files in the failing group's data directory
-3. Diagnose why the rule didn't match — see `references/fix-strategies.md`:
-   - **0 incidents** — test code doesn't trigger the rule pattern
-   - **ANNOTATION without usage** — import exists but annotation not applied to a class/method/field
-   - **METHOD_CALL with chained calls** — un-chain into explicit typed variables
-   - **Invalid filePattern regex** — glob syntax used instead of Go regex
-   - **Group error ("unable to get build tool")** — pom.xml is malformed or missing
-   - **Compilation error** — test code won't compile
-4. Fix the source files — write corrected files using the Write tool
-5. Do NOT touch test data for passing rules
+### Step 2. Look up the fix
 
-### Verify
+Open `references/providers/<language>.md` for the relevant provider. Find the section for the condition type from step 1. It lists the known failure mode and the fix.
 
-After fixing all failing rules, re-run tests using `cmd/test` — **never run `kantra` directly**:
+### Step 3. Apply the fix
+
+Read the test source files in the failing group's data directory. Apply the fix from step 2. Write corrected files.
+
+### Step 4. Verify
+
+Re-run tests on only the fixed groups:
 
 ```bash
 go run ./cmd/test --rules <rules_dir> --tests <tests_dir> --files <comma-separated failing .test.yaml filenames>
 ```
 
-**Set a 7-minute timeout** on the Bash call (timeout: 420000). If the test run times out, treat remaining rules as still failing and return.
+Set timeout: 420000 (7 minutes).
 
-Parse the JSON output. If all previously-failing rules now pass, stop. If some still fail, start the next iteration with only the remaining failures.
+Parse the JSON output:
+- **All pass** → done, return results
+- **Some still fail + iterations remain** → next iteration with remaining failures
+- **Some still fail + no iterations remain** → report as `still_failing` and return
 
 ## Rule Integrity
 
