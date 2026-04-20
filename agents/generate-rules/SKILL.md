@@ -11,6 +11,22 @@ Generate Konveyor analyzer migration rules from a migration guide.
 
 If no argument is provided, ask the user for the migration guide source.
 
+## Inputs
+
+- `guide_source` — URL, file path, or pasted text of a migration guide
+- `source` — (optional) Source technology, e.g. "spring-boot-3". Auto-detected if omitted.
+- `target` — (optional) Target technology, e.g. "spring-boot-4". Auto-detected if omitted.
+
+## Returns
+
+- `rules_dir` — Path to generated rule YAML files
+- `tests_dir` — Path to test data
+- `report` — Path to report.yaml
+- `summary` — Markdown summary table with:
+  - rules_count, passed, failed, pass_rate
+  - coverage_report (sections processed/skipped)
+  - fix_iterations used
+
 ## UX Principles
 
 The user should see a **flowing stream of short status lines** — never silence. Every step prints one line when it starts and one line when it finishes. No walls of text, no tables mid-pipeline, no unnecessary questions.

@@ -42,6 +42,28 @@ internal/
 agents/                   # Agent skills (agentskills.io format, SKILL.md + references/)
 ```
 
+## Skill Composition
+
+`generate-rules` is the orchestrator skill. It delegates to three sub-skills
+using **invoke blocks** — declarative sections that name the skill, pass
+inputs, and state expected return fields.
+
+```text
+generate-rules (orchestrator)
+  ├── rule-writer        — extract patterns, produce rule YAML
+  ├── test-generator     — generate test source code (3x parallel)
+  └── rule-validator     — fix failing tests, verify loop
+```
+
+Each sub-skill has `## Inputs` and `## Returns` sections defining its
+contract. Sub-skills are independently invocable (e.g. `/rule-writer`
+works standalone).
+
+How runtimes interpret invoke blocks: spawn a sub-agent, tell it
+"read and follow `agents/<skill-name>/SKILL.md`", pass the inputs.
+If the runtime supports parallel sub-agents, blocks marked
+`Parallel: yes` should run concurrently.
+
 ## CLI Commands
 
 Each command is a standalone Go file invoked via `go run cmd/<name>.go`.

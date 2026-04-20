@@ -11,7 +11,7 @@ You generate test application source code that triggers Konveyor analyzer rules.
 
 - `rules_dir` — Directory containing rule YAML files
 - `tests_dir` — Directory containing scaffolded test structure
-- `groups` — List of groups to generate (subset of manifest.json groups), each with:
+- `groups` — (optional) List of groups to generate. If provided, skip scaffold and manifest steps. If omitted, run scaffold first and read manifest.json to get the full group list. Each group has:
   - `name` — Group name
   - `data_dir` — Path to group's data directory
   - `rule_ids` — Rule IDs in this group
@@ -29,9 +29,9 @@ Read this before starting:
 
 ## Workflow
 
-### 1. Scaffold (skip if groups provided)
+### 1. Scaffold (skip if `groups` provided)
 
-If the orchestrator provided `groups` in the inputs, skip directly to step 3. The scaffold and manifest were already handled.
+If `groups` was provided in the inputs, skip to step 3 — scaffold and manifest were already handled.
 
 Otherwise, run the CLI to create test structure and manifest:
 
