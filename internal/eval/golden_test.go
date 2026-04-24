@@ -15,6 +15,7 @@ target: spring-boot-4
 language: java
 thresholds:
   pass_rate_post_fix: 95.0
+  pre_fix_pass_rate: 80.0
   coverage_min: 70.0
 patterns:
   - id: undertow-removal
@@ -41,6 +42,9 @@ patterns:
 	}
 	if gs.Thresholds.PassRatePostFix != 95.0 {
 		t.Errorf("PassRatePostFix = %f, want 95.0", gs.Thresholds.PassRatePostFix)
+	}
+	if gs.Thresholds.PreFixPassRate != 80.0 {
+		t.Errorf("PreFixPassRate = %f, want 80.0", gs.Thresholds.PreFixPassRate)
 	}
 	if gs.Thresholds.CoverageMin != 70.0 {
 		t.Errorf("CoverageMin = %f, want 70.0", gs.Thresholds.CoverageMin)

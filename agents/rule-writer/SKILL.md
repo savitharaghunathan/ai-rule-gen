@@ -1,6 +1,6 @@
 ---
 name: rule-writer
-description: Extract migration patterns from a guide and produce validated Konveyor analyzer rules
+description: Extract migration patterns from a guide and produce validated Konveyor analyzer rules. Use when a migration guide needs to be parsed into patterns.json and rule YAML files.
 ---
 
 # Rule Writer
@@ -185,7 +185,7 @@ The message should be just the text — no headers, no labels wrapping it.
 
 ### 7. Write patterns.json
 
-Assemble the complete patterns.json with all extracted patterns and write it to the workspace:
+Assemble the complete patterns.json with all extracted patterns and write it to the rules directory (e.g. `<rules-dir>/patterns.json`):
 
 ```json
 {
@@ -201,7 +201,7 @@ Assemble the complete patterns.json with all extracted patterns and write it to 
 Run the CLI to convert patterns to validated rule YAML:
 
 ```bash
-go run ./cmd/construct --patterns patterns.json --output <rules-dir>
+go run ./cmd/construct --patterns <rules-dir>/patterns.json --output <rules-dir>
 ```
 
 This produces rule YAML files grouped by concern + ruleset.yaml.

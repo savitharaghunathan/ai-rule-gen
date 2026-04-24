@@ -1,24 +1,31 @@
 package eval
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 	"github.com/konveyor/ai-rule-gen/internal/workspace"
+	"gopkg.in/yaml.v3"
 )
 
-// CheckResult holds the outcome of a single eval check.
 type CheckResult struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
+	Agent    string `json:"agent"`
 	Priority string `json:"priority"`
 	Passed   bool   `json:"passed"`
 	Message  string `json:"message"`
 	Details  any    `json:"details,omitempty"`
 }
 
-// EvalSummary holds aggregate pass/fail counts.
+type AgentEval struct {
+	Checks  []CheckResult `json:"checks"`
+	Summary EvalSummary   `json:"summary"`
+}
+
 type EvalSummary struct {
 	Total    int     `json:"total"`
 	Passed   int     `json:"passed"`
@@ -26,29 +33,29 @@ type EvalSummary struct {
 	PassRate float64 `json:"pass_rate"`
 }
 
-// EvalReport is the top-level eval output.
 type EvalReport struct {
-	Timestamp string        `json:"timestamp"`
-	GoldenSet string        `json:"golden_set"`
-	Checks    []CheckResult `json:"checks"`
-	Summary   EvalSummary   `json:"summary"`
+	Timestamp string                `json:"timestamp"`
+	GoldenSet string                `json:"golden_set"`
+	Agents    map[string]*AgentEval `json:"agents"`
+	Summary   EvalSummary           `json:"summary"`
 }
 
-// EvalContext holds all inputs needed by grader functions.
 type EvalContext struct {
-	Golden   *GoldenSet
-	Patterns *rules.ExtractOutput
-	Rules    []rules.Rule
-	Report   *workspace.Report
+	Golden        *GoldenSet
+	Patterns      *rules.ExtractOutput
+	Rules         []rules.Rule
+	Report        *workspace.Report
+	PreFixReport  *workspace.Report
+	RulesSnapshot []rules.Rule
 }
 
-// CheckRequiredFields (p0-004) checks each pattern has source_pattern, rationale,
-// complexity, and category.
+// --- Rule Writer Graders ---
+
 func CheckRequiredFields(ctx *EvalContext) CheckResult {
 	if ctx.Patterns == nil {
 		return CheckResult{
-			ID: "p0-004", Name: "Required fields in patterns.json",
-			Priority: "P0", Passed: false,
+			ID: "rw-002", Name: "Required fields in patterns.json",
+			Agent: "rule-writer", Priority: "P0", Passed: false,
 			Message: "No patterns.json loaded",
 		}
 	}
@@ -73,45 +80,314 @@ func CheckRequiredFields(ctx *EvalContext) CheckResult {
 	}
 	if len(missing) > 0 {
 		return CheckResult{
-			ID: "p0-004", Name: "Required fields in patterns.json",
-			Priority: "P0", Passed: false,
+			ID: "rw-002", Name: "Required fields in patterns.json",
+			Agent: "rule-writer", Priority: "P0", Passed: false,
 			Message:  fmt.Sprintf("%d patterns missing required fields", len(missing)),
 			Details:  missing,
 		}
 	}
 	return CheckResult{
-		ID: "p0-004", Name: "Required fields in patterns.json",
-		Priority: "P0", Passed: true,
+		ID: "rw-002", Name: "Required fields in patterns.json",
+		Agent: "rule-writer", Priority: "P0", Passed: true,
 		Message: fmt.Sprintf("All %d patterns have required fields", len(ctx.Patterns.Patterns)),
 	}
 }
 
-// CheckRuleValidity (p0-001) validates rule YAML using rules.Validate.
 func CheckRuleValidity(ctx *EvalContext) CheckResult {
 	if len(ctx.Rules) == 0 {
 		return CheckResult{
-			ID: "p0-001", Name: "Rule YAML validity",
-			Priority: "P0", Passed: false,
+			ID: "rw-001", Name: "Rule YAML validity",
+			Agent: "rule-writer", Priority: "P0", Passed: false,
 			Message: "No rules loaded",
 		}
 	}
 	result := rules.Validate(ctx.Rules)
 	if result.Valid {
 		return CheckResult{
-			ID: "p0-001", Name: "Rule YAML validity",
-			Priority: "P0", Passed: true,
+			ID: "rw-001", Name: "Rule YAML validity",
+			Agent: "rule-writer", Priority: "P0", Passed: true,
 			Message: fmt.Sprintf("All %d rules are valid", result.RuleCount),
 		}
 	}
 	return CheckResult{
-		ID: "p0-001", Name: "Rule YAML validity",
-		Priority: "P0", Passed: false,
+		ID: "rw-001", Name: "Rule YAML validity",
+		Agent: "rule-writer", Priority: "P0", Passed: false,
 		Message:  fmt.Sprintf("%d validation errors", len(result.Errors)),
 		Details:  result.Errors,
 	}
 }
 
-// ConditionType returns the provider condition type string for a Condition.
+func CheckDeduplication(ctx *EvalContext) CheckResult {
+	if ctx.Patterns == nil {
+		return CheckResult{
+			ID: "rw-005", Name: "No duplicate patterns",
+			Agent: "rule-writer", Priority: "P1", Passed: false,
+			Message: "No patterns.json loaded",
+		}
+	}
+	seenFQN := make(map[string]int)
+	seenDep := make(map[string]int)
+	var dupes []string
+	for i, p := range ctx.Patterns.Patterns {
+		if p.SourceFQN != "" {
+			if prev, ok := seenFQN[p.SourceFQN]; ok {
+				dupes = append(dupes, fmt.Sprintf("source_fqn %q: pattern[%d] and pattern[%d]", p.SourceFQN, prev, i))
+			}
+			seenFQN[p.SourceFQN] = i
+		}
+		if p.DependencyName != "" {
+			if prev, ok := seenDep[p.DependencyName]; ok {
+				dupes = append(dupes, fmt.Sprintf("dependency_name %q: pattern[%d] and pattern[%d]", p.DependencyName, prev, i))
+			}
+			seenDep[p.DependencyName] = i
+		}
+	}
+	if len(dupes) > 0 {
+		return CheckResult{
+			ID: "rw-005", Name: "No duplicate patterns",
+			Agent: "rule-writer", Priority: "P1", Passed: false,
+			Message:  fmt.Sprintf("%d duplicate patterns found", len(dupes)),
+			Details:  dupes,
+		}
+	}
+	return CheckResult{
+		ID: "rw-005", Name: "No duplicate patterns",
+		Agent: "rule-writer", Priority: "P1", Passed: true,
+		Message: fmt.Sprintf("No duplicates among %d patterns", len(ctx.Patterns.Patterns)),
+	}
+}
+
+func CheckKnownPatterns(ctx *EvalContext) CheckResult {
+	if ctx.Golden == nil || ctx.Patterns == nil {
+		return CheckResult{
+			ID: "rw-003", Name: "Known patterns extracted",
+			Agent: "rule-writer", Priority: "P1", Passed: false,
+			Message: "Missing golden set or patterns.json",
+		}
+	}
+	fqnSet := make(map[string]bool)
+	depSet := make(map[string]bool)
+	xpathSet := make(map[string]bool)
+	for _, p := range ctx.Patterns.Patterns {
+		if p.SourceFQN != "" {
+			fqnSet[p.SourceFQN] = true
+		}
+		if p.DependencyName != "" {
+			depSet[p.DependencyName] = true
+		}
+		if p.XPath != "" {
+			xpathSet[p.XPath] = true
+		}
+	}
+	var missing []string
+	for _, gp := range ctx.Golden.Patterns {
+		found := false
+		if gp.SourceFQN != "" && fqnSet[gp.SourceFQN] {
+			found = true
+		}
+		if gp.DependencyName != "" && depSet[gp.DependencyName] {
+			found = true
+		}
+		if gp.XPath != "" && xpathSet[gp.XPath] {
+			found = true
+		}
+		if !found {
+			missing = append(missing, gp.ID)
+		}
+	}
+	if len(missing) > 0 {
+		return CheckResult{
+			ID: "rw-003", Name: "Known patterns extracted",
+			Agent: "rule-writer", Priority: "P1", Passed: false,
+			Message:  fmt.Sprintf("%d/%d golden patterns missing", len(missing), len(ctx.Golden.Patterns)),
+			Details:  missing,
+		}
+	}
+	return CheckResult{
+		ID: "rw-003", Name: "Known patterns extracted",
+		Agent: "rule-writer", Priority: "P1", Passed: true,
+		Message: fmt.Sprintf("All %d golden patterns found", len(ctx.Golden.Patterns)),
+	}
+}
+
+func CheckConditionTypes(ctx *EvalContext) CheckResult {
+	if ctx.Golden == nil || len(ctx.Rules) == 0 {
+		return CheckResult{
+			ID: "rw-004", Name: "Correct condition types",
+			Agent: "rule-writer", Priority: "P1", Passed: false,
+			Message: "Missing golden set or rules",
+		}
+	}
+	var mismatches []string
+	for _, gp := range ctx.Golden.Patterns {
+		r := findRuleByGolden(ctx.Rules, gp)
+		if r == nil {
+			continue
+		}
+		actual := ConditionType(r.When)
+		if actual != gp.ConditionType {
+			mismatches = append(mismatches, fmt.Sprintf("%s: expected %s, got %s", gp.ID, gp.ConditionType, actual))
+		}
+	}
+	if len(mismatches) > 0 {
+		return CheckResult{
+			ID: "rw-004", Name: "Correct condition types",
+			Agent: "rule-writer", Priority: "P1", Passed: false,
+			Message:  fmt.Sprintf("%d condition type mismatches", len(mismatches)),
+			Details:  mismatches,
+		}
+	}
+	return CheckResult{
+		ID: "rw-004", Name: "Correct condition types",
+		Agent: "rule-writer", Priority: "P1", Passed: true,
+		Message: "All golden patterns have correct condition types",
+	}
+}
+
+// --- Test Generator Graders ---
+
+func CheckPreFixPassRate(ctx *EvalContext) CheckResult {
+	if ctx.PreFixReport == nil {
+		return CheckResult{
+			ID: "tg-001", Name: "Pre-fix pass rate",
+			Agent: "test-generator", Priority: "P1", Passed: false,
+			Message: "No pre-fix report loaded",
+		}
+	}
+	threshold := 80.0
+	if ctx.Golden != nil && ctx.Golden.Thresholds.PreFixPassRate > 0 {
+		threshold = ctx.Golden.Thresholds.PreFixPassRate
+	}
+	passed := ctx.PreFixReport.PassRate >= threshold
+	return CheckResult{
+		ID: "tg-001", Name: "Pre-fix pass rate",
+		Agent: "test-generator", Priority: "P1", Passed: passed,
+		Message: fmt.Sprintf("Pre-fix pass rate: %.1f%% (threshold: %.1f%%)", ctx.PreFixReport.PassRate, threshold),
+	}
+}
+
+// --- Rule Validator Graders ---
+
+func CheckRuleIntegrity(ctx *EvalContext) CheckResult {
+	if ctx.RulesSnapshot == nil || len(ctx.Rules) == 0 {
+		return CheckResult{
+			ID: "rv-001", Name: "Rule integrity after fix loop",
+			Agent: "validator", Priority: "P0", Passed: false,
+			Message: "Missing rules snapshot or final rules",
+		}
+	}
+	snapshotConditions := make(map[string][]byte)
+	for _, r := range ctx.RulesSnapshot {
+		data, _ := yaml.Marshal(r.When)
+		snapshotConditions[r.RuleID] = data
+	}
+	var changed []string
+	for _, r := range ctx.Rules {
+		data, _ := yaml.Marshal(r.When)
+		if snap, ok := snapshotConditions[r.RuleID]; ok {
+			if !bytes.Equal(snap, data) {
+				changed = append(changed, r.RuleID)
+			}
+		}
+	}
+	if len(changed) > 0 {
+		return CheckResult{
+			ID: "rv-001", Name: "Rule integrity after fix loop",
+			Agent: "validator", Priority: "P0", Passed: false,
+			Message:  fmt.Sprintf("%d rules had conditions modified by fix loop", len(changed)),
+			Details:  changed,
+		}
+	}
+	return CheckResult{
+		ID: "rv-001", Name: "Rule integrity after fix loop",
+		Agent: "validator", Priority: "P0", Passed: true,
+		Message: fmt.Sprintf("All %d rules unchanged after fix loop", len(ctx.Rules)),
+	}
+}
+
+func CheckFixEffectiveness(ctx *EvalContext) CheckResult {
+	if ctx.PreFixReport == nil || ctx.Report == nil {
+		return CheckResult{
+			ID: "rv-002", Name: "Fix loop effectiveness",
+			Agent: "validator", Priority: "P1", Passed: false,
+			Message: "Missing pre-fix or post-fix report",
+		}
+	}
+	if ctx.PreFixReport.TestsFailed == 0 {
+		return CheckResult{
+			ID: "rv-002", Name: "Fix loop effectiveness",
+			Agent: "validator", Priority: "P1", Passed: true,
+			Message: "No failures to fix",
+		}
+	}
+	fixed := ctx.PreFixReport.TestsFailed - ctx.Report.TestsFailed
+	passed := ctx.Report.TestsFailed < ctx.PreFixReport.TestsFailed
+	return CheckResult{
+		ID: "rv-002", Name: "Fix loop effectiveness",
+		Agent: "validator", Priority: "P1", Passed: passed,
+		Message: fmt.Sprintf("Fixed %d/%d failures (pre: %d failed, post: %d failed)",
+			fixed, ctx.PreFixReport.TestsFailed,
+			ctx.PreFixReport.TestsFailed, ctx.Report.TestsFailed),
+	}
+}
+
+func CheckNoRegressions(ctx *EvalContext) CheckResult {
+	if ctx.PreFixReport == nil || ctx.Report == nil {
+		return CheckResult{
+			ID: "rv-003", Name: "No regressions from fix loop",
+			Agent: "validator", Priority: "P0", Passed: false,
+			Message: "Missing pre-fix or post-fix report",
+		}
+	}
+	preFailSet := make(map[string]bool)
+	for _, id := range ctx.PreFixReport.FailedRules {
+		preFailSet[id] = true
+	}
+	var regressions []string
+	for _, id := range ctx.Report.FailedRules {
+		if !preFailSet[id] {
+			regressions = append(regressions, id)
+		}
+	}
+	if len(regressions) > 0 {
+		return CheckResult{
+			ID: "rv-003", Name: "No regressions from fix loop",
+			Agent: "validator", Priority: "P0", Passed: false,
+			Message:  fmt.Sprintf("%d rules regressed after fix loop", len(regressions)),
+			Details:  regressions,
+		}
+	}
+	return CheckResult{
+		ID: "rv-003", Name: "No regressions from fix loop",
+		Agent: "validator", Priority: "P0", Passed: true,
+		Message: "No regressions",
+	}
+}
+
+// --- Pipeline Graders ---
+
+func CheckPassRate(ctx *EvalContext) CheckResult {
+	if ctx.Report == nil {
+		return CheckResult{
+			ID: "e2e-001", Name: "Pass rate (post-fix)",
+			Agent: "pipeline", Priority: "P1", Passed: false,
+			Message: "No report.yaml loaded",
+		}
+	}
+	threshold := 95.0
+	if ctx.Golden != nil && ctx.Golden.Thresholds.PassRatePostFix > 0 {
+		threshold = ctx.Golden.Thresholds.PassRatePostFix
+	}
+	passed := ctx.Report.PassRate >= threshold
+	return CheckResult{
+		ID: "e2e-001", Name: "Pass rate (post-fix)",
+		Agent: "pipeline", Priority: "P1", Passed: passed,
+		Message: fmt.Sprintf("Pass rate: %.1f%% (threshold: %.1f%%)", ctx.Report.PassRate, threshold),
+	}
+}
+
+// --- Helpers ---
+
 func ConditionType(c rules.Condition) string {
 	switch {
 	case c.JavaReferenced != nil:
@@ -145,44 +421,6 @@ func ConditionType(c rules.Condition) string {
 	}
 }
 
-// CheckConditionTypes (p1-006) verifies each golden pattern's expected condition type
-// matches the actual condition type in the generated rules.
-func CheckConditionTypes(ctx *EvalContext) CheckResult {
-	if ctx.Golden == nil || len(ctx.Rules) == 0 {
-		return CheckResult{
-			ID: "p1-006", Name: "Correct condition types",
-			Priority: "P1", Passed: false,
-			Message: "Missing golden set or rules",
-		}
-	}
-	var mismatches []string
-	for _, gp := range ctx.Golden.Patterns {
-		r := findRuleByGolden(ctx.Rules, gp)
-		if r == nil {
-			continue
-		}
-		actual := ConditionType(r.When)
-		if actual != gp.ConditionType {
-			mismatches = append(mismatches, fmt.Sprintf("%s: expected %s, got %s", gp.ID, gp.ConditionType, actual))
-		}
-	}
-	if len(mismatches) > 0 {
-		return CheckResult{
-			ID: "p1-006", Name: "Correct condition types",
-			Priority: "P1", Passed: false,
-			Message:  fmt.Sprintf("%d condition type mismatches", len(mismatches)),
-			Details:  mismatches,
-		}
-	}
-	return CheckResult{
-		ID: "p1-006", Name: "Correct condition types",
-		Priority: "P1", Passed: true,
-		Message: "All golden patterns have correct condition types",
-	}
-}
-
-// findRuleByGolden locates the rule matching a golden pattern by source_fqn or
-// dependency_name, including conditions inside or-combinators.
 func findRuleByGolden(ruleList []rules.Rule, gp GoldenPattern) *rules.Rule {
 	for i, r := range ruleList {
 		c := r.When
@@ -202,6 +440,14 @@ func findRuleByGolden(ruleList []rules.Rule, gp GoldenPattern) *rules.Rule {
 			if c.BuiltinFilecontent != nil && c.BuiltinFilecontent.Pattern == gp.SourceFQN {
 				return &ruleList[i]
 			}
+			if c.BuiltinXML != nil && c.BuiltinXML.XPath == gp.SourceFQN {
+				return &ruleList[i]
+			}
+		}
+		if gp.XPath != "" {
+			if c.BuiltinXML != nil && c.BuiltinXML.XPath == gp.XPath {
+				return &ruleList[i]
+			}
 		}
 		if gp.DependencyName != "" {
 			if c.JavaDependency != nil && c.JavaDependency.Name == gp.DependencyName {
@@ -210,9 +456,6 @@ func findRuleByGolden(ruleList []rules.Rule, gp GoldenPattern) *rules.Rule {
 			if c.GoDependency != nil && c.GoDependency.Name == gp.DependencyName {
 				return &ruleList[i]
 			}
-			// Also match referenced conditions by dependency name to detect
-			// condition type mismatches (e.g., golden expects java.dependency
-			// but rule uses java.referenced with the same identifier).
 			if c.JavaReferenced != nil && c.JavaReferenced.Pattern == gp.DependencyName {
 				return &ruleList[i]
 			}
@@ -245,112 +488,87 @@ func findRuleByGolden(ruleList []rules.Rule, gp GoldenPattern) *rules.Rule {
 	return nil
 }
 
-// CheckPassRate (p1-002) verifies the post-fix pass rate meets the threshold.
-func CheckPassRate(ctx *EvalContext) CheckResult {
-	if ctx.Report == nil {
-		return CheckResult{
-			ID: "p1-002", Name: "Pass rate (post-fix)",
-			Priority: "P1", Passed: false,
-			Message: "No report.yaml loaded",
+// --- RunAll ---
+
+func addChecks(agents map[string]*AgentEval, checks ...CheckResult) {
+	for _, c := range checks {
+		ae, ok := agents[c.Agent]
+		if !ok {
+			ae = &AgentEval{}
+			agents[c.Agent] = ae
 		}
-	}
-	threshold := 95.0
-	if ctx.Golden != nil && ctx.Golden.Thresholds.PassRatePostFix > 0 {
-		threshold = ctx.Golden.Thresholds.PassRatePostFix
-	}
-	passed := ctx.Report.PassRate >= threshold
-	return CheckResult{
-		ID: "p1-002", Name: "Pass rate (post-fix)",
-		Priority: "P1", Passed: passed,
-		Message: fmt.Sprintf("Pass rate: %.1f%% (threshold: %.1f%%)", ctx.Report.PassRate, threshold),
+		ae.Checks = append(ae.Checks, c)
 	}
 }
 
-// CheckDeduplication (p1-009) ensures no duplicate source_fqn or dependency_name
-// values exist in patterns.json.
-func CheckDeduplication(ctx *EvalContext) CheckResult {
-	if ctx.Patterns == nil {
-		return CheckResult{
-			ID: "p1-009", Name: "No duplicate patterns",
-			Priority: "P1", Passed: false,
-			Message: "No patterns.json loaded",
-		}
-	}
-	seenFQN := make(map[string]int)
-	seenDep := make(map[string]int)
-	var dupes []string
-	for i, p := range ctx.Patterns.Patterns {
-		if p.SourceFQN != "" {
-			if prev, ok := seenFQN[p.SourceFQN]; ok {
-				dupes = append(dupes, fmt.Sprintf("source_fqn %q: pattern[%d] and pattern[%d]", p.SourceFQN, prev, i))
-			}
-			seenFQN[p.SourceFQN] = i
-		}
-		if p.DependencyName != "" {
-			if prev, ok := seenDep[p.DependencyName]; ok {
-				dupes = append(dupes, fmt.Sprintf("dependency_name %q: pattern[%d] and pattern[%d]", p.DependencyName, prev, i))
-			}
-			seenDep[p.DependencyName] = i
-		}
-	}
-	if len(dupes) > 0 {
-		return CheckResult{
-			ID: "p1-009", Name: "No duplicate patterns",
-			Priority: "P1", Passed: false,
-			Message:  fmt.Sprintf("%d duplicate patterns found", len(dupes)),
-			Details:  dupes,
-		}
-	}
-	return CheckResult{
-		ID: "p1-009", Name: "No duplicate patterns",
-		Priority: "P1", Passed: true,
-		Message: fmt.Sprintf("No duplicates among %d patterns", len(ctx.Patterns.Patterns)),
-	}
-}
+func RunAll(ctx *EvalContext) *EvalReport {
+	agents := make(map[string]*AgentEval)
 
-// CheckKnownPatterns (p1-005) verifies all golden patterns were extracted.
-func CheckKnownPatterns(ctx *EvalContext) CheckResult {
-	if ctx.Golden == nil || ctx.Patterns == nil {
-		return CheckResult{
-			ID: "p1-005", Name: "Known patterns extracted",
-			Priority: "P1", Passed: false,
-			Message: "Missing golden set or patterns.json",
-		}
+	if ctx.Patterns != nil || len(ctx.Rules) > 0 {
+		addChecks(agents, CheckRuleValidity(ctx))
+		addChecks(agents, CheckRequiredFields(ctx))
+		addChecks(agents, CheckDeduplication(ctx))
 	}
-	fqnSet := make(map[string]bool)
-	depSet := make(map[string]bool)
-	for _, p := range ctx.Patterns.Patterns {
-		if p.SourceFQN != "" {
-			fqnSet[p.SourceFQN] = true
-		}
-		if p.DependencyName != "" {
-			depSet[p.DependencyName] = true
-		}
+	if ctx.Golden != nil && ctx.Patterns != nil {
+		addChecks(agents, CheckKnownPatterns(ctx))
 	}
-	var missing []string
-	for _, gp := range ctx.Golden.Patterns {
-		found := false
-		if gp.SourceFQN != "" && fqnSet[gp.SourceFQN] {
-			found = true
-		}
-		if gp.DependencyName != "" && depSet[gp.DependencyName] {
-			found = true
-		}
-		if !found {
-			missing = append(missing, gp.ID)
-		}
+	if ctx.Golden != nil && len(ctx.Rules) > 0 {
+		addChecks(agents, CheckConditionTypes(ctx))
 	}
-	if len(missing) > 0 {
-		return CheckResult{
-			ID: "p1-005", Name: "Known patterns extracted",
-			Priority: "P1", Passed: false,
-			Message:  fmt.Sprintf("%d/%d golden patterns missing", len(missing), len(ctx.Golden.Patterns)),
-			Details:  missing,
-		}
+
+	if ctx.PreFixReport != nil {
+		addChecks(agents, CheckPreFixPassRate(ctx))
 	}
-	return CheckResult{
-		ID: "p1-005", Name: "Known patterns extracted",
-		Priority: "P1", Passed: true,
-		Message: fmt.Sprintf("All %d golden patterns found", len(ctx.Golden.Patterns)),
+
+	if ctx.RulesSnapshot != nil && len(ctx.Rules) > 0 {
+		addChecks(agents, CheckRuleIntegrity(ctx))
+	}
+	if ctx.PreFixReport != nil && ctx.Report != nil {
+		addChecks(agents, CheckFixEffectiveness(ctx))
+		addChecks(agents, CheckNoRegressions(ctx))
+	}
+
+	if ctx.Report != nil {
+		addChecks(agents, CheckPassRate(ctx))
+	}
+
+	totalPassed, totalCount := 0, 0
+	for _, ae := range agents {
+		p := 0
+		for _, c := range ae.Checks {
+			if c.Passed {
+				p++
+			}
+		}
+		total := len(ae.Checks)
+		var rate float64
+		if total > 0 {
+			rate = float64(p) / float64(total) * 100
+		}
+		ae.Summary = EvalSummary{Total: total, Passed: p, Failed: total - p, PassRate: rate}
+		totalPassed += p
+		totalCount += total
+	}
+
+	var totalRate float64
+	if totalCount > 0 {
+		totalRate = float64(totalPassed) / float64(totalCount) * 100
+	}
+
+	goldenName := ""
+	if ctx.Golden != nil {
+		goldenName = fmt.Sprintf("%s-to-%s", ctx.Golden.Source, ctx.Golden.Target)
+	}
+
+	return &EvalReport{
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		GoldenSet: goldenName,
+		Agents:    agents,
+		Summary: EvalSummary{
+			Total:    totalCount,
+			Passed:   totalPassed,
+			Failed:   totalCount - totalPassed,
+			PassRate: totalRate,
+		},
 	}
 }

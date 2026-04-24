@@ -39,6 +39,15 @@ func BuildReport(source, target string, rulesTotal, passed, failed int, failedRu
 	}
 }
 
+// ParseReport parses a YAML report from raw bytes.
+func ParseReport(data []byte) (*Report, error) {
+	var report Report
+	if err := yaml.Unmarshal(data, &report); err != nil {
+		return nil, fmt.Errorf("parsing report: %w", err)
+	}
+	return &report, nil
+}
+
 // WriteReport writes the report to a YAML file.
 func WriteReport(path string, report *Report) error {
 	data, err := yaml.Marshal(report)

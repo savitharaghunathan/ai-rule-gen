@@ -27,6 +27,7 @@ cmd/
   test/main.go            # Run kantra tests, stamp rules, generate report (all-in-one)
   stamp/main.go           # Update rule files with kantra pass/fail labels
   report/main.go          # Generate YAML summary report
+  eval/main.go            # Eval harness — grade pipeline output against golden sets
   internal/cli/           # Shared JSON output helper
 internal/
   construct/              # patterns.json → rule YAML + ruleset.yaml
@@ -38,8 +39,14 @@ internal/
                           #   labels.go (StampTestResults), ruleid.go (IDGenerator)
   sanitize/               # Fix illegal XML comments (LLM-generated '--')
   scaffold/               # test-scaffold: create dirs, .test.yaml, manifest.json
+  eval/                   # Eval harness: golden sets, graders, report types
   workspace/              # Output directory management, report generation
+eval/
+  Containerfile           # Podman image for sandboxed eval runs
+  run.sh                  # Entry script for container eval runs
+  golden/                 # Curated golden pattern sets per migration (YAML)
 agents/                   # Agent skills (agentskills.io format, SKILL.md + references/)
+  eval/                   # Eval skill — sandboxed pipeline run + grading
 ```
 
 ## Skill Composition
@@ -72,13 +79,22 @@ All commands are deterministic. No LLM, no API keys required.
 ```bash
 # Run individual commands (no build step needed)
 go run ./cmd/ingest    --input <url-or-file> --output guide.md
-go run ./cmd/construct --patterns patterns.json --output rules/
+go run ./cmd/construct --patterns rules/patterns.json --output rules/
 go run ./cmd/validate  --rules rules/
 go run ./cmd/scaffold  --rules rules/ --output tests/
 go run ./cmd/sanitize  --dir tests/data/
 go run ./cmd/test      --rules rules/ --tests tests/ [--files a.test.yaml,b.test.yaml]
 go run ./cmd/stamp     --rules rules/ --kantra-output "..."
 go run ./cmd/report    --source src --target tgt --output report.yaml
+go run ./cmd/eval      --golden eval/golden/<set>.yaml --rules rules/ --report report.yaml [--pre-fix-report pre-fix.yaml] [--rules-snapshot rules-snapshot/]
+
+# Eval (containerized)
+podman build -t ai-rule-gen-eval -f eval/Containerfile eval/
+podman run --rm -v $(pwd):$(pwd) -w $(pwd) \
+  -v /run/podman/podman.sock:/run/podman/podman.sock \
+  -e CONTAINER_HOST=unix:///run/podman/podman.sock \
+  -e GOOGLE_GENERATIVE_AI_API_KEY ai-rule-gen-eval \
+  bash eval/run.sh <guide-url> [eval/golden/<set>.yaml]
 
 # Tests
 go test ./internal/...  # Unit tests
@@ -94,6 +110,11 @@ Intermediate JSON format between agent pattern extraction and `go run ./cmd/cons
 Agent writes this; CLI reads it. Contains source, target, language, and a list of
 MigrationPattern objects with fields like source_fqn, provider_type, location_type,
 alternative_fqns, complexity, category, concern.
+
+### Golden Sets (eval/golden/)
+Curated YAML files listing expected patterns per migration guide. Each golden set
+specifies source/target, thresholds (pass_rate_post_fix, coverage_min), and patterns
+with condition_type expectations. Used by `go run ./cmd/eval` to grade pipeline output.
 
 ### manifest.json
 Output of `go run ./cmd/scaffold`. Tells the agent what source files to generate

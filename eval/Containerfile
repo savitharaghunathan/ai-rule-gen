@@ -1,0 +1,30 @@
+# Eval harness container
+# Runs generate-rules pipeline with Go, opencode, kantra, and podman client
+# NOT podman-in-podman — mounts host's podman socket for kantra analysis containers
+
+FROM golang:1.25-bookworm
+
+# Install Node.js, podman client, and curl
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs podman && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install opencode (anomalyco/opencode — models fetched dynamically)
+RUN npm install -g opencode-ai@latest
+
+# Install kantra v0.9.1
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -sL "https://github.com/konveyor/kantra/releases/download/v0.9.1/kantra.linux.${ARCH}.zip" -o /tmp/kantra.zip && \
+    apt-get update && apt-get install -y unzip && apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    unzip /tmp/kantra.zip -d /usr/local/bin && \
+    chmod +x /usr/local/bin/kantra && \
+    rm /tmp/kantra.zip
+
+# Default working directory
+WORKDIR /src
+
+# Container will mount the repo at its absolute path via -v $(pwd):$(pwd)
+# and mount host podman socket at /run/podman/podman.sock

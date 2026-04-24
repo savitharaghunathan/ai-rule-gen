@@ -1,6 +1,6 @@
 ---
 name: rule-validator
-description: Fix failing test data so rules pass kantra tests, with built-in verify loop
+description: Fix failing test data so rules pass kantra tests, with built-in verify loop. Use when kantra test runs report failing rules that need test data repairs.
 ---
 
 # Rule Validator — Fix Agent

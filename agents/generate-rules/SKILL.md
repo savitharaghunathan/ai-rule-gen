@@ -1,6 +1,6 @@
 ---
 name: generate-rules
-description: Generate Konveyor analyzer migration rules from a migration guide (URL, file path, or pasted text)
+description: Generate Konveyor analyzer migration rules from a migration guide. Use when user provides a migration guide URL, file path, or pasted text and wants analyzer rules generated end-to-end.
 ---
 
 # Generate Konveyor Migration Rules
@@ -137,13 +137,9 @@ Save `source`, `target`, `patterns_count`, `rules_count`, and the coverage repor
 
 ### Checkpoint
 
-After printing the extract summary, ask the user:
+**Interactive mode:** After printing the extract summary, ask the user: "Continue with test generation and validation? (y/n)". If the user declines, skip to Step 6 (Summary) with untested rules.
 
-```
-Continue with test generation and validation? (y/n)
-```
-
-If the user declines, skip to Step 6 (Summary) with untested rules. Otherwise continue.
+**Headless mode (`claude -p`):** Skip the checkpoint and continue automatically.
 
 ### 3. Test Generation
 

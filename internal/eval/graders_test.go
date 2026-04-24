@@ -20,6 +20,9 @@ func TestCheckRequiredFields_AllPresent(t *testing.T) {
 	if !result.Passed {
 		t.Errorf("expected pass, got fail: %s", result.Message)
 	}
+	if result.Agent != "rule-writer" {
+		t.Errorf("Agent = %q, want rule-writer", result.Agent)
+	}
 }
 
 func TestCheckRequiredFields_MissingFields(t *testing.T) {
@@ -63,6 +66,9 @@ func TestCheckRuleValidity_Valid(t *testing.T) {
 	result := CheckRuleValidity(ctx)
 	if !result.Passed {
 		t.Errorf("expected pass: %s", result.Message)
+	}
+	if result.Agent != "rule-writer" {
+		t.Errorf("Agent = %q, want rule-writer", result.Agent)
 	}
 }
 
@@ -154,6 +160,9 @@ func TestCheckPassRate_Above(t *testing.T) {
 	result := CheckPassRate(ctx)
 	if !result.Passed {
 		t.Errorf("expected pass: %s", result.Message)
+	}
+	if result.Agent != "pipeline" {
+		t.Errorf("Agent = %q, want pipeline", result.Agent)
 	}
 }
 
@@ -267,5 +276,275 @@ func TestCheckKnownPatterns_SomeMissing(t *testing.T) {
 	details, ok := result.Details.([]string)
 	if !ok || len(details) != 1 || details[0] != "ref-1" {
 		t.Errorf("expected [ref-1] in details, got %v", result.Details)
+	}
+}
+
+func TestRunAll_RuleWriterOnly(t *testing.T) {
+	ctx := &EvalContext{
+		Golden: &GoldenSet{
+			Patterns: []GoldenPattern{
+				{ID: "dep-1", DependencyName: "org.example.foo", ConditionType: "java.dependency"},
+			},
+			Thresholds: Thresholds{PassRatePostFix: 95.0},
+		},
+		Patterns: &rules.ExtractOutput{
+			Patterns: []rules.MigrationPattern{
+				{SourcePattern: "foo", DependencyName: "org.example.foo", Rationale: "r", Complexity: "low", Category: "mandatory"},
+			},
+		},
+		Rules: []rules.Rule{
+			{
+				RuleID: "r1", Message: "test",
+				When: rules.Condition{JavaDependency: &rules.Dependency{Name: "org.example.foo"}},
+			},
+		},
+	}
+	report := RunAll(ctx)
+	rw, ok := report.Agents["rule-writer"]
+	if !ok {
+		t.Fatal("expected rule-writer agent in report")
+	}
+	if rw.Summary.Failed != 0 {
+		t.Errorf("expected 0 rule-writer failures, got %d", rw.Summary.Failed)
+		for _, c := range rw.Checks {
+			if !c.Passed {
+				t.Errorf("  FAIL: %s — %s", c.ID, c.Message)
+			}
+		}
+	}
+	if rw.Summary.Total != 5 {
+		t.Errorf("expected 5 rule-writer checks, got %d", rw.Summary.Total)
+	}
+	if _, ok := report.Agents["test-generator"]; ok {
+		t.Error("test-generator should not appear without PreFixReport")
+	}
+	if _, ok := report.Agents["validator"]; ok {
+		t.Error("validator should not appear without RulesSnapshot")
+	}
+	if _, ok := report.Agents["pipeline"]; ok {
+		t.Error("pipeline should not appear without Report")
+	}
+}
+
+func TestRunAll_AllAgents(t *testing.T) {
+	baseRules := []rules.Rule{
+		{
+			RuleID: "r1", Message: "test",
+			When: rules.Condition{JavaDependency: &rules.Dependency{Name: "org.example.foo"}},
+		},
+	}
+	ctx := &EvalContext{
+		Golden: &GoldenSet{
+			Patterns: []GoldenPattern{
+				{ID: "dep-1", DependencyName: "org.example.foo", ConditionType: "java.dependency"},
+			},
+			Thresholds: Thresholds{PassRatePostFix: 95.0, PreFixPassRate: 80.0},
+		},
+		Patterns: &rules.ExtractOutput{
+			Patterns: []rules.MigrationPattern{
+				{SourcePattern: "foo", DependencyName: "org.example.foo", Rationale: "r", Complexity: "low", Category: "mandatory"},
+			},
+		},
+		Rules:         baseRules,
+		RulesSnapshot: baseRules,
+		PreFixReport:  &workspace.Report{PassRate: 90.0, TestsPassed: 9, TestsFailed: 1, FailedRules: []string{"r2"}},
+		Report:        &workspace.Report{PassRate: 100.0, TestsPassed: 10, TestsFailed: 0},
+	}
+	report := RunAll(ctx)
+
+	expectedAgents := []string{"rule-writer", "test-generator", "validator", "pipeline"}
+	for _, agent := range expectedAgents {
+		if _, ok := report.Agents[agent]; !ok {
+			t.Errorf("expected %s agent in report", agent)
+		}
+	}
+	if report.Summary.Failed != 0 {
+		t.Errorf("expected 0 total failures, got %d", report.Summary.Failed)
+		for agent, ae := range report.Agents {
+			for _, c := range ae.Checks {
+				if !c.Passed {
+					t.Errorf("  FAIL [%s]: %s — %s", agent, c.ID, c.Message)
+				}
+			}
+		}
+	}
+}
+
+func TestRunAll_MinimalContext(t *testing.T) {
+	ctx := &EvalContext{}
+	report := RunAll(ctx)
+	if len(report.Agents) != 0 {
+		t.Errorf("expected empty agents map with no data, got %d agents", len(report.Agents))
+	}
+	if report.Summary.Total != 0 {
+		t.Errorf("expected 0 total checks, got %d", report.Summary.Total)
+	}
+}
+
+func TestCheckPreFixPassRate_Above(t *testing.T) {
+	ctx := &EvalContext{
+		Golden:       &GoldenSet{Thresholds: Thresholds{PreFixPassRate: 80.0}},
+		PreFixReport: &workspace.Report{PassRate: 90.0, TestsPassed: 9, TestsFailed: 1},
+	}
+	result := CheckPreFixPassRate(ctx)
+	if !result.Passed {
+		t.Errorf("expected pass: %s", result.Message)
+	}
+	if result.Agent != "test-generator" {
+		t.Errorf("Agent = %q, want test-generator", result.Agent)
+	}
+}
+
+func TestCheckPreFixPassRate_Below(t *testing.T) {
+	ctx := &EvalContext{
+		Golden:       &GoldenSet{Thresholds: Thresholds{PreFixPassRate: 80.0}},
+		PreFixReport: &workspace.Report{PassRate: 50.0, TestsPassed: 5, TestsFailed: 5},
+	}
+	result := CheckPreFixPassRate(ctx)
+	if result.Passed {
+		t.Error("expected fail for low pre-fix pass rate")
+	}
+}
+
+func TestCheckPreFixPassRate_DefaultThreshold(t *testing.T) {
+	ctx := &EvalContext{
+		PreFixReport: &workspace.Report{PassRate: 85.0},
+	}
+	result := CheckPreFixPassRate(ctx)
+	if !result.Passed {
+		t.Errorf("expected pass with default 80%% threshold: %s", result.Message)
+	}
+}
+
+func TestCheckPreFixPassRate_Nil(t *testing.T) {
+	ctx := &EvalContext{}
+	result := CheckPreFixPassRate(ctx)
+	if result.Passed {
+		t.Error("expected fail for nil pre-fix report")
+	}
+}
+
+func TestCheckRuleIntegrity_Unchanged(t *testing.T) {
+	r := []rules.Rule{
+		{
+			RuleID: "r1", Message: "test",
+			When: rules.Condition{JavaDependency: &rules.Dependency{Name: "org.example.foo"}},
+		},
+	}
+	ctx := &EvalContext{Rules: r, RulesSnapshot: r}
+	result := CheckRuleIntegrity(ctx)
+	if !result.Passed {
+		t.Errorf("expected pass: %s", result.Message)
+	}
+	if result.Agent != "validator" {
+		t.Errorf("Agent = %q, want validator", result.Agent)
+	}
+}
+
+func TestCheckRuleIntegrity_Changed(t *testing.T) {
+	snapshot := []rules.Rule{
+		{
+			RuleID: "r1", Message: "test",
+			When: rules.Condition{JavaDependency: &rules.Dependency{Name: "org.example.foo"}},
+		},
+	}
+	modified := []rules.Rule{
+		{
+			RuleID: "r1", Message: "test",
+			When: rules.Condition{JavaReferenced: &rules.JavaReferenced{Pattern: "org.example.foo"}},
+		},
+	}
+	ctx := &EvalContext{Rules: modified, RulesSnapshot: snapshot}
+	result := CheckRuleIntegrity(ctx)
+	if result.Passed {
+		t.Error("expected fail for modified rule condition")
+	}
+	details, ok := result.Details.([]string)
+	if !ok || len(details) != 1 || details[0] != "r1" {
+		t.Errorf("expected [r1] in details, got %v", result.Details)
+	}
+}
+
+func TestCheckRuleIntegrity_Nil(t *testing.T) {
+	ctx := &EvalContext{}
+	result := CheckRuleIntegrity(ctx)
+	if result.Passed {
+		t.Error("expected fail for nil snapshot")
+	}
+}
+
+func TestCheckFixEffectiveness_Improved(t *testing.T) {
+	ctx := &EvalContext{
+		PreFixReport: &workspace.Report{PassRate: 80.0, TestsPassed: 8, TestsFailed: 2},
+		Report:       &workspace.Report{PassRate: 100.0, TestsPassed: 10, TestsFailed: 0},
+	}
+	result := CheckFixEffectiveness(ctx)
+	if !result.Passed {
+		t.Errorf("expected pass: %s", result.Message)
+	}
+	if result.Agent != "validator" {
+		t.Errorf("Agent = %q, want validator", result.Agent)
+	}
+}
+
+func TestCheckFixEffectiveness_NoImprovement(t *testing.T) {
+	ctx := &EvalContext{
+		PreFixReport: &workspace.Report{PassRate: 80.0, TestsPassed: 8, TestsFailed: 2},
+		Report:       &workspace.Report{PassRate: 80.0, TestsPassed: 8, TestsFailed: 2},
+	}
+	result := CheckFixEffectiveness(ctx)
+	if result.Passed {
+		t.Error("expected fail when no failures were fixed")
+	}
+}
+
+func TestCheckFixEffectiveness_NoFailures(t *testing.T) {
+	ctx := &EvalContext{
+		PreFixReport: &workspace.Report{PassRate: 100.0, TestsPassed: 10, TestsFailed: 0},
+		Report:       &workspace.Report{PassRate: 100.0, TestsPassed: 10, TestsFailed: 0},
+	}
+	result := CheckFixEffectiveness(ctx)
+	if !result.Passed {
+		t.Errorf("expected pass when no failures to fix: %s", result.Message)
+	}
+}
+
+func TestCheckNoRegressions_Clean(t *testing.T) {
+	ctx := &EvalContext{
+		PreFixReport: &workspace.Report{FailedRules: []string{"r1", "r2"}},
+		Report:       &workspace.Report{FailedRules: []string{"r1"}},
+	}
+	result := CheckNoRegressions(ctx)
+	if !result.Passed {
+		t.Errorf("expected pass: %s", result.Message)
+	}
+	if result.Agent != "validator" {
+		t.Errorf("Agent = %q, want validator", result.Agent)
+	}
+}
+
+func TestCheckNoRegressions_Regression(t *testing.T) {
+	ctx := &EvalContext{
+		PreFixReport: &workspace.Report{FailedRules: []string{"r1"}},
+		Report:       &workspace.Report{FailedRules: []string{"r3"}},
+	}
+	result := CheckNoRegressions(ctx)
+	if result.Passed {
+		t.Error("expected fail for regression")
+	}
+	details, ok := result.Details.([]string)
+	if !ok || len(details) != 1 || details[0] != "r3" {
+		t.Errorf("expected [r3] in details, got %v", result.Details)
+	}
+}
+
+func TestCheckNoRegressions_AllFixed(t *testing.T) {
+	ctx := &EvalContext{
+		PreFixReport: &workspace.Report{FailedRules: []string{"r1", "r2"}},
+		Report:       &workspace.Report{},
+	}
+	result := CheckNoRegressions(ctx)
+	if !result.Passed {
+		t.Errorf("expected pass when all fixed: %s", result.Message)
 	}
 }
