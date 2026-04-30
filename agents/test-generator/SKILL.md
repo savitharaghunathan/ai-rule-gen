@@ -80,36 +80,29 @@ For each group:
 **Source code requirements:**
 - The project must be COMPLETE and COMPILABLE
 - For EACH rule, include code that EXACTLY matches the pattern in the `when` condition
+- **Use the SOURCE (old/pre-migration) API paths** — the test simulates unmigrated code. Copy the `pattern` field from the rule YAML verbatim as your import/type/annotation. Never use the target (new) API path.
 - Add a comment before each pattern: `// Rule: <ruleID>`
 - Keep code minimal — one example per rule, just enough to trigger the pattern
 - All imports/dependencies must be valid and resolve
 
-**How the analyzer matches each condition type:**
-- `java.referenced` with location `ANNOTATION`: USE the annotation on a class, method, or field (e.g., `@MockBean private Object svc;`). **An import alone is NOT enough** — the annotation must appear as `@Name` on an actual element.
-- `java.referenced` with location `IMPORT`: use the import statement
-- `java.referenced` with location `TYPE`: declare or use the type
-- `java.referenced` with location `METHOD_CALL`: call the method on an explicitly typed variable. **Do NOT chain calls** — `Foo.get().bar()` fails in source-only mode because JDTLS can't resolve intermediate return types. Instead: `Foo f = Foo.get(); f.bar();`
-- `go.referenced`: import and use the package/symbol (e.g., `import "golang.org/x/crypto/md4"`)
-- `nodejs.referenced`: import and use the symbol
-- `builtin.filecontent`: include text matching the regex pattern in the appropriate file
+**Dependency version requirements for `java.dependency` rules:**
+- The version must be **strictly below** the rule's `upperbound`
+- The version must **actually exist** on Maven Central — do not fabricate versions
+- Use **plain numeric versions** (e.g., `3.2.0`) — kantra cannot reliably compare qualified versions like `6.4.0.Final` or `2.3-groovy-4.0` against numeric bounds
+- When the artifact only publishes qualified versions (e.g., Spock, Hibernate), use the Spring Boot parent BOM to manage the version instead of declaring an explicit version. Declare the dependency without a `<version>` tag and let the BOM resolve it. If the BOM doesn't manage the artifact, use a comment `<!-- version managed by BOM -->` and verify the BOM-resolved version is below the upperbound
+- When an artifact was **discontinued** before the target version (e.g., `hibernate-proxool` was dropped in Hibernate 6), use the **last published version** from the era when it existed (e.g., `5.6.15.Final` under `org.hibernate` groupId, not `6.4.0.Final` under `org.hibernate.orm`)
+
+**How the analyzer matches each condition type:** See `references/test-data-guide.md` for the full matching rules per condition type. Getting this wrong is the #1 cause of test failures.
 
 ### 4. Resolve dependencies (only when needed)
 
-Most rules use source-only analysis and do NOT need dependency resolution. Only resolve when required:
+See `references/test-data-guide.md` for per-language dependency resolution rules. The key constraints:
+- **Java:** Do NOT run `mvn compile` or any Maven command — kantra resolves dependencies by parsing pom.xml directly
+- **Go:** Always run `go mod tidy` then `go mod vendor`
 
-- **Go:** Always run `go mod tidy` then `go mod vendor` (gopls in kantra container can't download modules)
-- **Java `java.referenced` (source-only):** Do NOT run `mvn dependency:resolve`. Source-only analysis resolves IMPORT, ANNOTATION, TYPE patterns without downloaded JARs.
-- **Java `java.dependency`:** DO run `mvn dependency:resolve -q -B`. These rules use Maven dependency resolution, not JDTLS.
-- **Node.js:** `npm install` only if needed for type resolution
-- **C#:** `dotnet restore` only if needed for type resolution
+### 5. Sanitize XML
 
-### 5. Sanitize XML (skip if invoked from orchestrator — orchestrator handles sanitize)
-
-Run the sanitizer to fix any illegal XML comments:
-
-```bash
-go run ./cmd/sanitize --dir <tests-data-dir>
-```
+Do NOT run sanitize. The orchestrator handles this after all test-gen agents complete.
 
 ### 6. Return
 

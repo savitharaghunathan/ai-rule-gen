@@ -71,4 +71,4 @@ Parse the JSON output:
 
 ## Rule Integrity
 
-**NEVER change a rule's condition type, provider_type, or pattern.** The rule is authoritative. Fixes always target test data.
+See `references/fix-strategies.md` — Rule Integrity Principle. The rule is authoritative; fixes always target test data.

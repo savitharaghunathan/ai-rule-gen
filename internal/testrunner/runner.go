@@ -2,11 +2,14 @@ package testrunner
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/konveyor/ai-rule-gen/internal/kantraparser"
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -14,19 +17,22 @@ import (
 
 // Result is the JSON output of a test run.
 type Result struct {
-	Passed      int      `json:"passed"`
-	Failed      int      `json:"failed"`
-	Total       int      `json:"total"`
-	PassRate    float64  `json:"pass_rate"`
-	FailedRules []string `json:"failed_rules,omitempty"`
-	Output      string   `json:"output,omitempty"`
+	Passed       int      `json:"passed"`
+	Failed       int      `json:"failed"`
+	Total        int      `json:"total"`
+	PassRate     float64  `json:"pass_rate"`
+	FailedRules  []string `json:"failed_rules,omitempty"`
+	TimedOutFiles []string `json:"timed_out_files,omitempty"`
+	Output       string   `json:"output,omitempty"`
 }
 
 // Config holds the inputs for a test run.
 type Config struct {
-	RulesDir string
-	TestsDir string
-	Files    []string // specific test files to run (if empty, scan TestsDir)
+	RulesDir       string
+	TestsDir       string
+	Files          []string      // specific test files to run (if empty, scan TestsDir)
+	TestTimeout    time.Duration // per-test-file timeout (0 = no timeout)
+	RetryTimeouts  bool          // retry timed-out files once after the initial run
 }
 
 // Run executes kantra test for each .test.yaml file and returns pass/fail results.
@@ -55,29 +61,25 @@ func Run(cfg Config) (*Result, error) {
 		return nil, fmt.Errorf("no .test.yaml files found in %s", cfg.TestsDir)
 	}
 
-	// Run kantra test per file sequentially, collect output.
-	// Track groups that error out (e.g., "unable to get build tool") so their
-	// rules are correctly marked as failed rather than silently passing.
 	var allOutput strings.Builder
-	var erroredRuleIDs []string
-	for _, tf := range testFiles {
-		out, err := RunKantraTest(tf)
-		allOutput.WriteString(out)
-		allOutput.WriteString("\n")
-		if err != nil {
-			if out == "" {
-				return nil, fmt.Errorf("kantra test %s: %w", filepath.Base(tf), err)
-			}
-			// Only mark all rules as errored if kantra failed before producing
-			// any test results (e.g., "unable to get build tool"). If kantra
-			// produced a Rules Summary, per-rule parsing handles pass/fail.
-			if _, total := kantraparser.ParseSummary(out); total == 0 {
-				if ids, parseErr := kantraparser.TestFileRuleIDs(tf); parseErr == nil {
-					erroredRuleIDs = append(erroredRuleIDs, ids...)
-				}
-			}
-		}
+	erroredRuleIDs, timedOutFiles, err := runFiles(testFiles, cfg.TestTimeout, &allOutput)
+	if err != nil {
+		return nil, err
 	}
+
+	if cfg.RetryTimeouts && len(timedOutFiles) > 0 {
+		var retryPaths []string
+		for _, f := range timedOutFiles {
+			retryPaths = append(retryPaths, filepath.Join(cfg.TestsDir, f))
+		}
+		retryErrored, retryTimedOut, retryErr := runFiles(retryPaths, cfg.TestTimeout, &allOutput)
+		if retryErr != nil {
+			return nil, retryErr
+		}
+		erroredRuleIDs = retryErrored
+		timedOutFiles = retryTimedOut
+	}
+
 	combinedOutput := allOutput.String()
 
 	// Write combined kantra output.
@@ -124,12 +126,13 @@ func Run(cfg Config) (*Result, error) {
 	}
 
 	return &Result{
-		Passed:      passed,
-		Failed:      failed,
-		Total:       total,
-		PassRate:    passRate,
-		FailedRules: failedIDs,
-		Output:      combinedOutput,
+		Passed:        passed,
+		Failed:        failed,
+		Total:         total,
+		PassRate:      passRate,
+		FailedRules:   failedIDs,
+		TimedOutFiles: timedOutFiles,
+		Output:        combinedOutput,
 	}, nil
 }
 
@@ -153,7 +156,46 @@ func FindTestFiles(dir string) ([]string, error) {
 
 // RunKantraTest executes kantra test on a single test file and returns the combined output.
 func RunKantraTest(testFile string) (string, error) {
-	cmd := exec.Command("kantra", "test", testFile)
+	return runKantraTestWithTimeout(testFile, 0)
+}
+
+// runFiles runs kantra test on each file sequentially, appending output to w.
+// Returns rule IDs from errored/timed-out files and the list of timed-out filenames.
+func runFiles(testFiles []string, timeout time.Duration, w *strings.Builder) (erroredRuleIDs, timedOutFiles []string, err error) {
+	for _, tf := range testFiles {
+		out, runErr := runKantraTestWithTimeout(tf, timeout)
+		w.WriteString(out)
+		w.WriteString("\n")
+		if runErr != nil {
+			if isTimeout(runErr) {
+				timedOutFiles = append(timedOutFiles, filepath.Base(tf))
+				if ids, parseErr := kantraparser.TestFileRuleIDs(tf); parseErr == nil {
+					erroredRuleIDs = append(erroredRuleIDs, ids...)
+				}
+				continue
+			}
+			if out == "" {
+				return nil, nil, fmt.Errorf("kantra test %s: %w", filepath.Base(tf), runErr)
+			}
+			if _, total := kantraparser.ParseSummary(out); total == 0 {
+				if ids, parseErr := kantraparser.TestFileRuleIDs(tf); parseErr == nil {
+					erroredRuleIDs = append(erroredRuleIDs, ids...)
+				}
+			}
+		}
+	}
+	return erroredRuleIDs, timedOutFiles, nil
+}
+
+func runKantraTestWithTimeout(testFile string, timeout time.Duration) (string, error) {
+	var cmd *exec.Cmd
+	if timeout > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		cmd = exec.CommandContext(ctx, "kantra", "test", testFile)
+	} else {
+		cmd = exec.Command("kantra", "test", testFile)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -163,6 +205,20 @@ func RunKantraTest(testFile string) (string, error) {
 		output += "\n" + stderr.String()
 	}
 	return output, err
+}
+
+func isTimeout(err error) bool {
+	if err == nil {
+		return false
+	}
+	if err == context.DeadlineExceeded {
+		return true
+	}
+	var exitErr *exec.ExitError
+	if ok := errors.As(err, &exitErr); ok && exitErr.ProcessState != nil {
+		return exitErr.String() == "signal: killed"
+	}
+	return errors.Is(err, context.DeadlineExceeded)
 }
 
 // ReadSourceTarget extracts source and target from ruleset.yaml labels.

@@ -14,6 +14,14 @@ For each rule, generate a COMPLETE, COMPILABLE project where the source code con
 4. Keep code minimal — one example per rule, just enough to trigger the pattern
 5. All imports/dependencies must be valid and resolve
 
+## Source Code Must Use the OLD (Source) API
+
+This is a common mistake. The test data simulates code that has NOT been migrated yet. Every import, annotation, type reference, and dependency version must use the **source** (pre-migration) API — never the target.
+
+Example: if a rule detects `org.springframework.boot.autoconfigure.http.HttpMessageConverters` (the 3.x package), the test file must import from that exact path. Do NOT use the 4.x relocated path `org.springframework.boot.http.converter.autoconfigure.HttpMessageConverters` — the rule won't match and the test fails.
+
+The `pattern` field in the rule YAML tells you the exact FQN to use in the test code. Copy it verbatim.
+
 ## How the Analyzer Matches Each Condition Type
 
 This is CRITICAL — the analyzer matches patterns against fully qualified names and source references. If you don't follow these rules, the test code won't trigger the rule.
@@ -34,9 +42,59 @@ This is CRITICAL — the analyzer matches patterns against fully qualified names
 | `nodejs.referenced` | — | Import and use the symbol (e.g., `import { Button } from '@patternfly/react-core';`) |
 | `csharp.referenced` | — | Use the fully qualified type/symbol |
 | `builtin.filecontent` | — | Include text in the appropriate file that matches the regex pattern. Check the `filePattern` field to know which file type. Note: `filePattern` is a Go regex, not a glob. |
-| `java.dependency` | — | The `pom.xml` must declare the dependency with a version within the rule's bounds. Use the `name` field as `groupId.artifactId` (dot-separated). E.g., name `org.springframework.boot.spring-boot-starter-undertow` + upperbound `4.0.0` → pom.xml needs `<artifactId>spring-boot-starter-undertow</artifactId>` with a version below 4.0.0. **No source code needed** — only the pom.xml matters. |
+| `java.dependency` | — | The `pom.xml` must declare the dependency with a version that satisfies the rule's bounds. See the **java.dependency version bounds** section below. **No source code needed** — only the pom.xml matters. |
 | `go.dependency` | — | The `go.mod` must declare the module dependency with a version within the rule's bounds |
 | `builtin.xml` | — | The XML file (usually `pom.xml`) must contain elements matching the XPath expression. If `filepaths` is set, the file must be at that path. If `namespaces` is set, ensure the XML uses those namespace URIs |
+
+## java.dependency version bounds
+
+This is the most common cause of test failures. Read carefully.
+
+A `java.dependency` rule matches when:
+- The pom.xml declares the artifact AND
+- The declared version is **strictly less than** the `upperbound` (if set) AND
+- The declared version is **greater than or equal to** the `lowerbound` (if set)
+
+**If the declared version is >= upperbound, the rule does NOT match and the test FAILS.**
+
+Example: a rule with `name: org.flywaydb.flyway-core` and `upperbound: 4.0.0`:
+- `<version>3.2.1</version>` → MATCHES (3.2.1 < 4.0.0)
+- `<version>9.22.0</version>` → DOES NOT MATCH (9.22.0 >= 4.0.0) — **test fails**
+- `<version>8.13.0</version>` → DOES NOT MATCH (8.13.0 >= 4.0.0) — **test fails**
+
+**Rules for choosing test versions:**
+1. The version MUST be strictly less than the `upperbound`
+2. Use a realistic version that actually exists for the artifact (check Maven Central)
+3. **Use plain numeric versions** (e.g., `2.3.0`) — kantra cannot compare qualified versions like `2.3-groovy-4.0` or `2.4-M4-groovy-4.0` against numeric bounds
+4. When in doubt, use a version in the `3.x` range — it's almost always below the upperbound and is a realistic Spring Boot 3.x era version
+5. Use the `name` field as `groupId.artifactId` (dot-separated). E.g., name `org.springframework.boot.spring-boot-starter-undertow` → `<groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-undertow</artifactId>`
+
+**Handling artifacts that only publish qualified versions:**
+
+Some artifacts never publish plain numeric versions:
+- **Spock** (`org.spockframework:spock-spring`): versions are `2.3-groovy-3.0`, `2.3-groovy-4.0`, etc.
+- **Hibernate** (`org.hibernate.orm:hibernate-*`): versions are `6.4.0.Final`, `6.5.2.Final`, etc.
+
+For these artifacts, use the Spring Boot parent BOM to manage the version. Declare the dependency **without** a `<version>` tag:
+
+```xml
+<dependency>
+    <groupId>org.spockframework</groupId>
+    <artifactId>spock-spring</artifactId>
+    <!-- version managed by spring-boot-starter-parent BOM -->
+</dependency>
+```
+
+The BOM resolves a version that the kantra parser can extract and compare. If the BOM doesn't manage the artifact, you must use the qualified version — kantra handles `.Final` suffixes but NOT `-groovy-4.0` style qualifiers. Test and verify.
+
+**Handling discontinued artifacts:**
+
+Some artifacts were discontinued before the migration target version. For example, `hibernate-proxool` and `hibernate-vibur` were dropped in Hibernate 6 — they were never published under `org.hibernate.orm`.
+
+For discontinued artifacts:
+1. Use the **last published groupId and version**. Example: `org.hibernate:hibernate-proxool:5.6.15.Final` (not `org.hibernate.orm:hibernate-proxool:6.4.0.Final` which never existed)
+2. Check the rule's `dependency_name` field — it specifies the groupId.artifactId to use. If the rule says `org.hibernate.orm.hibernate-proxool`, use that exact groupId/artifactId, but with a version that actually existed for that coordinate
+3. If no version of the artifact was ever published under the rule's groupId, flag it — the rule's `dependency_name` may need correction
 
 ## Output Format
 
@@ -125,13 +183,29 @@ For each group:
 ## Dependency Resolution
 
 - **Go:** Always run `go mod tidy` then `go mod vendor` (gopls inside the kantra container can't download modules)
-- **Java:** `mvn dependency:resolve -q -B` only if METHOD_CALL rules fail. Source-only analysis resolves IMPORT/ANNOTATION/TYPE patterns without downloading dependencies.
+- **Java:** Do NOT run `mvn compile`, `mvn dependency:resolve`, or any Maven command. Do NOT import the project into an IDE. Kantra resolves `java.dependency` rules by parsing the pom.xml directly, and source-only analysis resolves IMPORT/ANNOTATION/TYPE patterns without downloaded JARs. Running Maven or IDE imports creates `.classpath`, `.project`, `.settings/`, `target/`, and `.factorypath` artifacts that pollute the test data.
 - **Node.js:** `npm install` only if needed for type resolution
 - **C#:** `dotnet restore` only if needed for type resolution
 
 ### Java pom.xml: prefer minimal dependencies
 
 JDTLS runs inside the kantra container with limited memory. Prefer the lightest dependency that provides the class you need — e.g., `spring-boot-autoconfigure` instead of a full starter like `spring-boot-starter-web`.
+
+### Use realistic dependency versions
+
+Test pom.xml files must use versions that actually exist on Maven Central. Do NOT fabricate version numbers. Common mistakes:
+- `elasticsearch-rest-client:3.9.0` — this artifact never had a 3.x release (real versions: 7.x, 8.x)
+- `hibernate-jpamodelgen:3.6.0.Final` — very old and likely not what was intended
+- `hibernate-proxool:6.4.0.Final` — this module was dropped before Hibernate 6, never published under `org.hibernate.orm`
+- `spock-spring:2.3.0` — plain `2.3.0` does not exist; real versions are `2.3-groovy-3.0`, `2.3-groovy-4.0`
+
+When you need a version below an upperbound and don't know a real version, use the Spring Boot parent BOM version. For Spring Boot 3.x migrations, `spring-boot-starter-parent` version `3.2.0` or `3.3.0` with managed dependencies is the safest approach — the BOM resolves correct transitive versions automatically.
+
+**Version verification checklist** (apply to every `java.dependency` rule in the group):
+1. Is this version plain numeric? If not (e.g., `.Final`, `-groovy-4.0`), prefer BOM-managed
+2. Does this groupId + artifactId + version actually exist? If unsure, omit `<version>` and let the BOM manage it
+3. Is the version strictly below the upperbound?
+4. Was this artifact ever published under this groupId? (e.g., `org.hibernate.orm` vs `org.hibernate`)
 
 ### java.dependency and builtin.xml tests
 
@@ -163,4 +237,4 @@ On fix iterations:
 - Use the fix guidance to understand what the test code is missing
 - The most common failure is: the test code doesn't actually use the API that the rule pattern matches
 
-**Rule integrity:** NEVER change a rule's condition type or pattern to make a test pass. If test data can't be made to trigger the rule correctly, mark the rule as failed. The fix always belongs in the test data, not the rule.
+**Rule integrity:** The rule is authoritative — never change a rule to make a test pass. Fix the test data instead.

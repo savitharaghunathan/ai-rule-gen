@@ -137,6 +137,7 @@ Use lowercase, hyphenated names (e.g., `spring-boot-3` not `Spring Boot 3`).
 - Extract EVERY migration pattern found in the guide — API, annotation, config, dependency, and build changes
 - One pattern per distinct change — don't combine unrelated changes
 - Use specific FQNs — `javax.ejb.Stateless` not `javax.ejb.*`
+- **`source_fqn` must be the OLD (pre-migration) path** — this is what the rule matches in user code. Never use the target/new path. The migration guide often shows both; use the "Before" path. Verification: "Would this FQN appear in code that has NOT been migrated?"
 - Set `provider_type` — the CLI uses this to pick the right condition type
 - Set `location_type` for Java/C# — critical for accurate matching
 - For removed/renamed dependencies, use `dependency_name` + `upper_bound` — don't try to detect dependencies via `builtin.filecontent`
@@ -167,6 +168,8 @@ Any guide item where a user's code, config, or build file could be automatically
 | Build config removed from non-XML files (Gradle, etc.) | `builtin.filecontent` | regex + `file_pattern` |
 
 ### Common extraction mistakes
+
+0. **Wrong version bounds for `*.dependency`** — Choose bounds from the *semantics* of the migration, not from artifact version knowledge: (a) If the artifact is **removed or renamed** (a different artifact replaces it), use `lower_bound: 0.0.0` with no `upper_bound` — any version of the old artifact is a problem, so the artifact's presence is the signal. (b) If the **same artifact** continues to exist but changes behavior across source→target versions, use `upper_bound` equal to the framework's target version. Rule: `upper_bound` = target framework version is only valid for the framework's own artifacts — never apply it to third-party libraries (Hibernate, Elasticsearch, Spock, etc.) that have independent version numbering.
 
 1. **Skipping dependency renames** — A renamed artifact is a `*.dependency` pattern on the old name
 2. **Skipping feature removals** — If a removed feature had a dedicated dependency, detect it via `*.dependency`. "Removed" always means detectable

@@ -27,9 +27,11 @@ cmd/
   test/main.go            # Run kantra tests, stamp rules, generate report (all-in-one)
   stamp/main.go           # Update rule files with kantra pass/fail labels
   report/main.go          # Generate YAML summary report
+  coverage/main.go        # Post-extraction coverage check (guide artifacts vs patterns.json)
   internal/cli/           # Shared JSON output helper
 internal/
   construct/              # patterns.json → rule YAML + ruleset.yaml
+  coverage/               # Coverage check: scan guide sections for artifacts, cross-ref patterns.json
   ingestion/              # URL/file/text → clean markdown, chunking
   kantraparser/           # Parse kantra test/analyze output
   testrunner/             # Run kantra tests per group, stamp, report (used by cmd/test)
@@ -76,9 +78,10 @@ go run ./cmd/construct --patterns patterns.json --output rules/
 go run ./cmd/validate  --rules rules/
 go run ./cmd/scaffold  --rules rules/ --output tests/
 go run ./cmd/sanitize  --dir tests/data/
-go run ./cmd/test      --rules rules/ --tests tests/ [--files a.test.yaml,b.test.yaml]
+go run ./cmd/test      --rules rules/ --tests tests/ [--files a.test.yaml,b.test.yaml] [--timeout 5m] [--retry-timeouts]
 go run ./cmd/stamp     --rules rules/ --kantra-output "..."
 go run ./cmd/report    --source src --target tgt --output report.yaml
+go run ./cmd/coverage  --guide guide.md --patterns patterns.json [--language java|go]
 
 # Tests
 go test ./internal/...  # Unit tests

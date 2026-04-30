@@ -48,6 +48,19 @@ Matches Maven dependencies by groupId.artifactId and version range.
 - `upperbound` — Version upper bound (exclusive). E.g., `3.0.0` matches deps below 3.0.0. At least one of `upperbound` or `lowerbound` is required.
 - `lowerbound` — Version lower bound (inclusive). At least one of `upperbound` or `lowerbound` is required.
 
+**Version bound derivation — use semantics, not artifact knowledge:**
+
+Choose bounds based on *why* the dependency is flagged, not by looking up the artifact's version history:
+
+1. **Artifact removed or renamed** (a different groupId/artifactId replaces it, or it is dropped entirely):
+   Set `lowerbound: 0.0.0` with **no upperbound**. The artifact's presence is the signal regardless of version. There is no "safe" version of a removed artifact.
+
+2. **Same artifact, behavior changes between source and target versions** (the artifact continues to exist but behaves differently):
+   Set `upperbound` to the framework's target version (e.g., `4.0.0` for a Spring Boot 4 migration). This correctly scopes to the pre-migration version range.
+
+3. **`upperbound` = target framework version is only valid for the framework's own artifacts** (e.g., `org.springframework.*`, `org.springframework.boot.*`).
+   Third-party libraries (Flyway, Liquibase, Hibernate, Elasticsearch, Spock, AspectJ, etc.) use independent versioning — Flyway is at 10.x, Liquibase at 4.x. Applying the framework version (e.g., `4.0.0`) as their upperbound produces a bound that silently misses real projects. Use `lowerbound: 0.0.0` with no upperbound for third-party artifacts.
+
 **Note:** `java.dependency` requires full analysis (not `source-only` mode) since it uses Maven dependency resolution, not JDTLS.
 
 ### go.referenced
@@ -93,7 +106,7 @@ Matches regex patterns in file contents. Use this for config files, properties, 
 
 **Fields:**
 - `pattern` (required) — Regex pattern to match in file contents (e.g., `javax\.servlet`, `spring\.jpa\.hibernate\.ddl-auto`). Must be a valid Go regex.
-- `filePattern` (optional) — Regex restricting which files to search (e.g., `.*\\.properties`, `.*\\.xml`, `application.*\\.yml`). Must be a valid Go regex — do NOT use glob syntax (`*.properties` is invalid regex; use `.*\\.properties`). Omit to search all files.
+- `filePattern` (optional) — Regex restricting which files to search. Must be a valid Go regex — do NOT use glob syntax (`*.properties` is invalid regex; use `.*\\.properties`). For application config properties, always use `application.*\\.(properties|yml)` to cover both formats. Never use `.*\\.properties` alone (too broad — matches any `.properties` file) or `application.*\\.properties` alone (misses YAML configs). Omit to search all files.
 - `filepaths` (optional) — Restrict to specific file paths.
 
 ### builtin.file

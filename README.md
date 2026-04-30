@@ -8,27 +8,46 @@ Generate [Konveyor](https://www.konveyor.io/) analyzer migration rules from any 
 
 - [Go 1.25+](https://go.dev/dl/)
 - [kantra](https://github.com/konveyor-ecosystem/kantra) (for rule testing)
-- An AI coding agent ([Claude Code](https://claude.ai/code), [Cursor](https://cursor.sh), [Goose](https://github.com/block/goose), or similar)
+- An AI coding agent ([Claude Code](https://claude.ai/code), [OpenCode](https://opencode.ai), [Goose](https://goose-docs.ai), [Codex](https://developers.openai.com/codex), or similar)
 
 ### Add the skill
 
 ```bash
-# Clone the repo
 git clone https://github.com/konveyor/ai-rule-gen.git
-cd ai-rule-gen
-
-# Add as a project skill (from inside your target project)
-claude project add-skill /path/to/ai-rule-gen/agents/generate-rules/SKILL.md
 ```
 
-Skills follow the [Agent Skills](https://agentskills.io) format and work with any compatible agent.
+Skills follow the [Agent Skills](https://agentskills.io) format and are bundled in the repo. Open the repo in your agent — no registration step needed.
 
 ## Usage
 
-From Claude Code, invoke the skill:
+### Claude Code
 
 ```
 /generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+```
+
+### OpenCode
+
+```
+/generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+```
+
+### Goose
+
+```
+/skills generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+```
+
+### Codex
+
+```
+$generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+```
+
+### Any other agent
+
+```
+Read and follow agents/generate-rules/SKILL.md. Input: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
 ```
 
 The input can be a URL, a file path, or pasted migration guide text.

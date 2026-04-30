@@ -20,3 +20,6 @@ Thumbs.db
 # Environment
 .env*
 .cursor/
+
+# Local agent settings (personal machine paths, session-accumulated permissions)
+.claude/settings.local.json

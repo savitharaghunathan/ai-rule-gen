@@ -206,6 +206,23 @@ func Run(rulesDir, outputDir, language string) (*Result, error) {
 			relDataDir, _ := filepath.Rel(outputDir, dataDir)
 			relTestFile, _ := filepath.Rel(outputDir, testFilePath)
 
+			files := []ManifestFile{
+				{
+					Path:     filepath.Join(relDataDir, langConfig.BuildFile),
+					FileType: langConfig.BuildFileType,
+					Purpose:  "build",
+				},
+				{
+					Path:     filepath.Join(relDataDir, langConfig.SourceDir, langConfig.MainFile),
+					FileType: langConfig.MainFileType,
+					Purpose:  "source",
+				},
+			}
+
+			// Add extra files for builtin rules that target non-source files
+			extraFiles := detectExtraFiles(group.rules, relDataDir, language)
+			files = append(files, extraFiles...)
+
 			mg := ManifestGroup{
 				Name:      group.name,
 				DataDir:   relDataDir,
@@ -213,18 +230,7 @@ func Run(rulesDir, outputDir, language string) (*Result, error) {
 				RuleCount: len(group.rules),
 				Providers: providers,
 				RuleIDs:   ruleIDs,
-				Files: []ManifestFile{
-					{
-						Path:     filepath.Join(relDataDir, langConfig.BuildFile),
-						FileType: langConfig.BuildFileType,
-						Purpose:  "build",
-					},
-					{
-						Path:     filepath.Join(relDataDir, langConfig.SourceDir, langConfig.MainFile),
-						FileType: langConfig.MainFileType,
-						Purpose:  "source",
-					},
-				},
+				Files:     files,
 			}
 			manifest.Groups = append(manifest.Groups, mg)
 			totalRules += len(group.rules)
@@ -425,6 +431,96 @@ func needsSourceOnly(c rules.Condition) bool {
 		}
 	}
 	return false
+}
+
+// extraFileMapping maps a filePattern hint (substring in the regex) to
+// the extra file that needs to be generated, keyed by language.
+// Each entry: hint substring → {language → ManifestFile template}.
+// Path is relative to the data dir and joined at runtime.
+type extraFileRule struct {
+	hint    string                  // substring to look for in filePattern
+	perLang map[string]ManifestFile // language → file template (Path is relative)
+}
+
+var extraFileRules = []extraFileRule{
+	{
+		hint: "properties",
+		perLang: map[string]ManifestFile{
+			"java": {Path: "src/main/resources/application.properties", FileType: "properties", Purpose: "config"},
+		},
+	},
+	{
+		hint: "yml",
+		perLang: map[string]ManifestFile{
+			"java":   {Path: "src/main/resources/application.yml", FileType: "yaml", Purpose: "config"},
+			"nodejs": {Path: "config.yml", FileType: "yaml", Purpose: "config"},
+			"go":     {Path: "config.yml", FileType: "yaml", Purpose: "config"},
+		},
+	},
+	{
+		hint: "gradle",
+		perLang: map[string]ManifestFile{
+			"java": {Path: "build.gradle", FileType: "gradle", Purpose: "build"},
+		},
+	},
+	{
+		hint: ".env",
+		perLang: map[string]ManifestFile{
+			"nodejs": {Path: ".env", FileType: "env", Purpose: "config"},
+		},
+	},
+	{
+		hint: "appsettings",
+		perLang: map[string]ManifestFile{
+			"csharp": {Path: "appsettings.json", FileType: "json", Purpose: "config"},
+		},
+	},
+}
+
+// detectExtraFiles inspects rules for builtin.filecontent conditions
+// and adds extra files to the manifest when the filePattern targets
+// files beyond the standard build + source pair.
+func detectExtraFiles(ruleList []rules.Rule, relDataDir, language string) []ManifestFile {
+	needed := make(map[string]bool) // keyed by relative path to dedup
+
+	for _, r := range ruleList {
+		collectExtraHints(r.When, &needed, language)
+	}
+
+	var extras []ManifestFile
+	for path := range needed {
+		// Find the matching rule to get FileType and Purpose
+		for _, efr := range extraFileRules {
+			if mf, ok := efr.perLang[language]; ok && mf.Path == path {
+				extras = append(extras, ManifestFile{
+					Path:     filepath.Join(relDataDir, mf.Path),
+					FileType: mf.FileType,
+					Purpose:  mf.Purpose,
+				})
+				break
+			}
+		}
+	}
+	return extras
+}
+
+func collectExtraHints(c rules.Condition, needed *map[string]bool, language string) {
+	if c.BuiltinFilecontent != nil {
+		fp := c.BuiltinFilecontent.FilePattern
+		for _, efr := range extraFileRules {
+			if strings.Contains(fp, efr.hint) {
+				if mf, ok := efr.perLang[language]; ok {
+					(*needed)[mf.Path] = true
+				}
+			}
+		}
+	}
+	for _, entry := range c.Or {
+		collectExtraHints(entry.Condition, needed, language)
+	}
+	for _, entry := range c.And {
+		collectExtraHints(entry.Condition, needed, language)
+	}
 }
 
 // GetLanguageConfig returns the LanguageConfig for a given language.

@@ -75,13 +75,19 @@ The runtime translates each invoke block into a sub-agent call:
 1. "Read and follow `agents/<skill-name>/SKILL.md`."
 2. Inputs from the invoke block, with actual values substituted.
 
-If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes` should be dispatched concurrently.
+If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes` should be dispatched concurrently. If the runtime does not support parallel dispatch or sub-agents, run all invoke blocks sequentially in the current agent context — read and follow each sub-skill's SKILL.md inline.
 
 **Single agent for extraction:** One agent processing the full guide is faster than batching across multiple agents (avoids duplicated reference reads and merge overhead).
+
+**Do NOT read sub-agent references.** The orchestrator must NOT read files under `agents/<skill>/references/` — sub-agents read their own references. The orchestrator only needs to know the invoke contract (inputs/returns). Reading references wastes context and risks the orchestrator overriding sub-agent decisions with its own interpretation of reference material.
+
+**Do NOT micro-manage sub-agent work.** Pass the inputs specified in the invoke block. Do not pre-digest rule YAML, pre-read the guide, or compose line-by-line instructions. The sub-agent's SKILL.md tells it what to read and how to work.
 
 ## Pipeline
 
 **Error handling:** If any CLI command (`ingest`, `construct`, `validate`, `scaffold`, `sanitize`, `test`, `stamp`, `report`) exits non-zero, print `[step] FAILED — <error>` and stop the pipeline. Do not proceed to the next step.
+
+**Partial failures:** If a step produces partial results before failing (e.g., `construct` succeeds for 48 patterns but fails on 2), preserve the partial output and report what succeeded. The user can fix the failing patterns and re-run. Do not discard valid results because of a partial failure.
 
 ### 1. Ingest
 
@@ -120,20 +126,54 @@ Count lines (`GUIDE_LINES`) and section headings. Print:
 **Expect:**
   - source, target, patterns_count, rules_count, rules_dir, coverage_report
 
-Run syntactic validation and print the result:
-
-```bash
-go run ./cmd/validate --rules output/rules
-```
-
-Print:
+The rule-writer runs `construct` and `validate` internally (its steps 8-9). Print:
 
 ```
 [extract] Done — <patterns_count> patterns → <rules_count> rules in output/rules/
-[extract] Validation: <result from cmd/validate>
 ```
 
 Save `source`, `target`, `patterns_count`, `rules_count`, and the coverage report for the final summary.
+
+### 2b. Coverage Check
+
+Run the coverage tool to find sections with named artifacts that weren't extracted:
+
+```bash
+go run ./cmd/coverage --guide output/guide.md --patterns patterns.json --language <language>
+```
+
+If `gap_count > 0` in the JSON output, print:
+
+```
+[coverage] <gap_count> sections with uncovered artifacts: <heading_1>, <heading_2>, ...
+```
+
+Send the gap sections back to the rule-writer for targeted re-extraction:
+
+**Invoke:** `rule-writer` (targeted)
+**Purpose:** Extract patterns from specific sections that the coverage check flagged.
+**Inputs:**
+  - guide: output/guide.md
+  - source: {detected source}
+  - target: {detected target}
+  - rules_dir: output/rules
+  - gaps: {gap list from coverage tool — section headings + artifacts found}
+  - existing_patterns: patterns.json (to avoid duplicates)
+**Parallel:** no
+**Expect:**
+  - additional_patterns_count, updated patterns.json
+
+The rule-writer handles construct and validate internally. Re-run the coverage check. If gaps remain, accept them — one re-extraction pass is enough.
+
+```
+[coverage] Done — <final_gap_count> remaining gaps (accepted)
+```
+
+If `gap_count == 0`:
+
+```
+[coverage] No gaps found
+```
 
 ### Checkpoint
 
@@ -179,6 +219,8 @@ Split the groups into **batches of ~5 groups each** (minimum 1 batch, maximum 5 
 
 **3d. Collect results and sanitize.** After all agents complete:
 
+Sanitize XML:
+
 ```bash
 go run ./cmd/sanitize --dir output/tests/tests/data
 ```
@@ -189,27 +231,17 @@ go run ./cmd/sanitize --dir output/tests/tests/data
 
 ### 4. Validate (orchestrator-driven loop)
 
-The orchestrator runs tests directly in **batched sequential runs** to avoid OOM (one giant kantra run) and Docker contention (parallel kantra runs). The fix loop uses a sub-agent for LLM-driven repairs.
+The orchestrator runs tests and uses a sub-agent for LLM-driven repairs on failures.
 
-**4a. Batch and run tests:**
-
-Split the groups from `manifest.json` into **batches of ~5 groups each** (minimum 1 batch, maximum 5 batches), balanced by rule count — same batching logic as test-gen. Run each batch sequentially using `--files`:
-
-```
-[validate] Running batch 1/<B>: <group_names> (<N> rules)...
-```
+**4a. Run tests:**
 
 ```bash
-go run ./cmd/test --rules output/rules --tests output/tests/tests --files <test1.test.yaml>,<test2.test.yaml>,...
+go run ./cmd/test --rules output/rules --tests output/tests/tests --timeout 5m
 ```
 
-Repeat for each batch.
+The CLI runs each test file sequentially (avoids Docker contention) and automatically retries timed-out files once (`--retry-timeouts`, on by default). To run a subset, use `--files` with bare filenames (e.g., `--files data-1.test.yaml,data-2.test.yaml`), resolved relative to `--tests` dir.
 
-**Why batched sequential, not parallel agents:** `kantra test` runs Docker containers. Multiple kantra instances running simultaneously cause Docker contention and hangs. Sequential batches keep each kantra run small (avoids OOM) while avoiding contention.
-
-**`--files` takes bare filenames** (e.g., `data-1.test.yaml`), resolved relative to `--tests` dir. The runner scopes results to only the rules referenced by those test files.
-
-Collate results across all batches. Print the combined result:
+Print the result:
 
 ```
 [validate] <total_passed>/<total_rules> passed
@@ -242,6 +274,8 @@ If all passed, skip to step 5.
 
 The validator agent owns the fix-verify loop — it fixes files, re-runs tests via `cmd/test`, and iterates up to `max_iterations`. Default is 1 iteration; pass up to 3 if the user requests more attempts.
 
+**The orchestrator must NOT run its own fix attempts.** Do not manually edit test files, create stub classes, toggle analysisParams, or retry. All fix work goes through the rule-validator sub-agent. When the validator returns `still_failing`, accept that result and move on.
+
 Print the result:
 
 ```
@@ -252,7 +286,7 @@ If still_failing is non-empty, move on — don't block the pipeline.
 
 ### 5. Stamp + Report
 
-Collate pass/fail results from all batch runs and the fix loop. No need to re-run the full test suite — stamp directly from results:
+Collate pass/fail results from the test run and the fix loop. No need to re-run the full test suite — stamp directly from results:
 
 ```bash
 go run ./cmd/stamp --rules output/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs>

@@ -21,8 +21,30 @@ func XMLComments(content string) string {
 	})
 }
 
-// Dir walks a directory and sanitizes all XML files (.xml, .csproj, .pom).
+// buildArtifactDirs are directory names created by build tools or IDEs
+// that should not exist in test data.
+var buildArtifactDirs = map[string]bool{
+	"target":    true,
+	".settings": true,
+}
+
+// buildArtifactFiles are filenames created by build tools or IDEs
+// that should not exist in test data.
+var buildArtifactFiles = map[string]bool{
+	".classpath":   true,
+	".project":     true,
+	".factorypath": true,
+}
+
+// Dir walks a directory, sanitizes all XML files (.xml, .csproj, .pom),
+// and removes build/IDE artifacts (target/, .settings/, .classpath, .project, .factorypath).
 func Dir(dir string) error {
+	// First pass: remove build artifacts
+	if err := removeBuildArtifacts(dir); err != nil {
+		return fmt.Errorf("removing build artifacts: %w", err)
+	}
+
+	// Second pass: sanitize XML comments
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -42,6 +64,31 @@ func Dir(dir string) error {
 		if cleaned != string(data) {
 			if err := os.WriteFile(path, []byte(cleaned), info.Mode()); err != nil {
 				return fmt.Errorf("writing %s: %w", path, err)
+			}
+		}
+		return nil
+	})
+}
+
+// removeBuildArtifacts removes IDE and build tool artifacts from the directory tree.
+func removeBuildArtifacts(dir string) error {
+	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		name := info.Name()
+		if info.IsDir() {
+			if buildArtifactDirs[name] {
+				if err := os.RemoveAll(path); err != nil {
+					return fmt.Errorf("removing %s: %w", path, err)
+				}
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if buildArtifactFiles[name] {
+			if err := os.Remove(path); err != nil {
+				return fmt.Errorf("removing %s: %w", path, err)
 			}
 		}
 		return nil

@@ -226,6 +226,124 @@ func TestRun(t *testing.T) {
 	}
 }
 
+func TestDetectExtraFiles(t *testing.T) {
+	t.Run("properties rule adds application.properties", func(t *testing.T) {
+		ruleList := []rules.Rule{
+			{RuleID: "r1", When: rules.NewBuiltinFilecontent("spring\\.jpa", `application.*\.properties`)},
+		}
+		extras := detectExtraFiles(ruleList, "tests/data/config", "java")
+		found := false
+		for _, f := range extras {
+			if f.FileType == "properties" && f.Purpose == "config" {
+				found = true
+			}
+		}
+		if !found {
+			t.Error("expected application.properties in extra files")
+		}
+	})
+
+	t.Run("gradle rule adds build.gradle", func(t *testing.T) {
+		ruleList := []rules.Rule{
+			{RuleID: "r1", When: rules.NewBuiltinFilecontent("loaderImplementation", `.*\.gradle`)},
+		}
+		extras := detectExtraFiles(ruleList, "tests/data/build", "java")
+		found := false
+		for _, f := range extras {
+			if f.FileType == "gradle" && f.Purpose == "build" {
+				found = true
+			}
+		}
+		if !found {
+			t.Error("expected build.gradle in extra files")
+		}
+	})
+
+	t.Run("csharp appsettings rule adds appsettings.json", func(t *testing.T) {
+		ruleList := []rules.Rule{
+			{RuleID: "r1", When: rules.NewBuiltinFilecontent("ConnectionString", `appsettings.*\.json`)},
+		}
+		extras := detectExtraFiles(ruleList, "tests/data/config", "csharp")
+		found := false
+		for _, f := range extras {
+			if f.FileType == "json" && f.Purpose == "config" {
+				found = true
+			}
+		}
+		if !found {
+			t.Error("expected appsettings.json in extra files for csharp")
+		}
+	})
+
+	t.Run("nodejs env rule adds .env", func(t *testing.T) {
+		ruleList := []rules.Rule{
+			{RuleID: "r1", When: rules.NewBuiltinFilecontent("DB_HOST", `\.env`)},
+		}
+		extras := detectExtraFiles(ruleList, "tests/data/config", "nodejs")
+		found := false
+		for _, f := range extras {
+			if f.FileType == "env" && f.Purpose == "config" {
+				found = true
+			}
+		}
+		if !found {
+			t.Error("expected .env in extra files for nodejs")
+		}
+	})
+
+	t.Run("java.referenced rule adds no extras", func(t *testing.T) {
+		ruleList := []rules.Rule{
+			{RuleID: "r1", When: rules.NewJavaReferenced("javax.ejb.Stateless", "ANNOTATION")},
+		}
+		extras := detectExtraFiles(ruleList, "tests/data/core", "java")
+		if len(extras) != 0 {
+			t.Errorf("expected 0 extras, got %d", len(extras))
+		}
+	})
+}
+
+func TestRunWithBuiltinRules(t *testing.T) {
+	dir := t.TempDir()
+	rulesDir := filepath.Join(dir, "rules")
+	os.MkdirAll(rulesDir, 0o755)
+
+	ruleList := []rules.Rule{
+		{
+			RuleID:  "config-00010",
+			Message: "test",
+			When:    rules.NewBuiltinFilecontent("spring\\.jpa\\.hibernate", `application.*\.properties`),
+		},
+	}
+	ruleData, _ := yaml.Marshal(ruleList)
+	os.WriteFile(filepath.Join(rulesDir, "config.yaml"), ruleData, 0o644)
+
+	result, err := Run(rulesDir, dir, "java")
+	if err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+
+	manifestData, _ := os.ReadFile(result.ManifestPath)
+	var manifest Manifest
+	json.Unmarshal(manifestData, &manifest)
+
+	if len(manifest.Groups) != 1 {
+		t.Fatalf("manifest has %d groups, want 1", len(manifest.Groups))
+	}
+	// Expect 3 files: pom.xml + Application.java + application.properties
+	if len(manifest.Groups[0].Files) != 3 {
+		t.Errorf("group has %d files, want 3 (pom.xml + Application.java + application.properties)", len(manifest.Groups[0].Files))
+	}
+	hasConfig := false
+	for _, f := range manifest.Groups[0].Files {
+		if f.Purpose == "config" {
+			hasConfig = true
+		}
+	}
+	if !hasConfig {
+		t.Error("expected a config file in manifest")
+	}
+}
+
 func TestGetLanguageConfig(t *testing.T) {
 	cfg, ok := GetLanguageConfig("java")
 	if !ok {

@@ -67,54 +67,65 @@ This index drives the per-section extraction in the next step. Every section mus
 Process **each section from the index individually**. For each section:
 
 1. Read the section content
-2. Determine if it contains actionable migration items (API changes, dependency renames, property renames, config changes, feature removals, etc.)
-3. If yes: extract one or more patterns with the fields described below
-4. If no: record a skip reason (e.g., "informational table", "prerequisite guidance", "no code change required")
+2. Run the **extraction checklist** below — this is the decision method, not a post-hoc check
+3. If ANY checklist item is "yes": extract one or more patterns with the fields described below
+4. If ALL checklist items are "no" AND the section contains zero named artifacts: record a skip with the reason "header only" or "links only"
 
-**Do not skip sections silently.** Every section must produce either patterns or an explicit skip reason.
+**The checklist is the decision.** Do not pre-judge a section as "informational" or "not actionable" before running the checklist. Read the section, then evaluate each item:
 
-**Before skipping a section**, apply this checklist — if ANY answer is "yes", extract a pattern:
+#### Extraction checklist (run ALL 8 items for EVERY non-header section)
 
-1. Does the section mention a removed feature, library, or integration? → Detect via `*.dependency` on the removed artifact. "Removed" always means detectable.
-2. Does the section mention a class, annotation, or interface that was removed or relocated? → Detect via `*.referenced` on the old FQN
-3. Does the section mention a dependency that changed scope, was renamed, or now requires explicit versioning? → Detect via `*.dependency`
-4. Does the section contain a reference table with old→new mappings? → Process **every row** — each row is a separate pattern, not decoration
-5. Does a behavioral default change affect users of a specific class or dependency? → Detect the affected class/dependency and warn about the new behavior (category: `potential`)
-6. Does the section mention deprecated starters, modules, or artifacts? → Deprecated = detectable dependency rename. Extract a pattern for each old→new mapping.
-7. Does the section name any specific artifact (class, dependency, property, annotation)? → If it names it, detect it.
+| # | Question | If yes → extract |
+|---|----------|-------------------|
+| 1 | Does the section mention a **removed** feature, library, or integration? | `*.dependency` on the removed artifact. "Removed" ALWAYS means detectable. |
+| 2 | Does the section mention a class, annotation, or interface that was **removed or relocated**? | `*.referenced` on the old FQN |
+| 3 | Does the section mention a dependency that **changed scope, was renamed, or now requires explicit versioning**? | `*.dependency` |
+| 4 | Does the section contain a **reference table** with old→new mappings? | Process **every row** — each row is a separate pattern |
+| 5 | Does a **behavioral default change** affect users of a specific class, property, or dependency? | Detect the affected artifact, warn about new behavior (category: `potential`) |
+| 6 | Does the section mention **deprecated** starters, modules, or artifacts? | Each old→new mapping is a pattern |
+| 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
+| 8 | Does the section mention a **version requirement** for a plugin, tool, or library? | `builtin.filecontent` (Gradle) or `builtin.xml` (Maven) |
 
-**These are NOT valid skip reasons:**
-- "Informational" — tables with old→new mappings are patterns, not decoration
-- "Deprecated" — deprecated starters are detectable dependency renames
-- "Advisory" — if it names a specific artifact, detect it
-- "Not detectable" — ask: can I detect the *affected artifact* instead of the *missing fix*?
+**Output your checklist evaluation** for every section that is not a pure header. Format:
 
-**The ONLY valid skip reason** is: the section contains zero code artifacts — no classes, dependencies, properties, annotations, or config elements that could appear in user code. Sections that are purely introductory headers, prerequisite checklists, or links to external docs may be skipped.
+```
+Section: "### Liveness and Readiness Probes"
+  1. Removed? no
+  2. Class relocated? no
+  3. Dependency changed? no
+  4. Reference table? no
+  5. Behavioral default? YES — probes now enabled by default, affects management.health.probes.enabled
+  6. Deprecated? no
+  7. Names artifact? YES — management.health.probes.enabled
+  8. Version requirement? no
+  → EXTRACT: detect management.health.probes.enabled property, category: potential
+```
 
-For each pattern, provide these fields:
+```
+Section: "## Upgrading Web Features"
+  → SKIP: header only (no content, children contain the patterns)
+```
 
-1. `source_pattern` — What to detect in the source code (API, annotation, class, config, dependency, etc.)
-2. `target_pattern` — The replacement in the target technology (null if simply removed)
-3. `source_fqn` — Fully qualified name for matching (e.g., `javax.ejb.Stateless`). Required for `*.referenced` conditions.
-4. `location_type` — Where this appears in code: `TYPE`, `INHERITANCE`, `METHOD_CALL`, `CONSTRUCTOR_CALL`, `ANNOTATION`, `IMPLEMENTS_TYPE`, `ENUM`, `RETURN_TYPE`, `IMPORT`, `VARIABLE_DECLARATION`, `PACKAGE`, `FIELD`, `METHOD`, `CLASS`
-5. `alternative_fqns` — Alternative fully qualified names that serve the same purpose (for or conditions)
-6. `rationale` — Why this migration is needed
-7. `complexity` — One of: `trivial`, `low`, `medium`, `high`, `expert`
-8. `category` — One of: `mandatory`, `optional`, `potential`
-9. `concern` — Grouping key (e.g., `ejb`, `cdi`, `jpa`, `security`, `web`, `config`)
-10. `provider_type` — One of: `java`, `go`, `nodejs`, `csharp`, `builtin`
-11. `file_pattern` — File pattern for builtin.filecontent matches (e.g., `application.*\\.properties`)
-12. `example_before` — Short code example showing the source pattern
-13. `example_after` — Short code example showing the target pattern
-14. `documentation_url` — URL to relevant migration documentation
-15. `dependency_name` — Maven/Go dependency coordinate as `groupId.artifactId` (e.g., `org.springframework.boot.spring-boot-starter-undertow`). When set, produces a `java.dependency` or `go.dependency` condition.
-16. `upper_bound` — Version upper bound (exclusive) for dependency conditions
-17. `lower_bound` — Version lower bound (inclusive) for dependency conditions
-18. `xpath` — XPath expression for `builtin.xml` conditions (e.g., POM structure matching)
-19. `namespaces` — Namespace map for XPath (e.g., `{"m": "http://maven.apache.org/POM/4.0.0"}`)
-20. `xpath_filepaths` — File paths to restrict XPath matching (e.g., `["pom.xml"]`)
+This makes every decision visible and auditable. If a checklist item is answered "no" incorrectly, the error is traceable.
 
-Each pattern must have at minimum: `source_pattern`, `rationale`, `complexity`, `category`.
+#### Skip reasons that indicate a checklist failure
+
+If your skip reason contains any of these phrases, you answered a checklist item wrong — go back and re-evaluate:
+
+- "informational" — check items 4, 7
+- "advisory" — check items 5, 7
+- "not detectable" — check item 7 (detect the *affected artifact*, not the *missing fix*)
+- "naming convention" / "no old-to-new rename mapping" — check items 2, 3, 6, 7 (package renames and module restructures ARE detectable)
+- "covered by other patterns" / "already covered by X section" — cite the exact rule_id or re-extract
+- "behavioral change" / "behavioral default change" — check item 5 (detect the affected artifact)
+- "reference table of NEW items" — check items 4, 6 (new items often imply old items were restructured)
+- "build plugin config" / "Gradle plugin version" — check item 8
+- "no code artifacts" — check item 7 (if the section names ANY artifact, it has code artifacts)
+- "describes a compatibility helper" — check items 3, 7 (detect the OLD artifact it bridges)
+
+**The ONLY valid skip** is a section that contains genuinely zero named artifacts — no classes, no dependencies, no properties, no annotations, no config elements, no build plugin names. This means: pure headers (`## Upgrading Web Features`), prerequisite checklists (`### Before You Start`), or link collections (`### Review Other Release Notes`). **If a section names even one concrete artifact, it is not skippable.** When in doubt, extract — false positives are cheaper than missed migrations.
+
+For each pattern, provide the fields defined in `references/patterns-json-schema.md`. At minimum: `source_pattern`, `rationale`, `complexity`, `category`.
 
 ### Detection strategy: detect the affected artifact, not the missing fix
 
@@ -122,33 +133,31 @@ When a migration requires users to ADD something (a new annotation, a new depend
 
 For example: if `@SpringBootTest` no longer auto-configures `MockMvc`, don't try to detect "missing `@AutoConfigureMockMvc`." Instead, detect `MockMvc` class usage (IMPORT) and warn that `@AutoConfigureMockMvc` is now required.
 
+### Source FQN must be the pre-migration (source) path
+
+The `source_fqn` field is what the rule will match against in user code. It must be the **old/source** path — the one that exists in code that has NOT been migrated yet.
+
+**Common mistake:** using the target/new package path as the pattern. Example:
+- WRONG: `org.springframework.boot.http.converter.autoconfigure.HttpMessageConverters` (this is the Spring Boot 4 path — unmigrated code doesn't have this)
+- RIGHT: `org.springframework.boot.autoconfigure.http.HttpMessageConverters` (this is the Spring Boot 3 path — what actually appears in user code before migration)
+
+**Verification:** For each `source_fqn`, ask: "Would this FQN appear in a project that has NOT been migrated yet?" If no, you have the wrong path.
+
+The migration guide often shows both old and new paths. The old path goes in `source_fqn`; the new path goes in `target_pattern` and the migration message.
+
 ### Read section lead paragraphs carefully
 
 The most impactful change in a section is often stated in the **first paragraph** before the details. Don't skip straight to bullet lists and code examples — the opening text may describe a foundational change (e.g., an entire package rename) that the rest of the section merely elaborates on.
 
 ### Choosing the right condition type
 
-- **API/annotation/import changes** → Set `source_fqn` + `location_type` + `provider_type` (produces `*.referenced`)
-- **Dependency removed/renamed/version required** → Set `dependency_name` + `upper_bound` or `lower_bound` (produces `*.dependency`). At least one version bound is required.
-- **POM/XML structure changes** (parent version, plugin config, properties) → Set `xpath` + `namespaces` + `xpath_filepaths` (produces `builtin.xml`)
-- **Config property renames** → Set `source_fqn` (regex) + `file_pattern` + `provider_type: builtin` (produces `builtin.filecontent`)
+See `references/condition-types.md` for the full condition-type reference and `references/patterns-json-schema.md` for which fields map to which condition type.
+
+**One critical rule for config properties:** Always use `application.*\\.(properties|yml)` as the `file_pattern` — this covers both `.properties` and `.yml` formats. Never use `.*\\.properties` alone (too broad) or `application.*\\.properties` alone (misses YAML configs).
 
 ### What counts as an extractable migration item
 
-Be thorough. These are ALL extractable:
-
-- **API renames/moves** — class, interface, or annotation moved to a new package → `*.referenced`
-- **Method removals** — removed or renamed method on a known class → `*.referenced` with METHOD_CALL
-- **Annotation renames** — `@OldName` → `@NewName` → `*.referenced` with ANNOTATION
-- **Dependency renames** — artifactId changed → `*.dependency`
-- **Dependency removals** — artifact no longer available → `*.dependency`
-- **New required dependencies** — feature now requires an explicit starter/dependency → `*.dependency` on the OLD artifact with an upper bound
-- **Property renames** — `old.prop.name` → `new.prop.name` → `builtin.filecontent`
-- **Property removals** — property no longer supported → `builtin.filecontent`
-- **Build config removals** — POM element or Gradle config no longer valid → `builtin.xml` or `builtin.filecontent`
-- **Feature removals** — if the removed feature had a dependency, detect via `*.dependency`
-- **Test framework changes** — test annotation/class moves → `*.referenced`
-- **Version property renames** — `old.version` property no longer works → `builtin.filecontent`
+See the full list in `references/patterns-json-schema.md` under "What Counts as an Extractable Pattern." Be thorough — if a section names a concrete artifact, it is extractable.
 
 ### 4. Coverage report
 
@@ -161,13 +170,13 @@ Coverage Report:
   Sections skipped: K
   Total patterns extracted: P
 
-  Skipped sections:
-  - "## Before You Start" — prerequisite guidance, no code change
-  - "### Starters" — informational reference table
+  Skipped sections (header/links only):
+  - "## Before You Start" — header only
+  - "## Upgrading Web Features" — header only
   ...
 ```
 
-This makes extraction visible and auditable. If a section was skipped, the reason is on record.
+Every skipped section must be "header only" or "links only." If a skip reason contains any other phrasing, re-run the checklist for that section.
 
 ### 5. Deduplicate
 
