@@ -1,0 +1,41 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "filesystem": {
+      "allowWrite": ["./output", "/tmp"],
+      "allowRead": ["."]
+    },
+    "network": {
+      "allowFetch": true,
+      "allowWebSearch": true
+    },
+    "allowedCommands": [
+      "mkdir *",
+      "go run ./cmd/*",
+      "go run ./agents/*",
+      "go test *",
+      "go build *",
+      "go vet *",
+      "git status",
+      "git diff *",
+      "git log *",
+      "git branch *",
+      "git show *",
+      "gh issue view *",
+      "gh issue list *",
+      "gh pr view *",
+      "gh pr list *",
+      "gh pr diff *",
+      "gh api repos/*/pulls/*/comments",
+      "gh repo view *",
+      "kantra *",
+      "grep *",
+      "find *",
+      "ls *",
+      "wc *",
+      "stat *",
+      "head *",
+      "tail *"
+    ]
+  }
+}

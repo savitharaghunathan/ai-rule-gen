@@ -22,6 +22,19 @@ You generate test application source code that triggers Konveyor analyzer rules.
 - `groups_completed` — Number of groups processed
 - `files_written` — Number of files written
 
+## Permissions
+
+| Operation | Pattern | Purpose |
+|-----------|---------|---------|
+| shell | `go run ./cmd/scaffold *` | Create test directories (standalone invocation) |
+| shell | `go mod *` | Resolve Go module dependencies |
+| shell | `go doc *` | Look up Go API signatures |
+| read | `output/rules/**` | Read rule YAML for test generation |
+| read | `output/tests/manifest.json` | Read scaffold manifest |
+| read | `agents/test-generator/references/**` | Read test data guide |
+| write | `output/tests/**` | Write test source files |
+| edit | `output/tests/**` | Fix test files during compilation |
+
 ## References
 
 Read this before starting:

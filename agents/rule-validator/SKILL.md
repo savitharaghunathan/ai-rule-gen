@@ -27,6 +27,17 @@ You fix test data for failing rules using a lookup-based approach. Read the rule
   - `diagnosis` — What was wrong
   - `fix` — What was changed
 
+## Permissions
+
+| Operation | Pattern | Purpose |
+|-----------|---------|---------|
+| shell | `go run ./cmd/test *` | Run kantra tests on subset |
+| read | `output/rules/**` | Read rule YAML |
+| read | `output/tests/**` | Read test files and kantra output |
+| read | `agents/rule-validator/references/**` | Read fix strategies |
+| edit | `output/tests/**` | Fix failing test data |
+| write | `output/tests/**` | Rewrite test files when edits are insufficient |
+
 ## References
 
 Read before starting:

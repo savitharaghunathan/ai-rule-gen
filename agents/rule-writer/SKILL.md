@@ -26,6 +26,17 @@ You extract migration patterns from a migration guide and produce validated Konv
   - `sections_with_patterns` — Sections that produced patterns
   - `sections_skipped` — Sections skipped with reasons
 
+## Permissions
+
+| Operation | Pattern | Purpose |
+|-----------|---------|---------|
+| shell | `go run ./cmd/construct *` | Build rule YAML from patterns.json |
+| shell | `go run ./cmd/validate *` | Validate rule YAML structure |
+| read | `output/guide.md` | Read migration guide |
+| read | `agents/rule-writer/references/**` | Read condition types, schema |
+| write | `patterns.json` | Write extracted patterns |
+| write | `output/rules/**` | Write generated rule YAML |
+
 ## References
 
 Read these before starting:
@@ -86,27 +97,35 @@ Process **each section from the index individually**. For each section:
 | 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
 | 8 | Does the section mention a **version requirement** for a plugin, tool, or library? | `builtin.filecontent` (Gradle) or `builtin.xml` (Maven) |
 
-**Output your checklist evaluation** for every section that is not a pure header. Format:
+**Output format — terse for extractions, verbose for skips.**
 
-```
-Section: "### Liveness and Readiness Probes"
-  1. Removed? no
-  2. Class relocated? no
-  3. Dependency changed? no
-  4. Reference table? no
-  5. Behavioral default? YES — probes now enabled by default, affects management.health.probes.enabled
-  6. Deprecated? no
-  7. Names artifact? YES — management.health.probes.enabled
-  8. Version requirement? no
-  → EXTRACT: detect management.health.probes.enabled property, category: potential
-```
+Run all 8 checklist items internally for every section. For output:
 
-```
-Section: "## Upgrading Web Features"
-  → SKIP: header only (no content, children contain the patterns)
-```
+- **EXTRACT** — print only the verdict line:
+  ```
+  Section: "### Liveness and Readiness Probes" → EXTRACT: detect management.health.probes.enabled property, category: potential (items 5,7)
+  ```
 
-This makes every decision visible and auditable. If a checklist item is answered "no" incorrectly, the error is traceable.
+- **SKIP** — print the full 8-item evaluation so the decision is auditable:
+  ```
+  Section: "### Some Section"
+    1. Removed? no
+    2. Class relocated? no
+    3. Dependency changed? no
+    4. Reference table? no
+    5. Behavioral default? no
+    6. Deprecated? no
+    7. Names artifact? no
+    8. Version requirement? no
+    → SKIP: header only
+  ```
+
+- **Header-only** — one line is enough:
+  ```
+  Section: "## Upgrading Web Features" → SKIP: header only
+  ```
+
+Skips are where errors hide, so they get the full trace. Extractions are self-validating (the rule either works or it doesn't).
 
 #### Skip reasons that indicate a checklist failure
 

@@ -27,6 +27,23 @@ If no argument is provided, ask the user for the migration guide source.
   - coverage_report (sections processed/skipped)
   - fix_iterations used
 
+## Permissions
+
+| Operation | Pattern | Purpose |
+|-----------|---------|---------|
+| shell | `mkdir -p output` | Create output directory |
+| shell | `go run ./cmd/ingest *` | Fetch migration guide as markdown |
+| shell | `go run ./cmd/scaffold *` | Create test directories and manifests |
+| shell | `go run ./cmd/sanitize *` | Fix XML comments in test data |
+| shell | `go run ./cmd/test *` | Run kantra tests |
+| shell | `go run ./cmd/stamp *` | Mark rules with pass/fail labels |
+| shell | `go run ./cmd/report *` | Generate summary report |
+| shell | `go run ./cmd/coverage *` | Check guide coverage |
+| shell | `wc -l *` | Count guide lines |
+| shell | `grep *` | Count sections, search output |
+| read | `output/**` | Read manifest, test results |
+| write | `output/guide.md` | Write pasted/markdown guide to file |
+
 ## UX Principles
 
 The user should see a **flowing stream of short status lines** — never silence. Every step prints one line when it starts and one line when it finishes. No walls of text, no tables mid-pipeline, no unnecessary questions.
