@@ -277,6 +277,68 @@ func TestEmptySectionNotAGap(t *testing.T) {
 	}
 }
 
+func TestParseSectionsEndLine(t *testing.T) {
+	guide := `## First
+
+Line one.
+
+## Second
+
+Line two.
+
+## Third
+
+Line three.
+`
+	sections := ParseSections(guide)
+	if len(sections) != 3 {
+		t.Fatalf("expected 3 sections, got %d", len(sections))
+	}
+	if sections[0].EndLine != 4 {
+		t.Errorf("section 0 end_line = %d, want 4", sections[0].EndLine)
+	}
+	if sections[1].EndLine != 8 {
+		t.Errorf("section 1 end_line = %d, want 8", sections[1].EndLine)
+	}
+}
+
+func TestParseSectionsIgnoresIndentedHashes(t *testing.T) {
+	guide := `## Real Heading
+
+Some content.
+
+  ### Uh oh!
+
+More content.
+`
+	sections := ParseSections(guide)
+	if len(sections) != 1 {
+		t.Fatalf("expected 1 section (indented hash ignored), got %d", len(sections))
+	}
+	if sections[0].Heading != "Real Heading" {
+		t.Errorf("heading = %q, want %q", sections[0].Heading, "Real Heading")
+	}
+}
+
+func TestClassifySections(t *testing.T) {
+	sections := []Section{
+		{Heading: "Header Only", Content: "\n\n"},
+		{Heading: "Has Content", Content: "\nSome real text here.\n"},
+		{Heading: "Links Only", Content: "\n[link](http://example.com)\nhttp://another.com\n"},
+	}
+	ClassifySections(sections)
+
+	if sections[0].Type != "header-only" {
+		t.Errorf("section 0 type = %q, want header-only", sections[0].Type)
+	}
+	if sections[1].Type != "content" {
+		t.Errorf("section 1 type = %q, want content", sections[1].Type)
+	}
+	if sections[2].Type != "header-only" {
+		t.Errorf("section 2 type = %q, want header-only (links only)", sections[2].Type)
+	}
+}
+
 func TestNoiseFiltering(t *testing.T) {
 	content := "Set `true` or `false`. Use `null` value."
 	scanner := NewScanner("java")

@@ -60,6 +60,59 @@ func ReadPatternsFile(path string) (*ExtractOutput, error) {
 	return &output, nil
 }
 
+// MergePatterns combines multiple ExtractOutputs into one, deduplicating by
+// source_fqn and dependency_name. The first occurrence wins.
+func MergePatterns(parts []*ExtractOutput) *ExtractOutput {
+	if len(parts) == 0 {
+		return &ExtractOutput{}
+	}
+	merged := &ExtractOutput{
+		Source:   parts[0].Source,
+		Target:   parts[0].Target,
+		Language: parts[0].Language,
+	}
+
+	seen := make(map[string]bool)
+	for _, part := range parts {
+		if merged.Language == "" && part.Language != "" {
+			merged.Language = part.Language
+		}
+		for _, p := range part.Patterns {
+			key := deduplicationKey(p)
+			if key != "" && seen[key] {
+				continue
+			}
+			if key != "" {
+				seen[key] = true
+			}
+			merged.Patterns = append(merged.Patterns, p)
+		}
+	}
+	return merged
+}
+
+func deduplicationKey(p MigrationPattern) string {
+	if p.SourceFQN != "" {
+		return "fqn:" + p.SourceFQN
+	}
+	if p.DependencyName != "" {
+		return "dep:" + p.DependencyName
+	}
+	if p.XPath != "" {
+		return "xpath:" + p.XPath
+	}
+	return ""
+}
+
+// WritePatternsFile writes an ExtractOutput to a JSON file.
+func WritePatternsFile(path string, output *ExtractOutput) error {
+	data, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling patterns: %w", err)
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
 // ComplexityToEffort converts a human-readable complexity to a numeric effort value.
 func ComplexityToEffort(complexity string) int {
 	switch strings.ToLower(complexity) {

@@ -13,18 +13,22 @@ You extract migration patterns from a migration guide and produce validated Konv
 - `source` — Source technology (e.g., "spring-boot-3") or "auto-detect"
 - `target` — Target technology (e.g., "spring-boot-3.5") or "auto-detect"
 - `rules_dir` — Output directory for generated rules
+- `sections` — (optional) List of sections to process, each with `heading`, `start_line`, `end_line`. When provided, only process these sections (chunk mode)
+- `output_file` — (optional, default: `patterns.json`) Where to write the extracted patterns
 
 ## Returns
 
+**Full mode** (no `sections` input):
 - `source` — Detected source technology
 - `target` — Detected target technology
 - `patterns_count` — Number of patterns extracted
 - `rules_count` — Number of rules generated
 - `rules_dir` — Path to generated rules directory
-- `coverage_report` — Section-level extraction coverage:
-  - `sections_processed` — Total sections visited
-  - `sections_with_patterns` — Sections that produced patterns
-  - `sections_skipped` — Sections skipped with reasons
+- `coverage_report` — Section-level extraction coverage
+
+**Chunk mode** (with `sections` input):
+- `patterns_count` — Number of patterns extracted
+- `output_file` — Path to the written patterns file
 
 ## Permissions
 
@@ -34,7 +38,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 | shell | `go run ./cmd/validate *` | Validate rule YAML structure |
 | read | `output/guide.md` | Read migration guide |
 | read | `agents/rule-writer/references/**` | Read condition types, schema |
-| write | `patterns.json` | Write extracted patterns |
+| write | `patterns*.json` | Write extracted patterns |
 | write | `output/rules/**` | Write generated rule YAML |
 
 ## References
@@ -46,6 +50,17 @@ Read these before starting:
 - `references/examples/` — Working rule examples per language
 
 ## Workflow
+
+### Chunk mode vs full mode
+
+If the `sections` input is provided, you are in **chunk mode**:
+- Source, target, and language are already provided — do NOT auto-detect
+- Skip step 2 (indexing) — the section list is your index
+- Read only the assigned sections from the guide using line ranges (use `Read --offset <start_line> --limit <end_line - start_line>`)
+- Skip steps 8-9 (construct/validate) — the orchestrator handles these
+- Write patterns to `output_file` (not `patterns.json`)
+
+If `sections` is NOT provided, run the full workflow below.
 
 ### 1. Auto-detect source/target/language (if not provided)
 

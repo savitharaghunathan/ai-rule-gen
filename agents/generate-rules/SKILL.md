@@ -33,6 +33,10 @@ If no argument is provided, ask the user for the migration guide source.
 |-----------|---------|---------|
 | shell | `mkdir -p output` | Create output directory |
 | shell | `go run ./cmd/ingest *` | Fetch migration guide as markdown |
+| shell | `go run ./cmd/sections *` | Index guide sections with classification |
+| shell | `go run ./cmd/merge-patterns *` | Merge partial patterns files |
+| shell | `go run ./cmd/construct *` | Build rule YAML from patterns.json |
+| shell | `go run ./cmd/validate *` | Validate rule YAML structure |
 | shell | `go run ./cmd/scaffold *` | Create test directories and manifests |
 | shell | `go run ./cmd/sanitize *` | Fix XML comments in test data |
 | shell | `go run ./cmd/test *` | Run kantra tests |
@@ -68,8 +72,10 @@ Example full run:
 [ingest] Fetching guide from https://...
 [ingest] Done — 3876 lines, 77 sections
 
-[extract] Extracting migration patterns...
+[extract] Extracting patterns from 62 sections (3 parallel agents)...
 [extract] Done — 52 patterns → 52 rules in output/rules/
+
+[coverage] No gaps found
 
 [test-gen] Generating test data for 52 rules...
 [test-gen] Done — 12 groups, 39 files
@@ -94,7 +100,7 @@ The runtime translates each invoke block into a sub-agent call:
 
 If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes` should be dispatched concurrently. If the runtime does not support parallel dispatch or sub-agents, run all invoke blocks sequentially in the current agent context — read and follow each sub-skill's SKILL.md inline.
 
-**Single agent for extraction:** One agent processing the full guide is faster than batching across multiple agents (avoids duplicated reference reads and merge overhead).
+**Parallel extraction:** The guide is split into chunks by section, and multiple rule-writer agents process chunks concurrently. The orchestrator merges the partial patterns files and runs construct/validate once. Each agent reads only its assigned sections from the guide.
 
 **Do NOT read sub-agent references.** The orchestrator must NOT read files under `agents/<skill>/references/` — sub-agents read their own references. The orchestrator only needs to know the invoke contract (inputs/returns). Reading references wastes context and risks the orchestrator overriding sub-agent decisions with its own interpretation of reference material.
 
@@ -126,32 +132,60 @@ Count lines (`GUIDE_LINES`) and section headings. Print:
 [ingest] Done — <GUIDE_LINES> lines, <N> sections
 ```
 
-### 2. Extract
+### 2. Extract (parallel)
+
+Extraction uses parallel agents to process the guide faster. The orchestrator splits the guide into chunks and spawns multiple rule-writer agents.
+
+**2a. Index sections and auto-detect metadata:**
+
+```bash
+go run ./cmd/sections --guide output/guide.md
+```
+
+This returns JSON with all sections classified as `content` or `header-only`. Filter to content sections only.
+
+Read the first ~50 lines of the guide to auto-detect source, target, and language. Use lowercase, hyphenated names (e.g., `spring-boot-3`). If the user provided source/target, use those instead.
 
 ```
-[extract] Extracting migration patterns...
+[extract] Extracting patterns from <content_count> sections (<N> parallel agents)...
 ```
 
-**Invoke:** `rule-writer`
-**Purpose:** Extract migration patterns from the guide and produce validated rules.
-**Inputs:**
+**2b. Split into chunks and dispatch:**
+
+Split the content sections into **N balanced chunks** (minimum 2, maximum 5 agents). Balance by section count. Assign each chunk a number (1, 2, ..., N).
+
+**Invoke:** `rule-writer` (one per chunk, in parallel)
+**Purpose:** Extract migration patterns from assigned sections.
+**Inputs per invocation:**
   - guide: output/guide.md
-  - source: {source if user specified, otherwise "auto-detect"}
-  - target: {target if user specified, otherwise "auto-detect"}
+  - source: {detected source}
+  - target: {detected target}
   - rules_dir: output/rules
-**Parallel:** no
+  - sections: {chunk subset — list of `{heading, start_line, end_line}` objects}
+  - output_file: output/patterns-{chunk_number}.json
+**Parallel:** yes
 **Expect:**
-  - source, target, patterns_count, rules_count, rules_dir, coverage_report
+  - patterns_count, output_file
 
-The rule-writer runs `construct` and `validate` internally (its steps 8-9). Print:
+**2c. Merge and construct:**
+
+After all agents complete, merge the partial patterns files and build rules:
+
+```bash
+go run ./cmd/merge-patterns --output patterns.json output/patterns-1.json output/patterns-2.json ...
+go run ./cmd/construct --patterns patterns.json --output output/rules
+go run ./cmd/validate --rules output/rules
+```
+
+If validation fails, fix the patterns.json (remove invalid entries) and re-run construct.
 
 ```
 [extract] Done — <patterns_count> patterns → <rules_count> rules in output/rules/
 ```
 
-Save `source`, `target`, `patterns_count`, `rules_count`, and the coverage report for the final summary.
+Save `source`, `target`, `patterns_count`, `rules_count` for the final summary.
 
-### 2b. Coverage Check
+### 2d. Coverage Check
 
 Run the coverage tool to find sections with named artifacts that weren't extracted:
 

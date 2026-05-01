@@ -78,7 +78,13 @@ func fetchURL(rawURL string) (string, error) {
 		return "", err
 	}
 
-	resp, err := http.Get(rawURL)
+	req, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("creating request for %s: %w", rawURL, err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ai-rule-gen/1.0)")
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetching %s: %w", rawURL, err)
 	}
@@ -95,7 +101,8 @@ func fetchURL(rawURL string) (string, error) {
 
 	contentType := resp.Header.Get("Content-Type")
 	if strings.Contains(contentType, "text/html") {
-		return HTMLToMarkdown(string(body))
+		cleaned := ExtractArticle(string(body))
+		return HTMLToMarkdown(cleaned)
 	}
 
 	return string(body), nil

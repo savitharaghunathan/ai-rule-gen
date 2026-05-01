@@ -11,6 +11,8 @@ type Section struct {
 	Heading   string `json:"heading"`
 	Level     int    `json:"level"`
 	StartLine int    `json:"start_line"`
+	EndLine   int    `json:"end_line"`
+	Type      string `json:"type,omitempty"`
 	Content   string `json:"-"`
 }
 
@@ -38,6 +40,7 @@ func ParseSections(guide string) []Section {
 		level, title := parseHeading(line)
 		if level > 0 {
 			if current != nil {
+				current.EndLine = i
 				current.Content = strings.Join(lines[current.StartLine:i], "\n")
 				sections = append(sections, *current)
 			}
@@ -49,19 +52,47 @@ func ParseSections(guide string) []Section {
 		}
 	}
 	if current != nil {
+		current.EndLine = len(lines)
 		current.Content = strings.Join(lines[current.StartLine:], "\n")
 		sections = append(sections, *current)
 	}
 	return sections
 }
 
+// ClassifySections sets the Type field on each section based on content.
+// "header-only" for sections with no meaningful content, "content" otherwise.
+func ClassifySections(sections []Section) {
+	for i := range sections {
+		if isHeaderOnly(sections[i].Content) {
+			sections[i].Type = "header-only"
+		} else {
+			sections[i].Type = "content"
+		}
+	}
+}
+
+func isHeaderOnly(content string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		// Skip lines that are only links or link references
+		if strings.HasPrefix(trimmed, "[") || strings.HasPrefix(trimmed, "http") {
+			continue
+		}
+		// Has actual text content
+		return false
+	}
+	return true
+}
+
 func parseHeading(line string) (int, string) {
-	trimmed := strings.TrimSpace(line)
-	if len(trimmed) == 0 || trimmed[0] != '#' {
+	if len(line) == 0 || line[0] != '#' {
 		return 0, ""
 	}
 	level := 0
-	for _, c := range trimmed {
+	for _, c := range line {
 		if c == '#' {
 			level++
 		} else {
@@ -71,7 +102,7 @@ func parseHeading(line string) (int, string) {
 	if level > 6 {
 		return 0, ""
 	}
-	title := strings.TrimSpace(trimmed[level:])
+	title := strings.TrimSpace(line[level:])
 	if title == "" {
 		return 0, ""
 	}

@@ -3,6 +3,7 @@ package ingestion
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -92,6 +93,79 @@ func TestChunk_SmallContent(t *testing.T) {
 	if chunks[0] != content {
 		t.Errorf("chunk content mismatch")
 	}
+}
+
+func TestExtractArticle_WithArticleTag(t *testing.T) {
+	raw := `<html><body>
+		<nav><a href="/">Home</a><a href="/blog">Blog</a></nav>
+		<article><h1>Migration Guide</h1><p>Replace javax with jakarta.</p></article>
+		<footer><p>Copyright 2024</p></footer>
+	</body></html>`
+
+	result := ExtractArticle(raw)
+	if !containsStr(result, "Migration Guide") {
+		t.Error("expected article content")
+	}
+	if containsStr(result, "Home") {
+		t.Error("nav content should be stripped")
+	}
+	if containsStr(result, "Copyright") {
+		t.Error("footer content should be stripped")
+	}
+}
+
+func TestExtractArticle_WithMainTag(t *testing.T) {
+	raw := `<html><body>
+		<nav><ul><li>Nav item</li></ul></nav>
+		<main><h2>Step 1</h2><p>Do the thing.</p></main>
+		<aside><p>Related posts</p></aside>
+	</body></html>`
+
+	result := ExtractArticle(raw)
+	if !containsStr(result, "Step 1") {
+		t.Error("expected main content")
+	}
+	if containsStr(result, "Nav item") {
+		t.Error("nav content should be stripped")
+	}
+	if containsStr(result, "Related posts") {
+		t.Error("aside content should be stripped")
+	}
+}
+
+func TestExtractArticle_NoArticleOrMain(t *testing.T) {
+	raw := `<html><body>
+		<nav><a href="/">Home</a></nav>
+		<div><h1>Guide</h1><p>Content here.</p></div>
+		<footer><p>Footer</p></footer>
+		<script>alert("hi")</script>
+	</body></html>`
+
+	result := ExtractArticle(raw)
+	if !containsStr(result, "Guide") {
+		t.Error("expected body content")
+	}
+	if containsStr(result, "Home") {
+		t.Error("nav should be stripped")
+	}
+	if containsStr(result, "Footer") {
+		t.Error("footer should be stripped")
+	}
+	if containsStr(result, "alert") {
+		t.Error("script should be stripped")
+	}
+}
+
+func TestExtractArticle_InvalidHTML(t *testing.T) {
+	raw := "not html at all, just text"
+	result := ExtractArticle(raw)
+	if result == "" {
+		t.Error("should return something for invalid HTML")
+	}
+}
+
+func containsStr(s, substr string) bool {
+	return len(s) >= len(substr) && strings.Contains(s, substr)
 }
 
 func TestChunk_LargeContent(t *testing.T) {

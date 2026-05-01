@@ -1,6 +1,6 @@
 # ai-rule-gen Development Guidelines
 
-Skill-first architecture. Last updated: 2026-04-16
+Skill-first architecture. Last updated: 2026-05-01
 
 ## Architecture
 
@@ -13,7 +13,7 @@ lifting.
 
 ## Active Technologies
 
-- Go 1.25+ with stdlib `flag` (CLI), `gopkg.in/yaml.v3`, `github.com/JohannesKaufmann/html-to-markdown`
+- Go 1.25+ with stdlib `flag` (CLI), `gopkg.in/yaml.v3`, `github.com/JohannesKaufmann/html-to-markdown`, `golang.org/x/net`
 
 ## Project Structure
 
@@ -22,6 +22,8 @@ cmd/
   construct/main.go       # patterns.json → rule YAML + ruleset.yaml
   validate/main.go        # Validate rule YAML files
   ingest/main.go          # Fetch migration guide → clean markdown
+  sections/main.go        # Index guide sections with content classification
+  merge-patterns/main.go  # Merge partial patterns files with deduplication
   scaffold/main.go        # Create test dirs, .test.yaml, manifest.json
   sanitize/main.go        # Fix illegal XML comments in a directory
   test/main.go            # Run kantra tests, stamp rules, generate report (all-in-one)
@@ -31,8 +33,8 @@ cmd/
   internal/cli/           # Shared JSON output helper
 internal/
   construct/              # patterns.json → rule YAML + ruleset.yaml
-  coverage/               # Coverage check: scan guide sections for artifacts, cross-ref patterns.json
-  ingestion/              # URL/file/text → clean markdown, chunking
+  coverage/               # Coverage check, section parsing, section classification
+  ingestion/              # URL/file/text → clean markdown, article extraction, chunking
   kantraparser/           # Parse kantra test/analyze output
   testrunner/             # Run kantra tests per group, stamp, report (used by cmd/test)
   rules/                  # Rule/Condition types, builders, serializer, validator,
@@ -82,6 +84,8 @@ go run ./cmd/test      --rules rules/ --tests tests/ [--files a.test.yaml,b.test
 go run ./cmd/stamp     --rules rules/ --kantra-output "..."
 go run ./cmd/report    --source src --target tgt --output report.yaml
 go run ./cmd/coverage  --guide guide.md --patterns patterns.json [--language java|go]
+go run ./cmd/sections  --guide guide.md
+go run ./cmd/merge-patterns --output patterns.json patterns-1.json patterns-2.json ...
 
 # Tests
 go test ./internal/...  # Unit tests

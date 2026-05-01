@@ -12,9 +12,10 @@
     "allowedCommands": [
       "mkdir *",
       "go run ./cmd/*",
-      "go run ./agents/*",
       "go test *",
       "go build *",
+      "go mod *",
+      "go doc *",
       "go vet *",
       "git status",
       "git diff *",
