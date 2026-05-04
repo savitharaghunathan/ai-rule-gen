@@ -171,6 +171,33 @@ func TestValidate_RuleIDWithNewline(t *testing.T) {
 	assertContains(t, result.Errors, "must not contain newlines or semicolons")
 }
 
+func TestValidate_PythonReferenced_MissingPattern(t *testing.T) {
+	rules := []Rule{{
+		RuleID:  "test-00010",
+		Message: "test",
+		When:    NewPythonReferenced(""),
+	}}
+
+	result := Validate(rules)
+	if result.Valid {
+		t.Error("expected invalid")
+	}
+	assertContains(t, result.Errors, "python.referenced missing required field 'pattern'")
+}
+
+func TestValidate_PythonReferenced_Valid(t *testing.T) {
+	rules := []Rule{{
+		RuleID:  "test-00010",
+		Message: "Migrate Flask usage",
+		When:    NewPythonReferenced("flask.Flask"),
+	}}
+
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid, got errors: %v", result.Errors)
+	}
+}
+
 func TestValidate_OrCombinator(t *testing.T) {
 	rules := []Rule{{
 		RuleID:  "test-00010",

@@ -49,6 +49,30 @@ func TestDetectLanguage(t *testing.T) {
 			expected: "java",
 		},
 		{
+			name: "python referenced",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewPythonReferenced("flask.Flask"),
+			}},
+			expected: "python",
+		},
+		{
+			name: "csharp referenced",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewCSharpReferenced("System.Web.HttpContext", ""),
+			}},
+			expected: "csharp",
+		},
+		{
+			name: "builtin with python file pattern",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewBuiltinFilecontent("pattern", "*.py"),
+			}},
+			expected: "python",
+		},
+		{
 			name:     "no rules",
 			rules:    nil,
 			expected: "",
@@ -351,6 +375,17 @@ func TestGetLanguageConfig(t *testing.T) {
 	}
 	if cfg.BuildFile != "pom.xml" {
 		t.Errorf("BuildFile = %q, want %q", cfg.BuildFile, "pom.xml")
+	}
+
+	cfg, ok = GetLanguageConfig("python")
+	if !ok {
+		t.Fatal("python config not found")
+	}
+	if cfg.BuildFile != "requirements.txt" {
+		t.Errorf("BuildFile = %q, want %q", cfg.BuildFile, "requirements.txt")
+	}
+	if cfg.MainFile != "main.py" {
+		t.Errorf("MainFile = %q, want %q", cfg.MainFile, "main.py")
 	}
 
 	_, ok = GetLanguageConfig("rust")

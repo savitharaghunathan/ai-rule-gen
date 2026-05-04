@@ -1,0 +1,19 @@
+{
+  "language": "csharp",
+  "providers": ["csharp", "builtin"],
+  "scaffold": {
+    "build_file": "Project.csproj",
+    "build_file_type": "xml",
+    "source_dir": ".",
+    "main_file": "Program.cs",
+    "main_file_type": "csharp"
+  },
+  "dependency_resolution": {
+    "command": "dotnet restore",
+    "note": "Always required. Kantra's C# analyzer needs NuGet packages restored for type resolution."
+  },
+  "compilation_check": {
+    "command": "dotnet build --no-restore",
+    "note": "Check errors for type/member info."
+  }
+}

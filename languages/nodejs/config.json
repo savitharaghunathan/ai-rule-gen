@@ -1,0 +1,19 @@
+{
+  "language": "nodejs",
+  "providers": ["nodejs", "builtin"],
+  "scaffold": {
+    "build_file": "package.json",
+    "build_file_type": "json",
+    "source_dir": "src",
+    "main_file": "App.tsx",
+    "main_file_type": "tsx"
+  },
+  "dependency_resolution": {
+    "command": "npm install",
+    "note": "Always required. Kantra's TypeScript analyzer needs node_modules to resolve types."
+  },
+  "compilation_check": {
+    "command": "npx tsc --noEmit",
+    "note": "Check TypeScript errors for property/member name info."
+  }
+}
