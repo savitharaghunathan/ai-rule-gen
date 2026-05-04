@@ -49,6 +49,13 @@ var languageConfigs = map[string]LanguageConfig{
 		MainFile:      "Program.cs",
 		MainFileType:  "csharp",
 	},
+	"python": {
+		BuildFile:     "requirements.txt",
+		BuildFileType: "text",
+		SourceDir:     ".",
+		MainFile:      "main.py",
+		MainFileType:  "python",
+	},
 }
 
 // TestFile represents a kantra .test.yaml file.
@@ -303,6 +310,9 @@ func detectConditionLanguage(c rules.Condition) string {
 	if c.CSharpReferenced != nil {
 		return "csharp"
 	}
+	if c.PythonReferenced != nil {
+		return "python"
+	}
 	if c.BuiltinFilecontent != nil {
 		fp := c.BuiltinFilecontent.FilePattern
 		switch {
@@ -314,6 +324,8 @@ func detectConditionLanguage(c rules.Condition) string {
 			return "nodejs"
 		case strings.Contains(fp, ".cs"):
 			return "csharp"
+		case strings.Contains(fp, ".py"):
+			return "python"
 		}
 	}
 	for _, entry := range c.Or {
@@ -360,6 +372,9 @@ func conditionProviders(c rules.Condition) []string {
 	}
 	if c.CSharpReferenced != nil {
 		providers = append(providers, "dotnet")
+	}
+	if c.PythonReferenced != nil {
+		providers = append(providers, "python")
 	}
 	if c.BuiltinFilecontent != nil || c.BuiltinFile != nil || c.BuiltinXML != nil ||
 		c.BuiltinJSON != nil || c.BuiltinXMLPublicID != nil || len(c.BuiltinHasTags) > 0 {
@@ -416,7 +431,8 @@ func buildTestFile(ruleList []rules.Rule, ruleFilePath, dataDir, testsDir string
 // builtin conditions do NOT use source-only mode.
 func needsSourceOnly(c rules.Condition) bool {
 	if c.JavaReferenced != nil || c.GoReferenced != nil ||
-		c.NodejsReferenced != nil || c.CSharpReferenced != nil {
+		c.NodejsReferenced != nil || c.CSharpReferenced != nil ||
+		c.PythonReferenced != nil {
 		return true
 	}
 	// For or/and combinators, check if ANY child needs source-only

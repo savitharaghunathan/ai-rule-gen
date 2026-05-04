@@ -44,6 +44,12 @@ internal/
   scaffold/               # test-scaffold: create dirs, .test.yaml, manifest.json
   workspace/              # Output directory management, report generation
 agents/                   # Agent skills (agentskills.io format, SKILL.md + references/)
+languages/                # Per-language plugin directories
+  <lang>/                 #   java, go, nodejs, csharp, python
+    config.json           #   Scaffold config (build file, source dir, etc.)
+    condition-types.md    #   Provider-specific condition types
+    test-data-guide.md    #   Test data generation guide
+    fix-strategies.md     #   Fix lookup for failing tests
 ```
 
 ## Skill Composition

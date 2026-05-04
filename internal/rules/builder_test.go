@@ -69,6 +69,16 @@ func TestNewCSharpReferenced(t *testing.T) {
 	}
 }
 
+func TestNewPythonReferenced(t *testing.T) {
+	c := NewPythonReferenced("flask.Flask")
+	if c.PythonReferenced == nil {
+		t.Fatal("PythonReferenced is nil")
+	}
+	if c.PythonReferenced.Pattern != "flask.Flask" {
+		t.Errorf("pattern: got %q", c.PythonReferenced.Pattern)
+	}
+}
+
 func TestNewBuiltinFilecontent(t *testing.T) {
 	c := NewBuiltinFilecontent("spring\\.datasource", `application.*\.properties`)
 	if c.BuiltinFilecontent == nil {

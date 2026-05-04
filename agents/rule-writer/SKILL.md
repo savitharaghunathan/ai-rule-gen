@@ -38,6 +38,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 | shell | `go run ./cmd/validate *` | Validate rule YAML structure |
 | read | `output/guide.md` | Read migration guide |
 | read | `agents/rule-writer/references/**` | Read condition types, schema |
+| read | `languages/**` | Read language-specific condition types |
 | write | `patterns*.json` | Write extracted patterns |
 | write | `output/rules/**` | Write generated rule YAML |
 
@@ -45,7 +46,8 @@ You extract migration patterns from a migration guide and produce validated Konv
 
 Read these before starting:
 - `references/patterns-json-schema.md` — The patterns.json contract (what fields to extract, what the CLI does with them)
-- `references/condition-types.md` — All 12 condition types, when to use each, critical matching rules
+- `languages/<language>/condition-types.md` — Provider-specific conditions for the detected language (java, go, nodejs, csharp, python)
+- `references/builtin-conditions.md` — Language-agnostic builtin conditions (filecontent, xml, json, file, hasTags, xmlPublicID)
 - `references/rule-schema.md` — Rule YAML structure, required fields, validation rules
 - `references/examples/` — Working rule examples per language
 

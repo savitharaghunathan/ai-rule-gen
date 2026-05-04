@@ -71,6 +71,15 @@ func NewCSharpReferenced(pattern, location string) Condition {
 	}
 }
 
+// NewPythonReferenced creates a python.referenced condition.
+func NewPythonReferenced(pattern string) Condition {
+	return Condition{
+		PythonReferenced: &PythonReferenced{
+			Pattern: pattern,
+		},
+	}
+}
+
 // NewBuiltinFilecontent creates a builtin.filecontent condition.
 func NewBuiltinFilecontent(pattern, filePattern string) Condition {
 	return Condition{

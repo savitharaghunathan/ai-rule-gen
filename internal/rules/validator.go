@@ -125,6 +125,9 @@ func validateCondition(c Condition, prefix string, result *ValidationResult) {
 			result.addError("%s: csharp.referenced invalid location %q", prefix, c.CSharpReferenced.Location)
 		}
 	}
+	if c.PythonReferenced != nil && c.PythonReferenced.Pattern == "" {
+		result.addError("%s: python.referenced missing required field 'pattern'", prefix)
+	}
 	if c.BuiltinFilecontent != nil {
 		if c.BuiltinFilecontent.Pattern == "" {
 			result.addError("%s: builtin.filecontent missing required field 'pattern'", prefix)
@@ -172,6 +175,7 @@ func isEmptyCondition(c Condition) bool {
 		c.GoDependency == nil &&
 		c.NodejsReferenced == nil &&
 		c.CSharpReferenced == nil &&
+		c.PythonReferenced == nil &&
 		c.BuiltinFilecontent == nil &&
 		c.BuiltinFile == nil &&
 		c.BuiltinXML == nil &&

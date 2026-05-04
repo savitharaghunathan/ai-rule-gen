@@ -126,6 +126,20 @@ func TestBuildSingleCondition_BuiltinXMLNoFilepaths(t *testing.T) {
 	}
 }
 
+func TestBuildSingleCondition_PythonReferenced(t *testing.T) {
+	p := rules.MigrationPattern{
+		ProviderType: "python",
+		SourceFQN:    "flask.Flask",
+	}
+	c := buildSingleCondition(p)
+	if c.PythonReferenced == nil {
+		t.Fatal("expected python.referenced condition")
+	}
+	if c.PythonReferenced.Pattern != "flask.Flask" {
+		t.Errorf("pattern: got %q", c.PythonReferenced.Pattern)
+	}
+}
+
 func TestBuildSingleCondition_BuiltinFilecontent(t *testing.T) {
 	p := rules.MigrationPattern{
 		ProviderType: "builtin",

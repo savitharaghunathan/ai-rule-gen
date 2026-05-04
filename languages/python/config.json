@@ -1,0 +1,19 @@
+{
+  "language": "python",
+  "providers": ["python", "builtin"],
+  "scaffold": {
+    "build_file": "requirements.txt",
+    "build_file_type": "text",
+    "source_dir": ".",
+    "main_file": "main.py",
+    "main_file_type": "python"
+  },
+  "dependency_resolution": {
+    "command": "pip install -r requirements.txt",
+    "note": "Required for type resolution. Use a virtualenv to avoid polluting the system."
+  },
+  "compilation_check": {
+    "command": "python -m py_compile main.py",
+    "note": "Basic syntax check. For type checking use 'mypy main.py' if available."
+  }
+}

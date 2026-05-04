@@ -144,6 +144,8 @@ func buildSingleCondition(p rules.MigrationPattern) rules.Condition {
 		return rules.NewNodejsReferenced(pattern)
 	case "csharp":
 		return rules.NewCSharpReferenced(pattern, p.LocationType)
+	case "python":
+		return rules.NewPythonReferenced(pattern)
 	case "builtin":
 		return rules.NewBuiltinFilecontent(pattern, p.FilePattern)
 	default:

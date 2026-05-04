@@ -64,6 +64,7 @@ type Condition struct {
 	GoDependency      *Dependency        `yaml:"go.dependency,omitempty"`
 	NodejsReferenced  *NodejsReferenced  `yaml:"nodejs.referenced,omitempty"`
 	CSharpReferenced  *CSharpReferenced  `yaml:"csharp.referenced,omitempty"`
+	PythonReferenced  *PythonReferenced  `yaml:"python.referenced,omitempty"`
 	BuiltinFilecontent *BuiltinFilecontent `yaml:"builtin.filecontent,omitempty"`
 	BuiltinFile       *BuiltinFile       `yaml:"builtin.file,omitempty"`
 	BuiltinXML        *BuiltinXML        `yaml:"builtin.xml,omitempty"`
@@ -129,6 +130,11 @@ type NodejsReferenced struct {
 type CSharpReferenced struct {
 	Pattern  string `yaml:"pattern"`
 	Location string `yaml:"location,omitempty"`
+}
+
+// PythonReferenced matches Python symbol references.
+type PythonReferenced struct {
+	Pattern string `yaml:"pattern"`
 }
 
 // BuiltinFilecontent matches regex patterns in file contents.

@@ -1,0 +1,19 @@
+{
+  "language": "java",
+  "providers": ["java", "builtin"],
+  "scaffold": {
+    "build_file": "pom.xml",
+    "build_file_type": "xml",
+    "source_dir": "src/main/java/com/example",
+    "main_file": "Application.java",
+    "main_file_type": "java"
+  },
+  "dependency_resolution": {
+    "command": "",
+    "note": "Do NOT run mvn compile. Kantra parses pom.xml directly and JDTLS resolves references in source-only mode without downloaded JARs."
+  },
+  "compilation_check": {
+    "command": "",
+    "note": "JDTLS in source-only mode resolves references without compilation."
+  }
+}

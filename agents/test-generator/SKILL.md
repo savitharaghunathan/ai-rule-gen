@@ -32,13 +32,15 @@ You generate test application source code that triggers Konveyor analyzer rules.
 | read | `output/rules/**` | Read rule YAML for test generation |
 | read | `output/tests/manifest.json` | Read scaffold manifest |
 | read | `agents/test-generator/references/**` | Read test data guide |
+| read | `languages/**` | Read language-specific test data guide |
 | write | `output/tests/**` | Write test source files |
 | edit | `output/tests/**` | Fix test files during compilation |
 
 ## References
 
-Read this before starting:
-- `references/test-data-guide.md` — How the analyzer matches each condition type, project structure per language, output format, manifest.json structure
+Read these before starting:
+- `references/test-data-common.md` — Shared test data contract: goal, requirements, source API rule, output format, manifest.json structure, XML sanitization
+- `languages/<language>/test-data-guide.md` — Language-specific project structure, condition matching table, dependency resolution, compilation check
 
 ## Workflow
 
@@ -105,11 +107,11 @@ For each group:
 - When the artifact only publishes qualified versions (e.g., Spock, Hibernate), use the Spring Boot parent BOM to manage the version instead of declaring an explicit version. Declare the dependency without a `<version>` tag and let the BOM resolve it. If the BOM doesn't manage the artifact, use a comment `<!-- version managed by BOM -->` and verify the BOM-resolved version is below the upperbound
 - When an artifact was **discontinued** before the target version (e.g., `hibernate-proxool` was dropped in Hibernate 6), use the **last published version** from the era when it existed (e.g., `5.6.15.Final` under `org.hibernate` groupId, not `6.4.0.Final` under `org.hibernate.orm`)
 
-**How the analyzer matches each condition type:** See `references/test-data-guide.md` for the full matching rules per condition type. Getting this wrong is the #1 cause of test failures.
+**How the analyzer matches each condition type:** See `languages/<language>/test-data-guide.md` for the full matching rules per condition type. Getting this wrong is the #1 cause of test failures.
 
 ### 4. Resolve dependencies (only when needed)
 
-See `references/test-data-guide.md` for per-language dependency resolution rules. The key constraints:
+See `languages/<language>/test-data-guide.md` for per-language dependency resolution rules. The key constraints:
 - **Java:** Do NOT run `mvn compile` or any Maven command — kantra resolves dependencies by parsing pom.xml directly
 - **Go:** Always run `go mod tidy` then `go mod vendor`
 

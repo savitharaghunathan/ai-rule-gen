@@ -1,0 +1,19 @@
+{
+  "language": "go",
+  "providers": ["go", "builtin"],
+  "scaffold": {
+    "build_file": "go.mod",
+    "build_file_type": "go",
+    "source_dir": ".",
+    "main_file": "main.go",
+    "main_file_type": "go"
+  },
+  "dependency_resolution": {
+    "command": "go mod tidy && go mod vendor",
+    "note": "gopls needs vendored modules. Always run after writing test files."
+  },
+  "compilation_check": {
+    "command": "go build ./...",
+    "note": "Use 'go doc <package>' to look up actual function signatures when fixing errors."
+  }
+}

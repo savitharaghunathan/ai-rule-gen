@@ -7,6 +7,21 @@ description: Fix failing test data so rules pass kantra tests, with built-in ver
 
 You fix test data for failing rules using a lookup-based approach. Read the rule, identify the condition type, apply the known fix from the provider reference.
 
+## Constraints (RIGID — follow exactly)
+
+This is a **lookup-based fix loop**, not an investigation. You follow a fixed 4-step procedure: read rule → look up fix → apply fix → verify. Nothing else.
+
+**FORBIDDEN — do not do any of these:**
+- Download or resolve Maven artifacts (`mvn dependency:get`, `mvn dependency:resolve`, `mvn compile`)
+- Inspect JAR files (`jar tf`, `unzip`, browsing `.m2/repository`)
+- Verify whether FQNs, classes, or packages exist in real libraries
+- Investigate whether the rule itself is correct — the rule is always authoritative
+- Run any command not listed in the Permissions table
+- Add dependencies, files, or code beyond what `languages/<language>/fix-strategies.md` prescribes
+- Modify rule YAML files — fixes always target test data
+
+If the lookup fix doesn't resolve the failure, mark the rule as `still_failing` and move on. Do not improvise alternative approaches.
+
 ## Inputs
 
 - `rules_dir` — Directory containing rule YAML files
@@ -35,6 +50,7 @@ You fix test data for failing rules using a lookup-based approach. Read the rule
 | read | `output/rules/**` | Read rule YAML |
 | read | `output/tests/**` | Read test files and kantra output |
 | read | `agents/rule-validator/references/**` | Read fix strategies |
+| read | `languages/**` | Read language-specific fix strategies |
 | edit | `output/tests/**` | Fix failing test data |
 | write | `output/tests/**` | Rewrite test files when edits are insufficient |
 
@@ -42,7 +58,7 @@ You fix test data for failing rules using a lookup-based approach. Read the rule
 
 Read before starting:
 - `references/fix-strategies.md` — Fix loop flow, rule integrity principle
-- `references/providers/<language>.md` — Condition-type fix lookup for the relevant language (`java.md`, `go.md`, `nodejs.md`, `csharp.md`)
+- `languages/<language>/fix-strategies.md` — Condition-type fix lookup for the relevant language (java, go, nodejs, csharp, python)
 
 ## Workflow
 
@@ -55,11 +71,11 @@ For each failing rule, read the rule YAML from `rules_dir`. Extract:
 - **Location** (for `*.referenced`): `ANNOTATION`, `IMPORT`, `METHOD_CALL`, `TYPE`, etc.
 - **Pattern**: the regex or FQN the rule matches against
 
-The provider language comes from the condition type prefix (e.g., `java.referenced` → `java`, `go.referenced` → `go`, `builtin.*` → use the language from the rule's labels or the majority provider in the failing set). Read only the matching `references/providers/<language>.md` — not all four.
+The provider language comes from the condition type prefix (e.g., `java.referenced` → `java`, `go.referenced` → `go`, `builtin.*` → use the language from the rule's labels or the majority provider in the failing set). Read only the matching `languages/<language>/fix-strategies.md` — not all five.
 
 ### Step 2. Look up the fix
 
-Open `references/providers/<language>.md` for the relevant provider. Find the section for the condition type from step 1. It lists the known failure mode and the fix.
+Open `languages/<language>/fix-strategies.md` for the relevant provider. Find the section for the condition type from step 1. It lists the known failure mode and the fix.
 
 ### Step 3. Apply the fix
 

@@ -1,6 +1,6 @@
 # Fix Strategies
 
-Universal guide for interpreting kantra test failures and fixing test data. For language-specific provider behavior, see `providers/<language>.md`.
+Universal guide for interpreting kantra test failures and fixing test data. For language-specific provider behavior, see `languages/<language>/fix-strategies.md`.
 
 ## Kantra Output Parsing
 
@@ -17,7 +17,7 @@ Kantra test output contains:
 
 **Diagnosis steps:**
 1. Read the rule YAML — what condition type? (`*.referenced`, `*.dependency`, `builtin.filecontent`, `builtin.xml`)
-2. Read the provider reference (`providers/<language>.md`) for that condition type
+2. Read the provider reference (`languages/<language>/fix-strategies.md`) for that condition type
 3. Check the test source files — does the code actually trigger the pattern?
 4. Check the `.test.yaml` — is `mode: source-only` set on a rule that doesn't support it?
 
@@ -55,7 +55,7 @@ Then re-run `go run ./cmd/construct` and re-test.
 
 ### Compilation errors
 
-Test code must compile before kantra can analyze it. See `providers/<language>.md` for language-specific compilation commands and fix guidance.
+Test code must compile before kantra can analyze it. See `languages/<language>/fix-strategies.md` for language-specific compilation commands and fix guidance.
 
 Universal rules:
 - Fix ONLY the lines mentioned in errors
@@ -69,7 +69,7 @@ This agent owns the fix-verify loop:
 ```
 for iteration = 1 to max_iterations:
     1. Diagnose each failing rule (read rule YAML + test source)
-    2. Read providers/<language>.md for the relevant condition type
+    2. Read languages/<language>/fix-strategies.md for the relevant condition type
     3. Fix test source files
     4. Verify via: go run ./cmd/test --rules <dir> --tests <dir> --files <failing .test.yaml files>
     5. If all pass: done
@@ -84,12 +84,12 @@ To diagnose failures, extract the condition type and pattern from the failing ru
 
 | Condition | Pattern Source | Provider |
 |---|---|---|
-| `java.referenced` | `.pattern` | Java (see `providers/java.md`) |
-| `java.dependency` | `.name` | Java (see `providers/java.md`) |
-| `go.referenced` | `.pattern` | Go (see `providers/go.md`) |
-| `go.dependency` | `.name` | Go (see `providers/go.md`) |
-| `nodejs.referenced` | `.pattern` | Node.js (see `providers/nodejs.md`) |
-| `csharp.referenced` | `.pattern` | C# (see `providers/csharp.md`) |
+| `java.referenced` | `.pattern` | Java (see `languages/java/fix-strategies.md`) |
+| `java.dependency` | `.name` | Java (see `languages/java/fix-strategies.md`) |
+| `go.referenced` | `.pattern` | Go (see `languages/go/fix-strategies.md`) |
+| `go.dependency` | `.name` | Go (see `languages/go/fix-strategies.md`) |
+| `nodejs.referenced` | `.pattern` | Node.js (see `languages/nodejs/fix-strategies.md`) |
+| `csharp.referenced` | `.pattern` | C# (see `languages/csharp/fix-strategies.md`) |
 | `builtin.filecontent` | `.pattern` | Builtin (no provider reference needed) |
 | `builtin.xml` | `.xpath` | Builtin (no provider reference needed) |
 | `or` / `and` combinator | Recurse into children | From child condition |
