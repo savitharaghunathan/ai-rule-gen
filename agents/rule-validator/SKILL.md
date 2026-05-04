@@ -7,6 +7,21 @@ description: Fix failing test data so rules pass kantra tests, with built-in ver
 
 You fix test data for failing rules using a lookup-based approach. Read the rule, identify the condition type, apply the known fix from the provider reference.
 
+## Constraints (RIGID — follow exactly)
+
+This is a **lookup-based fix loop**, not an investigation. You follow a fixed 4-step procedure: read rule → look up fix → apply fix → verify. Nothing else.
+
+**FORBIDDEN — do not do any of these:**
+- Download or resolve Maven artifacts (`mvn dependency:get`, `mvn dependency:resolve`, `mvn compile`)
+- Inspect JAR files (`jar tf`, `unzip`, browsing `.m2/repository`)
+- Verify whether FQNs, classes, or packages exist in real libraries
+- Investigate whether the rule itself is correct — the rule is always authoritative
+- Run any command not listed in the Permissions table
+- Add dependencies, files, or code beyond what `languages/<language>/fix-strategies.md` prescribes
+- Modify rule YAML files — fixes always target test data
+
+If the lookup fix doesn't resolve the failure, mark the rule as `still_failing` and move on. Do not improvise alternative approaches.
+
 ## Inputs
 
 - `rules_dir` — Directory containing rule YAML files
