@@ -11,12 +11,10 @@ The ai-rule-gen pipeline has been validated end-to-end for Java only. It support
 1. Make each language a self-contained plugin directory (zero Go code changes for new languages after initial refactor)
 2. Fix documentation gaps for Go, Node.js, and C# so the pipeline is ready when someone brings a migration guide
 3. Validate the pipeline end-to-end for Node.js/TypeScript with a real migration guide
-4. Document Go container limitations as kantra-side issues (no workarounds in this repo)
 
 ## Non-Goals
 
 - Adding new languages beyond the existing 4 (the plugin system enables this but we're not doing it now)
-- Fixing kantra's Go container toolchain issue (tracked upstream)
 - Generalizing `construct.go` condition builders (current switch works fine)
 
 ## Design
@@ -43,6 +41,11 @@ languages/
     test-data-guide.md
     fix-strategies.md
   csharp/
+    config.json
+    condition-types.md
+    test-data-guide.md
+    fix-strategies.md
+  python/
     config.json
     condition-types.md
     test-data-guide.md
@@ -140,28 +143,61 @@ No changes. The `buildSingleCondition()` switch on `provider_type` handles known
 - test-generator: "Read `languages/<language>/test-data-guide.md` and `references/test-data-common.md`"
 - rule-validator: "Read `languages/<language>/fix-strategies.md`" (replaces `references/providers/<lang>.md`)
 
-### Known Gaps Per Language
+### Current Provider Capabilities (as of 2026-05-04)
 
-#### Go
-- **Container limitation:** kantra v0.9.0-alpha.6 has gopls but no Go toolchain. `go.referenced` rules fail in container mode. `cmd/test` already uses `--run-local` for Go. This is a kantra-side fix — we document it but don't work around it.
-- **Vendor directory required:** gopls can't download modules in the container. After test generation, `go mod tidy && go mod vendor` is mandatory. Currently mentioned in docs but should be in `config.json` as the `dependency_resolution.command`.
-- **`go.dependency` untested end-to-end.** Construct code handles it, but no pipeline run has validated it.
+Based on analyzer-lsp and kantra source:
+
+| Provider | referenced | dependency | Locations | Container | Notes |
+|----------|-----------|-----------|-----------|-----------|-------|
+| java | YES | YES | TYPE, ANNOTATION, METHOD_CALL, CONSTRUCTOR_CALL, INHERITANCE, IMPLEMENTS_TYPE, RETURN_TYPE, ENUM | YES | Full implementation via java-external-provider |
+| go | YES | YES | N/A (LSP-based) | YES | Has dedicated golang-dependency-provider; `kantra test` defaults to `--run-local=true` |
+| python | YES | NO | N/A (LSP-based) | YES | `GetDependencies()` returns nil; SourceOnlyAnalysisMode |
+| nodejs | YES | NO | N/A (LSP-based) | YES | `GetDependencies()` stub returns nil (`c7ea23c`); SourceOnlyAnalysisMode |
+| csharp | YES | NO | ALL, METHOD | YES | Separate Rust provider; gRPC dependency interface defined but not implemented |
+| builtin | YES | N/A | N/A | YES | filecontent, xml, json, file, hasTags — language-agnostic |
+
+### Remaining Gaps
 
 #### Node.js / TypeScript
-- **No `nodejs.dependency` kantra provider.** Detecting package.json dependency versions requires `builtin.json` with XPath, not a first-class provider. Must be documented in `languages/nodejs/condition-types.md`.
-- **`npm install` always required.** Kantra's TypeScript analyzer needs `node_modules` to resolve types. Current docs say "only if needed" — should be "always".
-- **Fix strategies are thin.** Current `nodejs.md` is 24 lines. Needs expansion: common failures (missing `node_modules`, unresolved types, JSX vs TSX), fix patterns.
-- **Test data guide is minimal.** Java has detailed version bounds, BOM management, discontinued artifacts sections. Node.js needs equivalent depth: valid package.json structure, version ranges, TypeScript config.
+
+| Gap | Resolution | Phase |
+|-----|-----------|-------|
+| No `nodejs.dependency` — `GetDependencies()` is a stub returning nil | Document `builtin.json` with XPath on `package.json` as workaround in `languages/nodejs/condition-types.md` | Phase 1 |
+| `npm install` always required but docs say "only if needed" | Fix to "always required" in `config.json` and `languages/nodejs/test-data-guide.md` | Phase 1 |
+| Fix strategies are thin (24 lines) | Expand with: missing `node_modules`, unresolved types, JSX vs TSX, common TypeScript errors | Phase 1 |
+| Test data guide is minimal | Enrich with: valid `package.json` structure, version ranges, `tsconfig.json` requirements, `node_modules` resolution | Phase 1 |
+| Untested end-to-end | Run PatternFly or similar migration guide through full pipeline | Phase 2 |
 
 #### C#
-- **No `csharp.dependency` kantra provider.** Detecting `.csproj` package versions requires `builtin.xml` with XPath. Must be documented.
-- **Limited location support.** Only `ALL`, `METHOD`, `FIELD`, `CLASS` (vs Java's 14). Must be clear in docs.
-- **Fix strategies are thin.** Current `csharp.md` is 21 lines. Needs expansion.
-- **`dotnet restore` always required.** Same vagueness as Node.js.
+
+| Gap | Resolution | Phase |
+|-----|-----------|-------|
+| No `csharp.dependency` — gRPC interface defined but not implemented in Rust provider | Document `builtin.xml` with XPath on `.csproj` as workaround in `languages/csharp/condition-types.md` | Phase 1 |
+| Location support is only ALL and METHOD (vs Java's 8) | Document clearly in `languages/csharp/condition-types.md` | Phase 1 |
+| Fix strategies are thin (21 lines) | Expand with: NuGet resolution failures, namespace vs type resolution, `.csproj` format issues | Phase 1 |
+| `dotnet restore` always required but docs are vague | Fix to "always required" in `config.json` and `languages/csharp/test-data-guide.md` | Phase 1 |
+
+#### Python (new language)
+
+| Gap | Resolution | Phase |
+|-----|-----------|-------|
+| No `languages/python/` plugin directory | Python external provider exists in analyzer-lsp (`1f32fbe`), kantra has Python language server fix (`cd058fb`). Create plugin with config.json + docs | Phase 1 |
+| No `python.dependency` — `GetDependencies()` returns nil | Document `builtin.filecontent` on `requirements.txt`/`pyproject.toml` as workaround | Phase 1 |
 
 #### Cross-cutting
-- Monolithic docs bury language-specific gotchas — fixed by the plugin split.
-- Java documentation depth is 10x other languages — fixed by enriching per-language docs.
+
+| Gap | Resolution | Phase |
+|-----|-----------|-------|
+| Monolithic docs bury language-specific gotchas | Fixed by the plugin split — each language gets focused docs | Phase 1 |
+| Java documentation depth is 10x other languages | Fixed by enriching per-language docs during plugin creation | Phase 1 |
+
+### Resolved Gaps (no action needed)
+
+| Previously listed gap | Why it's resolved |
+|----------------------|-------------------|
+| Go container limitation — `go.referenced` fails in container | `kantra test` now defaults to `--run-local=true` (`586d9a4`). Container mode is no longer the default path. |
+| Go vendor directory only mentioned in prose | Covered by `config.json` `dependency_resolution.command` — standard part of plugin setup, not a gap |
+| `go.dependency` untested end-to-end | `go.dependency` is fully implemented with `golang-dependency-provider`. Works in kantra test. Validated when someone runs a Go guide — not a gap, just untested. |
 
 ### Validation Plan: Node.js End-to-End
 
@@ -201,7 +237,7 @@ After the plugin structure and doc enrichment are in place:
 | Area | Files Changed | Files Added | Files Moved |
 |------|--------------|-------------|-------------|
 | Go code | scaffold.go (~50 lines) | scaffold config loader (~40 lines) | — |
-| Language plugins | — | 16 (4 languages x 4 files) | 4 (providers/*.md → languages/*/fix-strategies.md) |
+| Language plugins | — | 20 (5 languages x 4 files) | 4 (providers/*.md → languages/*/fix-strategies.md) |
 | Agent skills | 3 SKILL.md files | 2 shared references | — |
 | Docs | CLAUDE.md | — | — |
 | Tests | — | config loader tests | — |
