@@ -199,22 +199,30 @@ If `gap_count > 0` in the JSON output, print:
 [coverage] <gap_count> sections with uncovered artifacts: <heading_1>, <heading_2>, ...
 ```
 
-Send the gap sections back to the rule-writer for targeted re-extraction:
+Convert gaps to sections and send back to the rule-writer in chunk mode for targeted re-extraction. Each gap has `heading` and `line` — use the sections index to get the `start_line` and `end_line` for that heading. Mention the uncovered artifacts in the prompt so the sub-agent focuses on them.
 
-**Invoke:** `rule-writer` (targeted)
+**Invoke:** `rule-writer` (chunk mode)
 **Purpose:** Extract patterns from specific sections that the coverage check flagged.
 **Inputs:**
   - guide: output/guide.md
   - source: {detected source}
   - target: {detected target}
   - rules_dir: output/rules
-  - gaps: {gap list from coverage tool — section headings + artifacts found}
-  - existing_patterns: patterns.json (to avoid duplicates)
+  - sections: {gap sections converted to `[{heading, start_line, end_line}]` format}
+  - output_file: output/patterns-gaps.json
 **Parallel:** no
 **Expect:**
-  - additional_patterns_count, updated patterns.json
+  - patterns_count, output_file
 
-The rule-writer handles construct and validate internally. Re-run the coverage check. If gaps remain, accept them — one re-extraction pass is enough.
+The sub-agent writes only the new patterns to `output/patterns-gaps.json`. It does NOT read or inspect existing patterns — the orchestrator handles deduplication. After the sub-agent returns, merge and rebuild:
+
+```bash
+go run ./cmd/merge-patterns --output patterns.json patterns.json output/patterns-gaps.json
+go run ./cmd/construct --patterns patterns.json --output output/rules
+go run ./cmd/validate --rules output/rules
+```
+
+Re-run the coverage check. If gaps remain, accept them — one re-extraction pass is enough.
 
 ```
 [coverage] Done — <final_gap_count> remaining gaps (accepted)
@@ -361,6 +369,8 @@ Print a formatted summary table using GitHub-flavored markdown:
 | **Output** | `output/rules/` (rules), `output/tests/` (tests), `output/report.yaml` (report) |
 
 ### Rule Categories
+
+Use the `groups` array from the `construct` JSON output — it lists each file and its rule count. Do not iterate rule files manually.
 
 | Group | Rules | Status |
 |---|---|---|

@@ -36,6 +36,8 @@ You generate test application source code that triggers Konveyor analyzer rules.
 | write | `output/tests/**` | Write test source files |
 | edit | `output/tests/**` | Fix test files during compilation |
 
+**Do NOT use `python`, `python3`, `node`, or any scripting language runtime.** This is a Go project. Only run commands listed in this permissions table. Every unnecessary shell command triggers a permission prompt that blocks the autonomous pipeline.
+
 ## References
 
 Read these before starting:

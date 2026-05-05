@@ -16,6 +16,7 @@ This is a **lookup-based fix loop**, not an investigation. You follow a fixed 4-
 - Inspect JAR files (`jar tf`, `unzip`, browsing `.m2/repository`)
 - Verify whether FQNs, classes, or packages exist in real libraries
 - Investigate whether the rule itself is correct — the rule is always authoritative
+- Use `python`, `python3`, `node`, or any scripting language runtime — this is a Go project
 - Run any command not listed in the Permissions table
 - Add dependencies, files, or code beyond what `languages/<language>/fix-strategies.md` prescribes
 - Modify rule YAML files — fixes always target test data

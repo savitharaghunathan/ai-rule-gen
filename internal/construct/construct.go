@@ -7,11 +7,18 @@ import (
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 )
 
+// GroupCount holds the rule count for a single group file.
+type GroupCount struct {
+	File  string `json:"file"`
+	Rules int    `json:"rules"`
+}
+
 // Result holds the output of a construct operation.
 type Result struct {
 	RulesWritten int                     `json:"rules_written"`
 	FilesWritten int                     `json:"files_written"`
 	OutputDir    string                  `json:"output_dir"`
+	Groups       []GroupCount            `json:"groups"`
 	Errors       []string                `json:"errors,omitempty"`
 	Grouped      map[string][]rules.Rule `json:"-"`
 	Ruleset      *rules.Ruleset          `json:"-"`
@@ -70,10 +77,16 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 
 	filesWritten := len(grouped) + 1 // rule files + ruleset.yaml
 
+	groups := make([]GroupCount, 0, len(grouped))
+	for name, rr := range grouped {
+		groups = append(groups, GroupCount{File: name + ".yaml", Rules: len(rr)})
+	}
+
 	return &Result{
 		RulesWritten: len(allRules),
 		FilesWritten: filesWritten,
 		OutputDir:    outputDir,
+		Groups:       groups,
 		Grouped:      grouped,
 		Ruleset:      ruleset,
 	}, nil

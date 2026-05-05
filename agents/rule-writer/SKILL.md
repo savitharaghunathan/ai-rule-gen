@@ -42,6 +42,8 @@ You extract migration patterns from a migration guide and produce validated Konv
 | write | `patterns*.json` | Write extracted patterns |
 | write | `output/rules/**` | Write generated rule YAML |
 
+**Do NOT use `python`, `python3`, `node`, or any scripting language runtime.** This is a Go project. Only run commands listed in this permissions table. Do not validate JSON yourself — the orchestrator runs `merge-patterns` and `construct` which validate the JSON. Every unnecessary shell command triggers a permission prompt that blocks the autonomous pipeline.
+
 ## References
 
 Read these before starting:
@@ -53,7 +55,7 @@ Read these before starting:
 
 ## Workflow
 
-### Chunk mode vs full mode
+### Chunk mode vs full mode vs gap mode
 
 If the `sections` input is provided, you are in **chunk mode**:
 - Source, target, and language are already provided — do NOT auto-detect
@@ -62,7 +64,7 @@ If the `sections` input is provided, you are in **chunk mode**:
 - Skip steps 8-9 (construct/validate) — the orchestrator handles these
 - Write patterns to `output_file` (not `patterns.json`)
 
-If `sections` is NOT provided, run the full workflow below.
+If neither `sections` nor `output_file` is provided, run the full workflow below.
 
 ### 1. Auto-detect source/target/language (if not provided)
 
