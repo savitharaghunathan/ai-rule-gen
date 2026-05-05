@@ -26,6 +26,11 @@ type Result struct {
 	Output       string   `json:"output,omitempty"`
 }
 
+// ProgressFunc is called before and after each test file.
+// When starting: passed=-1, total=fileCount, elapsed=0.
+// When complete: passed/total are rule counts from that file.
+type ProgressFunc func(file string, index, fileCount, passed, total int, timedOut bool, elapsed time.Duration)
+
 // Config holds the inputs for a test run.
 type Config struct {
 	RulesDir       string
@@ -33,6 +38,7 @@ type Config struct {
 	Files          []string      // specific test files to run (if empty, scan TestsDir)
 	TestTimeout    time.Duration // per-test-file timeout (0 = no timeout)
 	RetryTimeouts  bool          // retry timed-out files once after the initial run
+	OnProgress     ProgressFunc  // optional callback after each test file
 }
 
 // Run executes kantra test for each .test.yaml file and returns pass/fail results.
@@ -62,7 +68,7 @@ func Run(cfg Config) (*Result, error) {
 	}
 
 	var allOutput strings.Builder
-	erroredRuleIDs, timedOutFiles, err := runFiles(testFiles, cfg.TestTimeout, &allOutput)
+	erroredRuleIDs, timedOutFiles, err := runFiles(testFiles, cfg.TestTimeout, &allOutput, cfg.OnProgress)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +78,7 @@ func Run(cfg Config) (*Result, error) {
 		for _, f := range timedOutFiles {
 			retryPaths = append(retryPaths, filepath.Join(cfg.TestsDir, f))
 		}
-		retryErrored, retryTimedOut, retryErr := runFiles(retryPaths, cfg.TestTimeout, &allOutput)
+		retryErrored, retryTimedOut, retryErr := runFiles(retryPaths, cfg.TestTimeout, &allOutput, cfg.OnProgress)
 		if retryErr != nil {
 			return nil, retryErr
 		}
@@ -161,27 +167,41 @@ func RunKantraTest(testFile string) (string, error) {
 
 // runFiles runs kantra test on each file sequentially, appending output to w.
 // Returns rule IDs from errored/timed-out files and the list of timed-out filenames.
-func runFiles(testFiles []string, timeout time.Duration, w *strings.Builder) (erroredRuleIDs, timedOutFiles []string, err error) {
-	for _, tf := range testFiles {
+func runFiles(testFiles []string, timeout time.Duration, w *strings.Builder, onProgress ProgressFunc) (erroredRuleIDs, timedOutFiles []string, err error) {
+	n := len(testFiles)
+	for i, tf := range testFiles {
+		name := filepath.Base(tf)
+		if onProgress != nil {
+			onProgress(name, i+1, n, -1, 0, false, 0)
+		}
+		start := time.Now()
 		out, runErr := runKantraTestWithTimeout(tf, timeout)
+		elapsed := time.Since(start)
 		w.WriteString(out)
 		w.WriteString("\n")
 		if runErr != nil {
 			if isTimeout(runErr) {
-				timedOutFiles = append(timedOutFiles, filepath.Base(tf))
+				timedOutFiles = append(timedOutFiles, name)
 				if ids, parseErr := kantraparser.TestFileRuleIDs(tf); parseErr == nil {
 					erroredRuleIDs = append(erroredRuleIDs, ids...)
+				}
+				if onProgress != nil {
+					onProgress(name, i+1, n, 0, 0, true, elapsed)
 				}
 				continue
 			}
 			if out == "" {
-				return nil, nil, fmt.Errorf("kantra test %s: %w", filepath.Base(tf), runErr)
+				return nil, nil, fmt.Errorf("kantra test %s: %w", name, runErr)
 			}
 			if _, total := kantraparser.ParseSummary(out); total == 0 {
 				if ids, parseErr := kantraparser.TestFileRuleIDs(tf); parseErr == nil {
 					erroredRuleIDs = append(erroredRuleIDs, ids...)
 				}
 			}
+		}
+		if onProgress != nil {
+			passed, total := kantraparser.ParseSummary(out)
+			onProgress(name, i+1, n, passed, total, false, elapsed)
 		}
 	}
 	return erroredRuleIDs, timedOutFiles, nil
@@ -192,9 +212,9 @@ func runKantraTestWithTimeout(testFile string, timeout time.Duration) (string, e
 	if timeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		cmd = exec.CommandContext(ctx, "kantra", "test", testFile)
+		cmd = exec.CommandContext(ctx, "kantra", "test", "--run-local=true", testFile)
 	} else {
-		cmd = exec.Command("kantra", "test", testFile)
+		cmd = exec.Command("kantra", "test", "--run-local=true", testFile)
 	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

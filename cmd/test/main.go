@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -26,6 +28,16 @@ func main() {
 		TestsDir:      *testsDir,
 		TestTimeout:   *timeout,
 		RetryTimeouts: *retryTimeouts,
+		OnProgress: func(file string, index, fileCount, passed, total int, timedOut bool, elapsed time.Duration) {
+			prefix := fmt.Sprintf("[%d/%d]", index, fileCount)
+			if passed == -1 {
+				fmt.Fprintf(os.Stderr, "  %-7s %s...\n", prefix, file)
+			} else if timedOut {
+				fmt.Fprintf(os.Stderr, "  %-7s %-40s TIMED OUT (%s)\n", prefix, file, elapsed.Truncate(time.Second))
+			} else {
+				fmt.Fprintf(os.Stderr, "  %-7s %-40s %d/%d passed (%s)\n", prefix, file, passed, total, elapsed.Truncate(time.Second))
+			}
+		},
 	}
 
 	if *filesFlag != "" {
