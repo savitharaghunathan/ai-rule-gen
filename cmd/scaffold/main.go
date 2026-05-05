@@ -13,6 +13,7 @@ func main() {
 	rulesDir := flag.String("rules", "", "Path to rules directory (required)")
 	output := flag.String("output", "", "Output directory (required)")
 	language := flag.String("language", "", "Programming language (auto-detected if omitted)")
+	languagesDir := flag.String("languages-dir", "languages", "Path to languages/ config directory")
 	flag.Parse()
 
 	if *rulesDir == "" || *output == "" {
@@ -20,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	result, err := scaffold.Run(*rulesDir, *output, *language)
+	result, err := scaffold.Run(*rulesDir, *output, *language, *languagesDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

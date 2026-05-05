@@ -1,4 +1,27 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(mkdir *)",
+      "Bash(go run ./cmd/ingest *)",
+      "Bash(go run ./cmd/sections *)",
+      "Bash(go run ./cmd/merge-patterns *)",
+      "Bash(go run ./cmd/construct *)",
+      "Bash(go run ./cmd/validate *)",
+      "Bash(go run ./cmd/scaffold *)",
+      "Bash(go run ./cmd/sanitize *)",
+      "Bash(go run ./cmd/test *)",
+      "Bash(go run ./cmd/stamp *)",
+      "Bash(go run ./cmd/report *)",
+      "Bash(go run ./cmd/coverage *)",
+      "Bash(go mod *)",
+      "Bash(go doc *)",
+      "Bash(go test *)",
+      "Bash(wc *)",
+      "Bash(grep *)",
+      "Bash(ls *)",
+      "Bash(cat *)"
+    ]
+  },
   "sandbox": {
     "enabled": true,
     "filesystem": {
@@ -6,37 +29,7 @@
       "allowRead": ["."]
     },
     "network": {
-      "allowFetch": true,
-      "allowWebSearch": true
-    },
-    "allowedCommands": [
-      "mkdir *",
-      "go run ./cmd/*",
-      "go test *",
-      "go build *",
-      "go mod *",
-      "go doc *",
-      "go vet *",
-      "git status",
-      "git diff *",
-      "git log *",
-      "git branch *",
-      "git show *",
-      "gh issue view *",
-      "gh issue list *",
-      "gh pr view *",
-      "gh pr list *",
-      "gh pr diff *",
-      "gh api repos/*/pulls/*/comments",
-      "gh repo view *",
-      "kantra *",
-      "grep *",
-      "find *",
-      "ls *",
-      "wc *",
-      "stat *",
-      "head *",
-      "tail *"
-    ]
+      "allowFetch": true
+    }
   }
 }

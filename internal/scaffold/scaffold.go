@@ -20,42 +20,26 @@ type LanguageConfig struct {
 	MainFileType  string `json:"main_file_type"`
 }
 
-var languageConfigs = map[string]LanguageConfig{
-	"java": {
-		BuildFile:     "pom.xml",
-		BuildFileType: "xml",
-		SourceDir:     "src/main/java/com/example",
-		MainFile:      "Application.java",
-		MainFileType:  "java",
-	},
-	"go": {
-		BuildFile:     "go.mod",
-		BuildFileType: "go",
-		SourceDir:     ".",
-		MainFile:      "main.go",
-		MainFileType:  "go",
-	},
-	"nodejs": {
-		BuildFile:     "package.json",
-		BuildFileType: "json",
-		SourceDir:     "src",
-		MainFile:      "App.tsx",
-		MainFileType:  "tsx",
-	},
-	"csharp": {
-		BuildFile:     "Project.csproj",
-		BuildFileType: "xml",
-		SourceDir:     ".",
-		MainFile:      "Program.cs",
-		MainFileType:  "csharp",
-	},
-	"python": {
-		BuildFile:     "requirements.txt",
-		BuildFileType: "text",
-		SourceDir:     ".",
-		MainFile:      "main.py",
-		MainFileType:  "python",
-	},
+// languageFile mirrors the JSON structure of languages/<lang>/config.json.
+type languageFile struct {
+	Language  string         `json:"language"`
+	Providers []string       `json:"providers"`
+	Scaffold  LanguageConfig `json:"scaffold"`
+}
+
+// LoadLanguageConfig reads languages/<lang>/config.json from the given
+// languages directory and returns the scaffold configuration.
+func LoadLanguageConfig(languagesDir, language string) (LanguageConfig, error) {
+	path := filepath.Join(languagesDir, language, "config.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return LanguageConfig{}, fmt.Errorf("reading language config %s: %w", path, err)
+	}
+	var lf languageFile
+	if err := json.Unmarshal(data, &lf); err != nil {
+		return LanguageConfig{}, fmt.Errorf("parsing language config %s: %w", path, err)
+	}
+	return lf.Scaffold, nil
 }
 
 // TestFile represents a kantra .test.yaml file.
@@ -131,7 +115,8 @@ const maxRulesPerGroup = 8
 
 // Run reads rules from rulesDir, creates the test scaffold structure
 // (directories, .test.yaml files), and writes a manifest.json for the agent.
-func Run(rulesDir, outputDir, language string) (*Result, error) {
+// languagesDir is the path to the languages/ directory containing per-language config.json files.
+func Run(rulesDir, outputDir, language, languagesDir string) (*Result, error) {
 	entries, err := os.ReadDir(rulesDir)
 	if err != nil {
 		return nil, fmt.Errorf("reading rules dir: %w", err)
@@ -176,9 +161,9 @@ func Run(rulesDir, outputDir, language string) (*Result, error) {
 		}
 		manifest.Language = language
 
-		langConfig, ok := languageConfigs[language]
-		if !ok {
-			return nil, fmt.Errorf("unsupported language %q", language)
+		langConfig, err := LoadLanguageConfig(languagesDir, language)
+		if err != nil {
+			return nil, fmt.Errorf("loading language config for %q: %w", language, err)
 		}
 
 		// Split large rule files into groups of maxRulesPerGroup
@@ -539,8 +524,8 @@ func collectExtraHints(c rules.Condition, needed *map[string]bool, language stri
 	}
 }
 
-// GetLanguageConfig returns the LanguageConfig for a given language.
-func GetLanguageConfig(language string) (LanguageConfig, bool) {
-	cfg, ok := languageConfigs[language]
-	return cfg, ok
+// GetLanguageConfig returns the LanguageConfig for a given language,
+// loading from the specified languages directory.
+func GetLanguageConfig(languagesDir, language string) (LanguageConfig, error) {
+	return LoadLanguageConfig(languagesDir, language)
 }

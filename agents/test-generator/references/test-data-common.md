@@ -1,6 +1,6 @@
 # Test Data Generation — Common Reference
 
-This covers language-agnostic rules for generating test data. Read the language-specific guide at `languages/<language>/test-data-guide.md` for project structure, dependency resolution, and version rules.
+This covers language-agnostic rules for generating test data. Read the language-specific guide at `references/languages/<language>/test-data-guide.md` for project structure, dependency resolution, and version rules.
 
 ## Goal
 

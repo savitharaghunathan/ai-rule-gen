@@ -44,12 +44,15 @@ internal/
   scaffold/               # test-scaffold: create dirs, .test.yaml, manifest.json
   workspace/              # Output directory management, report generation
 agents/                   # Agent skills (agentskills.io format, SKILL.md + references/)
-languages/                # Per-language plugin directories
+  rule-writer/references/languages/<lang>/
+    condition-types.md    #   Provider-specific condition types
+  test-generator/references/languages/<lang>/
+    test-data-guide.md    #   Test data generation guide
+  rule-validator/references/languages/<lang>/
+    fix-strategies.md     #   Fix lookup for failing tests
+languages/                # Per-language scaffold config (used by Go CLI)
   <lang>/                 #   java, go, nodejs, csharp, python
     config.json           #   Scaffold config (build file, source dir, etc.)
-    condition-types.md    #   Provider-specific condition types
-    test-data-guide.md    #   Test data generation guide
-    fix-strategies.md     #   Fix lookup for failing tests
 ```
 
 ## Skill Composition

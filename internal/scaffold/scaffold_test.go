@@ -10,6 +10,44 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// setupTestLanguagesDir creates a temporary languages/ directory with config.json
+// files for all supported languages, matching the real languages/ directory structure.
+func setupTestLanguagesDir(t *testing.T) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), "languages")
+
+	configs := map[string]languageFile{
+		"java": {Language: "java", Providers: []string{"java", "builtin"}, Scaffold: LanguageConfig{
+			BuildFile: "pom.xml", BuildFileType: "xml",
+			SourceDir: "src/main/java/com/example", MainFile: "Application.java", MainFileType: "java",
+		}},
+		"go": {Language: "go", Providers: []string{"go", "builtin"}, Scaffold: LanguageConfig{
+			BuildFile: "go.mod", BuildFileType: "go",
+			SourceDir: ".", MainFile: "main.go", MainFileType: "go",
+		}},
+		"nodejs": {Language: "nodejs", Providers: []string{"nodejs", "builtin"}, Scaffold: LanguageConfig{
+			BuildFile: "package.json", BuildFileType: "json",
+			SourceDir: "src", MainFile: "App.tsx", MainFileType: "tsx",
+		}},
+		"csharp": {Language: "csharp", Providers: []string{"dotnet", "builtin"}, Scaffold: LanguageConfig{
+			BuildFile: "Project.csproj", BuildFileType: "xml",
+			SourceDir: ".", MainFile: "Program.cs", MainFileType: "csharp",
+		}},
+		"python": {Language: "python", Providers: []string{"python", "builtin"}, Scaffold: LanguageConfig{
+			BuildFile: "requirements.txt", BuildFileType: "text",
+			SourceDir: ".", MainFile: "main.py", MainFileType: "python",
+		}},
+	}
+
+	for lang, cfg := range configs {
+		langDir := filepath.Join(dir, lang)
+		os.MkdirAll(langDir, 0o755)
+		data, _ := json.Marshal(cfg)
+		os.WriteFile(filepath.Join(langDir, "config.json"), data, 0o644)
+	}
+	return dir
+}
+
 func TestDetectLanguage(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -195,7 +233,8 @@ func TestRun(t *testing.T) {
 	rsData, _ := yaml.Marshal(rules.Ruleset{Name: "test"})
 	os.WriteFile(filepath.Join(rulesDir, "ruleset.yaml"), rsData, 0o644)
 
-	result, err := Run(rulesDir, dir, "")
+	langsDir := setupTestLanguagesDir(t)
+	result, err := Run(rulesDir, dir, "", langsDir)
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -341,7 +380,8 @@ func TestRunWithBuiltinRules(t *testing.T) {
 	ruleData, _ := yaml.Marshal(ruleList)
 	os.WriteFile(filepath.Join(rulesDir, "config.yaml"), ruleData, 0o644)
 
-	result, err := Run(rulesDir, dir, "java")
+	langsDir := setupTestLanguagesDir(t)
+	result, err := Run(rulesDir, dir, "java", langsDir)
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -369,17 +409,19 @@ func TestRunWithBuiltinRules(t *testing.T) {
 }
 
 func TestGetLanguageConfig(t *testing.T) {
-	cfg, ok := GetLanguageConfig("java")
-	if !ok {
-		t.Fatal("java config not found")
+	langsDir := setupTestLanguagesDir(t)
+
+	cfg, err := GetLanguageConfig(langsDir, "java")
+	if err != nil {
+		t.Fatalf("java config: %v", err)
 	}
 	if cfg.BuildFile != "pom.xml" {
 		t.Errorf("BuildFile = %q, want %q", cfg.BuildFile, "pom.xml")
 	}
 
-	cfg, ok = GetLanguageConfig("python")
-	if !ok {
-		t.Fatal("python config not found")
+	cfg, err = GetLanguageConfig(langsDir, "python")
+	if err != nil {
+		t.Fatalf("python config: %v", err)
 	}
 	if cfg.BuildFile != "requirements.txt" {
 		t.Errorf("BuildFile = %q, want %q", cfg.BuildFile, "requirements.txt")
@@ -388,8 +430,8 @@ func TestGetLanguageConfig(t *testing.T) {
 		t.Errorf("MainFile = %q, want %q", cfg.MainFile, "main.py")
 	}
 
-	_, ok = GetLanguageConfig("rust")
-	if ok {
-		t.Error("expected rust config to not exist")
+	_, err = GetLanguageConfig(langsDir, "rust")
+	if err == nil {
+		t.Error("expected rust config to fail")
 	}
 }
