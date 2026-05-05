@@ -5,6 +5,16 @@
 vendor/
 /bin/
 /test
+/construct
+/coverage
+/ingest
+/merge-patterns
+/report
+/sanitize
+/scaffold
+/sections
+/stamp
+/validate
 
 # Output
 output*/
@@ -20,6 +30,11 @@ Thumbs.db
 # Environment
 .env*
 .cursor/
+
+# Tool/IDE workspace artifacts
+.metadata/
+.agents/
+.opencode/
 
 # Local agent settings (personal machine paths, session-accumulated permissions)
 .claude/settings.local.json

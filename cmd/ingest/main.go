@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
 	"github.com/konveyor/ai-rule-gen/internal/ingestion"
@@ -16,20 +15,17 @@ func main() {
 	flag.Parse()
 
 	if *input == "" {
-		fmt.Fprintln(os.Stderr, "error: --input is required")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--input is required", "ingest", "set --input to a URL, file path, or raw text", nil)
 	}
 
 	result, err := ingestion.Ingest(*input, *chunkSize)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("ingest_failed", err.Error(), "ingest", "verify input source and network/file access", map[string]interface{}{"input": *input, "chunk_size": *chunkSize})
 	}
 
 	if *output != "" {
 		if err := ingestion.WriteMarkdown(*output, result.Content); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
+			cli.Fail("write_output_failed", err.Error(), "ingest", "check output path and write permissions", map[string]string{"output": *output})
 		}
 		cli.WriteJSON(map[string]interface{}{
 			"output":     *output,

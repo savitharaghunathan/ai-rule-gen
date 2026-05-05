@@ -1,0 +1,29 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "bash": {
+      "*": "ask",
+      "go run ./cmd/ingest *": "allow",
+      "go run ./cmd/sections *": "allow",
+      "go run ./cmd/merge-patterns *": "allow",
+      "go run ./cmd/contract-validate *": "allow",
+      "go run ./cmd/construct *": "allow",
+      "go run ./cmd/validate *": "allow",
+      "go run ./cmd/scaffold *": "allow",
+      "go run ./cmd/sanitize *": "allow",
+      "go run ./cmd/test *": "allow",
+      "go run ./cmd/stamp *": "allow",
+      "go run ./cmd/report *": "allow",
+      "go run ./cmd/coverage *": "allow",
+      "go mod *": "allow",
+      "go doc *": "allow",
+      "mkdir *": "allow",
+      "wc *": "allow",
+      "grep *": "allow"
+    },
+    "edit": {
+      "*": "ask",
+      "output/**": "allow"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "filesystem": {
+      "allowWrite": ["./output", "/tmp"],
+      "allowRead": ["."]
+    },
+    "network": {
+      "allowFetch": true
+    },
+    "allowedCommands": [
+      "go run ./cmd/ingest *",
+      "go run ./cmd/sections *",
+      "go run ./cmd/merge-patterns *",
+      "go run ./cmd/contract-validate *",
+      "go run ./cmd/construct *",
+      "go run ./cmd/validate *",
+      "go run ./cmd/scaffold *",
+      "go run ./cmd/sanitize *",
+      "go run ./cmd/test *",
+      "go run ./cmd/stamp *",
+      "go run ./cmd/report *",
+      "go run ./cmd/coverage *",
+      "go mod *",
+      "go doc *",
+      "mkdir *",
+      "grep *",
+      "wc *",
+      "ls *"
+    ]
+  }
+}

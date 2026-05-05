@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
@@ -21,8 +19,7 @@ func main() {
 	flag.Parse()
 
 	if *output == "" {
-		fmt.Fprintln(os.Stderr, "error: --output is required")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--output is required", "report", "set --output to a writable report.yaml path", nil)
 	}
 
 	var failedRules []string
@@ -37,8 +34,7 @@ func main() {
 
 	report := workspace.BuildReport(*source, *target, *rulesTotal, *passed, *failed, failedRules)
 	if err := workspace.WriteReport(*output, report); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("write_report_failed", err.Error(), "report", "verify output directory exists and is writable", map[string]string{"output": *output})
 	}
 
 	cli.WriteJSON(report)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
@@ -21,14 +20,12 @@ func main() {
 	flag.Parse()
 
 	if *guide == "" {
-		fmt.Fprintln(os.Stderr, "error: --guide is required")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--guide is required", "sections", "set --guide to a migration guide markdown path", nil)
 	}
 
 	data, err := os.ReadFile(*guide)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: reading guide: %v\n", err)
-		os.Exit(1)
+		cli.Fail("read_guide_failed", err.Error(), "sections", "verify guide path and read permissions", map[string]string{"guide": *guide})
 	}
 
 	sections := coverage.ParseSections(string(data))

@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -22,8 +20,7 @@ func main() {
 
 	files := flag.Args()
 	if len(files) == 0 {
-		fmt.Fprintln(os.Stderr, "error: provide one or more patterns files as arguments")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "provide one or more patterns files as arguments", "merge-patterns", "pass input patterns files after flags", nil)
 	}
 
 	var parts []*rules.ExtractOutput
@@ -31,8 +28,7 @@ func main() {
 	for _, f := range files {
 		p, err := rules.ReadPatternsFile(f)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
+			cli.Fail("read_patterns_failed", err.Error(), "merge-patterns", "verify each input patterns file path and JSON format", map[string]string{"file": f})
 		}
 		totalPatterns += len(p.Patterns)
 		parts = append(parts, p)
@@ -40,8 +36,7 @@ func main() {
 
 	merged := rules.MergePatterns(parts)
 	if err := rules.WritePatternsFile(*outFile, merged); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("write_patterns_failed", err.Error(), "merge-patterns", "verify output path permissions", map[string]string{"output": *outFile})
 	}
 
 	cli.WriteJSON(output{

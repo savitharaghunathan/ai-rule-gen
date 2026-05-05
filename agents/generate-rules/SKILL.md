@@ -35,6 +35,7 @@ If no argument is provided, ask the user for the migration guide source.
 | shell | `go run ./cmd/ingest *` | Fetch migration guide as markdown |
 | shell | `go run ./cmd/sections *` | Index guide sections with classification |
 | shell | `go run ./cmd/merge-patterns *` | Merge partial patterns files |
+| shell | `go run ./cmd/contract-validate *` | Validate sub-agent payload contracts |
 | shell | `go run ./cmd/construct *` | Build rule YAML from patterns.json |
 | shell | `go run ./cmd/validate *` | Validate rule YAML structure |
 | shell | `go run ./cmd/scaffold *` | Create test directories and manifests |
@@ -46,7 +47,7 @@ If no argument is provided, ask the user for the migration guide source.
 | shell | `wc -l *` | Count guide lines |
 | shell | `grep *` | Count sections, search output |
 | read | `output/**` | Read manifest, test results |
-| write | `output/guide.md` | Write pasted/markdown guide to file |
+| write | `output/**` | Write migration artifacts |
 
 ## UX Principles
 
@@ -73,7 +74,7 @@ Example full run:
 [ingest] Done — 3876 lines, 77 sections
 
 [extract] Extracting patterns from 62 sections (3 parallel agents)...
-[extract] Done — 52 patterns → 52 rules in output/rules/
+[extract] Done — 52 patterns → 52 rules in output/<source>-to-<target>/rules/
 
 [coverage] No gaps found
 
@@ -85,7 +86,7 @@ Example full run:
 [validate] Fix 1/3 — 51/52 passed
 [validate] Fix 2/3 — 52/52 passed
 
-[done] 52 rules generated, 52/52 passed — output/rules/
+[done] 52 rules generated, 52/52 passed — output/<source>-to-<target>/rules/
 ```
 
 That's the entire user-visible output. Everything else happens silently in sub-agents.
@@ -97,6 +98,18 @@ This orchestrator delegates heavy LLM work to sub-agents using **invoke blocks**
 The runtime translates each invoke block into a sub-agent call:
 1. "Read and follow `agents/<skill-name>/SKILL.md`."
 2. Inputs from the invoke block, with actual values substituted.
+
+**Contract validation is mandatory.** For every invoke:
+- Validate invoke input JSON against `agents/<skill>/contract.json` with `--mode inputs`
+- Validate sub-agent return JSON against `agents/<skill>/contract.json` with `--mode returns`
+- If validation fails, stop that step and print `[step] FAILED — contract validation error`
+
+Example:
+
+```bash
+go run ./cmd/contract-validate --contract agents/rule-writer/contract.json --mode inputs --payload-file output/<source>-to-<target>/contracts/rule-writer-input-1.json
+go run ./cmd/contract-validate --contract agents/rule-writer/contract.json --mode returns --payload-file output/<source>-to-<target>/contracts/rule-writer-return-1.json
+```
 
 If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes` should be dispatched concurrently. If the runtime does not support parallel dispatch or sub-agents, run all invoke blocks sequentially in the current agent context — read and follow each sub-skill's SKILL.md inline.
 
@@ -114,6 +127,13 @@ If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes
 
 ### 1. Ingest
 
+Set migration-specific paths once source and target are known:
+
+```bash
+MIGRATION_DIR="output/<source>-to-<target>"
+mkdir -p "$MIGRATION_DIR"
+```
+
 ```
 [ingest] Fetching guide from <source>...
 ```
@@ -122,9 +142,9 @@ If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes
 mkdir -p output
 ```
 
-- **URL:** `go run ./cmd/ingest --input <url> --output output/guide.md`
-- **File (not markdown):** `go run ./cmd/ingest --input <path> --output output/guide.md`
-- **Pasted text or already markdown:** Write directly to `output/guide.md`
+- **URL:** `go run ./cmd/ingest --input <url> --output output/<source>-to-<target>/guide.md`
+- **File (not markdown):** `go run ./cmd/ingest --input <path> --output output/<source>-to-<target>/guide.md`
+- **Pasted text or already markdown:** Write directly to `output/<source>-to-<target>/guide.md`
 
 Count lines (`GUIDE_LINES`) and section headings. Print:
 
@@ -139,12 +159,20 @@ Extraction uses parallel agents to process the guide faster. The orchestrator sp
 **2a. Index sections and auto-detect metadata:**
 
 ```bash
-go run ./cmd/sections --guide output/guide.md
+go run ./cmd/sections --guide output/<source>-to-<target>/guide.md
 ```
 
 This returns JSON with all sections classified as `content` or `header-only`. Filter to content sections only.
 
 Read the first ~50 lines of the guide to auto-detect source, target, and language. Use lowercase, hyphenated names (e.g., `spring-boot-3`). If the user provided source/target, use those instead.
+
+Set migration-specific output paths after source/target are known:
+
+```bash
+MIGRATION="<source>-to-<target>"
+MIGRATION_DIR="output/${MIGRATION}"
+mkdir -p "${MIGRATION_DIR}"
+```
 
 ```
 [extract] Extracting patterns from <content_count> sections (<N> parallel agents)...
@@ -157,12 +185,12 @@ Split the content sections into **N balanced chunks** (minimum 2, maximum 5 agen
 **Invoke:** `rule-writer` (one per chunk, in parallel)
 **Purpose:** Extract migration patterns from assigned sections.
 **Inputs per invocation:**
-  - guide: output/guide.md
+  - guide: output/<source>-to-<target>/guide.md
   - source: {detected source}
   - target: {detected target}
-  - rules_dir: output/rules
+  - rules_dir: output/<source>-to-<target>/rules
   - sections: {chunk subset — list of `{heading, start_line, end_line}` objects}
-  - output_file: output/patterns-{chunk_number}.json
+  - output_file: output/<source>-to-<target>/patterns-{chunk_number}.json
 **Parallel:** yes
 **Expect:**
   - patterns_count, output_file
@@ -172,15 +200,15 @@ Split the content sections into **N balanced chunks** (minimum 2, maximum 5 agen
 After all agents complete, merge the partial patterns files and build rules:
 
 ```bash
-go run ./cmd/merge-patterns --output patterns.json output/patterns-1.json output/patterns-2.json ...
-go run ./cmd/construct --patterns patterns.json --output output/rules
-go run ./cmd/validate --rules output/rules
+go run ./cmd/merge-patterns --output output/<source>-to-<target>/patterns.json output/<source>-to-<target>/patterns-1.json output/<source>-to-<target>/patterns-2.json ...
+go run ./cmd/construct --patterns output/<source>-to-<target>/patterns.json --output output/<source>-to-<target>/rules
+go run ./cmd/validate --rules output/<source>-to-<target>/rules
 ```
 
-If validation fails, fix the patterns.json (remove invalid entries) and re-run construct.
+If validation fails, fix `output/<source>-to-<target>/patterns.json` (remove invalid entries) and re-run construct.
 
 ```
-[extract] Done — <patterns_count> patterns → <rules_count> rules in output/rules/
+[extract] Done — <patterns_count> patterns → <rules_count> rules in output/<source>-to-<target>/rules/
 ```
 
 Save `source`, `target`, `patterns_count`, `rules_count` for the final summary.
@@ -190,7 +218,7 @@ Save `source`, `target`, `patterns_count`, `rules_count` for the final summary.
 Run the coverage tool to find sections with named artifacts that weren't extracted:
 
 ```bash
-go run ./cmd/coverage --guide output/guide.md --patterns patterns.json --language <language>
+go run ./cmd/coverage --guide output/<source>-to-<target>/guide.md --patterns output/<source>-to-<target>/patterns.json --language <language>
 ```
 
 If `gap_count > 0` in the JSON output, print:
@@ -204,22 +232,22 @@ Convert gaps to sections and send back to the rule-writer in chunk mode for targ
 **Invoke:** `rule-writer` (chunk mode)
 **Purpose:** Extract patterns from specific sections that the coverage check flagged.
 **Inputs:**
-  - guide: output/guide.md
+  - guide: output/<source>-to-<target>/guide.md
   - source: {detected source}
   - target: {detected target}
-  - rules_dir: output/rules
+  - rules_dir: output/<source>-to-<target>/rules
   - sections: {gap sections converted to `[{heading, start_line, end_line}]` format}
-  - output_file: output/patterns-gaps.json
+  - output_file: output/<source>-to-<target>/patterns-gaps.json
 **Parallel:** no
 **Expect:**
   - patterns_count, output_file
 
-The sub-agent writes only the new patterns to `output/patterns-gaps.json`. It does NOT read or inspect existing patterns — the orchestrator handles deduplication. After the sub-agent returns, merge and rebuild:
+The sub-agent writes only the new patterns to `output/<source>-to-<target>/patterns-gaps.json`. It does NOT read or inspect existing patterns — the orchestrator handles deduplication. After the sub-agent returns, merge and rebuild:
 
 ```bash
-go run ./cmd/merge-patterns --output patterns.json patterns.json output/patterns-gaps.json
-go run ./cmd/construct --patterns patterns.json --output output/rules
-go run ./cmd/validate --rules output/rules
+go run ./cmd/merge-patterns --output output/<source>-to-<target>/patterns.json output/<source>-to-<target>/patterns.json output/<source>-to-<target>/patterns-gaps.json
+go run ./cmd/construct --patterns output/<source>-to-<target>/patterns.json --output output/<source>-to-<target>/rules
+go run ./cmd/validate --rules output/<source>-to-<target>/rules
 ```
 
 Re-run the coverage check. If gaps remain, accept them — one re-extraction pass is enough.
@@ -249,14 +277,14 @@ If the user declines, skip to Step 6 (Summary) with untested rules. Otherwise co
 **3a. Scaffold (orchestrator runs this directly, not an agent):**
 
 ```bash
-go run ./cmd/scaffold --rules output/rules --output output/tests
+go run ./cmd/scaffold --rules output/<source>-to-<target>/rules --output output/<source>-to-<target>/tests
 ```
 
 This creates all directories, `.test.yaml` files, and `manifest.json`. No LLM needed.
 
 **3b. Read manifest and split into batches:**
 
-Read `output/tests/manifest.json`. It contains a `groups` array — each group has `name`, `data_dir`, `files` (paths to generate), and `rule_ids`.
+Read `output/<source>-to-<target>/tests/manifest.json`. It contains a `groups` array — each group has `name`, `data_dir`, `files` (paths to generate), and `rule_ids`.
 
 Split the groups into **batches of ~5 groups each** (minimum 1 batch, maximum 5 batches), balanced by rule count.
 
@@ -269,8 +297,8 @@ Split the groups into **batches of ~5 groups each** (minimum 1 batch, maximum 5 
 **Invoke:** `test-generator` (one per batch, up to 5 in parallel)
 **Purpose:** Generate compilable test source code that triggers the assigned rules.
 **Inputs per invocation:**
-  - rules_dir: output/rules
-  - tests_dir: output/tests
+  - rules_dir: output/<source>-to-<target>/rules
+  - tests_dir: output/<source>-to-<target>/tests
   - groups: {batch subset from manifest.json — include name, data_dir, rule_ids, files}
 **Parallel:** yes
 **Expect:**
@@ -281,7 +309,7 @@ Split the groups into **batches of ~5 groups each** (minimum 1 batch, maximum 5 
 Sanitize XML:
 
 ```bash
-go run ./cmd/sanitize --dir output/tests/tests/data
+go run ./cmd/sanitize --dir output/<source>-to-<target>/tests/data
 ```
 
 ```
@@ -295,7 +323,7 @@ The orchestrator runs tests and uses a sub-agent for LLM-driven repairs on failu
 **4a. Run tests:**
 
 ```bash
-go run ./cmd/test --rules output/rules --tests output/tests/tests --timeout 5m
+go run ./cmd/test --rules output/<source>-to-<target>/rules --tests output/<source>-to-<target>/tests --timeout 5m
 ```
 
 The CLI runs each test file sequentially (avoids Docker contention) and automatically retries timed-out files once (`--retry-timeouts`, on by default). To run a subset, use `--files` with bare filenames (e.g., `--files data-1.test.yaml,data-2.test.yaml`), resolved relative to `--tests` dir.
@@ -323,8 +351,8 @@ If all passed, skip to step 5.
 **Invoke:** `rule-validator`
 **Purpose:** Fix test data for failing rules so they pass kantra validation.
 **Inputs:**
-  - rules_dir: output/rules
-  - tests_dir: output/tests/tests
+  - rules_dir: output/<source>-to-<target>/rules
+  - tests_dir: output/<source>-to-<target>/tests
   - failing_rules: {list with rule_id, test_file, error for each failure}
   - max_iterations: 1
 **Parallel:** no
@@ -348,8 +376,8 @@ If still_failing is non-empty, move on — don't block the pipeline.
 Collate pass/fail results from the test run and the fix loop. No need to re-run the full test suite — stamp directly from results:
 
 ```bash
-go run ./cmd/stamp --rules output/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs>
-go run ./cmd/report --source <source> --target <target> --output output/report.yaml --rules-total <N> --passed <P> --failed <F> --failed-rules <comma-separated>
+go run ./cmd/stamp --rules output/<source>-to-<target>/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs>
+go run ./cmd/report --source <source> --target <target> --output output/<source>-to-<target>/report.yaml --rules-total <N> --passed <P> --failed <F> --failed-rules <comma-separated>
 ```
 
 ### 6. Summary
@@ -366,7 +394,7 @@ Print a formatted summary table using GitHub-flavored markdown:
 | **Guide** | <GUIDE_LINES> lines, <N> sections → <M> produced patterns, <K> skipped |
 | **Rules** | <rules_count> generated, **<P>/<N> passed (<percent>%)** |
 | **Fix iterations** | <iterations used, 0 if none> |
-| **Output** | `output/rules/` (rules), `output/tests/` (tests), `output/report.yaml` (report) |
+| **Output** | `output/<source>-to-<target>/patterns.json` (patterns), `output/<source>-to-<target>/rules/` (rules), `output/<source>-to-<target>/tests/` (tests), `output/<source>-to-<target>/report.yaml` (report) |
 
 ### Rule Categories
 

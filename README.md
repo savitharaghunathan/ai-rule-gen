@@ -66,14 +66,15 @@ The agent runs the full pipeline automatically:
 
 ```
 output/
-├── rules/                # Rule YAML files ready for konveyor/rulesets
-│   ├── ruleset.yaml
-│   ├── web.yaml
-│   └── ...
-├── tests/                # Kantra test suites
-├── patterns.json         # Extracted migration patterns
-├── guide.md              # Ingested migration guide
-└── report.yaml           # Summary report
+└── <source>-to-<target>/
+    ├── guide.md          # Ingested migration guide
+    ├── patterns.json     # Extracted migration patterns
+    ├── rules/            # Rule YAML files ready for konveyor/rulesets
+    │   ├── ruleset.yaml
+    │   ├── web.yaml
+    │   └── ...
+    ├── tests/            # Kantra test suites
+    └── report.yaml       # Summary report
 ```
 
 ## Architecture
@@ -95,7 +96,7 @@ Migration Guide → Agent extracts patterns → CLI constructs rules → CLI sca
 | Skill | Role |
 |-------|------|
 | **generate-rules** | Orchestrates the full end-to-end pipeline |
-| **rule-writer** | Reads migration guide, extracts migration patterns into `patterns.json` |
+| **rule-writer** | Reads migration guide, extracts migration patterns into `output/<source>-to-<target>/patterns.json` |
 | **test-generator** | Reads `manifest.json`, generates compilable test source code |
 | **rule-validator** | Runs kantra, interprets results, generates fix hints |
 

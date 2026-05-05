@@ -1,0 +1,9 @@
+# Codex CLI — .codex/config.toml
+# Copy to .codex/config.toml in the project root
+#
+# NOTE: Verify this format against your installed Codex CLI version.
+# Codex CLI is evolving rapidly and the config schema may have changed.
+# Run `codex --help` or check https://developers.openai.com/codex for current docs.
+
+approval_policy = "auto-edit"
+sandbox_mode = "workspace-write"

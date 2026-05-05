@@ -2,6 +2,7 @@ package construct
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -81,6 +82,7 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 	for name, rr := range grouped {
 		groups = append(groups, GroupCount{File: name + ".yaml", Rules: len(rr)})
 	}
+	sort.Slice(groups, func(i, j int) bool { return groups[i].File < groups[j].File })
 
 	return &Result{
 		RulesWritten: len(allRules),

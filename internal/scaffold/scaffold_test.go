@@ -269,7 +269,7 @@ func TestRun(t *testing.T) {
 	}
 
 	// Verify .test.yaml was written
-	testFilePath := filepath.Join(dir, "tests", "ejb.test.yaml")
+	testFilePath := filepath.Join(dir, "ejb.test.yaml")
 	testData, err := os.ReadFile(testFilePath)
 	if err != nil {
 		t.Fatalf("reading test file: %v", err)
@@ -283,7 +283,7 @@ func TestRun(t *testing.T) {
 	}
 
 	// Verify data directory was created
-	dataDir := filepath.Join(dir, "tests", "data", "ejb", "src", "main", "java", "com", "example")
+	dataDir := filepath.Join(dir, "data", "ejb", "src", "main", "java", "com", "example")
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		t.Errorf("data directory %s was not created", dataDir)
 	}

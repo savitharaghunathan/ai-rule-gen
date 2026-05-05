@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
@@ -17,20 +16,17 @@ func main() {
 	flag.Parse()
 
 	if *guide == "" || *patterns == "" {
-		fmt.Fprintln(os.Stderr, "error: --guide and --patterns are required")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--guide and --patterns are required", "coverage", "provide both guide markdown and patterns.json paths", nil)
 	}
 
 	guideData, err := os.ReadFile(*guide)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: reading guide: %v\n", err)
-		os.Exit(1)
+		cli.Fail("read_guide_failed", err.Error(), "coverage", "verify guide path and read permissions", map[string]string{"guide": *guide})
 	}
 
 	extractOutput, err := rules.ReadPatternsFile(*patterns)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: reading patterns: %v\n", err)
-		os.Exit(1)
+		cli.Fail("read_patterns_failed", err.Error(), "coverage", "verify patterns path and JSON format", map[string]string{"patterns": *patterns})
 	}
 
 	lang := *language

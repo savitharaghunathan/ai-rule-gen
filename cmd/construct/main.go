@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
 	"github.com/konveyor/ai-rule-gen/internal/construct"
@@ -16,20 +14,23 @@ func main() {
 	flag.Parse()
 
 	if *patterns == "" || *output == "" {
-		fmt.Fprintln(os.Stderr, "error: --patterns and --output are required")
-		os.Exit(1)
+		cli.Fail(
+			"invalid_arguments",
+			"--patterns and --output are required",
+			"construct",
+			"provide both flags and retry",
+			nil,
+		)
 	}
 
 	extract, err := rules.ReadPatternsFile(*patterns)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("read_patterns_failed", err.Error(), "construct", "verify --patterns path and JSON format", map[string]string{"patterns": *patterns})
 	}
 
 	result, err := construct.Run(extract, *output)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("construct_failed", err.Error(), "construct", "inspect patterns content and output path permissions", map[string]string{"output": *output})
 	}
 
 	cli.WriteJSON(result)

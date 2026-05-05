@@ -14,7 +14,7 @@ import (
 func TestFindTestFiles(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create nested structure matching real layout: tests/tests/*.test.yaml
+	// Create nested structure matching real layout: tests/*.test.yaml
 	subdir := filepath.Join(dir, "tests")
 	os.MkdirAll(subdir, 0o755)
 

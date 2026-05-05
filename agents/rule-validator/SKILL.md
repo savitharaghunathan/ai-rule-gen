@@ -48,12 +48,11 @@ If the lookup fix doesn't resolve the failure, mark the rule as `still_failing` 
 | Operation | Pattern | Purpose |
 |-----------|---------|---------|
 | shell | `go run ./cmd/test *` | Run kantra tests on subset |
-| read | `output/rules/**` | Read rule YAML |
-| read | `output/tests/**` | Read test files and kantra output |
+| read | `output/**` | Read rule YAML, test files, and kantra output |
 | read | `agents/rule-validator/references/**` | Read fix strategies |
 | read | `agents/rule-validator/references/languages/**` | Read language-specific fix strategies |
-| edit | `output/tests/**` | Fix failing test data |
-| write | `output/tests/**` | Rewrite test files when edits are insufficient |
+| edit | `output/**` | Fix failing test data |
+| write | `output/**` | Rewrite test files when edits are insufficient |
 
 ## References
 

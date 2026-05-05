@@ -14,7 +14,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 - `target` — Target technology (e.g., "spring-boot-3.5") or "auto-detect"
 - `rules_dir` — Output directory for generated rules
 - `sections` — (optional) List of sections to process, each with `heading`, `start_line`, `end_line`. When provided, only process these sections (chunk mode)
-- `output_file` — (optional, default: `patterns.json`) Where to write the extracted patterns
+- `output_file` — (optional, default: `output/<source>-to-<target>/patterns.json`) Where to write the extracted patterns
 
 ## Returns
 
@@ -36,11 +36,11 @@ You extract migration patterns from a migration guide and produce validated Konv
 |-----------|---------|---------|
 | shell | `go run ./cmd/construct *` | Build rule YAML from patterns.json |
 | shell | `go run ./cmd/validate *` | Validate rule YAML structure |
-| read | `output/guide.md` | Read migration guide |
+| read | `output/**` | Read migration guide |
 | read | `agents/rule-writer/references/**` | Read condition types, schema |
 | read | `agents/rule-writer/references/languages/**` | Read language-specific condition types |
 | write | `patterns*.json` | Write extracted patterns |
-| write | `output/rules/**` | Write generated rule YAML |
+| write | `output/**` | Write generated rule YAML and patterns |
 
 **Do NOT use `python`, `python3`, `node`, or any scripting language runtime.** This is a Go project. Only run commands listed in this permissions table. Do not validate JSON yourself — the orchestrator runs `merge-patterns` and `construct` which validate the JSON. Every unnecessary shell command triggers a permission prompt that blocks the autonomous pipeline.
 
@@ -232,7 +232,7 @@ The message should be just the text — no headers, no labels wrapping it.
 
 ### 7. Write patterns.json
 
-Assemble the complete patterns.json with all extracted patterns and write it to the workspace:
+Assemble the complete patterns.json with all extracted patterns and write it to the workspace at `output/<source>-to-<target>/patterns.json`:
 
 ```json
 {
@@ -248,7 +248,7 @@ Assemble the complete patterns.json with all extracted patterns and write it to 
 Run the CLI to convert patterns to validated rule YAML:
 
 ```bash
-go run ./cmd/construct --patterns patterns.json --output <rules-dir>
+go run ./cmd/construct --patterns output/<source>-to-<target>/patterns.json --output <rules-dir>
 ```
 
 This produces rule YAML files grouped by concern + ruleset.yaml.
@@ -261,7 +261,7 @@ Run validation:
 go run ./cmd/validate --rules <rules-dir>
 ```
 
-If validation fails, fix the patterns.json and re-run construct. Common issues:
+If validation fails, fix `output/<source>-to-<target>/patterns.json` and re-run construct. Common issues:
 - Missing `source_fqn` → the rule condition has no pattern to match
 - Invalid `location_type` → not one of the 14 valid Java locations
 - Invalid regex in `file_pattern` → `file_pattern` must be valid Go regex, NOT glob syntax. Use `.*\\.properties` not `*.properties`

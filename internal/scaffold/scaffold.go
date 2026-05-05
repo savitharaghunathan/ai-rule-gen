@@ -115,6 +115,7 @@ const maxRulesPerGroup = 8
 
 // Run reads rules from rulesDir, creates the test scaffold structure
 // (directories, .test.yaml files), and writes a manifest.json for the agent.
+// outputDir is the tests root directory where data/, *.test.yaml, and manifest.json are written.
 // languagesDir is the path to the languages/ directory containing per-language config.json files.
 func Run(rulesDir, outputDir, language, languagesDir string) (*Result, error) {
 	entries, err := os.ReadDir(rulesDir)
@@ -122,7 +123,7 @@ func Run(rulesDir, outputDir, language, languagesDir string) (*Result, error) {
 		return nil, fmt.Errorf("reading rules dir: %w", err)
 	}
 
-	testsDir := filepath.Join(outputDir, "tests")
+	testsDir := outputDir
 	if err := os.MkdirAll(testsDir, 0o755); err != nil {
 		return nil, fmt.Errorf("creating tests dir: %w", err)
 	}

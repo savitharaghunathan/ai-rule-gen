@@ -29,12 +29,11 @@ You generate test application source code that triggers Konveyor analyzer rules.
 | shell | `go run ./cmd/scaffold *` | Create test directories (standalone invocation) |
 | shell | `go mod *` | Resolve Go module dependencies |
 | shell | `go doc *` | Look up Go API signatures |
-| read | `output/rules/**` | Read rule YAML for test generation |
-| read | `output/tests/manifest.json` | Read scaffold manifest |
+| read | `output/**` | Read rule YAML and scaffold manifest |
 | read | `agents/test-generator/references/**` | Read test data guide |
 | read | `agents/test-generator/references/languages/**` | Read language-specific test data guide |
-| write | `output/tests/**` | Write test source files |
-| edit | `output/tests/**` | Fix test files during compilation |
+| write | `output/**` | Write test source files |
+| edit | `output/**` | Fix test files during compilation |
 
 **Do NOT use `python`, `python3`, `node`, or any scripting language runtime.** This is a Go project. Only run commands listed in this permissions table. Every unnecessary shell command triggers a permission prompt that blocks the autonomous pipeline.
 

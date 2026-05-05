@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -20,8 +18,7 @@ func main() {
 	flag.Parse()
 
 	if *rulesDir == "" || *testsDir == "" {
-		fmt.Fprintln(os.Stderr, "error: --rules and --tests are required")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--rules and --tests are required", "test", "provide rules and tests directories", nil)
 	}
 
 	cfg := testrunner.Config{
@@ -42,8 +39,7 @@ func main() {
 
 	result, err := testrunner.Run(cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("test_runner_failed", err.Error(), "test", "verify tests directory, kantra availability, and rule validity", map[string]interface{}{"rules": *rulesDir, "tests": *testsDir, "files": cfg.Files})
 	}
 
 	cli.WriteJSON(result)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
@@ -14,14 +13,12 @@ func main() {
 	flag.Parse()
 
 	if *rulesPath == "" {
-		fmt.Fprintln(os.Stderr, "error: --rules is required")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--rules is required", "validate", "set --rules to a rules directory or file path", nil)
 	}
 
 	info, err := os.Stat(*rulesPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: cannot access %s: %v\n", *rulesPath, err)
-		os.Exit(1)
+		cli.Fail("rules_path_unavailable", err.Error(), "validate", "confirm the rules path exists and is readable", map[string]string{"rules": *rulesPath})
 	}
 
 	var ruleList []rules.Rule
@@ -31,8 +28,7 @@ func main() {
 		ruleList, err = rules.ReadRulesFile(*rulesPath)
 	}
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("read_rules_failed", err.Error(), "validate", "verify rule YAML syntax and schema fields", map[string]string{"rules": *rulesPath})
 	}
 
 	result := rules.Validate(ruleList)

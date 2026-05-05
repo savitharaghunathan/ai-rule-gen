@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
@@ -19,8 +17,7 @@ func main() {
 	flag.Parse()
 
 	if *rulesDir == "" {
-		fmt.Fprintln(os.Stderr, "error: --rules is required")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--rules is required", "stamp", "set --rules to a directory containing rule YAML files", nil)
 	}
 
 	var passedIDs, failedIDs []string
@@ -28,8 +25,7 @@ func main() {
 	if *kantraOutput != "" {
 		allRules, err := rules.ReadRulesDir(*rulesDir)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: reading rules: %v\n", err)
-			os.Exit(1)
+			cli.Fail("read_rules_failed", err.Error(), "stamp", "verify rules directory path and rule file validity", map[string]string{"rules": *rulesDir})
 		}
 		var allIDs []string
 		for _, r := range allRules {
@@ -46,13 +42,11 @@ func main() {
 	}
 
 	if len(passedIDs) == 0 && len(failedIDs) == 0 {
-		fmt.Fprintln(os.Stderr, "error: no results to stamp: provide --kantra-output or --passed/--failed")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "no results to stamp: provide --kantra-output or --passed/--failed", "stamp", "pass test results either as raw kantra output or explicit passed/failed IDs", nil)
 	}
 
 	if err := rules.StampTestResults(*rulesDir, passedIDs, failedIDs); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("stamp_failed", err.Error(), "stamp", "check rules directory write permissions and rule file format", map[string]string{"rules": *rulesDir})
 	}
 
 	cli.WriteJSON(map[string]interface{}{

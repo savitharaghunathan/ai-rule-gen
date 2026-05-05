@@ -1,4 +1,15 @@
-.PHONY: test test-integration test-e2e coverage lint clean
+.PHONY: build build-bin test test-integration test-e2e coverage lint clean
+
+build:
+	go build ./...
+
+build-bin:
+	mkdir -p bin
+	for d in cmd/*; do \
+		if [ -f "$$d/main.go" ]; then \
+			go build -o "bin/$$(basename "$$d")" "./$$d"; \
+		fi; \
+	done
 
 test:
 	go test ./internal/...
@@ -17,4 +28,4 @@ lint:
 	golangci-lint run ./internal/... ./cmd/...
 
 clean:
-	rm -rf coverage.out
+	rm -rf coverage.out bin/

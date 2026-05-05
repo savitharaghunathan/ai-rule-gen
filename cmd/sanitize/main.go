@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
 	"github.com/konveyor/ai-rule-gen/internal/sanitize"
@@ -14,13 +12,11 @@ func main() {
 	flag.Parse()
 
 	if *dir == "" {
-		fmt.Fprintln(os.Stderr, "error: --dir is required")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--dir is required", "sanitize", "set --dir to the test data directory containing XML files", nil)
 	}
 
 	if err := sanitize.Dir(*dir); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		cli.Fail("sanitize_failed", err.Error(), "sanitize", "check XML content and directory permissions", map[string]string{"dir": *dir})
 	}
 
 	cli.WriteJSON(map[string]interface{}{
