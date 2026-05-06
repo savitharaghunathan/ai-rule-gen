@@ -16,6 +16,11 @@ If no argument is provided, ask the user for the migration guide source.
 - `guide_source` — URL, file path, or pasted text of a migration guide
 - `source` — (optional) Source technology, e.g. "spring-boot-3". Auto-detected if omitted.
 - `target` — (optional) Target technology, e.g. "spring-boot-4". Auto-detected if omitted.
+- `mode` — (optional) `interactive` (default) or `non_interactive`
+- `checkpoint_behavior` — (optional) `ask` (default), `continue`, or `stop_after_extract`
+- `resume_from` — (optional) `ingest`, `extract`, `coverage`, `scaffold`, `test`, `stamp`, `report`
+- `migration_dir` — (optional) explicit output directory override, e.g. `output/spring-boot-3-to-4`
+- `force_rebuild` — (optional) `true|false` (default `false`)
 
 ## Returns
 
@@ -26,6 +31,18 @@ If no argument is provided, ask the user for the migration guide source.
   - rules_count, passed, failed, pass_rate
   - coverage_report (sections processed/skipped)
   - fix_iterations used
+
+## Execution Modes
+
+- `interactive` mode: ask at checkpoint only when `checkpoint_behavior=ask`
+- `non_interactive` mode: never prompt the user; obey `checkpoint_behavior`
+  - `continue`: run full pipeline
+  - `stop_after_extract`: end after extraction/coverage with untested outputs
+  - `ask`: treated as `continue` (no prompt allowed in non-interactive mode)
+
+## References
+
+- `references/orchestrator-details.md` — status-line conventions, parallelism defaults, resume preconditions, rebuild behavior
 
 ## Permissions
 
@@ -49,47 +66,16 @@ If no argument is provided, ask the user for the migration guide source.
 | read | `output/**` | Read manifest, test results |
 | write | `output/**` | Write migration artifacts |
 
+**Do NOT use `python`, `python3`, `node`, or any scripting language runtime.**
+This is a Go project. Run only commands listed in this permissions table.
+If a required action is not permitted, stop and report the limitation.
+
 ## UX Principles
 
-The user should see a **flowing stream of short status lines** — never silence. Every step prints one line when it starts and one line when it finishes. No walls of text, no tables mid-pipeline, no unnecessary questions.
-
-**Checkpoint after extraction.** After extraction completes, ask the user: "Continue with test generation and validation?" This is the only question in the pipeline. If they say no or say to skip testing, finalize with untested rules.
-
-**Don't ask beyond the checkpoint.** Once testing starts, run the full pipeline (test → validate → fix → finalize) without further questions. If something fails after 3 fix attempts, report it and move on — don't block.
-
-**Only fix what's broken.** When the fix loop runs, only re-generate and re-validate the failing rules, not the entire suite.
-
-## Output Format
-
-Use this format for every status line:
-
-```
-[step-name] message
-```
-
-Example full run:
-
-```
-[ingest] Fetching guide from https://...
-[ingest] Done — 3876 lines, 77 sections
-
-[extract] Extracting patterns from 62 sections (3 parallel agents)...
-[extract] Done — 52 patterns → 52 rules in output/<source>-to-<target>/rules/
-
-[coverage] No gaps found
-
-[test-gen] Generating test data for 52 rules...
-[test-gen] Done — 12 groups, 39 files
-
-[validate] Running tests on 12 groups...
-[validate] 49/52 passed — fixing 3 failures
-[validate] Fix 1/3 — 51/52 passed
-[validate] Fix 2/3 — 52/52 passed
-
-[done] 52 rules generated, 52/52 passed — output/<source>-to-<target>/rules/
-```
-
-That's the entire user-visible output. Everything else happens silently in sub-agents.
+- Emit short status lines continuously (start + finish for each step).
+- Only ask at checkpoint when `mode=interactive` and `checkpoint_behavior=ask`.
+- Do not block after testing starts; continue even if some rules remain failing.
+- Fix only failing rules, not the full suite.
 
 ## Sub-agent Protocol
 
@@ -124,6 +110,20 @@ If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes
 **Error handling:** If any CLI command (`ingest`, `construct`, `validate`, `scaffold`, `sanitize`, `test`, `stamp`, `report`) exits non-zero, print `[step] FAILED — <error>` and stop the pipeline. Do not proceed to the next step.
 
 **Partial failures:** If a step produces partial results before failing (e.g., `construct` succeeds for 48 patterns but fails on 2), preserve the partial output and report what succeeded. The user can fix the failing patterns and re-run. Do not discard valid results because of a partial failure.
+
+**Resume behavior:** If `resume_from` is set, skip prior stages and validate prerequisites first. Fail fast when required artifacts are missing.
+
+Stage prerequisites:
+- `extract` requires `output/<source>-to-<target>/guide.md`
+- `coverage` requires `output/<source>-to-<target>/patterns.json`
+- `scaffold` requires `output/<source>-to-<target>/rules/`
+- `test` requires `output/<source>-to-<target>/rules/` and `output/<source>-to-<target>/tests/manifest.json`
+- `stamp` requires stamped pass/fail test results and `output/<source>-to-<target>/rules/`
+- `report` requires source/target metadata plus pass/fail totals
+
+Reuse behavior:
+- `force_rebuild=false`: reuse existing artifacts when prerequisites are satisfied
+- `force_rebuild=true`: regenerate artifacts for current stage onward
 
 ### 1. Ingest
 
@@ -264,13 +264,17 @@ If `gap_count == 0`:
 
 ### Checkpoint
 
-After printing the extract summary, ask the user:
+After extraction/coverage:
 
-```
-Continue with test generation and validation? (y/n)
-```
-
-If the user declines, skip to Step 6 (Summary) with untested rules. Otherwise continue.
+- If `mode=non_interactive`, do **not** prompt:
+  - `checkpoint_behavior=continue` or `ask`: continue automatically
+  - `checkpoint_behavior=stop_after_extract`: skip testing and go to Step 6
+- If `mode=interactive`:
+  - `checkpoint_behavior=continue`: continue automatically
+  - `checkpoint_behavior=stop_after_extract`: skip testing and go to Step 6
+  - `checkpoint_behavior=ask`: ask:
+    - `Continue with test generation and validation? (y/n)`
+    - if no, skip to Step 6 with untested rules
 
 ### 3. Test Generation
 
@@ -305,6 +309,14 @@ Split the groups into **batches of ~5 groups each** (minimum 1 batch, maximum 5 
   - groups_completed, files_written
 
 **3d. Collect results and sanitize.** After all agents complete:
+
+Collect `suspected_kantra_limitations` from all rule-writer and test-generator agent returns (merge, deduplicate by `rule_id`). If non-empty, print:
+
+```
+[test-gen] <N> suspected kantra limitations (Maven Central: no plain-semver version): <rule_id_1>, ...
+```
+
+Carry this merged list forward as `pre_classified_kantra_limitations` — it will be passed to the rule-validator to skip the fix loop for these rules.
 
 Sanitize XML:
 
@@ -354,10 +366,12 @@ If all passed, skip to step 5.
   - rules_dir: output/<source>-to-<target>/rules
   - tests_dir: output/<source>-to-<target>/tests
   - failing_rules: {list with rule_id, test_file, error for each failure}
+  - pre_classified_kantra_limitations: {merged list from rule-writer and test-generator suspected_kantra_limitations — may be empty}
   - max_iterations: 1
 **Parallel:** no
 **Expect:**
-  - fixed_rules, still_failing, iterations_used, fix_details
+  - fixed_rules, still_failing, kantra_limitation_rules, iterations_used, fix_details
+  - results_by_rule (with `result_type` + `recommended_action`)
 
 The validator agent owns the fix-verify loop — it fixes files, re-runs tests via `cmd/test`, and iterates up to `max_iterations`. Default is 1 iteration; pass up to 3 if the user requests more attempts.
 
@@ -366,8 +380,16 @@ The validator agent owns the fix-verify loop — it fixes files, re-runs tests v
 Print the result:
 
 ```
-[fix] <fixed_count> fixed, <still_failing_count> still failing
+[fix] <fixed_count> fixed, <still_failing_count> still failing, <kantra_limitation_count> kantra limitations
 ```
+
+If `kantra_limitation_rules` is non-empty, print:
+
+```
+[fix] kantra limitations (engine cannot test — rule is correct): <rule_id_1>, ...
+```
+
+Group unresolved failures by `result_type` in `results_by_rule` and include grouped counts in the final summary (e.g., `still_failing_timeout: 2`, `still_failing_kantra_limitation: 1`).
 
 If still_failing is non-empty, move on — don't block the pipeline.
 
@@ -376,9 +398,11 @@ If still_failing is non-empty, move on — don't block the pipeline.
 Collate pass/fail results from the test run and the fix loop. No need to re-run the full test suite — stamp directly from results:
 
 ```bash
-go run ./cmd/stamp --rules output/<source>-to-<target>/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs>
-go run ./cmd/report --source <source> --target <target> --output output/<source>-to-<target>/report.yaml --rules-total <N> --passed <P> --failed <F> --failed-rules <comma-separated>
+go run ./cmd/stamp --rules output/<source>-to-<target>/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs> --kantra-limitation <comma-separated kantra limitation rule IDs>
+go run ./cmd/report --source <source> --target <target> --output output/<source>-to-<target>/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --failed-rules <comma-separated>
 ```
+
+Rules in `kantra_limitation_rules` are stamped with `test-result=kantra-limitation`. They are not counted as passed or failed. The pass rate in the report is computed as `passed / (total - kantra_limitation)` to remain honest — kantra limitations are not failures, but they are also not confirmed passes.
 
 ### 6. Summary
 
@@ -393,6 +417,7 @@ Print a formatted summary table using GitHub-flavored markdown:
 | **Migration** | <source> → <target> (<language>) |
 | **Guide** | <GUIDE_LINES> lines, <N> sections → <M> produced patterns, <K> skipped |
 | **Rules** | <rules_count> generated, **<P>/<N> passed (<percent>%)** |
+| **Kantra limitations** | <K> rules correct but not auto-testable — engine cannot compare non-semver versions (omit row if K=0) |
 | **Fix iterations** | <iterations used, 0 if none> |
 | **Output** | `output/<source>-to-<target>/patterns.json` (patterns), `output/<source>-to-<target>/rules/` (rules), `output/<source>-to-<target>/tests/` (tests), `output/<source>-to-<target>/report.yaml` (report) |
 

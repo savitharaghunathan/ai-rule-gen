@@ -21,6 +21,7 @@ You generate test application source code that triggers Konveyor analyzer rules.
 
 - `groups_completed` — Number of groups processed
 - `files_written` — Number of files written
+- `suspected_kantra_limitations` — (optional) List of objects `{rule_id, reason}` where Maven Central confirmed no plain-semver version exists for the artifact. The rule is still written as `java.dependency`; this signals the orchestrator to pre-classify these rules for the validator.
 
 ## Permissions
 
@@ -29,6 +30,7 @@ You generate test application source code that triggers Konveyor analyzer rules.
 | shell | `go run ./cmd/scaffold *` | Create test directories (standalone invocation) |
 | shell | `go mod *` | Resolve Go module dependencies |
 | shell | `go doc *` | Look up Go API signatures |
+| shell | `curl -s "https://search.maven.org/solrsearch/select*"` | Look up real artifact versions on Maven Central for java.dependency test data |
 | read | `output/**` | Read rule YAML and scaffold manifest |
 | read | `agents/test-generator/references/**` | Read test data guide |
 | read | `agents/test-generator/references/languages/**` | Read language-specific test data guide |
@@ -42,6 +44,7 @@ You generate test application source code that triggers Konveyor analyzer rules.
 Read these before starting:
 - `references/test-data-common.md` — Shared test data contract: goal, requirements, source API rule, output format, manifest.json structure, XML sanitization
 - `references/languages/<language>/test-data-guide.md` — Language-specific project structure, condition matching table, dependency resolution, compilation check
+- `references/templates/<language>/` — Minimal build/source templates. Start from templates, then inject rule snippets.
 
 ## Workflow
 
@@ -90,8 +93,9 @@ For each group:
 
 1. Read the rules referenced by `rule_ids` from the rules directory
 2. Look at each rule's `when` condition to understand what pattern must be matched
-3. Generate the **build file** (purpose: `build`) — a valid project file with all required dependencies
-4. Generate the **source file** (purpose: `source`) — code that triggers every rule in the group
+3. Copy the minimal language template files from `references/templates/<language>/` into the group's target files
+4. Inject rule-specific snippets into template placeholders (for example `{{RULE_SNIPPETS}}`)
+5. Generate the **build file** (purpose: `build`) and **source file** (purpose: `source`) from the template baseline
 
 **Source code requirements:**
 - The project must be COMPLETE and COMPILABLE
@@ -102,11 +106,30 @@ For each group:
 - All imports/dependencies must be valid and resolve
 
 **Dependency version requirements for `java.dependency` rules:**
-- The version must be **strictly below** the rule's `upperbound`
-- The version must **actually exist** on Maven Central — do not fabricate versions
-- Use **plain numeric versions** (e.g., `3.2.0`) — kantra cannot reliably compare qualified versions like `6.4.0.Final` or `2.3-groovy-4.0` against numeric bounds
-- When the artifact only publishes qualified versions (e.g., Spock, Hibernate), use the Spring Boot parent BOM to manage the version instead of declaring an explicit version. Declare the dependency without a `<version>` tag and let the BOM resolve it. If the BOM doesn't manage the artifact, use a comment `<!-- version managed by BOM -->` and verify the BOM-resolved version is below the upperbound
-- When an artifact was **discontinued** before the target version (e.g., `hibernate-proxool` was dropped in Hibernate 6), use the **last published version** from the era when it existed (e.g., `5.6.15.Final` under `org.hibernate` groupId, not `6.4.0.Final` under `org.hibernate.orm`)
+
+For every `java.dependency` rule, query Maven Central before writing any version into pom.xml. Never rely on training-data guesses for version strings.
+
+**Step A — Parse groupId and artifactId from the rule's `when.java.dependency.name` field:**
+The name uses dot notation — the artifactId is the last hyphen-containing segment (e.g. `org.spockframework.spock-spring` → `g:org.spockframework`, `a:spock-spring`).
+
+**Step B — Query Maven Central:**
+```bash
+curl -s "https://search.maven.org/solrsearch/select?q=g:%22<groupId>%22+AND+a:%22<artifactId>%22&core=gav&rows=20&wt=json"
+```
+Parse `.response.docs[].v` for the list of published versions.
+
+**Step C — Select a version:**
+1. Filter to versions satisfying the rule's bounds (below `upperbound`, at or above `lowerbound`)
+2. From those, keep only **plain semver** versions (match `^\d+\.\d+\.\d+$`)
+3. Use the most recent qualifying plain-semver version
+
+**Step D — If no plain-semver version qualifies:**
+Do NOT fabricate a version (e.g. do not write `2.3.0` for a Spock artifact that only publishes `2.3-groovy-4.0`). Do NOT switch to `builtin.xml`. Record the rule ID in `suspected_kantra_limitations` with reason `"no_plain_semver_version_on_maven_central"` and omit the `<version>` tag (BOM-managed fallback) if the BOM manages it, or omit the dependency entirely and note it in a comment.
+
+**Step E — If Maven Central returns no results:**
+Record in `suspected_kantra_limitations` with reason `"artifact_not_found_on_maven_central"`.
+
+**When an artifact was discontinued before the target version** (e.g., `hibernate-proxool` was dropped in Hibernate 6): query MC to find the last published version under the rule's groupId. Use that version if it is plain semver.
 
 **How the analyzer matches each condition type:** See `references/languages/<language>/test-data-guide.md` for the full matching rules per condition type. Getting this wrong is the #1 cause of test failures.
 

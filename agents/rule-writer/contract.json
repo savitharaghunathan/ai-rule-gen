@@ -1,0 +1,87 @@
+{
+  "name": "rule-writer",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "name": "guide",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "rules_dir",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "sections",
+      "type": "array",
+      "required": false,
+      "items_type": "object"
+    },
+    {
+      "name": "output_file",
+      "type": "string",
+      "required": false
+    }
+  ],
+  "returns": [
+    {
+      "name": "patterns_count",
+      "type": "number",
+      "required": true
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "language",
+      "type": "string",
+      "required": false,
+      "enum": ["java", "go", "nodejs", "csharp", "python"]
+    },
+    {
+      "name": "rules_count",
+      "type": "number",
+      "required": false
+    },
+    {
+      "name": "rules_dir",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "coverage_report",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "output_file",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "suspected_kantra_limitations",
+      "type": "array",
+      "required": false,
+      "items_type": "object",
+      "description": "Patterns where Maven Central confirmed no plain-semver version exists. Rule still emitted as java.dependency. Orchestrator passes these to rule-validator as pre_classified_kantra_limitations."
+    }
+  ]
+}

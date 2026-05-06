@@ -32,16 +32,29 @@ If the lookup fix doesn't resolve the failure, mark the rule as `still_failing` 
   - `test_file` — The `.test.yaml` filename (bare name, e.g. `data-1.test.yaml`)
   - `error` — Error summary from kantra output
 - `max_iterations` — Max fix-verify cycles (default: 1, max: 3)
+- `pre_classified_kantra_limitations` — (optional) List of `{rule_id, reason}` objects pre-classified by the rule-writer or test-generator via Maven Central lookup. These skip the fix loop entirely.
 
 ## Returns
 
 - `fixed_rules` — List of rule IDs that were fixed
 - `still_failing` — List of rule IDs that still fail after all iterations
+- `kantra_limitation_rules` — List of rule IDs where the rule and test data are correct but kantra cannot execute the test due to an engine limitation. Not included in `fixed_rules` or `still_failing`.
 - `iterations_used` — Number of fix-verify cycles executed
 - `fix_details` — Per-rule diagnosis and fix description:
   - `rule_id`
   - `diagnosis` — What was wrong
   - `fix` — What was changed
+- `results_by_rule` — Structured per-rule result taxonomy:
+  - `rule_id`
+  - `result_type` — one of:
+    - `fixed`
+    - `still_failing_unresolvable_pattern`
+    - `still_failing_missing_test_artifact`
+    - `still_failing_unsupported_condition`
+    - `still_failing_timeout`
+    - `still_failing_kantra_limitation` — rule and test data are correct; kantra cannot validate due to an engine limitation (e.g. non-semver version parsing). Do NOT modify rule or test data.
+  - `recommended_action` — short next-step guidance for orchestrator/reporting
+- `result_types` — Unique list of `result_type` values present in `results_by_rule`
 
 ## Permissions
 
@@ -61,6 +74,28 @@ Read before starting:
 - `references/languages/<language>/fix-strategies.md` — Condition-type fix lookup for the relevant language (java, go, nodejs, csharp, python)
 
 ## Workflow
+
+### Step 0. Classify pre-classified and detectable kantra limitations
+
+Before entering the fix loop, separate out any rules that are kantra engine limitations. These must NOT enter the fix loop — doing so wastes iterations and risks corrupting correct test data.
+
+**0a. Pre-classified (from `pre_classified_kantra_limitations` input):**
+
+If `pre_classified_kantra_limitations` is non-empty, immediately classify those rule IDs as `still_failing_kantra_limitation`, add them to `kantra_limitation_rules`, and remove them from the `failing_rules` list passed to the fix loop.
+
+**0b. Detectable from observable signals (for remaining failing rules):**
+
+For each remaining failing rule with error `"expected rule to match but unmatched"`, check for known kantra limitations before attempting a fix:
+
+| Condition type | Observable signal | Classification |
+|---|---|---|
+| `java.dependency` | Version in test pom.xml is not plain semver (`^\d+\.\d+\.\d+$`) | `still_failing_kantra_limitation` |
+
+If a signal matches: add to `kantra_limitation_rules`, set `result_type = still_failing_kantra_limitation`, remove from the fix loop. Do NOT change the version in the test data to a synthetic value.
+
+**The rule Integrity extension:** The Rule Integrity Principle says fixes always target test data. This is the one exception: when the test data is already correct and realistic, do not corrupt it to force a green result. A non-semver version like `2.3-groovy-4.0` IS the correct test data — it reflects what real projects use. Replacing it with `2.3.0` (which doesn't exist on Maven Central) makes the test pass against a scenario that cannot occur in production.
+
+Only rules not classified in Step 0 proceed to Steps 1–4.
 
 For each iteration (up to `max_iterations`):
 
@@ -95,6 +130,10 @@ Parse the JSON output:
 - **All pass** → done, return results
 - **Some still fail + iterations remain** → next iteration with remaining failures
 - **Some still fail + no iterations remain** → report as `still_failing` and return
+
+If the lookup fix didn't work, do NOT investigate further — mark the rule as `still_failing` and move on. Do not run `kantra analyze`, parse output with scripting languages, explore temp directories, or try alternative approaches. The lookup either works or it doesn't.
+
+For every rule in input `failing_rules`, emit one `results_by_rule` entry using the required taxonomy and populate `result_types` with unique values from those entries.
 
 ## Rule Integrity
 

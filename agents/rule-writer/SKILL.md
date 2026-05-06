@@ -29,6 +29,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 **Chunk mode** (with `sections` input):
 - `patterns_count` — Number of patterns extracted
 - `output_file` — Path to the written patterns file
+- `suspected_kantra_limitations` — (optional) List of objects `{rule_pattern, reason}` where Maven Central confirmed no plain-semver version exists. The pattern is still emitted as `java.dependency`; this list signals the orchestrator to pre-classify these rules for the validator.
 
 ## Permissions
 
@@ -36,6 +37,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 |-----------|---------|---------|
 | shell | `go run ./cmd/construct *` | Build rule YAML from patterns.json |
 | shell | `go run ./cmd/validate *` | Validate rule YAML structure |
+| shell | `curl -s "https://search.maven.org/solrsearch/select*"` | Verify artifact versioning scheme before choosing condition type |
 | read | `output/**` | Read migration guide |
 | read | `agents/rule-writer/references/**` | Read condition types, schema |
 | read | `agents/rule-writer/references/languages/**` | Read language-specific condition types |
@@ -186,6 +188,28 @@ The migration guide often shows both old and new paths. The old path goes in `so
 ### Read section lead paragraphs carefully
 
 The most impactful change in a section is often stated in the **first paragraph** before the details. Don't skip straight to bullet lists and code examples — the opening text may describe a foundational change (e.g., an entire package rename) that the rest of the section merely elaborates on.
+
+### Maven Central pre-check for dependency patterns
+
+Before emitting any pattern that uses `dependency_name` (which produces a `java.dependency` condition), query Maven Central to verify the artifact's versioning scheme:
+
+```bash
+curl -s "https://search.maven.org/solrsearch/select?q=g:%22<groupId>%22+AND+a:%22<artifactId>%22&core=gav&rows=10&wt=json"
+```
+
+Parse the `groupId` and `artifactId` from the rule's `dependency_name` field (dot notation — the artifactId is the last hyphen-containing segment, e.g. `org.spockframework.spock-spring` → `g:org.spockframework`, `a:spock-spring`). Parse `.response.docs[].v` for the list of published versions.
+
+**Decision:**
+
+| Finding | Action |
+|---|---|
+| Plain-semver versions exist (`^\d+\.\d+\.\d+$`) | No flag — proceed normally |
+| Only non-semver versions (e.g. `2.3-groovy-4.0`, `6.4.0.Final`) | Flag: `suspected_kantra_limitation: no_plain_semver_version` |
+| Artifact not found on Maven Central | Flag: `suspected_kantra_limitation: artifact_not_found` |
+
+**In all cases, still emit `java.dependency`** — it is the correct condition type for dependency detection. Do NOT substitute `builtin.xml` or `builtin.filecontent`. The limitation is in kantra's version comparator, not in the rule design.
+
+Collect flagged patterns in a `suspected_kantra_limitations` list and return it alongside `patterns_count` and `output_file`.
 
 ### Choosing the right condition type
 

@@ -1,0 +1,86 @@
+{
+  "name": "rule-validator",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "name": "rules_dir",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "tests_dir",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "failing_rules",
+      "type": "array",
+      "required": true,
+      "items_type": "object"
+    },
+    {
+      "name": "max_iterations",
+      "type": "number",
+      "required": false
+    },
+    {
+      "name": "pre_classified_kantra_limitations",
+      "type": "array",
+      "required": false,
+      "items_type": "object",
+      "description": "Rule IDs pre-classified by rule-writer or test-generator as kantra limitations via Maven Central lookup. Each entry: {rule_id, reason}. These skip the fix loop and go directly to kantra_limitation_rules."
+    }
+  ],
+  "returns": [
+    {
+      "name": "fixed_rules",
+      "type": "array",
+      "required": true,
+      "items_type": "string"
+    },
+    {
+      "name": "still_failing",
+      "type": "array",
+      "required": true,
+      "items_type": "string"
+    },
+    {
+      "name": "iterations_used",
+      "type": "number",
+      "required": true
+    },
+    {
+      "name": "fix_details",
+      "type": "array",
+      "required": true,
+      "items_type": "object"
+    },
+    {
+      "name": "kantra_limitation_rules",
+      "type": "array",
+      "required": true,
+      "items_type": "string",
+      "description": "Rule IDs where the rule and test data are both correct but kantra cannot execute the test due to an engine limitation (e.g. non-semver version parsing). These are NOT in fixed_rules or still_failing."
+    },
+    {
+      "name": "results_by_rule",
+      "type": "array",
+      "required": true,
+      "items_type": "object"
+    },
+    {
+      "name": "result_types",
+      "type": "array",
+      "required": true,
+      "items_type": "string",
+      "enum": [
+        "fixed",
+        "still_failing_unresolvable_pattern",
+        "still_failing_missing_test_artifact",
+        "still_failing_unsupported_condition",
+        "still_failing_timeout",
+        "still_failing_kantra_limitation"
+      ]
+    }
+  ]
+}

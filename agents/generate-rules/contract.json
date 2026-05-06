@@ -1,0 +1,86 @@
+{
+  "name": "generate-rules",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "name": "guide_source",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "required": false,
+      "enum": [
+        "interactive",
+        "non_interactive"
+      ]
+    },
+    {
+      "name": "checkpoint_behavior",
+      "type": "string",
+      "required": false,
+      "enum": [
+        "ask",
+        "continue",
+        "stop_after_extract"
+      ]
+    },
+    {
+      "name": "resume_from",
+      "type": "string",
+      "required": false,
+      "enum": [
+        "ingest",
+        "extract",
+        "coverage",
+        "scaffold",
+        "test",
+        "stamp",
+        "report"
+      ]
+    },
+    {
+      "name": "migration_dir",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "force_rebuild",
+      "type": "boolean",
+      "required": false
+    }
+  ],
+  "returns": [
+    {
+      "name": "rules_dir",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "tests_dir",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "report",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "summary",
+      "type": "string",
+      "required": true
+    }
+  ]
+}

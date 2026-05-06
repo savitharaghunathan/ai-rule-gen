@@ -15,6 +15,20 @@
 
 ## Details
 
+### java.dependency — non-semver version (kantra limitation — classify, do not fix)
+
+Check this FIRST before any other `java.dependency` fix.
+
+If the version declared in the test pom.xml is not plain semver (does not match `^\d+\.\d+\.\d+$`), this is a kantra engine limitation — kantra's dependency provider cannot compare non-semver strings against numeric bounds, producing 0 incidents regardless of whether the artifact is present.
+
+**Examples of non-semver versions:** `2.3-groovy-4.0` (Spock), `6.4.0.Final` (Hibernate), `1.0.0.RELEASE` (old Spring), `2.13.12_1.0` (Scala).
+
+**Action:**
+- Classify as `still_failing_kantra_limitation` (see `fix-strategies.md`)
+- Do NOT change the version to a synthetic plain-semver string — e.g. `2.3.0` for a Spock artifact does not exist on Maven Central and the test would validate a scenario that can't occur in production
+- Do NOT change the rule condition type — `java.dependency` is semantically correct
+- Do NOT enter a fix iteration for this rule
+
 ### java.dependency — `mode: source-only` is the #1 failure
 
 `java.dependency` rules use Maven resolution, not JDTLS. `mode: source-only` skips Maven entirely → always 0 incidents.

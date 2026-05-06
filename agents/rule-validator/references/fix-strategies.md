@@ -11,6 +11,25 @@ Kantra test output contains:
 
 ## Failure Types
 
+### 0 incidents — kantra limitation (classify before attempting any fix)
+
+**Cause:** kantra's engine cannot execute the test due to a structural constraint unrelated to whether the rule or test data is correct.
+
+**Detection signals:**
+
+| Condition type | Signal | Limitation |
+|---|---|---|
+| `java.dependency` | Version in test pom.xml is not plain semver (`^\d+\.\d+\.\d+$`) | kantra's version comparator cannot parse non-semver strings against numeric bounds |
+
+**Action:**
+- Classify as `still_failing_kantra_limitation`
+- Add to `kantra_limitation_rules`
+- Do NOT enter the fix loop for this rule
+- Do NOT change the test data version to a synthetic value — a version like `2.3-groovy-4.0` IS correct; replacing it with `2.3.0` (non-existent on Maven Central) validates a scenario that can't occur in production
+- Do NOT change the rule condition type — `java.dependency` is semantically correct; the limitation is in the engine
+
+**Rule Integrity extension:** The Rule Integrity Principle says fixes always target test data. This is the one exception: when the test data is already correct and realistic, do not corrupt it to force a green result. Track it, stamp it as `kantra-limitation`, move on.
+
 ### 0 incidents (rule didn't match anything)
 
 **Cause:** The test code doesn't contain code that triggers the rule's pattern.

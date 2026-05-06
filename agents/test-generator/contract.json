@@ -1,0 +1,41 @@
+{
+  "name": "test-generator",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "name": "rules_dir",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "tests_dir",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "groups",
+      "type": "array",
+      "required": false,
+      "items_type": "object"
+    }
+  ],
+  "returns": [
+    {
+      "name": "groups_completed",
+      "type": "number",
+      "required": true
+    },
+    {
+      "name": "files_written",
+      "type": "number",
+      "required": true
+    },
+    {
+      "name": "suspected_kantra_limitations",
+      "type": "array",
+      "required": false,
+      "items_type": "object",
+      "description": "Rules where Maven Central confirmed no plain-semver version exists for the artifact. Each entry: {rule_id, reason}. Orchestrator passes these to rule-validator as pre_classified_kantra_limitations."
+    }
+  ]
+}
