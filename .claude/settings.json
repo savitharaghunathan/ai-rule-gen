@@ -14,12 +14,10 @@
       "Bash(go run ./cmd/stamp *)",
       "Bash(go run ./cmd/report *)",
       "Bash(go run ./cmd/coverage *)",
-      "Bash(go mod *)",
-      "Bash(go doc *)",
-      "Bash(go test *)",
-      "Bash(wc *)",
-      "Bash(grep *)",
-      "Bash(ls *)"
+      "Bash(go run ./cmd/log *)",
+      "Bash(ls *)",
+      "Read(output/**)",
+      "Write(output/**)"
     ]
   },
   "sandbox": {
