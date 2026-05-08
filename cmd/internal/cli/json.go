@@ -14,6 +14,7 @@ func WriteJSON(v any) {
 		os.Exit(1)
 	}
 	fmt.Println(string(data))
+	LogJSON("output", v)
 }
 
 // ErrorResponse is a standard machine-readable command error payload.
@@ -43,6 +44,7 @@ func WriteError(code, message, step, hint string, details any) {
 		os.Exit(1)
 	}
 	fmt.Fprintln(os.Stderr, string(data))
+	LogJSON("error", payload)
 }
 
 // Fail writes a standardized error payload and exits.

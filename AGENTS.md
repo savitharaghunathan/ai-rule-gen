@@ -87,6 +87,28 @@ go run ./cmd/coverage  --guide output/<src>-to-<tgt>/guide.md --patterns output/
 go test ./internal/...   # Unit tests
 ```
 
+## Session Logging
+
+All CLI commands support `--log`, `--agent`, and `--model` flags for pipeline logging with agent/model attribution. Pass `--log <path>` to append timestamped JSON output to a log file. Pass `--model <id>` when an LLM agent invokes the command (logs `[model=<id>]`). Omit `--model` only for manual human CLI usage (logs `[cli]`).
+
+```bash
+# Orchestrator invocations (orchestrator is an LLM agent):
+go run ./cmd/ingest --log pipeline.log --agent orchestrator --model claude-opus-4-6 --input ... --output ...
+go run ./cmd/test   --log pipeline.log --agent orchestrator --model claude-opus-4-6 --rules ... --tests ...
+
+# Sub-agent invocations (e.g., rule-validator running tests):
+go run ./cmd/test   --log pipeline.log --agent rule-validator --model claude-sonnet-4-20250514 --rules ... --tests ...
+
+# Human manual invocation (no --model):
+go run ./cmd/validate --log pipeline.log --agent manual --rules ...
+```
+
+Log format:
+- Agent call: `[HH:MM:SS] [cmd-name] [agent=X] [model=Y] output: {json}`
+- Manual CLI call: `[HH:MM:SS] [cmd-name] [agent=X] [cli] output: {json}`
+
+The `RULE_GEN_LOG` environment variable also works as a fallback — `--log` takes precedence if both are set.
+
 ## Key Concepts
 
 **patterns.json** — Intermediate JSON between agent extraction and `cmd/construct`.

@@ -166,6 +166,7 @@ Any guide item where a user's code, config, or build file could be automatically
 | Version override property renamed or removed | `builtin.filecontent` | regex + `file_pattern` |
 | Build config element removed from XML | `builtin.xml` | `xpath` + `filepaths` |
 | Build config removed from non-XML files (Gradle, etc.) | `builtin.filecontent` | regex + `file_pattern` |
+| Minimum Java/Kotlin/runtime version requirement | `java.dependency` | detect the framework's core artifact with `upper_bound` at the target version — the version check on the framework artifact gates the migration |
 
 ### Common extraction mistakes
 
@@ -182,3 +183,4 @@ Any guide item where a user's code, config, or build file could be automatically
 7. **Missing the lead paragraph** — The first paragraph of a section often states the biggest change (e.g., an entire package rename). Don't jump straight to bullet points and miss the foundational change
 8. **Claiming "not detectable" without trying** — If a behavioral change affects users of a specific class or dependency, detect that class/dependency and warn. Detect the affected artifact, not the missing fix
 9. **Skipping behavioral default changes** — When a default flips (e.g., feature enabled→disabled, auto-config provided→removed), detect the affected class or dependency as a `potential` pattern
+10. **Skipping system requirements** — When the guide says "requires Java 17+" or "requires Kotlin 2.2+", extract a `java.dependency` pattern on the framework's core artifact (e.g., `org.springframework.spring-core` with `upper_bound` at the target version). The version check on the core artifact gates the entire migration and warns users still on an older framework version. Don't dismiss these as "informational" — they're the most impactful migration patterns

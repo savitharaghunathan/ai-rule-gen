@@ -9,6 +9,9 @@ import (
 )
 
 func main() {
+	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
+	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
+	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	source := flag.String("source", "", "Source technology")
 	target := flag.String("target", "", "Target technology")
 	output := flag.String("output", "", "Output report file path (required)")
@@ -19,6 +22,9 @@ func main() {
 	failedRulesFlag := flag.String("failed-rules", "", "Comma-separated list of failed rule IDs")
 	kantraLimitationRulesFlag := flag.String("kantra-limitation-rules", "", "Comma-separated list of kantra limitation rule IDs")
 	flag.Parse()
+
+	cli.InitLog(*logPath, *agentFlag, *modelFlag)
+	defer cli.CloseLog()
 
 	if *output == "" {
 		cli.Fail("invalid_arguments", "--output is required", "report", "set --output to a writable report.yaml path", nil)

@@ -11,12 +11,18 @@ import (
 )
 
 func main() {
+	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
+	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
+	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	contractPath := flag.String("contract", "", "Path to skill contract.json (required)")
 	mode := flag.String("mode", "returns", "Validation mode: inputs or returns")
 	payload := flag.String("payload", "", "Raw JSON payload string (optional, use --payload-file for files)")
 	payloadFile := flag.String("payload-file", "", "Path to JSON payload file (optional)")
 	strict := flag.Bool("strict", true, "Fail on unknown fields")
 	flag.Parse()
+
+	cli.InitLog(*logPath, *agentFlag, *modelFlag)
+	defer cli.CloseLog()
 
 	if *contractPath == "" {
 		cli.Fail("invalid_arguments", "--contract is required", "contract-validate", "set --contract to agents/<skill>/contract.json", nil)

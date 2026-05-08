@@ -10,12 +10,18 @@ import (
 )
 
 func main() {
+	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
+	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
+	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	rulesDir := flag.String("rules", "", "Path to rules directory (required)")
 	kantraOutput := flag.String("kantra-output", "", "Raw kantra test output to parse")
 	passedFlag := flag.String("passed", "", "Comma-separated list of passed rule IDs")
 	failedFlag := flag.String("failed", "", "Comma-separated list of failed rule IDs")
 	kantraLimitationFlag := flag.String("kantra-limitation", "", "Comma-separated list of kantra limitation rule IDs")
 	flag.Parse()
+
+	cli.InitLog(*logPath, *agentFlag, *modelFlag)
+	defer cli.CloseLog()
 
 	if *rulesDir == "" {
 		cli.Fail("invalid_arguments", "--rules is required", "stamp", "set --rules to a directory containing rule YAML files", nil)

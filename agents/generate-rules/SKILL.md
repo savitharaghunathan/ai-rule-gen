@@ -81,18 +81,37 @@ If a required action is not permitted, stop and report the limitation.
 
 ## Pipeline Transcript
 
-Write a `pipeline.log` file in `$MIGRATION_DIR` that captures the full pipeline session. Append to this file throughout the pipeline — do not overwrite.
+The pipeline log (`${MIGRATION_DIR}/pipeline.log`) captures the full session. **CLI commands auto-log their JSON output** when you pass `--log`. The orchestrator only needs to manually log agent-level events (dispatch/return, status lines).
 
-Log these events as they happen:
+### Auto-logged by CLI commands (no manual action needed)
+
+Pass `LOG_FLAGS` (which includes `--model`) to every CLI invocation. The orchestrator is an LLM agent, so its CLI calls are attributed to its model. Sub-agents pass their own `--model <model-id>`. Format:
+
+```
+[HH:MM:SS] [cmd-name] [agent=orchestrator] [model=<orchestrator-model>] output: {json}
+```
+
+### Manually logged by the orchestrator
+
+Append these events to `${MIGRATION_DIR}/pipeline.log` as they happen:
 - Pipeline start: timestamp, guide source, detected source/target/language
 - Every `[step]` status line (start and done)
-- CLI command JSON outputs (ingest, sections, construct, validate, coverage, test, etc.)
-- Sub-agent dispatches: skill name, chunk number, inputs summary
+- Sub-agent dispatches: skill name, chunk number, agent name, model
 - Sub-agent returns: patterns_count, files_written, errors, suspected_kantra_limitations
 - Errors, retries, and partial failures
 - Final summary table
 
-Format each entry with a timestamp prefix: `[HH:MM:SS] <content>`.
+Format each manual entry with: `[HH:MM:SS] <content>`.
+
+### Sub-agent CLI invocations
+
+When a sub-agent invokes a CLI command (e.g., rule-validator running `cmd/test`), the sub-agent passes its own identity:
+
+```bash
+go run ./cmd/test --rules ... --tests ... --log ${MIGRATION_DIR}/pipeline.log --agent rule-validator --model ${AGENT_MODEL}
+```
+
+This ensures every log entry is traceable to which agent ran it and which LLM powered the decision.
 
 ## Timing
 
@@ -131,8 +150,8 @@ The runtime translates each invoke block into a sub-agent call:
 Example:
 
 ```bash
-go run ./cmd/contract-validate --contract agents/rule-writer/contract.json --mode inputs --payload-file ${MIGRATION_DIR}/contracts/rule-writer-input-1.json
-go run ./cmd/contract-validate --contract agents/rule-writer/contract.json --mode returns --payload-file ${MIGRATION_DIR}/contracts/rule-writer-return-1.json
+go run ./cmd/contract-validate ${LOG_FLAGS} --contract agents/rule-writer/contract.json --mode inputs --payload-file ${MIGRATION_DIR}/contracts/rule-writer-input-1.json
+go run ./cmd/contract-validate ${LOG_FLAGS} --contract agents/rule-writer/contract.json --mode returns --payload-file ${MIGRATION_DIR}/contracts/rule-writer-return-1.json
 ```
 
 If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes` should be dispatched concurrently. If the runtime does not support parallel dispatch or sub-agents, run all invoke blocks sequentially in the current agent context — read and follow each sub-skill's SKILL.md inline.
@@ -174,14 +193,17 @@ Determine `$MIGRATION_DIR`:
 
 ```bash
 mkdir -p "${MIGRATION_DIR}"
+LOG_FLAGS="--log ${MIGRATION_DIR}/pipeline.log --agent orchestrator --model ${YOUR_MODEL_ID}"
 ```
+
+All CLI commands auto-append timestamped JSON output (with agent/model attribution) to the pipeline log when `--log` is passed. Set `LOG_FLAGS` once at pipeline start and append to every CLI invocation.
 
 ```
 [ingest] Fetching guide from <source>...
 ```
 
-- **URL:** `go run ./cmd/ingest --input <url> --output ${MIGRATION_DIR}/guide.md`
-- **File (not markdown):** `go run ./cmd/ingest --input <path> --output ${MIGRATION_DIR}/guide.md`
+- **URL:** `go run ./cmd/ingest ${LOG_FLAGS} --input <url> --output ${MIGRATION_DIR}/guide.md`
+- **File (not markdown):** `go run ./cmd/ingest ${LOG_FLAGS} --input <path> --output ${MIGRATION_DIR}/guide.md`
 - **Pasted text or already markdown:** Write directly to `${MIGRATION_DIR}/guide.md`
 
 If auto-detecting, move/copy `output/guide-temp.md` to `${MIGRATION_DIR}/guide.md` after MIGRATION_DIR is set.
@@ -199,7 +221,7 @@ Extraction uses parallel agents to process the guide faster. The orchestrator sp
 **2a. Index sections and auto-detect metadata:**
 
 ```bash
-go run ./cmd/sections --guide ${MIGRATION_DIR}/guide.md
+go run ./cmd/sections ${LOG_FLAGS} --guide ${MIGRATION_DIR}/guide.md
 ```
 
 This returns JSON with all sections classified as `content` or `header-only`. Filter to content sections only.
@@ -230,9 +252,9 @@ Split the content sections into **N balanced chunks** (minimum 2, maximum 5 agen
 After all agents complete, merge the partial patterns files and build rules:
 
 ```bash
-go run ./cmd/merge-patterns --output ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns-1.json ${MIGRATION_DIR}/patterns-2.json ...
-go run ./cmd/construct --patterns ${MIGRATION_DIR}/patterns.json --output ${MIGRATION_DIR}/rules
-go run ./cmd/validate --rules ${MIGRATION_DIR}/rules
+go run ./cmd/merge-patterns ${LOG_FLAGS} --output ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns-1.json ${MIGRATION_DIR}/patterns-2.json ...
+go run ./cmd/construct ${LOG_FLAGS} --patterns ${MIGRATION_DIR}/patterns.json --output ${MIGRATION_DIR}/rules
+go run ./cmd/validate ${LOG_FLAGS} --rules ${MIGRATION_DIR}/rules
 ```
 
 If validation fails, fix `${MIGRATION_DIR}/patterns.json` (remove invalid entries) and re-run construct.
@@ -248,7 +270,7 @@ Save `source`, `target`, `patterns_count`, `rules_count` for the final summary.
 Run the coverage tool to find sections with named artifacts that weren't extracted:
 
 ```bash
-go run ./cmd/coverage --guide ${MIGRATION_DIR}/guide.md --patterns ${MIGRATION_DIR}/patterns.json --language <language>
+go run ./cmd/coverage ${LOG_FLAGS} --guide ${MIGRATION_DIR}/guide.md --patterns ${MIGRATION_DIR}/patterns.json --language <language>
 ```
 
 If `gap_count > 0` in the JSON output, print:
@@ -275,9 +297,9 @@ Convert gaps to sections and send back to the rule-writer in chunk mode for targ
 The sub-agent writes only the new patterns to `${MIGRATION_DIR}/patterns-gaps.json`. It does NOT read or inspect existing patterns — the orchestrator handles deduplication. After the sub-agent returns, merge and rebuild:
 
 ```bash
-go run ./cmd/merge-patterns --output ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns-gaps.json
-go run ./cmd/construct --patterns ${MIGRATION_DIR}/patterns.json --output ${MIGRATION_DIR}/rules
-go run ./cmd/validate --rules ${MIGRATION_DIR}/rules
+go run ./cmd/merge-patterns ${LOG_FLAGS} --output ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns-gaps.json
+go run ./cmd/construct ${LOG_FLAGS} --patterns ${MIGRATION_DIR}/patterns.json --output ${MIGRATION_DIR}/rules
+go run ./cmd/validate ${LOG_FLAGS} --rules ${MIGRATION_DIR}/rules
 ```
 
 Re-run the coverage check. If gaps remain, accept them — one re-extraction pass is enough.
@@ -311,7 +333,7 @@ After extraction/coverage:
 **3a. Scaffold (orchestrator runs this directly, not an agent):**
 
 ```bash
-go run ./cmd/scaffold --rules ${MIGRATION_DIR}/rules --output ${MIGRATION_DIR}/tests
+go run ./cmd/scaffold ${LOG_FLAGS} --rules ${MIGRATION_DIR}/rules --output ${MIGRATION_DIR}/tests
 ```
 
 This creates all directories, `.test.yaml` files, and `manifest.json`. No LLM needed.
@@ -351,7 +373,7 @@ Carry this merged list forward as `pre_classified_kantra_limitations` — it wil
 Sanitize XML:
 
 ```bash
-go run ./cmd/sanitize --dir ${MIGRATION_DIR}/tests/data
+go run ./cmd/sanitize ${LOG_FLAGS} --dir ${MIGRATION_DIR}/tests/data
 ```
 
 ```
@@ -365,7 +387,7 @@ The orchestrator runs tests and uses a sub-agent for LLM-driven repairs on failu
 **4a. Run tests:**
 
 ```bash
-go run ./cmd/test --rules ${MIGRATION_DIR}/rules --tests ${MIGRATION_DIR}/tests --timeout 5m
+go run ./cmd/test ${LOG_FLAGS} --rules ${MIGRATION_DIR}/rules --tests ${MIGRATION_DIR}/tests --timeout 5m
 ```
 
 The CLI runs each test file sequentially (avoids Docker contention) and automatically retries timed-out files once (`--retry-timeouts`, on by default). To run a subset, use `--files` with bare filenames (e.g., `--files data-1.test.yaml,data-2.test.yaml`), resolved relative to `--tests` dir.
@@ -430,8 +452,8 @@ If still_failing is non-empty, move on — don't block the pipeline.
 Collate pass/fail results from the test run and the fix loop. No need to re-run the full test suite — stamp directly from results:
 
 ```bash
-go run ./cmd/stamp --rules ${MIGRATION_DIR}/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs> --kantra-limitation <comma-separated kantra limitation rule IDs>
-go run ./cmd/report --source <source> --target <target> --output ${MIGRATION_DIR}/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --failed-rules <comma-separated>
+go run ./cmd/stamp ${LOG_FLAGS} --rules ${MIGRATION_DIR}/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs> --kantra-limitation <comma-separated kantra limitation rule IDs>
+go run ./cmd/report ${LOG_FLAGS} --source <source> --target <target> --output ${MIGRATION_DIR}/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --failed-rules <comma-separated>
 ```
 
 Rules in `kantra_limitation_rules` are stamped with `test-result=kantra-limitation`. They are not counted as passed or failed. The pass rate in the report is computed as `passed / (total - kantra_limitation)` to remain honest — kantra limitations are not failures, but they are also not confirmed passes.

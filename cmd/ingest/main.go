@@ -9,10 +9,16 @@ import (
 )
 
 func main() {
+	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
+	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
+	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	input := flag.String("input", "", "URL, file path, or text content (required)")
 	output := flag.String("output", "", "Output markdown file path (omit to print to stdout)")
 	chunkSize := flag.Int("chunk-size", ingestion.DefaultMaxChunkSize, "Maximum characters per chunk")
 	flag.Parse()
+
+	cli.InitLog(*logPath, *agentFlag, *modelFlag)
+	defer cli.CloseLog()
 
 	if *input == "" {
 		cli.Fail("invalid_arguments", "--input is required", "ingest", "set --input to a URL, file path, or raw text", nil)

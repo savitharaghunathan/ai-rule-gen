@@ -15,8 +15,14 @@ type output struct {
 }
 
 func main() {
+	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
+	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
+	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	outFile := flag.String("output", "patterns.json", "Output path for merged patterns")
 	flag.Parse()
+
+	cli.InitLog(*logPath, *agentFlag, *modelFlag)
+	defer cli.CloseLog()
 
 	files := flag.Args()
 	if len(files) == 0 {

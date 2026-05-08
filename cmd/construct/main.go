@@ -9,9 +9,15 @@ import (
 )
 
 func main() {
+	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
+	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
+	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	patterns := flag.String("patterns", "", "Path to patterns.json (required)")
 	output := flag.String("output", "", "Output directory for rule files (required)")
 	flag.Parse()
+
+	cli.InitLog(*logPath, *agentFlag, *modelFlag)
+	defer cli.CloseLog()
 
 	if *patterns == "" || *output == "" {
 		cli.Fail(

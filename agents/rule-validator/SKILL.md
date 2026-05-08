@@ -121,8 +121,10 @@ Read the test source files in the failing group's data directory. Apply the fix 
 Re-run tests on only the fixed groups:
 
 ```bash
-go run ./cmd/test --rules <rules_dir> --tests <tests_dir> --files <comma-separated failing .test.yaml filenames>
+go run ./cmd/test --rules <rules_dir> --tests <tests_dir> --files <comma-separated failing .test.yaml filenames> --log <tests_dir>/../pipeline.log --agent rule-validator --model none
 ```
+
+Pass `--log`, `--agent`, and `--model` so the test output is auto-appended to the pipeline log with attribution. Set `--agent` to `rule-validator` and `--model` to the model powering this agent (or `none` if unknown).
 
 Set timeout: 420000 (7 minutes).
 

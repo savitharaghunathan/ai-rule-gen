@@ -9,8 +9,14 @@ import (
 )
 
 func main() {
+	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
+	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
+	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	rulesPath := flag.String("rules", "", "Path to rules directory or file (required)")
 	flag.Parse()
+
+	cli.InitLog(*logPath, *agentFlag, *modelFlag)
+	defer cli.CloseLog()
 
 	if *rulesPath == "" {
 		cli.Fail("invalid_arguments", "--rules is required", "validate", "set --rules to a rules directory or file path", nil)
