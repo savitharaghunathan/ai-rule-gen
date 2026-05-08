@@ -40,13 +40,13 @@ Do NOT include any other text or code blocks.
   "groups": [
     {
       "name": "web",
-      "data_dir": "tests/data/web",
-      "test_file": "tests/web.test.yaml",
+      "data_dir": "data/web",
+      "test_file": "web.test.yaml",
       "rule_count": 3,
       "providers": ["java"],
       "files": [
-        {"path": "tests/data/web/pom.xml", "file_type": "xml", "purpose": "build"},
-        {"path": "tests/data/web/src/main/java/com/example/Application.java", "file_type": "java", "purpose": "source"}
+        {"path": "data/web/pom.xml", "file_type": "xml", "purpose": "build"},
+        {"path": "data/web/src/main/java/com/example/Application.java", "file_type": "java", "purpose": "source"}
       ],
       "rule_ids": ["rule-00010", "rule-00020", "rule-00030"]
     }
@@ -54,10 +54,21 @@ Do NOT include any other text or code blocks.
 }
 ```
 
+**All `files[].path` values are relative to `tests_dir`.** Always join them with `tests_dir` when writing:
+
+```
+<tests_dir>/<files[].path>
+```
+
+For example, if `tests_dir` is `output/spring-boot-3-to-4/tests`, write the build file to:
+`output/spring-boot-3-to-4/tests/data/web/pom.xml`
+
+Do NOT write files relative to the current working directory — they will land at the repo root.
+
 For each group:
 1. Read the rules referenced by `rule_ids` to see what patterns must be matched
-2. Generate the build file at the `path` with `purpose: "build"`
-3. Generate the source file at the `path` with `purpose: "source"`
+2. Write the build file to `<tests_dir>/<path>` where `purpose: "build"`
+3. Write the source file to `<tests_dir>/<path>` where `purpose: "source"`
 4. The source code must trigger ALL rules in that group
 
 ## XML Sanitization

@@ -15,15 +15,15 @@ Example:
 
 ```text
 [ingest] Fetching guide from https://...
-[ingest] Done — 3876 lines, 77 sections
+[ingest] Done — 3876 lines, 77 sections (0m 12s)
 [extract] Extracting patterns from 62 sections (3 parallel agents)...
-[extract] Done — 52 patterns → 52 rules
-[coverage] No gaps found
+[extract] Done — 52 patterns → 52 rules (4m 35s)
+[coverage] No gaps found (1m 20s)
 [test-gen] Generating test data for 52 rules...
-[test-gen] Done — 12 groups, 39 files
+[test-gen] Done — 12 groups, 39 files (3m 45s)
 [validate] 49/52 passed — fixing 3 failures
-[fix] 2 fixed, 1 still failing
-[done] 52 rules generated
+[fix] 2 fixed, 1 still failing (6m 10s)
+[done] 52 rules generated (16m 02s total)
 ```
 
 ## Parallelism Defaults

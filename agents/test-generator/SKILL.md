@@ -55,7 +55,7 @@ If `groups` was provided in the inputs, skip to step 3 — scaffold and manifest
 Otherwise, run the CLI to create test structure and manifest:
 
 ```bash
-go run ./cmd/scaffold --rules <rules-dir> --output <output-dir>
+go run ./cmd/scaffold --rules <rules-dir> --output <tests-dir>
 ```
 
 This creates:
@@ -65,7 +65,7 @@ This creates:
 
 ### 2. Read manifest.json
 
-The manifest tells you exactly what files to generate:
+The manifest tells you exactly what files to generate. All paths are **relative to `tests_dir`**:
 
 ```json
 {
@@ -73,13 +73,13 @@ The manifest tells you exactly what files to generate:
   "groups": [
     {
       "name": "web",
-      "data_dir": "tests/data/web",
-      "test_file": "tests/web.test.yaml",
+      "data_dir": "data/web",
+      "test_file": "web.test.yaml",
       "rule_count": 3,
       "providers": ["java"],
       "files": [
-        {"path": "tests/data/web/pom.xml", "file_type": "xml", "purpose": "build"},
-        {"path": "tests/data/web/src/main/java/com/example/Application.java", "file_type": "java", "purpose": "source"}
+        {"path": "data/web/pom.xml", "file_type": "xml", "purpose": "build"},
+        {"path": "data/web/src/main/java/com/example/Application.java", "file_type": "java", "purpose": "source"}
       ],
       "rule_ids": ["rule-00010", "rule-00020", "rule-00030"]
     }
@@ -87,15 +87,17 @@ The manifest tells you exactly what files to generate:
 }
 ```
 
+**Always join `tests_dir` with each `files[].path` when writing:** `<tests_dir>/<files[].path>`. Do NOT write files relative to the current working directory — they will land at the repo root instead of inside `output/<migration>/tests/`.
+
 ### 3. Generate source code for each group
 
 For each group:
 
 1. Read the rules referenced by `rule_ids` from the rules directory
 2. Look at each rule's `when` condition to understand what pattern must be matched
-3. Copy the minimal language template files from `references/templates/<language>/` into the group's target files
+3. Copy the minimal language template files from `references/templates/<language>/` and write them to `<tests_dir>/<files[].path>`
 4. Inject rule-specific snippets into template placeholders (for example `{{RULE_SNIPPETS}}`)
-5. Generate the **build file** (purpose: `build`) and **source file** (purpose: `source`) from the template baseline
+5. Write the **build file** (purpose: `build`) to `<tests_dir>/<path>` and **source file** (purpose: `source`) to `<tests_dir>/<path>`
 
 **Source code requirements:**
 - The project must be COMPLETE and COMPILABLE
