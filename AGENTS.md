@@ -1,6 +1,101 @@
-# ai-rule-gen Development Guidelines
+# ai-rule-gen
 
-Canonical source: `docs/development-guidelines.md`.
+Skill-first architecture. All LLM orchestration lives in agent skills.
+Go CLI is purely deterministic — no LLM calls, no API keys, no prompt templates.
 
-Keep this file as a stable entrypoint for runtimes that auto-load `AGENTS.md`.
-When updating guidance, edit `docs/development-guidelines.md` first.
+## Global Tool Restrictions
+
+Agents MUST only use tools from their skill's permissions table. FORBIDDEN:
+`python`, `python3`, `pip`, `pip3`, `node`, `npm`, `npx`, `ruby`, `perl`,
+`bash -c`, `sh -c`, and any scripting runtime not explicitly listed.
+Do not write or execute ad-hoc scripts in any language.
+If a task cannot be done with allowed tools, report the limitation.
+
+## Active Technologies
+
+- Go 1.25+ with stdlib `flag`, `gopkg.in/yaml.v3`, `github.com/JohannesKaufmann/html-to-markdown`, `golang.org/x/net`
+
+## Project Structure
+
+```text
+cmd/                      # CLI commands (go run ./cmd/<name>)
+  ingest/                 # Fetch migration guide → clean markdown
+  sections/               # Index guide sections with content classification
+  construct/              # patterns.json → rule YAML + ruleset.yaml
+  validate/               # Validate rule YAML files
+  merge-patterns/         # Merge partial patterns files with deduplication
+  contract-validate/      # Validate skill input/return payloads against contract.json
+  scaffold/               # Create test dirs, .test.yaml, manifest.json
+  sanitize/               # Fix illegal XML comments in a directory
+  test/                   # Run kantra tests (sequential, auto-retry timeouts)
+  stamp/                  # Update rule files with kantra pass/fail labels
+  report/                 # Generate YAML summary report
+  coverage/               # Post-extraction coverage check
+internal/                 # Go library code (no LLM dependencies)
+agents/                   # Agent skills (agentskills.io format)
+  <skill>/SKILL.md        # Skill definition (inputs, returns, workflow)
+  <skill>/contract.json   # Machine-readable input/return contract
+  <skill>/references/     # Skill-specific reference docs
+languages/<lang>/         # Per-language scaffold config (java, go, nodejs, csharp, python)
+```
+
+## Skill Composition
+
+```text
+generate-rules (orchestrator skill)
+  ├── rule-writer        — extract patterns, produce rule YAML
+  ├── test-generator     — generate test source code (parallel)
+  └── rule-validator     — fix failing tests, verify loop
+```
+
+All four are skills under `agents/`, each with `SKILL.md`, `contract.json`,
+and `## Inputs` / `## Returns` sections defining their contract.
+
+## Sub-agent Dispatch
+
+When a skill says **"Invoke: `<skill-name>`"**, dispatch a new agent:
+
+1. Spawn an isolated agent using your runtime's agent dispatch tool.
+2. Prompt: "Read and follow `agents/<skill-name>/SKILL.md`." + the invoke inputs.
+3. Wait for results.
+
+**The orchestrator must NOT execute the sub-skill's workflow itself.** Dispatch and wait.
+The orchestrator must NOT read files under `agents/<skill>/references/` — sub-agents
+read their own references.
+Do not pre-digest data or compose step-by-step instructions for the sub-agent.
+If `Parallel: yes`, dispatch concurrently when your runtime supports it.
+
+**Fallback:** If your runtime cannot dispatch sub-agents, read the SKILL.md and
+follow its workflow exactly as written — do not reinterpret or reimagine the steps.
+
+## CLI Commands
+
+```bash
+go run ./cmd/ingest    --input <url-or-file> --output output/<src>-to-<tgt>/guide.md
+go run ./cmd/sections  --guide output/<src>-to-<tgt>/guide.md
+go run ./cmd/construct --patterns output/<src>-to-<tgt>/patterns.json --output output/<src>-to-<tgt>/rules/
+go run ./cmd/validate  --rules output/<src>-to-<tgt>/rules/
+go run ./cmd/merge-patterns --output output/<src>-to-<tgt>/patterns.json output/<src>-to-<tgt>/patterns-*.json
+go run ./cmd/contract-validate --contract agents/<skill>/contract.json --mode inputs|returns --payload-file payload.json
+go run ./cmd/scaffold  --rules output/<src>-to-<tgt>/rules/ --output output/<src>-to-<tgt>/tests/
+go run ./cmd/sanitize  --dir output/<src>-to-<tgt>/tests/data/
+go run ./cmd/test      --rules output/<src>-to-<tgt>/rules/ --tests output/<src>-to-<tgt>/tests/ [--files a.test.yaml,b.test.yaml] [--timeout 5m]
+go run ./cmd/stamp     --rules output/<src>-to-<tgt>/rules/ --passed id1,id2 --failed id3 [--kantra-limitation id4]
+go run ./cmd/report    --source <src> --target <tgt> --output output/<src>-to-<tgt>/report.yaml [--kantra-limitation N] [--kantra-limitation-rules id4,id5]
+go run ./cmd/coverage  --guide output/<src>-to-<tgt>/guide.md --patterns output/<src>-to-<tgt>/patterns.json [--language java]
+
+go test ./internal/...   # Unit tests
+```
+
+## Key Concepts
+
+**patterns.json** — Intermediate JSON between agent extraction and `cmd/construct`.
+Contains source, target, language, and MigrationPattern objects (source_fqn,
+dependency_name, provider_type, location_type, complexity, category, concern).
+
+**manifest.json** — Output of `cmd/scaffold`. Tells the agent what source files
+to generate per test group.
+
+## Code Style
+
+Go 1.25+. Standard conventions. No LLM dependencies in Go code.

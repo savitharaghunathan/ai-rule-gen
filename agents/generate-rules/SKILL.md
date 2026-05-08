@@ -11,6 +11,8 @@ Generate Konveyor analyzer migration rules from a migration guide.
 
 If no argument is provided, ask the user for the migration guide source.
 
+**IMPORTANT — Fresh run every time:** Each invocation creates a new timestamped output directory. Do NOT scan `output/` for previous runs, do NOT reuse existing directories, do NOT check for prior results. Start step 1 immediately. The only exception is when the user explicitly provides `migration_dir` with `resume_from`.
+
 ## Inputs
 
 - `guide_source` — URL, file path, or pasted text of a migration guide
@@ -19,8 +21,7 @@ If no argument is provided, ask the user for the migration guide source.
 - `mode` — (optional) `interactive` (default) or `non_interactive`
 - `checkpoint_behavior` — (optional) `ask` (default), `continue`, or `stop_after_extract`
 - `resume_from` — (optional) `ingest`, `extract`, `coverage`, `scaffold`, `test`, `stamp`, `report`
-- `migration_dir` — (optional) explicit output directory override, e.g. `output/spring-boot-3-to-4`
-- `force_rebuild` — (optional) `true|false` (default `false`)
+- `migration_dir` — (optional) explicit output directory override. If omitted, auto-generated as `output/<source>-to-<target>-<YYYYMMDD-HHMMSS>`. Required when using `resume_from`.
 
 ## Returns
 
@@ -61,12 +62,13 @@ If no argument is provided, ask the user for the migration guide source.
 | shell | `go run ./cmd/stamp *` | Mark rules with pass/fail labels |
 | shell | `go run ./cmd/report *` | Generate summary report |
 | shell | `go run ./cmd/coverage *` | Check guide coverage |
-| shell | `wc -l *` | Count guide lines |
-| shell | `grep *` | Count sections, search output |
+| shell | `ls *` | List files and directories |
 | read | `output/**` | Read manifest, test results |
 | write | `output/**` | Write migration artifacts |
 
 **Do NOT use `python`, `python3`, `node`, or any scripting language runtime.**
+**Do NOT use `grep`, `sed`, `awk`, `wc`, `find`, or other shell text-processing tools to parse data that CLI commands already return.**
+Every `go run ./cmd/*` command returns structured JSON. Use that JSON output directly — do not pipe it through shell commands to extract fields.
 This is a Go project. Run only commands listed in this permissions table.
 If a required action is not permitted, stop and report the limitation.
 
@@ -76,6 +78,42 @@ If a required action is not permitted, stop and report the limitation.
 - Only ask at checkpoint when `mode=interactive` and `checkpoint_behavior=ask`.
 - Do not block after testing starts; continue even if some rules remain failing.
 - Fix only failing rules, not the full suite.
+
+## Pipeline Transcript
+
+Write a `pipeline.log` file in `$MIGRATION_DIR` that captures the full pipeline session. Append to this file throughout the pipeline — do not overwrite.
+
+Log these events as they happen:
+- Pipeline start: timestamp, guide source, detected source/target/language
+- Every `[step]` status line (start and done)
+- CLI command JSON outputs (ingest, sections, construct, validate, coverage, test, etc.)
+- Sub-agent dispatches: skill name, chunk number, inputs summary
+- Sub-agent returns: patterns_count, files_written, errors, suspected_kantra_limitations
+- Errors, retries, and partial failures
+- Final summary table
+
+Format each entry with a timestamp prefix: `[HH:MM:SS] <content>`.
+
+## Timing
+
+Track wall-clock elapsed time for the pipeline and each major stage. Record the current time (HH:MM:SS) at the start of the pipeline and at the start/end of each stage.
+
+**Pipeline timer:** Record start time before step 1. Print total elapsed in the final summary.
+
+**Stage timers:** For each stage, include elapsed time in the "Done" status line using the format `(<elapsed>)` where elapsed is `Xm Ys` (e.g. `2m 15s`). Omit hours unless the stage takes ≥ 60 minutes.
+
+Format:
+```
+[step] Done — <metrics> (<elapsed>)
+```
+
+Stages to time:
+- **ingest** — from guide fetch start to guide written
+- **extract** — from section indexing start to rules constructed + validated (includes parallel rule-writer agents, merge, construct, validate)
+- **coverage** — from coverage check start to re-extraction complete (or "No gaps found")
+- **test-gen** — from scaffold start to all test-generator agents complete + sanitize
+- **validate** — from first `cmd/test` run to fix loop complete (includes all fix iterations)
+- **stamp+report** — from stamp start to report written
 
 ## Sub-agent Protocol
 
@@ -93,8 +131,8 @@ The runtime translates each invoke block into a sub-agent call:
 Example:
 
 ```bash
-go run ./cmd/contract-validate --contract agents/rule-writer/contract.json --mode inputs --payload-file output/<source>-to-<target>/contracts/rule-writer-input-1.json
-go run ./cmd/contract-validate --contract agents/rule-writer/contract.json --mode returns --payload-file output/<source>-to-<target>/contracts/rule-writer-return-1.json
+go run ./cmd/contract-validate --contract agents/rule-writer/contract.json --mode inputs --payload-file ${MIGRATION_DIR}/contracts/rule-writer-input-1.json
+go run ./cmd/contract-validate --contract agents/rule-writer/contract.json --mode returns --payload-file ${MIGRATION_DIR}/contracts/rule-writer-return-1.json
 ```
 
 If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes` should be dispatched concurrently. If the runtime does not support parallel dispatch or sub-agents, run all invoke blocks sequentially in the current agent context — read and follow each sub-skill's SKILL.md inline.
@@ -111,45 +149,47 @@ If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes
 
 **Partial failures:** If a step produces partial results before failing (e.g., `construct` succeeds for 48 patterns but fails on 2), preserve the partial output and report what succeeded. The user can fix the failing patterns and re-run. Do not discard valid results because of a partial failure.
 
-**Resume behavior:** If `resume_from` is set, skip prior stages and validate prerequisites first. Fail fast when required artifacts are missing.
+**Resume behavior:** When `resume_from` is set, the user must also provide `migration_dir` pointing to the specific timestamped directory to resume. Skip prior stages and validate prerequisites first. Fail fast when required artifacts are missing.
 
-Stage prerequisites:
-- `extract` requires `output/<source>-to-<target>/guide.md`
-- `coverage` requires `output/<source>-to-<target>/patterns.json`
-- `scaffold` requires `output/<source>-to-<target>/rules/`
-- `test` requires `output/<source>-to-<target>/rules/` and `output/<source>-to-<target>/tests/manifest.json`
-- `stamp` requires stamped pass/fail test results and `output/<source>-to-<target>/rules/`
+Stage prerequisites (paths relative to `$MIGRATION_DIR`):
+- `extract` requires `guide.md`
+- `coverage` requires `patterns.json`
+- `scaffold` requires `rules/`
+- `test` requires `rules/` and `tests/manifest.json`
+- `stamp` requires stamped pass/fail test results and `rules/`
 - `report` requires source/target metadata plus pass/fail totals
-
-Reuse behavior:
-- `force_rebuild=false`: reuse existing artifacts when prerequisites are satisfied
-- `force_rebuild=true`: regenerate artifacts for current stage onward
 
 ### 1. Ingest
 
-Set migration-specific paths once source and target are known:
+Generate a timestamp once at pipeline start (`YYYYMMDD-HHMMSS` in local time).
 
 ```bash
-MIGRATION_DIR="output/<source>-to-<target>"
-mkdir -p "$MIGRATION_DIR"
+TIMESTAMP="<YYYYMMDD-HHMMSS>"   # e.g. 20260508-143022, generated once
+```
+
+Determine `$MIGRATION_DIR`:
+- If the user provided `migration_dir`, use that (no timestamp)
+- If the user provided `source` and `target`, set `MIGRATION_DIR="output/<source>-to-<target>-${TIMESTAMP}"`
+- If auto-detecting: ingest to `output/guide-temp.md` first, read the first ~50 lines to detect source/target/language (lowercase, hyphenated names like `spring-boot-3`), then set `MIGRATION_DIR="output/<source>-to-<target>-${TIMESTAMP}"`
+
+```bash
+mkdir -p "${MIGRATION_DIR}"
 ```
 
 ```
 [ingest] Fetching guide from <source>...
 ```
 
-```bash
-mkdir -p output
-```
+- **URL:** `go run ./cmd/ingest --input <url> --output ${MIGRATION_DIR}/guide.md`
+- **File (not markdown):** `go run ./cmd/ingest --input <path> --output ${MIGRATION_DIR}/guide.md`
+- **Pasted text or already markdown:** Write directly to `${MIGRATION_DIR}/guide.md`
 
-- **URL:** `go run ./cmd/ingest --input <url> --output output/<source>-to-<target>/guide.md`
-- **File (not markdown):** `go run ./cmd/ingest --input <path> --output output/<source>-to-<target>/guide.md`
-- **Pasted text or already markdown:** Write directly to `output/<source>-to-<target>/guide.md`
+If auto-detecting, move/copy `output/guide-temp.md` to `${MIGRATION_DIR}/guide.md` after MIGRATION_DIR is set.
 
 Count lines (`GUIDE_LINES`) and section headings. Print:
 
 ```
-[ingest] Done — <GUIDE_LINES> lines, <N> sections
+[ingest] Done — <GUIDE_LINES> lines, <N> sections → ${MIGRATION_DIR}/ (<elapsed>)
 ```
 
 ### 2. Extract (parallel)
@@ -159,20 +199,10 @@ Extraction uses parallel agents to process the guide faster. The orchestrator sp
 **2a. Index sections and auto-detect metadata:**
 
 ```bash
-go run ./cmd/sections --guide output/<source>-to-<target>/guide.md
+go run ./cmd/sections --guide ${MIGRATION_DIR}/guide.md
 ```
 
 This returns JSON with all sections classified as `content` or `header-only`. Filter to content sections only.
-
-Read the first ~50 lines of the guide to auto-detect source, target, and language. Use lowercase, hyphenated names (e.g., `spring-boot-3`). If the user provided source/target, use those instead.
-
-Set migration-specific output paths after source/target are known:
-
-```bash
-MIGRATION="<source>-to-<target>"
-MIGRATION_DIR="output/${MIGRATION}"
-mkdir -p "${MIGRATION_DIR}"
-```
 
 ```
 [extract] Extracting patterns from <content_count> sections (<N> parallel agents)...
@@ -185,12 +215,12 @@ Split the content sections into **N balanced chunks** (minimum 2, maximum 5 agen
 **Invoke:** `rule-writer` (one per chunk, in parallel)
 **Purpose:** Extract migration patterns from assigned sections.
 **Inputs per invocation:**
-  - guide: output/<source>-to-<target>/guide.md
+  - guide: ${MIGRATION_DIR}/guide.md
   - source: {detected source}
   - target: {detected target}
-  - rules_dir: output/<source>-to-<target>/rules
+  - rules_dir: ${MIGRATION_DIR}/rules
   - sections: {chunk subset — list of `{heading, start_line, end_line}` objects}
-  - output_file: output/<source>-to-<target>/patterns-{chunk_number}.json
+  - output_file: ${MIGRATION_DIR}/patterns-{chunk_number}.json
 **Parallel:** yes
 **Expect:**
   - patterns_count, output_file
@@ -200,15 +230,15 @@ Split the content sections into **N balanced chunks** (minimum 2, maximum 5 agen
 After all agents complete, merge the partial patterns files and build rules:
 
 ```bash
-go run ./cmd/merge-patterns --output output/<source>-to-<target>/patterns.json output/<source>-to-<target>/patterns-1.json output/<source>-to-<target>/patterns-2.json ...
-go run ./cmd/construct --patterns output/<source>-to-<target>/patterns.json --output output/<source>-to-<target>/rules
-go run ./cmd/validate --rules output/<source>-to-<target>/rules
+go run ./cmd/merge-patterns --output ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns-1.json ${MIGRATION_DIR}/patterns-2.json ...
+go run ./cmd/construct --patterns ${MIGRATION_DIR}/patterns.json --output ${MIGRATION_DIR}/rules
+go run ./cmd/validate --rules ${MIGRATION_DIR}/rules
 ```
 
-If validation fails, fix `output/<source>-to-<target>/patterns.json` (remove invalid entries) and re-run construct.
+If validation fails, fix `${MIGRATION_DIR}/patterns.json` (remove invalid entries) and re-run construct.
 
 ```
-[extract] Done — <patterns_count> patterns → <rules_count> rules in output/<source>-to-<target>/rules/
+[extract] Done — <patterns_count> patterns → <rules_count> rules in ${MIGRATION_DIR}/rules/ (<elapsed>)
 ```
 
 Save `source`, `target`, `patterns_count`, `rules_count` for the final summary.
@@ -218,7 +248,7 @@ Save `source`, `target`, `patterns_count`, `rules_count` for the final summary.
 Run the coverage tool to find sections with named artifacts that weren't extracted:
 
 ```bash
-go run ./cmd/coverage --guide output/<source>-to-<target>/guide.md --patterns output/<source>-to-<target>/patterns.json --language <language>
+go run ./cmd/coverage --guide ${MIGRATION_DIR}/guide.md --patterns ${MIGRATION_DIR}/patterns.json --language <language>
 ```
 
 If `gap_count > 0` in the JSON output, print:
@@ -232,34 +262,34 @@ Convert gaps to sections and send back to the rule-writer in chunk mode for targ
 **Invoke:** `rule-writer` (chunk mode)
 **Purpose:** Extract patterns from specific sections that the coverage check flagged.
 **Inputs:**
-  - guide: output/<source>-to-<target>/guide.md
+  - guide: ${MIGRATION_DIR}/guide.md
   - source: {detected source}
   - target: {detected target}
-  - rules_dir: output/<source>-to-<target>/rules
+  - rules_dir: ${MIGRATION_DIR}/rules
   - sections: {gap sections converted to `[{heading, start_line, end_line}]` format}
-  - output_file: output/<source>-to-<target>/patterns-gaps.json
+  - output_file: ${MIGRATION_DIR}/patterns-gaps.json
 **Parallel:** no
 **Expect:**
   - patterns_count, output_file
 
-The sub-agent writes only the new patterns to `output/<source>-to-<target>/patterns-gaps.json`. It does NOT read or inspect existing patterns — the orchestrator handles deduplication. After the sub-agent returns, merge and rebuild:
+The sub-agent writes only the new patterns to `${MIGRATION_DIR}/patterns-gaps.json`. It does NOT read or inspect existing patterns — the orchestrator handles deduplication. After the sub-agent returns, merge and rebuild:
 
 ```bash
-go run ./cmd/merge-patterns --output output/<source>-to-<target>/patterns.json output/<source>-to-<target>/patterns.json output/<source>-to-<target>/patterns-gaps.json
-go run ./cmd/construct --patterns output/<source>-to-<target>/patterns.json --output output/<source>-to-<target>/rules
-go run ./cmd/validate --rules output/<source>-to-<target>/rules
+go run ./cmd/merge-patterns --output ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns.json ${MIGRATION_DIR}/patterns-gaps.json
+go run ./cmd/construct --patterns ${MIGRATION_DIR}/patterns.json --output ${MIGRATION_DIR}/rules
+go run ./cmd/validate --rules ${MIGRATION_DIR}/rules
 ```
 
 Re-run the coverage check. If gaps remain, accept them — one re-extraction pass is enough.
 
 ```
-[coverage] Done — <final_gap_count> remaining gaps (accepted)
+[coverage] Done — <final_gap_count> remaining gaps (accepted) (<elapsed>)
 ```
 
 If `gap_count == 0`:
 
 ```
-[coverage] No gaps found
+[coverage] No gaps found (<elapsed>)
 ```
 
 ### Checkpoint
@@ -281,14 +311,14 @@ After extraction/coverage:
 **3a. Scaffold (orchestrator runs this directly, not an agent):**
 
 ```bash
-go run ./cmd/scaffold --rules output/<source>-to-<target>/rules --output output/<source>-to-<target>/tests
+go run ./cmd/scaffold --rules ${MIGRATION_DIR}/rules --output ${MIGRATION_DIR}/tests
 ```
 
 This creates all directories, `.test.yaml` files, and `manifest.json`. No LLM needed.
 
 **3b. Read manifest and split into batches:**
 
-Read `output/<source>-to-<target>/tests/manifest.json`. It contains a `groups` array — each group has `name`, `data_dir`, `files` (paths to generate), and `rule_ids`.
+Read `${MIGRATION_DIR}/tests/manifest.json`. It contains a `groups` array — each group has `name`, `data_dir`, `files` (paths to generate), and `rule_ids`.
 
 Split the groups into **batches of ~5 groups each** (minimum 1 batch, maximum 5 batches), balanced by rule count.
 
@@ -301,8 +331,8 @@ Split the groups into **batches of ~5 groups each** (minimum 1 batch, maximum 5 
 **Invoke:** `test-generator` (one per batch, up to 5 in parallel)
 **Purpose:** Generate compilable test source code that triggers the assigned rules.
 **Inputs per invocation:**
-  - rules_dir: output/<source>-to-<target>/rules
-  - tests_dir: output/<source>-to-<target>/tests
+  - rules_dir: ${MIGRATION_DIR}/rules
+  - tests_dir: ${MIGRATION_DIR}/tests
   - groups: {batch subset from manifest.json — include name, data_dir, rule_ids, files}
 **Parallel:** yes
 **Expect:**
@@ -321,11 +351,11 @@ Carry this merged list forward as `pre_classified_kantra_limitations` — it wil
 Sanitize XML:
 
 ```bash
-go run ./cmd/sanitize --dir output/<source>-to-<target>/tests/data
+go run ./cmd/sanitize --dir ${MIGRATION_DIR}/tests/data
 ```
 
 ```
-[test-gen] Done — <total_groups> groups, <total_files> files
+[test-gen] Done — <total_groups> groups, <total_files> files (<elapsed>)
 ```
 
 ### 4. Validate (orchestrator-driven loop)
@@ -335,7 +365,7 @@ The orchestrator runs tests and uses a sub-agent for LLM-driven repairs on failu
 **4a. Run tests:**
 
 ```bash
-go run ./cmd/test --rules output/<source>-to-<target>/rules --tests output/<source>-to-<target>/tests --timeout 5m
+go run ./cmd/test --rules ${MIGRATION_DIR}/rules --tests ${MIGRATION_DIR}/tests --timeout 5m
 ```
 
 The CLI runs each test file sequentially (avoids Docker contention) and automatically retries timed-out files once (`--retry-timeouts`, on by default). To run a subset, use `--files` with bare filenames (e.g., `--files data-1.test.yaml,data-2.test.yaml`), resolved relative to `--tests` dir.
@@ -343,7 +373,7 @@ The CLI runs each test file sequentially (avoids Docker contention) and automati
 Print the result:
 
 ```
-[validate] <total_passed>/<total_rules> passed
+[validate] <total_passed>/<total_rules> passed (<elapsed>)
 ```
 
 Or if failures:
@@ -352,7 +382,7 @@ Or if failures:
 [validate] <total_passed>/<total_rules> passed — <F> failures: <rule_id_1>, <rule_id_2>, ...
 ```
 
-If all passed, skip to step 5.
+If all passed (elapsed shown above), skip to step 5.
 
 **4b. Fix (only if failures):**
 
@@ -363,8 +393,8 @@ If all passed, skip to step 5.
 **Invoke:** `rule-validator`
 **Purpose:** Fix test data for failing rules so they pass kantra validation.
 **Inputs:**
-  - rules_dir: output/<source>-to-<target>/rules
-  - tests_dir: output/<source>-to-<target>/tests
+  - rules_dir: ${MIGRATION_DIR}/rules
+  - tests_dir: ${MIGRATION_DIR}/tests
   - failing_rules: {list with rule_id, test_file, error for each failure}
   - pre_classified_kantra_limitations: {merged list from rule-writer and test-generator suspected_kantra_limitations — may be empty}
   - max_iterations: 1
@@ -380,8 +410,10 @@ The validator agent owns the fix-verify loop — it fixes files, re-runs tests v
 Print the result:
 
 ```
-[fix] <fixed_count> fixed, <still_failing_count> still failing, <kantra_limitation_count> kantra limitations
+[fix] <fixed_count> fixed, <still_failing_count> still failing, <kantra_limitation_count> kantra limitations (<validate elapsed>)
 ```
+
+The `<validate elapsed>` is the total time since the validate stage started (step 4a), including test runs and all fix iterations.
 
 If `kantra_limitation_rules` is non-empty, print:
 
@@ -398,8 +430,8 @@ If still_failing is non-empty, move on — don't block the pipeline.
 Collate pass/fail results from the test run and the fix loop. No need to re-run the full test suite — stamp directly from results:
 
 ```bash
-go run ./cmd/stamp --rules output/<source>-to-<target>/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs> --kantra-limitation <comma-separated kantra limitation rule IDs>
-go run ./cmd/report --source <source> --target <target> --output output/<source>-to-<target>/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --failed-rules <comma-separated>
+go run ./cmd/stamp --rules ${MIGRATION_DIR}/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs> --kantra-limitation <comma-separated kantra limitation rule IDs>
+go run ./cmd/report --source <source> --target <target> --output ${MIGRATION_DIR}/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --failed-rules <comma-separated>
 ```
 
 Rules in `kantra_limitation_rules` are stamped with `test-result=kantra-limitation`. They are not counted as passed or failed. The pass rate in the report is computed as `passed / (total - kantra_limitation)` to remain honest — kantra limitations are not failures, but they are also not confirmed passes.
@@ -419,7 +451,8 @@ Print a formatted summary table using GitHub-flavored markdown:
 | **Rules** | <rules_count> generated, **<P>/<N> passed (<percent>%)** |
 | **Kantra limitations** | <K> rules correct but not auto-testable — engine cannot compare non-semver versions (omit row if K=0) |
 | **Fix iterations** | <iterations used, 0 if none> |
-| **Output** | `output/<source>-to-<target>/patterns.json` (patterns), `output/<source>-to-<target>/rules/` (rules), `output/<source>-to-<target>/tests/` (tests), `output/<source>-to-<target>/report.yaml` (report) |
+| **Timing** | total: <total elapsed> — ingest: <elapsed>, extract: <elapsed>, coverage: <elapsed>, test-gen: <elapsed>, validate: <elapsed>, stamp+report: <elapsed> |
+| **Output** | `${MIGRATION_DIR}/patterns.json` (patterns), `${MIGRATION_DIR}/rules/` (rules), `${MIGRATION_DIR}/tests/` (tests), `${MIGRATION_DIR}/report.yaml` (report) |
 
 ### Rule Categories
 

@@ -14,13 +14,14 @@ func main() {
 	kantraOutput := flag.String("kantra-output", "", "Raw kantra test output to parse")
 	passedFlag := flag.String("passed", "", "Comma-separated list of passed rule IDs")
 	failedFlag := flag.String("failed", "", "Comma-separated list of failed rule IDs")
+	kantraLimitationFlag := flag.String("kantra-limitation", "", "Comma-separated list of kantra limitation rule IDs")
 	flag.Parse()
 
 	if *rulesDir == "" {
 		cli.Fail("invalid_arguments", "--rules is required", "stamp", "set --rules to a directory containing rule YAML files", nil)
 	}
 
-	var passedIDs, failedIDs []string
+	var passedIDs, failedIDs, kantraLimitationIDs []string
 
 	if *kantraOutput != "" {
 		allRules, err := rules.ReadRulesDir(*rulesDir)
@@ -40,19 +41,23 @@ func main() {
 	if *failedFlag != "" {
 		failedIDs = splitCSV(*failedFlag)
 	}
-
-	if len(passedIDs) == 0 && len(failedIDs) == 0 {
-		cli.Fail("invalid_arguments", "no results to stamp: provide --kantra-output or --passed/--failed", "stamp", "pass test results either as raw kantra output or explicit passed/failed IDs", nil)
+	if *kantraLimitationFlag != "" {
+		kantraLimitationIDs = splitCSV(*kantraLimitationFlag)
 	}
 
-	if err := rules.StampTestResults(*rulesDir, passedIDs, failedIDs); err != nil {
+	if len(passedIDs) == 0 && len(failedIDs) == 0 && len(kantraLimitationIDs) == 0 {
+		cli.Fail("invalid_arguments", "no results to stamp: provide --kantra-output or --passed/--failed/--kantra-limitation", "stamp", "pass test results either as raw kantra output or explicit passed/failed/kantra-limitation IDs", nil)
+	}
+
+	if err := rules.StampTestResults(*rulesDir, passedIDs, failedIDs, kantraLimitationIDs); err != nil {
 		cli.Fail("stamp_failed", err.Error(), "stamp", "check rules directory write permissions and rule file format", map[string]string{"rules": *rulesDir})
 	}
 
 	cli.WriteJSON(map[string]interface{}{
-		"status": "ok",
-		"passed": len(passedIDs),
-		"failed": len(failedIDs),
+		"status":            "ok",
+		"passed":            len(passedIDs),
+		"failed":            len(failedIDs),
+		"kantra_limitation": len(kantraLimitationIDs),
 	})
 }
 

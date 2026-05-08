@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// StampTestResults updates rule files with pass/fail labels based on kantra results.
-func StampTestResults(rulesDir string, passed, failed []string) error {
+// StampTestResults updates rule files with pass/fail/kantra-limitation labels based on kantra results.
+func StampTestResults(rulesDir string, passed, failed, kantraLimitation []string) error {
 	passedSet := make(map[string]bool)
 	for _, id := range passed {
 		passedSet[id] = true
@@ -16,6 +16,10 @@ func StampTestResults(rulesDir string, passed, failed []string) error {
 	failedSet := make(map[string]bool)
 	for _, id := range failed {
 		failedSet[id] = true
+	}
+	kantraLimitationSet := make(map[string]bool)
+	for _, id := range kantraLimitation {
+		kantraLimitationSet[id] = true
 	}
 
 	entries, err := os.ReadDir(rulesDir)
@@ -46,7 +50,9 @@ func StampTestResults(rulesDir string, passed, failed []string) error {
 		for i := range ruleList {
 			r := &ruleList[i]
 			var newLabel string
-			if passedSet[r.RuleID] {
+			if kantraLimitationSet[r.RuleID] {
+				newLabel = "konveyor.io/test-result=kantra-limitation"
+			} else if passedSet[r.RuleID] {
 				newLabel = "konveyor.io/test-result=passed"
 			} else if failedSet[r.RuleID] {
 				newLabel = "konveyor.io/test-result=failed"
