@@ -230,7 +230,7 @@ This returns JSON with all sections classified as `content` or `header-only`. Fi
 
 **2b. Split into chunks and dispatch:**
 
-Split the content sections into **N balanced chunks** (minimum 2, maximum 5 agents). Balance by section count. Assign each chunk a number (1, 2, ..., N).
+Split the content sections into **N balanced chunks** (minimum 1, maximum 5 agents). Balance by section count. Assign each chunk a number (1, 2, ..., N).
 
 **Invoke:** `rule-writer` (one per chunk, in parallel)
 **Purpose:** Extract migration patterns from assigned sections.

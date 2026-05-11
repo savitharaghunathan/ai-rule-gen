@@ -28,7 +28,7 @@ Example:
 
 ## Parallelism Defaults
 
-- Extraction: 2-5 parallel `rule-writer` invocations
+- Extraction: 1-5 parallel `rule-writer` invocations
 - Test generation: 1-5 parallel `test-generator` invocations
 - Balance by rule/section count per worker
 
