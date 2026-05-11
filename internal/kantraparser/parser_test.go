@@ -165,6 +165,71 @@ func TestParseSummary_nonZeroTotal(t *testing.T) {
 	}
 }
 
+func TestParseResults(t *testing.T) {
+	output := `  rule-00010 1/1 PASSED
+  rule-00020 0/1 PASSED
+  rule-00030 3/3 PASSED
+  rule-00040 Unexpected error: exit status 1`
+
+	results := ParseResults(output)
+
+	if !results["rule-00010"] {
+		t.Error("rule-00010 should be passed")
+	}
+	if results["rule-00020"] {
+		t.Error("rule-00020 should be failed (0/1)")
+	}
+	if !results["rule-00030"] {
+		t.Error("rule-00030 should be passed")
+	}
+	if _, found := results["rule-00040"]; found {
+		t.Error("rule-00040 should not appear in results (error format)")
+	}
+}
+
+func TestPassedAndFailed_erroredOutputDefaultsToFailed(t *testing.T) {
+	// Bug scenario: kantra produces a Rules Summary but per-rule output
+	// uses non-standard error format instead of "0/N PASSED".
+	output := `  rule-00010 Unexpected error: exit status 1
+  rule-00020 Unexpected error: exit status 1
+  rule-00030 Unexpected error: exit status 1
+------------------------------------------------------------
+  Rules Summary:      0/3 (0.00%) PASSED
+------------------------------------------------------------`
+
+	allIDs := []string{"rule-00010", "rule-00020", "rule-00030"}
+
+	passed, failed := PassedAndFailed(output, allIDs)
+
+	if len(passed) != 0 {
+		t.Errorf("passed = %v, want empty (all rules errored)", passed)
+	}
+	if len(failed) != 3 {
+		t.Errorf("failed = %v, want 3 failures", failed)
+	}
+}
+
+func TestPassedAndFailed_mixedPassAndError(t *testing.T) {
+	// Some rules pass normally, others error with non-standard output.
+	output := `  rule-00010 1/1 PASSED
+  rule-00020 Unexpected error: exit status 1
+  rule-00030 0/1 PASSED
+------------------------------------------------------------
+  Rules Summary:      1/3 (33.33%) PASSED
+------------------------------------------------------------`
+
+	allIDs := []string{"rule-00010", "rule-00020", "rule-00030"}
+
+	passed, failed := PassedAndFailed(output, allIDs)
+
+	if len(passed) != 1 || passed[0] != "rule-00010" {
+		t.Errorf("passed = %v, want [rule-00010]", passed)
+	}
+	if len(failed) != 2 {
+		t.Errorf("failed = %v, want [rule-00020, rule-00030]", failed)
+	}
+}
+
 func TestFindTestFiles(t *testing.T) {
 	dir := t.TempDir()
 	for _, name := range []string{"rules.test.yaml", "other.test.yml", "not-a-test.yaml", "readme.md"} {

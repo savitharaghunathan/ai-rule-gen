@@ -24,6 +24,7 @@ type Failure struct {
 
 var reSummary = regexp.MustCompile(`Rules Summary:\s+(\d+)/(\d+)`)
 var reFailure = regexp.MustCompile(`([\w-]+-\d{5})\s+0/\d+\s+PASSED(?:.*?find debug data in (/[^\s]+))?`)
+var reResult = regexp.MustCompile(`([\w-]+-\d{5})\s+(\d+)/(\d+)\s+PASSED`)
 
 // ParseSummary extracts passed/total counts from kantra test output.
 func ParseSummary(output string) (passed, total int) {
@@ -88,28 +89,46 @@ func ParseAnalyzeViolations(outputFile string) map[string]bool {
 	return matched
 }
 
+// ParseResults extracts per-rule pass/fail results from kantra test output.
+// Returns a map of ruleID → passed (true if N/N PASSED where N > 0).
+func ParseResults(output string) map[string]bool {
+	results := make(map[string]bool)
+	matches := reResult.FindAllStringSubmatch(output, -1)
+	for _, m := range matches {
+		ruleID := m[1]
+		var matched, total int
+		fmt.Sscanf(m[2], "%d", &matched)
+		fmt.Sscanf(m[3], "%d", &total)
+		results[ruleID] = matched > 0 && matched == total
+	}
+	return results
+}
+
 // PassedAndFailed categorizes rule IDs into passed and failed lists
 // based on kantra test output and the known set of all rule IDs.
+// Rules are only counted as passed if they explicitly show N/N PASSED
+// (where N > 0) in the output. Rules not found in the output or with
+// non-standard error output default to failed.
 // erroredRuleIDs are rules from groups that errored before any rules ran
 // (e.g., "unable to get build tool"). These are always marked as failed.
 func PassedAndFailed(output string, allRuleIDs []string, erroredRuleIDs ...string) (passed, failed []string) {
-	failures := ParseFailures(output)
+	results := ParseResults(output)
 
 	failedSet := make(map[string]bool)
-	for _, f := range failures {
-		failedSet[f.RuleID] = true
-		failed = append(failed, f.RuleID)
-	}
 	for _, id := range erroredRuleIDs {
-		if !failedSet[id] {
-			failedSet[id] = true
-			failed = append(failed, id)
-		}
+		failedSet[id] = true
 	}
 
 	for _, id := range allRuleIDs {
-		if !failedSet[id] {
+		if failedSet[id] {
+			failed = append(failed, id)
+			continue
+		}
+		didPass, found := results[id]
+		if found && didPass {
 			passed = append(passed, id)
+		} else {
+			failed = append(failed, id)
 		}
 	}
 
