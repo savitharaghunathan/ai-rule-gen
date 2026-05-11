@@ -125,3 +125,61 @@ func TestStampTestResults_NoLabelsField(t *testing.T) {
 		t.Errorf("expected kantra-limitation label appended, got %v", got[0].Labels)
 	}
 }
+
+func TestStampVerificationResults(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.yaml")
+
+	ruleList := []Rule{
+		{RuleID: "rule-001", Message: "verified rule", Labels: []string{"konveyor.io/test-result=untested"}, When: NewJavaReferenced("com.example.A", LocationImport)},
+		{RuleID: "rule-002", Message: "not found rule", Labels: []string{"konveyor.io/test-result=untested"}, When: NewJavaReferenced("com.example.B", LocationImport)},
+		{RuleID: "rule-003", Message: "not stamped", Labels: []string{"konveyor.io/test-result=untested"}, When: NewJavaReferenced("com.example.C", LocationImport)},
+	}
+
+	if err := WriteRulesFile(path, ruleList); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	err := StampVerificationResults(dir, []string{"rule-001"}, []string{"rule-002"})
+	if err != nil {
+		t.Fatalf("stamp: %v", err)
+	}
+
+	got, err := ReadRulesFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+
+	tests := []struct {
+		ruleID    string
+		wantLabel string
+		wantFound bool
+	}{
+		{"rule-001", "konveyor.io/source-verified=true", true},
+		{"rule-002", "konveyor.io/source-verified=false", true},
+		{"rule-003", "konveyor.io/source-verified=", false},
+	}
+
+	for _, tt := range tests {
+		for _, r := range got {
+			if r.RuleID != tt.ruleID {
+				continue
+			}
+			found := false
+			for _, l := range r.Labels {
+				if strings.HasPrefix(l, "konveyor.io/source-verified=") {
+					if !tt.wantFound {
+						t.Errorf("%s: unexpected source-verified label %q", tt.ruleID, l)
+					}
+					if l != tt.wantLabel {
+						t.Errorf("%s: label = %q, want %q", tt.ruleID, l, tt.wantLabel)
+					}
+					found = true
+				}
+			}
+			if tt.wantFound && !found {
+				t.Errorf("%s: expected label %q, got labels %v", tt.ruleID, tt.wantLabel, r.Labels)
+			}
+		}
+	}
+}
