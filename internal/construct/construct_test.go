@@ -246,3 +246,31 @@ func TestRun_MixedConditionTypes(t *testing.T) {
 		}
 	}
 }
+
+func TestRun_PatternRuleMap(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Source:   "sb3",
+		Target:   "sb4",
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{SourcePattern: "A", SourceFQN: "com.example.A", Rationale: "r1", Complexity: "low", Category: "mandatory", ProviderType: "java", LocationType: "IMPORT"},
+			{SourcePattern: "B", SourceFQN: "com.example.B", Rationale: "r2", Complexity: "low", Category: "mandatory", ProviderType: "java", LocationType: "IMPORT"},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	if len(result.PatternRuleMap) != 2 {
+		t.Fatalf("PatternRuleMap length = %d, want 2", len(result.PatternRuleMap))
+	}
+
+	for idx, ruleID := range result.PatternRuleMap {
+		if ruleID == "" {
+			t.Errorf("pattern %d has empty rule ID", idx)
+		}
+	}
+}

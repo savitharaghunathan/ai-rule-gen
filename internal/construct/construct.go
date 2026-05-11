@@ -16,13 +16,14 @@ type GroupCount struct {
 
 // Result holds the output of a construct operation.
 type Result struct {
-	RulesWritten int                     `json:"rules_written"`
-	FilesWritten int                     `json:"files_written"`
-	OutputDir    string                  `json:"output_dir"`
-	Groups       []GroupCount            `json:"groups"`
-	Errors       []string                `json:"errors,omitempty"`
-	Grouped      map[string][]rules.Rule `json:"-"`
-	Ruleset      *rules.Ruleset          `json:"-"`
+	RulesWritten     int                     `json:"rules_written"`
+	FilesWritten     int                     `json:"files_written"`
+	OutputDir        string                  `json:"output_dir"`
+	Groups           []GroupCount            `json:"groups"`
+	Errors           []string                `json:"errors,omitempty"`
+	PatternRuleMap   map[int]string          `json:"pattern_rule_map,omitempty"`
+	Grouped          map[string][]rules.Rule `json:"-"`
+	Ruleset          *rules.Ruleset          `json:"-"`
 }
 
 // Run reads patterns from an ExtractOutput, converts them to rules, validates, and writes output.
@@ -35,9 +36,11 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 	idGen := rules.NewIDGenerator(prefix)
 
 	grouped := make(map[string][]rules.Rule)
+	patternRuleMap := make(map[int]string)
 
-	for _, p := range extract.Patterns {
+	for i, p := range extract.Patterns {
 		rule := patternToRule(p, idGen, extract.Source, extract.Target)
+		patternRuleMap[i] = rule.RuleID
 		concern := p.Concern
 		if concern == "" {
 			concern = "general"
@@ -85,12 +88,13 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 	sort.Slice(groups, func(i, j int) bool { return groups[i].File < groups[j].File })
 
 	return &Result{
-		RulesWritten: len(allRules),
-		FilesWritten: filesWritten,
-		OutputDir:    outputDir,
-		Groups:       groups,
-		Grouped:      grouped,
-		Ruleset:      ruleset,
+		RulesWritten:   len(allRules),
+		FilesWritten:   filesWritten,
+		OutputDir:      outputDir,
+		Groups:         groups,
+		PatternRuleMap: patternRuleMap,
+		Grouped:        grouped,
+		Ruleset:        ruleset,
 	}, nil
 }
 
