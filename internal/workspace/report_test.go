@@ -2,6 +2,9 @@ package workspace
 
 import (
 	"math"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -48,5 +51,45 @@ func TestBuildReport_AllKantraLimitation(t *testing.T) {
 
 	if r.PassRate != 0 {
 		t.Errorf("pass_rate: got %.2f, want 0 (no testable rules)", r.PassRate)
+	}
+}
+
+func TestBuildReport_WithVerification(t *testing.T) {
+	r := BuildReport("sb3", "sb4", 20, 15, 3, 2, []string{"r1", "r2", "r3"}, []string{"k1", "k2"})
+	r.Verification = &VerificationStats{
+		Verified: 14,
+		NotFound: 3,
+		Skipped:  3,
+		NotFoundRules: []NotFoundRule{
+			{RuleID: "r1", SourceFQN: "com.example.Fake", Reason: "not found in foo-1.0.jar"},
+		},
+	}
+
+	if r.Verification.Verified != 14 {
+		t.Errorf("verified = %d, want 14", r.Verification.Verified)
+	}
+	if len(r.Verification.NotFoundRules) != 1 {
+		t.Fatalf("not_found_rules length = %d, want 1", len(r.Verification.NotFoundRules))
+	}
+	if r.Verification.NotFoundRules[0].RuleID != "r1" {
+		t.Errorf("not_found rule_id = %q, want r1", r.Verification.NotFoundRules[0].RuleID)
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "report.yaml")
+	if err := WriteReport(path, r); err != nil {
+		t.Fatalf("WriteReport: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "verification:") {
+		t.Error("report YAML missing verification section")
+	}
+	if !strings.Contains(content, "verified: 14") {
+		t.Error("report YAML missing verified count")
 	}
 }
