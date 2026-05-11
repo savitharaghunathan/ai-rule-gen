@@ -90,3 +90,79 @@ func TestWriteAndReadPatternsFile(t *testing.T) {
 		t.Errorf("source_fqn = %q, want com.A", read.Patterns[0].SourceFQN)
 	}
 }
+
+func TestWriteAndReadPatternsFile_SourceArtifact(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "patterns.json")
+
+	original := &ExtractOutput{
+		Source:   "httpcomponents-client-4",
+		Target:   "httpcomponents-client-5",
+		Language: "java",
+		Patterns: []MigrationPattern{
+			{
+				SourcePattern: "HttpClient",
+				SourceFQN:     "org.apache.http.client.HttpClient",
+				Rationale:     "Class moved in v5",
+				Complexity:    "low",
+				Category:      "mandatory",
+				ProviderType:  "java",
+				SourceArtifact: &ArtifactCoordinates{
+					GroupID:    "org.apache.httpcomponents",
+					ArtifactID: "httpclient",
+					Version:    "4.5.14",
+				},
+			},
+		},
+	}
+
+	if err := WritePatternsFile(path, original); err != nil {
+		t.Fatalf("write failed: %v", err)
+	}
+
+	read, err := ReadPatternsFile(path)
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+
+	if read.Patterns[0].SourceArtifact == nil {
+		t.Fatal("source_artifact is nil after round-trip")
+	}
+	sa := read.Patterns[0].SourceArtifact
+	if sa.GroupID != "org.apache.httpcomponents" {
+		t.Errorf("groupId = %q, want org.apache.httpcomponents", sa.GroupID)
+	}
+	if sa.ArtifactID != "httpclient" {
+		t.Errorf("artifactId = %q, want httpclient", sa.ArtifactID)
+	}
+	if sa.Version != "4.5.14" {
+		t.Errorf("version = %q, want 4.5.14", sa.Version)
+	}
+}
+
+func TestWriteAndReadPatternsFile_NilSourceArtifact(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "patterns.json")
+
+	original := &ExtractOutput{
+		Source:   "sb3",
+		Target:   "sb4",
+		Language: "java",
+		Patterns: []MigrationPattern{
+			{SourcePattern: "A", SourceFQN: "com.A", Rationale: "r", Complexity: "low", Category: "mandatory"},
+		},
+	}
+
+	if err := WritePatternsFile(path, original); err != nil {
+		t.Fatalf("write failed: %v", err)
+	}
+
+	read, err := ReadPatternsFile(path)
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+
+	if read.Patterns[0].SourceArtifact != nil {
+		t.Errorf("expected nil source_artifact, got %+v", read.Patterns[0].SourceArtifact)
+	}
+}

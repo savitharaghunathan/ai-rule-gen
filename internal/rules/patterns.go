@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// ArtifactCoordinates identifies a published library artifact in a package registry.
+type ArtifactCoordinates struct {
+	GroupID    string `json:"group_id"`
+	ArtifactID string `json:"artifact_id"`
+	Version    string `json:"version"`
+}
+
 // ExtractOutput is the intermediate format between agent pattern extraction and rule construction.
 // The agent writes this as patterns.json; `rulegen construct` reads it.
 type ExtractOutput struct {
@@ -33,6 +40,10 @@ type MigrationPattern struct {
 	ExampleAfter     string   `json:"example_after,omitempty"`
 	DocumentationURL string   `json:"documentation_url,omitempty"`
 	Message          string   `json:"message,omitempty"`
+
+	// Source artifact coordinates for deterministic verification.
+	// When set, the verifier downloads this artifact and checks that SourceFQN exists in it.
+	SourceArtifact *ArtifactCoordinates `json:"source_artifact,omitempty"`
 
 	// Dependency condition fields (java.dependency, go.dependency).
 	// When set, construct produces a dependency condition instead of a referenced condition.
