@@ -83,3 +83,8 @@ func (w *Workspace) RulesFilePath(concern string) string {
 func (w *Workspace) ScoresPath() string {
 	return filepath.Join(w.ConfidenceDir(), "scores.yaml")
 }
+
+// VerifyCacheDir returns the path for cached verification artifacts (JARs, class listings).
+func (w *Workspace) VerifyCacheDir() string {
+	return filepath.Join(w.Root, "verify-cache")
+}

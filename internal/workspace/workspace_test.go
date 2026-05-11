@@ -73,3 +73,17 @@ func TestWorkspace_Paths(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkspace_VerifyCacheDir(t *testing.T) {
+	dir := t.TempDir()
+	w, err := NewFromPath(dir)
+	if err != nil {
+		t.Fatalf("NewFromPath: %v", err)
+	}
+
+	want := filepath.Join(dir, "verify-cache")
+	got := w.VerifyCacheDir()
+	if got != want {
+		t.Errorf("VerifyCacheDir() = %q, want %q", got, want)
+	}
+}
