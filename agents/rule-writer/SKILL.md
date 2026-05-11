@@ -53,7 +53,7 @@ Read these before starting:
 - `references/languages/<language>/condition-types.md` — Provider-specific conditions for the detected language (java, go, nodejs, csharp, python)
 - `references/builtin-conditions.md` — Language-agnostic builtin conditions (filecontent, xml, json, file, hasTags, xmlPublicID)
 - `references/rule-schema.md` — Rule YAML structure, required fields, validation rules
-- `references/examples/` — Working rule examples per language
+- `references/examples/<language>.md` — Worked extraction examples for the detected language (guide text -> checklist -> patterns.json). Read ONLY the file matching the detected language.
 
 ## Workflow
 
