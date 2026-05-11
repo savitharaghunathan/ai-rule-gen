@@ -19,10 +19,32 @@ func main() {
 	language := flag.String("language", "", "Override language (default: read from patterns.json)")
 	outputPath := flag.String("output", "", "Write verification results to this JSON file")
 	cacheDir := flag.String("cache", "", "Directory for cached JARs/artifacts (default: <patterns-dir>/verify-cache)")
+	cleanFlag := flag.Bool("clean", false, "Remove cached artifacts and exit")
 	flag.Parse()
 
 	cli.InitLog(*logPath, *agentFlag, *modelFlag)
 	defer cli.CloseLog()
+
+	if *cleanFlag {
+		cache := *cacheDir
+		if cache == "" {
+			if *patternsPath != "" {
+				cache = filepath.Join(filepath.Dir(*patternsPath), "verify-cache")
+			} else {
+				cli.Fail("invalid_arguments", "--cache or --patterns required with --clean", "verify", "set --cache to the cache directory to clean", nil)
+			}
+		}
+		count, bytes, err := verify.CleanCache(cache)
+		if err != nil {
+			cli.Fail("clean_failed", err.Error(), "verify", "check cache directory permissions", map[string]string{"cache": cache})
+		}
+		cli.WriteJSON(map[string]interface{}{
+			"status":        "ok",
+			"files_removed": count,
+			"bytes_freed":   bytes,
+		})
+		return
+	}
 
 	if *patternsPath == "" {
 		cli.Fail("invalid_arguments", "--patterns is required", "verify", "set --patterns to a patterns.json file", nil)
