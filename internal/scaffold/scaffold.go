@@ -258,19 +258,71 @@ type ruleGroup struct {
 }
 
 func splitRules(ruleList []rules.Rule, concern string) []ruleGroup {
-	if len(ruleList) <= maxRulesPerGroup {
+	byProvider := partitionByProviders(ruleList)
+	if len(byProvider) == 1 && len(ruleList) <= maxRulesPerGroup {
 		return []ruleGroup{{name: concern, rules: ruleList}}
 	}
+
 	var groups []ruleGroup
-	for i := 0; i < len(ruleList); i += maxRulesPerGroup {
-		end := i + maxRulesPerGroup
-		if end > len(ruleList) {
-			end = len(ruleList)
+	for _, partition := range byProvider {
+		baseName := concern
+		if len(byProvider) > 1 {
+			baseName = fmt.Sprintf("%s-%s", concern, partition.providerKey)
 		}
-		name := fmt.Sprintf("%s-%d", concern, i/maxRulesPerGroup+1)
-		groups = append(groups, ruleGroup{name: name, rules: ruleList[i:end]})
+		if len(partition.rules) <= maxRulesPerGroup {
+			groups = append(groups, ruleGroup{name: baseName, rules: partition.rules})
+		} else {
+			for i := 0; i < len(partition.rules); i += maxRulesPerGroup {
+				end := i + maxRulesPerGroup
+				if end > len(partition.rules) {
+					end = len(partition.rules)
+				}
+				name := fmt.Sprintf("%s-%d", baseName, i/maxRulesPerGroup+1)
+				groups = append(groups, ruleGroup{name: name, rules: partition.rules[i:end]})
+			}
+		}
 	}
 	return groups
+}
+
+type providerPartition struct {
+	providerKey string
+	rules       []rules.Rule
+}
+
+func providerKey(r rules.Rule) string {
+	providers := conditionProviders(r.When)
+	if len(providers) == 0 {
+		return "builtin"
+	}
+	seen := make(map[string]bool)
+	for _, p := range providers {
+		seen[p] = true
+	}
+	var sorted []string
+	for _, p := range []string{"builtin", "csharp", "dotnet", "go", "java", "nodejs", "python"} {
+		if seen[p] {
+			sorted = append(sorted, p)
+		}
+	}
+	return strings.Join(sorted, "+")
+}
+
+func partitionByProviders(ruleList []rules.Rule) []providerPartition {
+	order := []string{}
+	byKey := make(map[string][]rules.Rule)
+	for _, r := range ruleList {
+		key := providerKey(r)
+		if _, exists := byKey[key]; !exists {
+			order = append(order, key)
+		}
+		byKey[key] = append(byKey[key], r)
+	}
+	var partitions []providerPartition
+	for _, key := range order {
+		partitions = append(partitions, providerPartition{providerKey: key, rules: byKey[key]})
+	}
+	return partitions
 }
 
 // detectLanguage infers the programming language from rule conditions.

@@ -246,3 +246,82 @@ Note: When `xpath` is set, construct produces a `builtin.xml` condition regardle
   <artifactId>sample</artifactId>
 </project>
 ```
+
+---
+
+## Example 4: `java.referenced` with `source_artifact` for deterministic verification
+
+### Guide Excerpt
+
+> ### BootstrapRegistry and EnvironmentPostProcessor package changes
+>
+> `BootstrapRegistry`, `BootstrapContext`, and `BootstrapRegistryInitializer`
+> have moved from `org.springframework.boot` to `org.springframework.boot.bootstrap`.
+>
+> `EnvironmentPostProcessor` has moved from `org.springframework.boot.env` to
+> `org.springframework.boot`.
+
+### Checklist
+
+Section: "BootstrapRegistry and EnvironmentPostProcessor package changes" -> EXTRACT: classes relocated to new packages (item 2); four FQNs named
+
+### patterns.json
+
+Each relocated class is a separate pattern. Include `source_artifact` so the verifier can confirm the FQN exists in the published JAR:
+
+```json
+{
+  "source_pattern": "BootstrapRegistry package relocation",
+  "source_fqn": "org.springframework.boot.BootstrapRegistry",
+  "target_pattern": "org.springframework.boot.bootstrap.BootstrapRegistry",
+  "location_type": "IMPORT",
+  "source_artifact": {
+    "group_id": "org.springframework.boot",
+    "artifact_id": "spring-boot",
+    "version": "3.5.0"
+  },
+  "rationale": "BootstrapRegistry moved from org.springframework.boot to org.springframework.boot.bootstrap",
+  "complexity": "low",
+  "category": "mandatory",
+  "concern": "core",
+  "provider_type": "java"
+}
+```
+
+Note: `source_artifact` identifies the Maven artifact that contains the source FQN. The version is the source framework version (Spring Boot 3.5.x → `3.5.0`). The verifier downloads this JAR, runs `jar tf`, and confirms `org/springframework/boot/BootstrapRegistry.class` exists. If the FQN were hallucinated, the verifier would flag it as `not_found`.
+
+How to determine `source_artifact`:
+- The guide says "migrating from Spring Boot 3.x" → source version is `3.5.0`
+- `org.springframework.boot.BootstrapRegistry` lives in the `spring-boot` module → `group_id: org.springframework.boot`, `artifact_id: spring-boot`
+- If unsure which module contains the class, omit `source_artifact` (the verifier skips gracefully)
+
+### Resulting Rule YAML (produced by cmd/construct, not by you)
+
+```yaml
+- ruleID: spring-boot-3-to-spring-boot-4-00010
+  description: BootstrapRegistry moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/target=spring-boot-4
+  when:
+    java.referenced:
+      pattern: org.springframework.boot.BootstrapRegistry
+      location: IMPORT
+```
+
+### Test Data (what triggers this rule)
+
+```java
+package com.example;
+
+import org.springframework.boot.BootstrapRegistry;
+
+public class AppInitializer implements BootstrapRegistry.InstanceSupplier<String> {
+    @Override
+    public String get(BootstrapRegistry registry) {
+        return "initialized";
+    }
+}
+```

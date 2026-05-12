@@ -16,6 +16,11 @@ This is the contract between the agent (which extracts migration patterns) and `
       "source_fqn": "javax.servlet.http.HttpServlet",
       "location_type": "IMPORT",
       "alternative_fqns": ["javax.servlet.Servlet"],
+      "source_artifact": {
+        "group_id": "javax.servlet",
+        "artifact_id": "javax.servlet-api",
+        "version": "4.0.1"
+      },
       "rationale": "javax.servlet renamed to jakarta.servlet in Jakarta EE 9+",
       "complexity": "trivial",
       "category": "mandatory",
@@ -82,10 +87,41 @@ This is the contract between the agent (which extracts migration patterns) and `
 | `xpath` | no | XPath expression for `builtin.xml` conditions. When set, produces a `builtin.xml` condition |
 | `namespaces` | no | Namespace map for XPath (e.g., `{"m": "http://maven.apache.org/POM/4.0.0"}`) |
 | `xpath_filepaths` | no | File paths to restrict XPath matching (e.g., `["pom.xml"]`) |
+| `source_artifact` | no | Maven/package coordinates of the library that publishes the `source_fqn`. Object with `group_id`, `artifact_id`, `version`. Emit for all `*.referenced` patterns when the source library and version are known from the guide. The verifier downloads this artifact and checks that `source_fqn` exists in it |
 
 **Minimum required fields per pattern:** `source_pattern`, `rationale`, `complexity`, `category`.
 
 **Response format:** The extraction output must be valid JSON — no explanations, no markdown fences.
+
+## Source Artifact Resolution
+
+For `*.referenced` patterns (`java.referenced`, `go.referenced`, etc.), emit `source_artifact` so the deterministic verifier can confirm the FQN exists in the published library. This catches hallucinated FQNs before rules are constructed.
+
+**When to emit:**
+- `*.referenced` patterns: ALWAYS when the source library and version are known from the guide context
+- `*.dependency` patterns: NOT needed (already verified by Maven pre-check)
+- `builtin.*` patterns: NOT applicable
+
+**How to determine coordinates:**
+1. Read the migration guide for the source framework version (e.g., "migrating from Spring Boot 3.5.x" → version `3.5.0`)
+2. Map the FQN's package to the correct Maven artifact. Examples:
+   - `org.springframework.boot.BootstrapRegistry` → `org.springframework.boot:spring-boot:3.5.0`
+   - `org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer` → `org.springframework.boot:spring-boot-autoconfigure:3.5.0`
+   - `org.apache.http.client.HttpClient` → `org.apache.httpcomponents:httpclient:4.5.14`
+3. Use the **source** version (the version being migrated FROM), not the target version
+
+**Format:**
+```json
+{
+  "source_artifact": {
+    "group_id": "org.springframework.boot",
+    "artifact_id": "spring-boot",
+    "version": "3.5.0"
+  }
+}
+```
+
+**If unsure:** Omit `source_artifact` — the verifier skips gracefully with status `skipped`. A missing `source_artifact` is better than a wrong one.
 
 ## What `go run ./cmd/construct` Does With This
 

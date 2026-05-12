@@ -54,6 +54,7 @@ If no argument is provided, ask the user for the migration guide source.
 | shell | `go run ./cmd/sections *` | Index guide sections with classification |
 | shell | `go run ./cmd/merge-patterns *` | Merge partial patterns files |
 | shell | `go run ./cmd/contract-validate *` | Validate sub-agent payload contracts |
+| shell | `go run ./cmd/verify *` | Verify patterns against source artifacts |
 | shell | `go run ./cmd/construct *` | Build rule YAML from patterns.json |
 | shell | `go run ./cmd/validate *` | Validate rule YAML structure |
 | shell | `go run ./cmd/scaffold *` | Create test directories and manifests |
@@ -245,15 +246,26 @@ Split the content sections into **N balanced chunks** (minimum 1, maximum 5 agen
 **Expect:**
   - patterns_count, output_file
 
-**2c. Merge and construct:**
+**2c. Merge, verify, and construct:**
 
-After all agents complete, merge the partial patterns files and build rules:
+After all agents complete, merge the partial patterns files, verify source artifacts, and build rules:
 
 ```bash
 go run ./cmd/merge-patterns <log_flags> --output <migration_dir>/patterns.json <migration_dir>/patterns-1.json <migration_dir>/patterns-2.json ...
+go run ./cmd/verify <log_flags> --patterns <migration_dir>/patterns.json --output <migration_dir>/verify-results.json --cache <migration_dir>/verify-cache
 go run ./cmd/construct <log_flags> --patterns <migration_dir>/patterns.json --output <migration_dir>/rules
 go run ./cmd/validate <log_flags> --rules <migration_dir>/rules
 ```
+
+**Verification step:** `cmd/verify` downloads source JARs from Maven Central and checks that each pattern's `source_fqn` exists in the declared `source_artifact`. This catches hallucinated class names before rules reach testing.
+
+The verify stdout JSON contains `verified`, `not_found`, `skipped`, and `offline` counts. Print:
+
+```
+[verify] <verified> verified, <not_found> not found, <skipped> skipped
+```
+
+If `not_found > 0`, read `<migration_dir>/verify-results.json` and note which `pattern_index` values have `status: "not_found"`. After construct runs, use the `pattern_rule_map` from construct's stdout JSON to map each `pattern_index` → `rule_id`. Carry `verified_rule_ids` and `not_found_rule_ids` forward to step 5 (stamp).
 
 If validation fails, fix `<migration_dir>/patterns.json` (remove invalid entries) and re-run construct.
 
@@ -261,7 +273,7 @@ If validation fails, fix `<migration_dir>/patterns.json` (remove invalid entries
 [extract] Done — <patterns_count> patterns → <rules_count> rules in <migration_dir>/rules/ (<elapsed>)
 ```
 
-Save `source`, `target`, `patterns_count`, `rules_count` for the final summary.
+Save `source`, `target`, `patterns_count`, `rules_count`, and verify counts for the final summary.
 
 ### 2d. Coverage Check
 
@@ -292,10 +304,11 @@ Convert gaps to sections and send back to the rule-writer in chunk mode for targ
 **Expect:**
   - patterns_count, output_file
 
-The sub-agent writes only the new patterns to `<migration_dir>/patterns-gaps.json`. It does NOT read or inspect existing patterns — the orchestrator handles deduplication. After the sub-agent returns, merge and rebuild:
+The sub-agent writes only the new patterns to `<migration_dir>/patterns-gaps.json`. It does NOT read or inspect existing patterns — the orchestrator handles deduplication. After the sub-agent returns, merge, verify, and rebuild:
 
 ```bash
 go run ./cmd/merge-patterns <log_flags> --output <migration_dir>/patterns.json <migration_dir>/patterns.json <migration_dir>/patterns-gaps.json
+go run ./cmd/verify <log_flags> --patterns <migration_dir>/patterns.json --output <migration_dir>/verify-results.json --cache <migration_dir>/verify-cache
 go run ./cmd/construct <log_flags> --patterns <migration_dir>/patterns.json --output <migration_dir>/rules
 go run ./cmd/validate <log_flags> --rules <migration_dir>/rules
 ```
@@ -447,12 +460,14 @@ If still_failing is non-empty, move on — don't block the pipeline.
 
 ### 5. Stamp + Report
 
-Collate pass/fail results from the test run and the fix loop. No need to re-run the full test suite — stamp directly from results:
+Collate pass/fail results from the test run and the fix loop. No need to re-run the full test suite — stamp directly from results. Include verification labels from step 2c:
 
 ```bash
-go run ./cmd/stamp <log_flags> --rules <migration_dir>/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs> --kantra-limitation <comma-separated kantra limitation rule IDs>
+go run ./cmd/stamp <log_flags> --rules <migration_dir>/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs> --kantra-limitation <comma-separated kantra limitation rule IDs> --verified <comma-separated verified rule IDs> --not-found <comma-separated not-found rule IDs>
 go run ./cmd/report <log_flags> --source <source> --target <target> --output <migration_dir>/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --failed-rules <comma-separated>
 ```
+
+The `--verified` and `--not-found` flags come from the verification mapping built in step 2c (pattern_index → rule_id via construct's pattern_rule_map). These stamp `konveyor.io/source-verified=true/false` labels alongside the test-result labels.
 
 Rules in `kantra_limitation_rules` are stamped with `test-result=kantra-limitation`. They are not counted as passed or failed. The pass rate in the report is computed as `passed / (total - kantra_limitation)` to remain honest — kantra limitations are not failures, but they are also not confirmed passes.
 
@@ -469,6 +484,7 @@ Print a formatted summary table using GitHub-flavored markdown:
 | **Migration** | <source> → <target> (<language>) |
 | **Guide** | <GUIDE_LINES> lines, <N> sections → <M> produced patterns, <K> skipped |
 | **Rules** | <rules_count> generated, **<P>/<N> passed (<percent>%)** |
+| **Verification** | <verified>/<total> source-verified, <not_found> not found, <skipped> skipped (omit row if all skipped) |
 | **Kantra limitations** | <K> rules correct but not auto-testable — engine cannot compare non-semver versions (omit row if K=0) |
 | **Fix iterations** | <iterations used, 0 if none> |
 | **Timing** | total: <total elapsed> — ingest: <elapsed>, extract: <elapsed>, coverage: <elapsed>, test-gen: <elapsed>, validate: <elapsed>, stamp+report: <elapsed> |

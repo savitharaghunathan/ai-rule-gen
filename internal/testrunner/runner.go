@@ -212,9 +212,9 @@ func runKantraTestWithTimeout(testFile string, timeout time.Duration) (string, e
 	if timeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		cmd = exec.CommandContext(ctx, "kantra", "test", "--run-local=true", testFile)
+		cmd = exec.CommandContext(ctx, "kantra", "test", testFile)
 	} else {
-		cmd = exec.Command("kantra", "test", "--run-local=true", testFile)
+		cmd = exec.Command("kantra", "test", testFile)
 	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

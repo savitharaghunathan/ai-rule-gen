@@ -13,6 +13,7 @@ type VerificationStats struct {
 	Verified      int            `yaml:"verified" json:"verified"`
 	NotFound      int            `yaml:"not_found" json:"not_found"`
 	Skipped       int            `yaml:"skipped" json:"skipped"`
+	Offline       int            `yaml:"offline,omitempty" json:"offline,omitempty"`
 	NotFoundRules []NotFoundRule `yaml:"not_found_rules,omitempty" json:"not_found_rules,omitempty"`
 }
 

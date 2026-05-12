@@ -187,6 +187,38 @@ func TestSplitRules(t *testing.T) {
 	})
 }
 
+func TestSplitRules_MixedProviders(t *testing.T) {
+	builtinRule := rules.Rule{RuleID: "r1", When: rules.NewBuiltinFilecontent("pattern", "*.xml")}
+	xmlRule := rules.Rule{RuleID: "r2", When: rules.Condition{BuiltinXML: &rules.BuiltinXML{XPath: "/project"}}}
+	javaDepRule := rules.Rule{RuleID: "r3", When: rules.NewJavaDependency("org.example.foo", "0.0.0", "")}
+	javaRefRule := rules.Rule{RuleID: "r4", When: rules.NewJavaReferenced("javax.ejb.Stateless", "ANNOTATION")}
+
+	t.Run("builtin and java rules split into separate groups", func(t *testing.T) {
+		ruleList := []rules.Rule{builtinRule, xmlRule, javaDepRule}
+		groups := splitRules(ruleList, "build")
+		if len(groups) != 2 {
+			t.Fatalf("got %d groups, want 2", len(groups))
+		}
+		if len(groups[0].rules) != 2 {
+			t.Errorf("builtin group has %d rules, want 2", len(groups[0].rules))
+		}
+		if len(groups[1].rules) != 1 {
+			t.Errorf("java group has %d rules, want 1", len(groups[1].rules))
+		}
+	})
+
+	t.Run("same-provider rules stay together", func(t *testing.T) {
+		ruleList := []rules.Rule{javaDepRule, javaRefRule}
+		groups := splitRules(ruleList, "core")
+		if len(groups) != 1 {
+			t.Fatalf("got %d groups, want 1", len(groups))
+		}
+		if groups[0].name != "core" {
+			t.Errorf("name = %q, want %q", groups[0].name, "core")
+		}
+	})
+}
+
 func TestBuildTestFile(t *testing.T) {
 	ruleList := []rules.Rule{
 		{RuleID: "rule-00010", When: rules.NewJavaReferenced("javax.ejb", "TYPE")},

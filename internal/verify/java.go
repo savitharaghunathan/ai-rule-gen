@@ -2,9 +2,12 @@ package verify
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +16,10 @@ import (
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 )
+
+const maxJARSize = 200 * 1024 * 1024 // 200 MB
+
+var errArtifactNotFound = errors.New("artifact not found on Maven Central")
 
 type JavaVerifier struct {
 	cacheDir   string
@@ -55,8 +62,23 @@ func (v *JavaVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 	}
 
 	sa := pattern.SourceArtifact
+	if err := validateCoordinates(sa); err != nil {
+		return Result{
+			SourceFQN: pattern.SourceFQN,
+			Status:    StatusSkipped,
+			Reason:    fmt.Sprintf("invalid source_artifact: %v", err),
+		}, nil
+	}
+
 	classLines, err := v.getClassList(sa.GroupID, sa.ArtifactID, sa.Version)
 	if err != nil {
+		if errors.Is(err, errArtifactNotFound) {
+			return Result{
+				SourceFQN: pattern.SourceFQN,
+				Status:    StatusNotFound,
+				Reason:    fmt.Sprintf("artifact %s:%s:%s not found on Maven Central", sa.GroupID, sa.ArtifactID, sa.Version),
+			}, nil
+		}
 		if isNetworkError(err) {
 			return Result{
 				SourceFQN: pattern.SourceFQN,
@@ -67,19 +89,20 @@ func (v *JavaVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 		return Result{}, err
 	}
 
-	target := fqnToClassPath(pattern.SourceFQN)
-	if findInClassList(classLines, target) {
-		jarName := fmt.Sprintf("%s-%s.jar", sa.ArtifactID, sa.Version)
-		return Result{
-			SourceFQN: pattern.SourceFQN,
-			Status:    StatusVerified,
-			Evidence:  fmt.Sprintf("found in %s", jarName),
-		}, nil
+	jarName := fmt.Sprintf("%s-%s.jar", sa.ArtifactID, sa.Version)
+
+	for _, target := range fqnToClassPaths(pattern.SourceFQN) {
+		if findInClassList(classLines, target) {
+			return Result{
+				SourceFQN: pattern.SourceFQN,
+				Status:    StatusVerified,
+				Evidence:  fmt.Sprintf("found in %s", jarName),
+			}, nil
+		}
 	}
 
 	className := classNameFromFQN(pattern.SourceFQN)
 	suggestions := findSuggestions(classLines, className)
-	jarName := fmt.Sprintf("%s-%s.jar", sa.ArtifactID, sa.Version)
 	return Result{
 		SourceFQN:   pattern.SourceFQN,
 		Status:      StatusNotFound,
@@ -119,27 +142,33 @@ func (v *JavaVerifier) getClassList(groupID, artifactID, version string) ([]stri
 
 func (v *JavaVerifier) downloadJAR(groupID, artifactID, version, destPath string) error {
 	groupPath := strings.ReplaceAll(groupID, ".", "/")
-	url := fmt.Sprintf("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
+	jarURL := fmt.Sprintf("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
 		groupPath, artifactID, version, artifactID, version)
 
-	resp, err := v.httpClient.Get(url)
+	resp, err := v.httpClient.Get(jarURL)
 	if err != nil {
-		return fmt.Errorf("downloading %s: %w", url, err)
+		return fmt.Errorf("downloading %s: %w", jarURL, err)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("downloading %s: %w", jarURL, errArtifactNotFound)
+	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Maven Central returned %d for %s", resp.StatusCode, url)
+		return fmt.Errorf("Maven Central returned %d for %s", resp.StatusCode, jarURL)
 	}
 
 	f, err := os.Create(destPath)
 	if err != nil {
 		return fmt.Errorf("creating %s: %w", destPath, err)
 	}
-	defer f.Close()
 
-	if _, err := io.Copy(f, resp.Body); err != nil {
+	if _, err := io.Copy(f, io.LimitReader(resp.Body, maxJARSize)); err != nil {
+		f.Close()
 		return fmt.Errorf("writing %s: %w", destPath, err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("closing %s: %w", destPath, err)
 	}
 	return nil
 }
@@ -153,8 +182,18 @@ func listJARClasses(jarPath string) ([]string, error) {
 	return splitLines(string(out)), nil
 }
 
-func fqnToClassPath(fqn string) string {
-	return strings.ReplaceAll(fqn, ".", "/") + ".class"
+func fqnToClassPaths(fqn string) []string {
+	primary := strings.ReplaceAll(fqn, ".", "/") + ".class"
+	paths := []string{primary}
+	parts := strings.Split(fqn, ".")
+	for i := len(parts) - 2; i >= 1; i-- {
+		if len(parts[i]) > 0 && parts[i][0] >= 'A' && parts[i][0] <= 'Z' {
+			pkg := strings.Join(parts[:i], "/")
+			cls := strings.Join(parts[i:], "$")
+			paths = append(paths, pkg+"/"+cls+".class")
+		}
+	}
+	return paths
 }
 
 func findInClassList(classLines []string, classPath string) bool {
@@ -185,12 +224,40 @@ func findSuggestions(classLines []string, className string) []string {
 }
 
 func isNetworkError(err error) bool {
-	msg := err.Error()
-	return strings.Contains(msg, "no such host") ||
-		strings.Contains(msg, "connection refused") ||
-		strings.Contains(msg, "timeout") ||
-		strings.Contains(msg, "network is unreachable") ||
-		strings.Contains(msg, "i/o timeout")
+	var netErr *net.OpError
+	if errors.As(err, &netErr) {
+		return true
+	}
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		if urlErr.Timeout() {
+			return true
+		}
+		if errors.As(urlErr.Err, &netErr) {
+			return true
+		}
+	}
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return true
+	}
+	return false
+}
+
+func validateCoordinates(ac *rules.ArtifactCoordinates) error {
+	for _, pair := range []struct{ name, val string }{
+		{"groupId", ac.GroupID},
+		{"artifactId", ac.ArtifactID},
+		{"version", ac.Version},
+	} {
+		if pair.val == "" {
+			return fmt.Errorf("%s is empty", pair.name)
+		}
+		if strings.Contains(pair.val, "..") || strings.Contains(pair.val, "/") || strings.Contains(pair.val, "\\") {
+			return fmt.Errorf("%s contains invalid characters: %q", pair.name, pair.val)
+		}
+	}
+	return nil
 }
 
 func splitLines(s string) []string {
