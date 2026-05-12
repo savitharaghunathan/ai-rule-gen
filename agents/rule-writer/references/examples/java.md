@@ -284,7 +284,8 @@ Each relocated class is a separate pattern. Include `source_artifact` so the ver
   "complexity": "low",
   "category": "mandatory",
   "concern": "core",
-  "provider_type": "java"
+  "provider_type": "java",
+  "documentation_url": "https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes"
 }
 ```
 
@@ -305,6 +306,9 @@ How to determine `source_artifact`:
   labels:
     - konveyor.io/source=spring-boot-3
     - konveyor.io/target=spring-boot-4
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
   when:
     java.referenced:
       pattern: org.springframework.boot.BootstrapRegistry
@@ -322,6 +326,88 @@ public class AppInitializer implements BootstrapRegistry.InstanceSupplier<String
     @Override
     public String get(BootstrapRegistry registry) {
         return "initialized";
+    }
+}
+```
+
+---
+
+## Example 5: Package-level consolidation with `PACKAGE` location
+
+### Guide Excerpt
+
+> ### HttpClient Migration
+>
+> Apache HttpClient 4.x (`org.apache.http`) is no longer supported. Remove
+> old `org.apache.http` imports and re-import HttpClient classes from the
+> `org.apache.hc.httpclient5` package namespace.
+
+### Checklist
+
+Section: "HttpClient Migration" -> EXTRACT: entire package renamed (item 2); one package-level rule is sufficient
+
+### patterns.json
+
+When an entire package is renamed or removed, create a **single** package-level pattern — do NOT create one rule per class. The `PACKAGE` location type matches any import from the old package.
+
+```json
+{
+  "source_pattern": "Apache HttpClient 4.x package removed",
+  "target_pattern": "org.apache.hc.httpclient5",
+  "source_fqn": "org.apache.http",
+  "location_type": "PACKAGE",
+  "source_artifact": {
+    "group_id": "org.apache.httpcomponents",
+    "artifact_id": "httpclient",
+    "version": "4.5.14"
+  },
+  "rationale": "Apache HttpClient 4.x (org.apache.http) is removed; re-import classes from org.apache.hc.httpclient5",
+  "complexity": "medium",
+  "category": "mandatory",
+  "concern": "http",
+  "provider_type": "java",
+  "documentation_url": "https://example.com/migration-guide#httpclient"
+}
+```
+
+Note: `location_type: PACKAGE` makes `java.referenced` match any class imported from the `org.apache.http` package. This single rule replaces what would otherwise be dozens of per-class rules (HttpClient, HttpGet, HttpResponse, etc.) that all have the same migration action. Only use per-class rules when individual classes have DIFFERENT migration paths.
+
+**When to consolidate vs per-class:**
+- Guide says "re-import everything from package X to Y" → ONE package-level rule
+- Guide says "ClassA moved to X, ClassB moved to Y, ClassC was removed" → separate per-class rules (different targets)
+
+### Resulting Rule YAML (produced by cmd/construct, not by you)
+
+```yaml
+- ruleID: java-ee-to-quarkus-00050
+  description: "Apache HttpClient 4.x (org.apache.http) is removed; re-import classes from org.apache.hc.httpclient5"
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/target=quarkus
+  links:
+    - url: https://example.com/migration-guide#httpclient
+      title: Migration Documentation
+  when:
+    java.referenced:
+      pattern: org.apache.http
+      location: PACKAGE
+```
+
+### Test Data (what triggers this rule)
+
+```java
+package com.example;
+
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.client.methods.HttpGet;
+
+public class ApiClient {
+    public void fetch() {
+        HttpClient client = HttpClients.createDefault();
+        HttpGet request = new HttpGet("https://api.example.com/data");
     }
 }
 ```

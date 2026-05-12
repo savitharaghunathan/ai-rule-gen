@@ -79,7 +79,7 @@ This is the contract between the agent (which extracts migration patterns) and `
 | `file_pattern` | no | Go regex restricting which files `builtin.filecontent` searches (e.g., `.*\\.properties`, `application.*\\.yml`). Must be valid Go regex — do NOT use glob syntax (`*.properties` is invalid; use `.*\\.properties`) |
 | `example_before` | no | Short code example showing the source pattern |
 | `example_after` | no | Short code example showing the target pattern |
-| `documentation_url` | no | URL to relevant migration documentation |
+| `documentation_url` | recommended | URL to the migration guide section or relevant documentation. Always populate this — construct emits it as a `links:` entry in the rule YAML so users can find the original guidance |
 | `message` | no | Custom message text. If empty, auto-generated from `source_pattern: rationale` |
 | `dependency_name` | no | Maven/Go coordinate as `groupId.artifactId`. When set, produces a `*.dependency` condition |
 | `upper_bound` | no* | Version upper bound (exclusive) for dependency conditions. *At least one bound required when `dependency_name` is set |
@@ -146,7 +146,7 @@ The CLI handles all mechanical transformation:
 
 5. **Initial labels** — Adds 5 labels: `source=`, `target=`, `generated-by=ai-rule-gen`, `test-result=untested`, `review=unreviewed`
 
-6. **Description** — Truncated from `rationale` (max 120 chars)
+6. **Description** — Uses `rationale` as-is (write complete sentences)
 
 7. **Message** — Uses `message` if provided, otherwise `source_pattern: rationale`
 
@@ -172,7 +172,8 @@ Use lowercase, hyphenated names (e.g., `spring-boot-3` not `Spring Boot 3`).
 
 - Extract EVERY migration pattern found in the guide — API, annotation, config, dependency, and build changes
 - One pattern per distinct change — don't combine unrelated changes
-- Use specific FQNs — `javax.ejb.Stateless` not `javax.ejb.*`
+- **Package-level vs per-class rules** — When an entire package is renamed or removed (e.g., "re-import from `org.apache.hc.httpclient5`"), create a SINGLE rule matching the old package (e.g., `org.apache.http`) with `location_type: PACKAGE`, not one rule per class. Per-class rules are only needed when individual classes within a package have different migration paths. If the migration is "everything under `com.foo` moves to `com.bar`", one package-level rule is correct and sufficient
+- Use specific FQNs — `javax.ejb.Stateless` not `javax.ejb.*` — UNLESS the entire package is being renamed/removed (see above)
 - **`source_fqn` must be the OLD (pre-migration) path** — this is what the rule matches in user code. Never use the target/new path. The migration guide often shows both; use the "Before" path. Verification: "Would this FQN appear in code that has NOT been migrated?"
 - Set `provider_type` — the CLI uses this to pick the right condition type
 - Set `location_type` for Java/C# — critical for accurate matching

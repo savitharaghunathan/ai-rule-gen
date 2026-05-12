@@ -167,6 +167,8 @@ If your skip reason contains any of these phrases, you answered a checklist item
 
 For each pattern, provide the fields defined in `references/patterns-json-schema.md`. At minimum: `source_pattern`, `rationale`, `complexity`, `category`.
 
+**Always populate `documentation_url`** with the URL to the migration guide or the relevant documentation section. If the guide was fetched from a URL, use that URL (with an anchor if available). The construct CLI converts this into a `links:` entry in the rule YAML so users can find the original migration guidance.
+
 ### Detection strategy: detect the affected artifact, not the missing fix
 
 When a migration requires users to ADD something (a new annotation, a new dependency, a new config), you cannot detect its absence. Instead, detect the **artifact that is affected** and warn about the required change.
@@ -216,6 +218,12 @@ Collect flagged patterns in a `suspected_kantra_limitations` list and return it 
 See `references/condition-types.md` for the full condition-type reference and `references/patterns-json-schema.md` for which fields map to which condition type.
 
 **One critical rule for config properties:** Always use `application.*\\.(properties|yml)` as the `file_pattern` — this covers both `.properties` and `.yml` formats. Never use `.*\\.properties` alone (too broad) or `application.*\\.properties` alone (misses YAML configs).
+
+### Package-level consolidation
+
+When a migration guide says an entire package is renamed or removed (e.g., "re-import from `org.apache.hc.httpclient5`"), create a **single rule** matching the old package with `location_type: PACKAGE` — not one rule per class. Per-class rules are only needed when individual classes within the same package have different migration paths.
+
+See Example 5 in `references/examples/java.md` for a worked example.
 
 ### What counts as an extractable migration item
 

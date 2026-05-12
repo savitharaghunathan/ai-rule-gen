@@ -247,6 +247,65 @@ func TestRun_MixedConditionTypes(t *testing.T) {
 	}
 }
 
+func TestPatternToRule_FullDescription(t *testing.T) {
+	long := "BootstrapRegistry moved from org.springframework.boot to org.springframework.boot.bootstrap in Spring Boot 4.0. Update all imports and spring.factories references accordingly."
+	p := rules.MigrationPattern{
+		SourcePattern: "BootstrapRegistry relocated",
+		SourceFQN:     "org.springframework.boot.BootstrapRegistry",
+		LocationType:  "IMPORT",
+		ProviderType:  "java",
+		Rationale:     long,
+		Complexity:    "low",
+		Category:      "mandatory",
+	}
+	idGen := rules.NewIDGenerator("test")
+	rule := patternToRule(p, idGen, "sb3", "sb4")
+	if rule.Description != long {
+		t.Errorf("description was truncated: got %q", rule.Description)
+	}
+}
+
+func TestPatternToRule_LinksFromDocURL(t *testing.T) {
+	p := rules.MigrationPattern{
+		SourcePattern:    "test pattern",
+		SourceFQN:        "com.example.Old",
+		LocationType:     "IMPORT",
+		ProviderType:     "java",
+		Rationale:        "test",
+		Complexity:       "low",
+		Category:         "mandatory",
+		DocumentationURL: "https://example.com/migration#section",
+	}
+	idGen := rules.NewIDGenerator("test")
+	rule := patternToRule(p, idGen, "sb3", "sb4")
+	if len(rule.Links) != 1 {
+		t.Fatalf("expected 1 link, got %d", len(rule.Links))
+	}
+	if rule.Links[0].URL != "https://example.com/migration#section" {
+		t.Errorf("link URL: got %q", rule.Links[0].URL)
+	}
+	if rule.Links[0].Title != "Migration Documentation" {
+		t.Errorf("link title: got %q", rule.Links[0].Title)
+	}
+}
+
+func TestPatternToRule_NoLinksWithoutDocURL(t *testing.T) {
+	p := rules.MigrationPattern{
+		SourcePattern: "test",
+		SourceFQN:     "com.example.Old",
+		ProviderType:  "java",
+		LocationType:  "IMPORT",
+		Rationale:     "test",
+		Complexity:    "low",
+		Category:      "mandatory",
+	}
+	idGen := rules.NewIDGenerator("test")
+	rule := patternToRule(p, idGen, "sb3", "sb4")
+	if rule.Links != nil {
+		t.Errorf("expected nil links when no documentation_url, got %v", rule.Links)
+	}
+}
+
 func TestRun_PatternRuleMap(t *testing.T) {
 	extract := &rules.ExtractOutput{
 		Source:   "sb3",

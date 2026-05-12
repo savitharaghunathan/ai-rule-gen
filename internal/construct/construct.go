@@ -108,7 +108,7 @@ func patternToRule(p rules.MigrationPattern, idGen *rules.IDGenerator, source, t
 
 	return rules.Rule{
 		RuleID:      idGen.Next(),
-		Description: truncate(p.Rationale, 120),
+		Description: p.Rationale,
 		Category:    rules.Category(p.Category),
 		Effort:      rules.ComplexityToEffort(p.Complexity),
 		Labels:      rules.InitialLabels(source, target),
@@ -196,9 +196,3 @@ func sanitize(s string) string {
 	return s
 }
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max-3] + "..."
-}
