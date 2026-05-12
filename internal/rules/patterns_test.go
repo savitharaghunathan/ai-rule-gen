@@ -3,6 +3,7 @@ package rules
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -24,22 +25,25 @@ func TestMergePatterns_Dedup(t *testing.T) {
 		},
 	}
 
-	merged := MergePatterns(parts)
-	if len(merged.Patterns) != 3 {
-		t.Fatalf("expected 3 patterns after dedup, got %d", len(merged.Patterns))
+	result := MergePatterns(parts)
+	if len(result.Output.Patterns) != 3 {
+		t.Fatalf("expected 3 patterns after dedup, got %d", len(result.Output.Patterns))
 	}
-	if merged.Patterns[0].SourcePattern != "A" {
-		t.Errorf("first occurrence should win, got %q", merged.Patterns[0].SourcePattern)
+	if result.Output.Patterns[0].SourcePattern != "A" {
+		t.Errorf("first occurrence should win, got %q", result.Output.Patterns[0].SourcePattern)
+	}
+	if result.Duplicates != 1 {
+		t.Errorf("expected 1 duplicate, got %d", result.Duplicates)
 	}
 }
 
 func TestMergePatterns_Empty(t *testing.T) {
-	merged := MergePatterns(nil)
-	if merged == nil {
+	result := MergePatterns(nil)
+	if result == nil || result.Output == nil {
 		t.Fatal("expected non-nil result")
 	}
-	if len(merged.Patterns) != 0 {
-		t.Errorf("expected 0 patterns, got %d", len(merged.Patterns))
+	if len(result.Output.Patterns) != 0 {
+		t.Errorf("expected 0 patterns, got %d", len(result.Output.Patterns))
 	}
 }
 
@@ -48,9 +52,107 @@ func TestMergePatterns_PreservesMetadata(t *testing.T) {
 		{Source: "sb3", Target: "sb4", Language: "java"},
 		{Source: "sb3", Target: "sb4", Language: "java"},
 	}
-	merged := MergePatterns(parts)
-	if merged.Source != "sb3" || merged.Target != "sb4" || merged.Language != "java" {
-		t.Errorf("metadata not preserved: %+v", merged)
+	result := MergePatterns(parts)
+	if result.Output.Source != "sb3" || result.Output.Target != "sb4" || result.Output.Language != "java" {
+		t.Errorf("metadata not preserved: %+v", result.Output)
+	}
+}
+
+func TestConsolidatePackages_Basic(t *testing.T) {
+	patterns := []MigrationPattern{
+		{SourceFQN: "org.apache.http", LocationType: "PACKAGE", Message: "Migrate from org.apache.http to org.apache.hc", Complexity: "low"},
+		{SourceFQN: "org.apache.http.conn.ssl.SSLConnectionSocketFactory", LocationType: "IMPORT", TargetPattern: "Use ClientTlsStrategyBuilder", Complexity: "medium"},
+		{SourceFQN: "org.apache.http.entity.EntityTemplate", LocationType: "IMPORT", TargetPattern: "Use HttpEntities.create()", Complexity: "low"},
+		{SourceFQN: "org.apache.http.HttpResponse.getStatusLine", LocationType: "METHOD_CALL", Rationale: "Use getCode()", Complexity: "low"},
+	}
+
+	result, absorbed := consolidatePackages(patterns)
+	if absorbed != 2 {
+		t.Fatalf("expected 2 absorbed, got %d", absorbed)
+	}
+	if len(result) != 2 {
+		t.Fatalf("expected 2 remaining patterns, got %d", len(result))
+	}
+	// PACKAGE pattern should have enhanced message
+	if !strings.Contains(result[0].Message, "SSLConnectionSocketFactory") {
+		t.Error("PACKAGE message should contain absorbed class SSLConnectionSocketFactory")
+	}
+	if !strings.Contains(result[0].Message, "EntityTemplate") {
+		t.Error("PACKAGE message should contain absorbed class EntityTemplate")
+	}
+	// METHOD_CALL should be kept
+	if result[1].SourceFQN != "org.apache.http.HttpResponse.getStatusLine" {
+		t.Errorf("METHOD_CALL pattern should be kept, got %q", result[1].SourceFQN)
+	}
+}
+
+func TestConsolidatePackages_NoPackagePattern(t *testing.T) {
+	patterns := []MigrationPattern{
+		{SourceFQN: "com.example.Foo", LocationType: "IMPORT", Complexity: "low"},
+		{SourceFQN: "com.example.Bar", LocationType: "IMPORT", Complexity: "low"},
+	}
+	result, absorbed := consolidatePackages(patterns)
+	if absorbed != 0 {
+		t.Errorf("expected 0 absorbed without PACKAGE pattern, got %d", absorbed)
+	}
+	if len(result) != 2 {
+		t.Errorf("expected 2 patterns unchanged, got %d", len(result))
+	}
+}
+
+func TestConsolidatePackages_MethodCallNotAbsorbed(t *testing.T) {
+	patterns := []MigrationPattern{
+		{SourceFQN: "com.example", LocationType: "PACKAGE", Message: "pkg rename", Complexity: "low"},
+		{SourceFQN: "com.example.Foo.doSomething", LocationType: "METHOD_CALL", Complexity: "low"},
+		{SourceFQN: "com.example.Bar", LocationType: "TYPE", TargetPattern: "com.newpkg.Bar", Complexity: "low"},
+	}
+	result, absorbed := consolidatePackages(patterns)
+	if absorbed != 1 {
+		t.Fatalf("expected 1 absorbed (TYPE), got %d", absorbed)
+	}
+	if len(result) != 2 {
+		t.Fatalf("expected 2 remaining (PACKAGE + METHOD_CALL), got %d", len(result))
+	}
+	if result[1].LocationType != "METHOD_CALL" {
+		t.Errorf("METHOD_CALL should be kept, got %q", result[1].LocationType)
+	}
+}
+
+func TestConsolidatePackages_MultiplePackages(t *testing.T) {
+	patterns := []MigrationPattern{
+		{SourceFQN: "com.alpha", LocationType: "PACKAGE", Message: "alpha pkg", Complexity: "low"},
+		{SourceFQN: "com.beta", LocationType: "PACKAGE", Message: "beta pkg", Complexity: "low"},
+		{SourceFQN: "com.alpha.Foo", LocationType: "IMPORT", TargetPattern: "new Foo", Complexity: "low"},
+		{SourceFQN: "com.beta.Bar", LocationType: "IMPORT", TargetPattern: "new Bar", Complexity: "low"},
+		{SourceFQN: "com.gamma.Baz", LocationType: "IMPORT", Complexity: "low"},
+	}
+	result, absorbed := consolidatePackages(patterns)
+	if absorbed != 2 {
+		t.Fatalf("expected 2 absorbed, got %d", absorbed)
+	}
+	if len(result) != 3 {
+		t.Fatalf("expected 3 remaining (2 PACKAGE + 1 unmatched IMPORT), got %d", len(result))
+	}
+	if !strings.Contains(result[0].Message, "com.alpha.Foo") {
+		t.Error("alpha package should absorb com.alpha.Foo")
+	}
+	if !strings.Contains(result[1].Message, "com.beta.Bar") {
+		t.Error("beta package should absorb com.beta.Bar")
+	}
+}
+
+func TestConsolidatePackages_ComplexityInheritance(t *testing.T) {
+	patterns := []MigrationPattern{
+		{SourceFQN: "com.example", LocationType: "PACKAGE", Message: "pkg", Complexity: "low"},
+		{SourceFQN: "com.example.HardClass", LocationType: "IMPORT", TargetPattern: "new class", Complexity: "high"},
+		{SourceFQN: "com.example.EasyClass", LocationType: "IMPORT", TargetPattern: "new class", Complexity: "trivial"},
+	}
+	result, absorbed := consolidatePackages(patterns)
+	if absorbed != 2 {
+		t.Fatalf("expected 2 absorbed, got %d", absorbed)
+	}
+	if result[0].Complexity != "high" {
+		t.Errorf("PACKAGE should inherit highest complexity 'high', got %q", result[0].Complexity)
 	}
 }
 

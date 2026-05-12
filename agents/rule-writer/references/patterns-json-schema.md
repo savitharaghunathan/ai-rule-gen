@@ -69,7 +69,7 @@ This is the contract between the agent (which extracts migration patterns) and `
 | `source_pattern` | yes | What to detect in the source code (API, annotation, class, config, etc.) |
 | `target_pattern` | no | The replacement in the target technology (null if simply removed) |
 | `source_fqn` | no | Fully qualified name for matching (e.g., `javax.ejb.Stateless`). Used as the `pattern` field in the rule condition |
-| `location_type` | no | Where this appears in code. Java: `TYPE`, `INHERITANCE`, `METHOD_CALL`, `CONSTRUCTOR_CALL`, `ANNOTATION`, `IMPLEMENTS_TYPE`, `ENUM`, `RETURN_TYPE`, `IMPORT`, `VARIABLE_DECLARATION`, `PACKAGE`, `FIELD`, `METHOD`, `CLASS`. C#: `ALL`, `METHOD`, `FIELD`, `CLASS` |
+| `location_type` | no | Where this appears in code. Java: `TYPE`, `INHERITANCE`, `METHOD_CALL`, `CONSTRUCTOR_CALL`, `ANNOTATION`, `IMPLEMENTS_TYPE`, `ENUM`, `RETURN_TYPE`, `IMPORT`, `VARIABLE_DECLARATION`, `PACKAGE`, `FIELD`, `FIELD_DECLARATION`, `METHOD`, `CLASS`. C#: `ALL`, `METHOD`, `FIELD`, `CLASS`. Note: `FIELD` and `FIELD_DECLARATION` are aliases — both match field declarations by type, NOT static field access |
 | `alternative_fqns` | no | Alternative FQNs for the same migration (creates `or` combinator) |
 | `rationale` | yes | Why this migration is needed |
 | `complexity` | yes | One of: `trivial`, `low`, `medium`, `high`, `expert` |

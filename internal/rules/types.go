@@ -183,6 +183,7 @@ const (
 	LocationVariableDeclaration = "VARIABLE_DECLARATION"
 	LocationPackage             = "PACKAGE"
 	LocationField               = "FIELD"
+	LocationFieldDeclaration    = "FIELD_DECLARATION"
 	LocationMethod              = "METHOD"
 	LocationClass               = "CLASS"
 )
@@ -201,7 +202,7 @@ var ValidJavaLocations = map[string]bool{
 	LocationConstructorCall: true, LocationAnnotation: true, LocationImplementsType: true,
 	LocationEnum: true, LocationReturnType: true, LocationImport: true,
 	LocationVariableDeclaration: true, LocationPackage: true, LocationField: true,
-	LocationMethod: true, LocationClass: true,
+	LocationFieldDeclaration: true, LocationMethod: true, LocationClass: true,
 }
 
 // ValidCSharpLocations is the set of valid C# location values.

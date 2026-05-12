@@ -12,6 +12,7 @@ type output struct {
 	TotalPatterns int `json:"total_patterns"`
 	Merged        int `json:"merged"`
 	Duplicates    int `json:"duplicates"`
+	Absorbed      int `json:"absorbed"`
 }
 
 func main() {
@@ -40,15 +41,16 @@ func main() {
 		parts = append(parts, p)
 	}
 
-	merged := rules.MergePatterns(parts)
-	if err := rules.WritePatternsFile(*outFile, merged); err != nil {
+	result := rules.MergePatterns(parts)
+	if err := rules.WritePatternsFile(*outFile, result.Output); err != nil {
 		cli.Fail("write_patterns_failed", err.Error(), "merge-patterns", "verify output path permissions", map[string]string{"output": *outFile})
 	}
 
 	cli.WriteJSON(output{
 		InputFiles:    len(files),
 		TotalPatterns: totalPatterns,
-		Merged:        len(merged.Patterns),
-		Duplicates:    totalPatterns - len(merged.Patterns),
+		Merged:        len(result.Output.Patterns),
+		Duplicates:    result.Duplicates,
+		Absorbed:      result.Absorbed,
 	})
 }

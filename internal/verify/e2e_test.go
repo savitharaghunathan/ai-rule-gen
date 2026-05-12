@@ -2,15 +2,15 @@ package verify_test
 
 import (
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/konveyor/ai-rule-gen/internal/construct"
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 	"github.com/konveyor/ai-rule-gen/internal/verify"
+	"github.com/konveyor/ai-rule-gen/internal/workspace"
 )
 
-func TestEndToEnd_VerifyAndStamp(t *testing.T) {
+func TestEndToEnd_VerifyToReport(t *testing.T) {
 	dir := t.TempDir()
 	cacheDir := filepath.Join(dir, "cache")
 	rulesDir := filepath.Join(dir, "rules")
@@ -28,7 +28,6 @@ func TestEndToEnd_VerifyAndStamp(t *testing.T) {
 				Category:      "mandatory",
 				ProviderType:  "java",
 				LocationType:  "IMPORT",
-				// No SourceArtifact — should be skipped
 			},
 			{
 				SourcePattern:  "B",
@@ -37,7 +36,6 @@ func TestEndToEnd_VerifyAndStamp(t *testing.T) {
 				Complexity:     "low",
 				Category:       "mandatory",
 				ProviderType:   "java",
-				// Dependency — auto-verified
 			},
 		},
 	}
@@ -79,27 +77,39 @@ func TestEndToEnd_VerifyAndStamp(t *testing.T) {
 		}
 	}
 
-	// Step 4: Stamp verification labels
-	if err := rules.StampVerificationResults(rulesDir, verifiedIDs, notFoundIDs); err != nil {
-		t.Fatalf("StampVerificationResults: %v", err)
+	// Step 4: Build report with per-rule status
+	report := workspace.BuildReport("lib-v1", "lib-v2", 2, 0, 0, 0, nil, nil, nil, verifiedIDs, notFoundIDs)
+
+	if len(report.Rules) != 1 {
+		t.Fatalf("report rules count = %d, want 1 (only verified/not-found rules included)", len(report.Rules))
 	}
 
-	// Step 5: Read back and check labels
+	depRuleID := constructResult.PatternRuleMap[1]
+	found := false
+	for _, rs := range report.Rules {
+		if rs.RuleID == depRuleID {
+			found = true
+			if rs.SourceVerified != "true" {
+				t.Errorf("dependency rule %s: source_verified = %q, want true", depRuleID, rs.SourceVerified)
+			}
+			if rs.TestStatus != "untested" {
+				t.Errorf("dependency rule %s: test_status = %q, want untested", depRuleID, rs.TestStatus)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("dependency rule %s not found in report", depRuleID)
+	}
+
+	// Verify rules don't have pipeline metadata labels
 	allRules, err := rules.ReadRulesDir(rulesDir)
 	if err != nil {
 		t.Fatalf("ReadRulesDir: %v", err)
 	}
-
 	for _, r := range allRules {
-		ruleID := r.RuleID
 		for _, l := range r.Labels {
-			if strings.HasPrefix(l, "konveyor.io/source-verified=") {
-				// The dependency rule should be verified
-				if ruleID == constructResult.PatternRuleMap[1] {
-					if l != "konveyor.io/source-verified=true" {
-						t.Errorf("dependency rule %s: label = %q, want source-verified=true", ruleID, l)
-					}
-				}
+			if l == "konveyor.io/test-result=untested" || l == "konveyor.io/review=unreviewed" {
+				t.Errorf("rule %s has pipeline metadata label %q — should only be in report", r.RuleID, l)
 			}
 		}
 	}

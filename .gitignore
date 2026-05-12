@@ -15,6 +15,7 @@ vendor/
 /sections
 /stamp
 /validate
+/verify
 
 # Output
 output*/

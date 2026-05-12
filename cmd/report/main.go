@@ -19,8 +19,11 @@ func main() {
 	passed := flag.Int("passed", 0, "Number of tests passed")
 	failed := flag.Int("failed", 0, "Number of tests failed")
 	kantraLimitation := flag.Int("kantra-limitation", 0, "Number of kantra limitation rules (correct but not auto-testable)")
+	passedRulesFlag := flag.String("passed-rules", "", "Comma-separated list of passed rule IDs")
 	failedRulesFlag := flag.String("failed-rules", "", "Comma-separated list of failed rule IDs")
 	kantraLimitationRulesFlag := flag.String("kantra-limitation-rules", "", "Comma-separated list of kantra limitation rule IDs")
+	verifiedRulesFlag := flag.String("verified-rules", "", "Comma-separated list of source-verified rule IDs")
+	notFoundRulesFlag := flag.String("not-found-rules", "", "Comma-separated list of source-not-found rule IDs")
 	flag.Parse()
 
 	cli.InitLog(*logPath, *agentFlag, *modelFlag)
@@ -30,10 +33,13 @@ func main() {
 		cli.Fail("invalid_arguments", "--output is required", "report", "set --output to a writable report.yaml path", nil)
 	}
 
+	passedRules := splitCSV(*passedRulesFlag)
 	failedRules := splitCSV(*failedRulesFlag)
 	kantraLimitationRules := splitCSV(*kantraLimitationRulesFlag)
+	verifiedRules := splitCSV(*verifiedRulesFlag)
+	notFoundRules := splitCSV(*notFoundRulesFlag)
 
-	report := workspace.BuildReport(*source, *target, *rulesTotal, *passed, *failed, *kantraLimitation, failedRules, kantraLimitationRules)
+	report := workspace.BuildReport(*source, *target, *rulesTotal, *passed, *failed, *kantraLimitation, passedRules, failedRules, kantraLimitationRules, verifiedRules, notFoundRules)
 	if err := workspace.WriteReport(*output, report); err != nil {
 		cli.Fail("write_report_failed", err.Error(), "report", "verify output directory exists and is writable", map[string]string{"output": *output})
 	}

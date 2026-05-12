@@ -20,7 +20,7 @@ If no argument is provided, ask the user for the migration guide source.
 - `target` — (optional) Target technology, e.g. "spring-boot-4". Auto-detected if omitted.
 - `mode` — (optional) `interactive` (default) or `non_interactive`
 - `checkpoint_behavior` — (optional) `ask` (default), `continue`, or `stop_after_extract`
-- `resume_from` — (optional) `ingest`, `extract`, `coverage`, `scaffold`, `test`, `stamp`, `report`
+- `resume_from` — (optional) `ingest`, `extract`, `coverage`, `scaffold`, `test`, `report`
 - `migration_dir` — (optional) explicit output directory override. If omitted, auto-generated as `output/<source>-to-<target>-<YYYYMMDD-HHMMSS>`. Required when using `resume_from`.
 
 ## Returns
@@ -60,8 +60,7 @@ If no argument is provided, ask the user for the migration guide source.
 | shell | `go run ./cmd/scaffold *` | Create test directories and manifests |
 | shell | `go run ./cmd/sanitize *` | Fix XML comments in test data |
 | shell | `go run ./cmd/test *` | Run kantra tests |
-| shell | `go run ./cmd/stamp *` | Mark rules with pass/fail labels |
-| shell | `go run ./cmd/report *` | Generate summary report |
+| shell | `go run ./cmd/report *` | Generate summary report with per-rule status |
 | shell | `go run ./cmd/coverage *` | Check guide coverage |
 | shell | `go run ./cmd/log *` | Append orchestrator events to pipeline log |
 | shell | `ls *` | List files and directories |
@@ -134,7 +133,7 @@ Stages to time:
 - **coverage** — from coverage check start to re-extraction complete (or "No gaps found")
 - **test-gen** — from scaffold start to all test-generator agents complete + sanitize
 - **validate** — from first `cmd/test` run to fix loop complete (includes all fix iterations)
-- **stamp+report** — from stamp start to report written
+- **report** — from report generation start to report written
 
 ## Sub-agent Protocol
 
@@ -166,7 +165,7 @@ If the runtime supports parallel sub-agents, invoke blocks marked `Parallel: yes
 
 ## Pipeline
 
-**Error handling:** If any CLI command (`ingest`, `construct`, `validate`, `scaffold`, `sanitize`, `test`, `stamp`, `report`) exits non-zero, print `[step] FAILED — <error>` and stop the pipeline. Do not proceed to the next step.
+**Error handling:** If any CLI command (`ingest`, `construct`, `validate`, `scaffold`, `sanitize`, `test`, `report`) exits non-zero, print `[step] FAILED — <error>` and stop the pipeline. Do not proceed to the next step.
 
 **Partial failures:** If a step produces partial results before failing (e.g., `construct` succeeds for 48 patterns but fails on 2), preserve the partial output and report what succeeded. The user can fix the failing patterns and re-run. Do not discard valid results because of a partial failure.
 
@@ -177,8 +176,7 @@ Stage prerequisites (paths relative to `<migration_dir>`):
 - `coverage` requires `patterns.json`
 - `scaffold` requires `rules/`
 - `test` requires `rules/` and `tests/manifest.json`
-- `stamp` requires stamped pass/fail test results and `rules/`
-- `report` requires source/target metadata plus pass/fail totals
+- `report` requires source/target metadata plus pass/fail totals and rule ID lists
 
 ### 1. Ingest
 
@@ -265,7 +263,7 @@ The verify stdout JSON contains `verified`, `not_found`, `skipped`, and `offline
 [verify] <verified> verified, <not_found> not found, <skipped> skipped
 ```
 
-If `not_found > 0`, read `<migration_dir>/verify-results.json` and note which `pattern_index` values have `status: "not_found"`. After construct runs, use the `pattern_rule_map` from construct's stdout JSON to map each `pattern_index` → `rule_id`. Carry `verified_rule_ids` and `not_found_rule_ids` forward to step 5 (stamp).
+If `not_found > 0`, read `<migration_dir>/verify-results.json` and note which `pattern_index` values have `status: "not_found"`. After construct runs, use the `pattern_rule_map` from construct's stdout JSON to map each `pattern_index` → `rule_id`. Carry `verified_rule_ids` and `not_found_rule_ids` forward to step 5 (report).
 
 If validation fails, fix `<migration_dir>/patterns.json` (remove invalid entries) and re-run construct.
 
@@ -458,18 +456,17 @@ Group unresolved failures by `result_type` in `results_by_rule` and include grou
 
 If still_failing is non-empty, move on — don't block the pipeline.
 
-### 5. Stamp + Report
+### 5. Report
 
-Collate pass/fail results from the test run and the fix loop. No need to re-run the full test suite — stamp directly from results. Include verification labels from step 2c:
+Collate pass/fail results from the test run and the fix loop. Generate `report.yaml` with per-rule test and verification status. No labels are written to rule YAML files — all pipeline metadata lives in the report.
 
 ```bash
-go run ./cmd/stamp <log_flags> --rules <migration_dir>/rules --passed <comma-separated passed rule IDs> --failed <comma-separated failed rule IDs> --kantra-limitation <comma-separated kantra limitation rule IDs> --verified <comma-separated verified rule IDs> --not-found <comma-separated not-found rule IDs>
-go run ./cmd/report <log_flags> --source <source> --target <target> --output <migration_dir>/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --failed-rules <comma-separated>
+go run ./cmd/report <log_flags> --source <source> --target <target> --output <migration_dir>/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --passed-rules <comma-separated passed rule IDs> --failed-rules <comma-separated failed rule IDs> --kantra-limitation-rules <comma-separated kantra limitation rule IDs> --verified-rules <comma-separated verified rule IDs> --not-found-rules <comma-separated not-found rule IDs>
 ```
 
-The `--verified` and `--not-found` flags come from the verification mapping built in step 2c (pattern_index → rule_id via construct's pattern_rule_map). These stamp `konveyor.io/source-verified=true/false` labels alongside the test-result labels.
+The `--verified-rules` and `--not-found-rules` flags come from the verification mapping built in step 2c (pattern_index → rule_id via construct's pattern_rule_map).
 
-Rules in `kantra_limitation_rules` are stamped with `test-result=kantra-limitation`. They are not counted as passed or failed. The pass rate in the report is computed as `passed / (total - kantra_limitation)` to remain honest — kantra limitations are not failures, but they are also not confirmed passes.
+The report includes a `rules` section with per-rule `test_status` (passed/failed/kantra-limitation/untested) and `source_verified` (true/false). The pass rate is computed as `passed / (passed + failed)` — kantra limitations are excluded since they are not failures, but also not confirmed passes.
 
 ### 6. Summary
 
@@ -487,7 +484,7 @@ Print a formatted summary table using GitHub-flavored markdown:
 | **Verification** | <verified>/<total> source-verified, <not_found> not found, <skipped> skipped (omit row if all skipped) |
 | **Kantra limitations** | <K> rules correct but not auto-testable — engine cannot compare non-semver versions (omit row if K=0) |
 | **Fix iterations** | <iterations used, 0 if none> |
-| **Timing** | total: <total elapsed> — ingest: <elapsed>, extract: <elapsed>, coverage: <elapsed>, test-gen: <elapsed>, validate: <elapsed>, stamp+report: <elapsed> |
+| **Timing** | total: <total elapsed> — ingest: <elapsed>, extract: <elapsed>, coverage: <elapsed>, test-gen: <elapsed>, validate: <elapsed>, report: <elapsed> |
 | **Output** | `<migration_dir>/patterns.json` (patterns), `<migration_dir>/rules/` (rules), `<migration_dir>/tests/` (tests), `<migration_dir>/report.yaml` (report) |
 
 ### Rule Categories

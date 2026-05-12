@@ -89,7 +89,7 @@ Migration Guide → Agent extracts patterns → CLI constructs rules → CLI sca
 | Layer | What | LLM? |
 |-------|------|------|
 | **Agent skills** (`agents/`) | Read guides, extract patterns, generate test code, fix failures | Yes |
-| **CLI commands** (`cmd/`) | Ingest, construct, validate, scaffold, sanitize, stamp, report | No |
+| **CLI commands** (`cmd/`) | Ingest, construct, validate, scaffold, sanitize, test, report | No |
 
 ### Agent skills
 

@@ -17,18 +17,20 @@ Matches Java type, class, or annotation references by fully qualified name.
 | `CONSTRUCTOR_CALL` | `new` expression | `new InitialContext()` |
 | `INHERITANCE` | `extends` clause | `class MyServlet extends HttpServlet` |
 | `IMPLEMENTS_TYPE` | `implements` clause | `class MyBean implements SessionBean` |
-| `FIELD` | Field declaration type | `@Inject private DataSource ds;` |
-| `METHOD` | Method declaration (return type or annotation) | Method with matching annotation or return type |
-| `CLASS` | Class declaration (annotation on class) | `@Stateless public class MyBean` |
-| `RETURN_TYPE` | Method return type | `public Response handle()` |
-| `VARIABLE_DECLARATION` | Local variable type | `DataSource ds = ...;` |
-| `ENUM` | Enum constant reference | `CascadeType.ALL` |
-| `PACKAGE` | Package declaration | `package javax.ejb;` |
+| `FIELD` | Field declared with this type — pattern is the FQN of the field's **type**, not the field name. `FIELD_DECLARATION` is an alias. | `private DataSource ds;` matches pattern `javax.sql.DataSource`. Does **NOT** match static field access like `Config.MY_CONSTANT`. |
+| `METHOD` | Method definition site — matches where the method is **defined**, not where it's called. Use `METHOD_CALL` for invocations. | `public void doWork()` matches pattern `com.example.MyService.doWork` |
+| `CLASS` | Class declaration — typically used with `annotated:` to find classes carrying a specific annotation | `@Controller public class MyController` with `annotated: {pattern: org.springframework.stereotype.Controller}` |
+| `RETURN_TYPE` | Method return type | `public EntityManager getEM()` matches pattern `javax.persistence.EntityManager` |
+| `VARIABLE_DECLARATION` | Local variable type | `DataSource ds = ...;` matches pattern `javax.sql.DataSource` |
+| `ENUM` | Enum type or constant reference — uses generic type matching | `SessionCreationPolicy.IF_REQUIRED` or full FQN `org.springframework.security.config.http.SessionCreationPolicy` |
+| `PACKAGE` | Package usage — matches any reference to types in the package (imports, fully qualified names) | `import org.apache.http.client.HttpClient;` matches pattern `org.apache.http` |
 
 **Critical matching rules:**
 - For `METHOD_CALL`: The pattern must include the class FQN + method name (e.g., `javax.naming.InitialContext.lookup`). The analyzer resolves fully qualified names — **static imports are NOT matched by METHOD_CALL**, so never rely on static import + unqualified call.
 - For `TYPE`/`ANNOTATION`/`IMPORT`: The pattern is the FQN of the type itself. The analyzer matches the resolved FQN regardless of how the code references it (short name, fully qualified, wildcard import).
 - For `INHERITANCE`/`IMPLEMENTS_TYPE`: The pattern is the FQN of the superclass/interface.
+- For `FIELD` (or `FIELD_DECLARATION`): The pattern is the FQN of the field's **declared type**. It matches when a class field is declared with that type (e.g., `private DataSource ds` is matched by pattern `javax.sql.DataSource`). It does **NOT** detect static field/constant access (e.g., `HttpCoreContext.HTTP_TARGET_HOST` or `Config.MY_CONSTANT`). For static constant access, use `builtin.filecontent` with a regex pattern.
+- For `METHOD` vs `METHOD_CALL`: `METHOD` matches the **definition** site (where the method is declared). `METHOD_CALL` matches **invocation** sites (where the method is called). For migration rules, you almost always want `METHOD_CALL` — use `METHOD` only when you need to find where a method is defined (rare).
 
 **Optional fields:**
 - `annotated` — Filter: only match if the matched element also has a specific annotation. Sub-fields: `pattern` (FQN of the annotation), `elements` (list of `{name, value}` pairs for annotation element values).

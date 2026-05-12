@@ -112,7 +112,7 @@ Process **each section from the index individually**. For each section:
 | 1 | Does the section mention a **removed** feature, library, or integration? | `*.dependency` on the removed artifact. "Removed" ALWAYS means detectable. |
 | 2 | Does the section mention a class, annotation, or interface that was **removed or relocated**? | `*.referenced` on the old FQN |
 | 3 | Does the section mention a dependency that **changed scope, was renamed, or now requires explicit versioning**? | `*.dependency` |
-| 4 | Does the section contain a **reference table** with old→new mappings? | Process **every row** — each row is a separate pattern |
+| 4 | Does the section contain a **reference table** with old→new mappings? | Process every row as a separate pattern — **unless** the section describes a package-level rename (see "Package-level consolidation" below), in which case emit ONE `PACKAGE` rule and only create additional rules for rows where the method name or signature genuinely changed |
 | 5 | Does a **behavioral default change** affect users of a specific class, property, or dependency? | Detect the affected artifact, warn about new behavior (category: `potential`) |
 | 6 | Does the section mention **deprecated** starters, modules, or artifacts? | Each old→new mapping is a pattern |
 | 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
@@ -164,6 +164,32 @@ If your skip reason contains any of these phrases, you answered a checklist item
 - "describes a compatibility helper" — check items 3, 7 (detect the OLD artifact it bridges)
 
 **The ONLY valid skip** is a section that contains genuinely zero named artifacts — no classes, no dependencies, no properties, no annotations, no config elements, no build plugin names. This means: pure headers (`## Upgrading Web Features`), prerequisite checklists (`### Before You Start`), or link collections (`### Review Other Release Notes`). **If a section names even one concrete artifact, it is not skippable.** When in doubt, extract — false positives are cheaper than missed migrations.
+
+### Package-level consolidation (applies to checklist items 2 and 4)
+
+When a migration guide says an entire package is renamed or removed (e.g., "re-import from `org.apache.hc.httpclient5`"), create a **single rule** matching the old package with `location_type: PACKAGE` — not one rule per class. This overrides the per-row instruction in checklist item 4 when the table is under a package rename.
+
+**How to recognize a package rename section:**
+- The lead paragraph says "re-import from," "moved to package," "namespace changed to," or similar
+- A reference table lists old→new class mappings where every old class is under the same package prefix and every new class is under a new prefix
+- The migration action for every row is the same: change the import
+
+**Reference tables under package renames:** The table is showing examples of what moves, not listing separate migration patterns. Emit ONE `PACKAGE` rule for the old package prefix. Do NOT process each table row as a separate pattern.
+
+**When to emit additional METHOD_CALL rules alongside a PACKAGE rule:**
+- ONLY when a method's **name or signature genuinely changed** (e.g., `getStatusLine()` was removed and replaced by `getCode()`, or `setRetryHandler(HttpRequestRetryHandler)` became `setRetryStrategy(HttpRequestRetryStrategy)`)
+- NOT when the method stayed the same but the owning class simply moved packages (e.g., `HttpResponse.getEntity()` → `ClassicHttpResponse.getEntity()` — same method `getEntity()`, the class just moved; the PACKAGE rule already covers the import change)
+
+**Decision tree:**
+
+| Scenario | Correct output |
+|---|---|
+| Section says "package X moved to Y" + table of class mappings | ONE `PACKAGE` rule on old package X |
+| Section says "package X moved to Y" + table includes rows where a method name changed | ONE `PACKAGE` rule + ONE `METHOD_CALL` rule per genuine method rename |
+| Section says "ClassA moved to X, ClassB moved to Y, ClassC removed" (different targets) | Separate per-class rules |
+| Section lists method-level API changes with no common package rename | Per-row `METHOD_CALL` or `IMPORT` rules as normal |
+
+See Example 5 in `references/examples/java.md` for worked examples including reference tables and METHOD_CALL alongside PACKAGE rules.
 
 For each pattern, provide the fields defined in `references/patterns-json-schema.md`. At minimum: `source_pattern`, `rationale`, `complexity`, `category`.
 
@@ -218,12 +244,6 @@ Collect flagged patterns in a `suspected_kantra_limitations` list and return it 
 See `references/condition-types.md` for the full condition-type reference and `references/patterns-json-schema.md` for which fields map to which condition type.
 
 **One critical rule for config properties:** Always use `application.*\\.(properties|yml)` as the `file_pattern` — this covers both `.properties` and `.yml` formats. Never use `.*\\.properties` alone (too broad) or `application.*\\.properties` alone (misses YAML configs).
-
-### Package-level consolidation
-
-When a migration guide says an entire package is renamed or removed (e.g., "re-import from `org.apache.hc.httpclient5`"), create a **single rule** matching the old package with `location_type: PACKAGE` — not one rule per class. Per-class rules are only needed when individual classes within the same package have different migration paths.
-
-See Example 5 in `references/examples/java.md` for a worked example.
 
 ### What counts as an extractable migration item
 

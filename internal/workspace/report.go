@@ -24,42 +24,106 @@ type NotFoundRule struct {
 	Reason    string `yaml:"reason" json:"reason"`
 }
 
-// Report holds a summary of the rule generation pipeline results.
-type Report struct {
-	GeneratedAt          string             `yaml:"generated_at" json:"generated_at"`
-	Source               string             `yaml:"source" json:"source"`
-	Target               string             `yaml:"target" json:"target"`
-	RulesTotal           int                `yaml:"rules_total" json:"rules_total"`
-	TestsPassed          int                `yaml:"tests_passed" json:"tests_passed"`
-	TestsFailed          int                `yaml:"tests_failed" json:"tests_failed"`
-	KantraLimitation     int                `yaml:"kantra_limitation" json:"kantra_limitation"`
-	PassRate             float64            `yaml:"pass_rate" json:"pass_rate"`
-	FailedRules          []string           `yaml:"failed_rules,omitempty" json:"failed_rules,omitempty"`
-	KantraLimitationRule []string           `yaml:"kantra_limitation_rules,omitempty" json:"kantra_limitation_rules,omitempty"`
-	Verification         *VerificationStats `yaml:"verification,omitempty" json:"verification,omitempty"`
+// RuleStatus records the per-rule test and verification status.
+type RuleStatus struct {
+	RuleID         string `yaml:"rule_id" json:"rule_id"`
+	TestStatus     string `yaml:"test_status" json:"test_status"`
+	SourceVerified string `yaml:"source_verified,omitempty" json:"source_verified,omitempty"`
 }
 
-// BuildReport creates a report from test results.
-// Pass rate is computed as passed / (total - kantraLimitation) to exclude
+// Report holds a summary of the rule generation pipeline results.
+type Report struct {
+	GeneratedAt      string             `yaml:"generated_at" json:"generated_at"`
+	Source           string             `yaml:"source" json:"source"`
+	Target           string             `yaml:"target" json:"target"`
+	RulesTotal       int                `yaml:"rules_total" json:"rules_total"`
+	TestsPassed      int                `yaml:"tests_passed" json:"tests_passed"`
+	TestsFailed      int                `yaml:"tests_failed" json:"tests_failed"`
+	KantraLimitation int                `yaml:"kantra_limitation" json:"kantra_limitation"`
+	PassRate         float64            `yaml:"pass_rate" json:"pass_rate"`
+	Verification     *VerificationStats `yaml:"verification,omitempty" json:"verification,omitempty"`
+	Rules            []RuleStatus       `yaml:"rules,omitempty" json:"rules,omitempty"`
+}
+
+// BuildReport creates a report from test results with per-rule status.
+// Pass rate is computed as passed / (passed + failed) to exclude
 // rules that are correct but cannot be auto-tested by kantra.
-func BuildReport(source, target string, rulesTotal, passed, failed, kantraLimitation int, failedRules, kantraLimitationRules []string) *Report {
+func BuildReport(source, target string, rulesTotal, passed, failed, kantraLimitation int, passedRules, failedRules, kantraLimitationRules, verifiedRules, notFoundRules []string) *Report {
 	testable := passed + failed
 	var passRate float64
 	if testable > 0 {
 		passRate = float64(passed) / float64(testable) * 100
 	}
-	return &Report{
-		GeneratedAt:          time.Now().UTC().Format(time.RFC3339),
-		Source:               source,
-		Target:               target,
-		RulesTotal:           rulesTotal,
-		TestsPassed:          passed,
-		TestsFailed:          failed,
-		KantraLimitation:     kantraLimitation,
-		PassRate:             passRate,
-		FailedRules:          failedRules,
-		KantraLimitationRule: kantraLimitationRules,
+
+	verifiedSet := toSet(verifiedRules)
+	notFoundSet := toSet(notFoundRules)
+
+	var ruleStatuses []RuleStatus
+	for _, id := range passedRules {
+		ruleStatuses = append(ruleStatuses, RuleStatus{
+			RuleID:         id,
+			TestStatus:     "passed",
+			SourceVerified: verifyLabel(id, verifiedSet, notFoundSet),
+		})
 	}
+	for _, id := range failedRules {
+		ruleStatuses = append(ruleStatuses, RuleStatus{
+			RuleID:         id,
+			TestStatus:     "failed",
+			SourceVerified: verifyLabel(id, verifiedSet, notFoundSet),
+		})
+	}
+	for _, id := range kantraLimitationRules {
+		ruleStatuses = append(ruleStatuses, RuleStatus{
+			RuleID:         id,
+			TestStatus:     "kantra-limitation",
+			SourceVerified: verifyLabel(id, verifiedSet, notFoundSet),
+		})
+	}
+
+	seen := toSet(append(append(passedRules, failedRules...), kantraLimitationRules...))
+	allVerifyRules := append(verifiedRules, notFoundRules...)
+	for _, id := range allVerifyRules {
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		ruleStatuses = append(ruleStatuses, RuleStatus{
+			RuleID:         id,
+			TestStatus:     "untested",
+			SourceVerified: verifyLabel(id, verifiedSet, notFoundSet),
+		})
+	}
+
+	return &Report{
+		GeneratedAt:      time.Now().UTC().Format(time.RFC3339),
+		Source:            source,
+		Target:            target,
+		RulesTotal:        rulesTotal,
+		TestsPassed:       passed,
+		TestsFailed:       failed,
+		KantraLimitation: kantraLimitation,
+		PassRate:          passRate,
+		Rules:             ruleStatuses,
+	}
+}
+
+func toSet(ids []string) map[string]bool {
+	s := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		s[id] = true
+	}
+	return s
+}
+
+func verifyLabel(id string, verified, notFound map[string]bool) string {
+	if verified[id] {
+		return "true"
+	}
+	if notFound[id] {
+		return "false"
+	}
+	return ""
 }
 
 // WriteReport writes the report to a YAML file.

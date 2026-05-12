@@ -71,11 +71,19 @@ func ReadPatternsFile(path string) (*ExtractOutput, error) {
 	return &output, nil
 }
 
+// MergeResult contains the merged output plus statistics.
+type MergeResult struct {
+	Output     *ExtractOutput
+	Duplicates int
+	Absorbed   int // patterns folded into package-level rules
+}
+
 // MergePatterns combines multiple ExtractOutputs into one, deduplicating by
-// source_fqn and dependency_name. The first occurrence wins.
-func MergePatterns(parts []*ExtractOutput) *ExtractOutput {
+// source_fqn and dependency_name (first occurrence wins), then consolidating
+// IMPORT/TYPE patterns into matching PACKAGE patterns.
+func MergePatterns(parts []*ExtractOutput) *MergeResult {
 	if len(parts) == 0 {
-		return &ExtractOutput{}
+		return &MergeResult{Output: &ExtractOutput{}}
 	}
 	merged := &ExtractOutput{
 		Source:   parts[0].Source,
@@ -83,12 +91,14 @@ func MergePatterns(parts []*ExtractOutput) *ExtractOutput {
 		Language: parts[0].Language,
 	}
 
+	totalPatterns := 0
 	seen := make(map[string]bool)
 	for _, part := range parts {
 		if merged.Language == "" && part.Language != "" {
 			merged.Language = part.Language
 		}
 		for _, p := range part.Patterns {
+			totalPatterns++
 			key := deduplicationKey(p)
 			if key != "" && seen[key] {
 				continue
@@ -99,7 +109,128 @@ func MergePatterns(parts []*ExtractOutput) *ExtractOutput {
 			merged.Patterns = append(merged.Patterns, p)
 		}
 	}
-	return merged
+
+	duplicates := totalPatterns - len(merged.Patterns)
+	consolidated, absorbed := consolidatePackages(merged.Patterns)
+	merged.Patterns = consolidated
+
+	return &MergeResult{
+		Output:     merged,
+		Duplicates: duplicates,
+		Absorbed:   absorbed,
+	}
+}
+
+// consolidatePackages folds IMPORT and TYPE patterns into any PACKAGE pattern
+// whose source_fqn is a prefix of theirs. Absorbed patterns contribute a row
+// to the PACKAGE pattern's message table. METHOD_CALL and other location types
+// are kept as separate rules because they provide detection beyond the package
+// import itself.
+func consolidatePackages(patterns []MigrationPattern) ([]MigrationPattern, int) {
+	pkgIndices := map[int]string{}
+	for i, p := range patterns {
+		if strings.EqualFold(p.LocationType, "PACKAGE") && p.SourceFQN != "" {
+			pkgIndices[i] = p.SourceFQN
+		}
+	}
+	if len(pkgIndices) == 0 {
+		return patterns, 0
+	}
+
+	absorbable := func(lt string) bool {
+		up := strings.ToUpper(lt)
+		return up == "IMPORT" || up == "TYPE"
+	}
+
+	// Map each absorbable pattern to its parent PACKAGE index.
+	// Longest prefix wins when multiple PACKAGE patterns could match.
+	childToParent := map[int]int{}
+	for i, p := range patterns {
+		if !absorbable(p.LocationType) || p.SourceFQN == "" {
+			continue
+		}
+		bestPkg := -1
+		bestLen := 0
+		for pi, pfqn := range pkgIndices {
+			if pi == i {
+				continue
+			}
+			prefix := pfqn + "."
+			if strings.HasPrefix(p.SourceFQN, prefix) && len(pfqn) > bestLen {
+				bestPkg = pi
+				bestLen = len(pfqn)
+			}
+		}
+		if bestPkg >= 0 {
+			childToParent[i] = bestPkg
+		}
+	}
+
+	if len(childToParent) == 0 {
+		return patterns, 0
+	}
+
+	// Group absorbed patterns by parent and build the replacement table.
+	parentChildren := map[int][]MigrationPattern{}
+	for ci, pi := range childToParent {
+		parentChildren[pi] = append(parentChildren[pi], patterns[ci])
+	}
+
+	absorbed := map[int]bool{}
+	for ci := range childToParent {
+		absorbed[ci] = true
+	}
+
+	for pi, children := range parentChildren {
+		pkg := &patterns[pi]
+
+		// Build a markdown table of specific replacements.
+		var table strings.Builder
+		table.WriteString("\n\n### Specific replacements\n\n")
+		table.WriteString("| Old class | Replacement |\n|---|---|\n")
+		for _, c := range children {
+			replacement := c.TargetPattern
+			if replacement == "" {
+				replacement = c.Rationale
+			}
+			table.WriteString(fmt.Sprintf("| `%s` | %s |\n", c.SourceFQN, replacement))
+		}
+		pkg.Message += table.String()
+
+		// Inherit the highest complexity.
+		for _, c := range children {
+			if complexityRank(c.Complexity) > complexityRank(pkg.Complexity) {
+				pkg.Complexity = c.Complexity
+			}
+		}
+	}
+
+	// Rebuild the slice, skipping absorbed patterns.
+	result := make([]MigrationPattern, 0, len(patterns)-len(absorbed))
+	for i, p := range patterns {
+		if !absorbed[i] {
+			result = append(result, p)
+		}
+	}
+
+	return result, len(absorbed)
+}
+
+func complexityRank(c string) int {
+	switch strings.ToLower(c) {
+	case "trivial":
+		return 1
+	case "low":
+		return 2
+	case "medium":
+		return 3
+	case "high":
+		return 4
+	case "expert":
+		return 5
+	default:
+		return 0
+	}
 }
 
 func deduplicationKey(p MigrationPattern) string {
@@ -148,7 +279,5 @@ func InitialLabels(source, target string) []string {
 		fmt.Sprintf("konveyor.io/source=%s", source),
 		fmt.Sprintf("konveyor.io/target=%s", target),
 		"konveyor.io/generated-by=ai-rule-gen",
-		"konveyor.io/test-result=untested",
-		"konveyor.io/review=unreviewed",
 	}
 }

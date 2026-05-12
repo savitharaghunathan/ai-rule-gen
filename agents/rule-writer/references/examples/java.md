@@ -341,14 +341,37 @@ public class AppInitializer implements BootstrapRegistry.InstanceSupplier<String
 > Apache HttpClient 4.x (`org.apache.http`) is no longer supported. Remove
 > old `org.apache.http` imports and re-import HttpClient classes from the
 > `org.apache.hc.httpclient5` package namespace.
+>
+> The following table shows the key class mappings:
+>
+> | Old Class (4.x) | New Class (5.x) |
+> |---|---|
+> | `org.apache.http.client.HttpClient` | `org.apache.hc.client5.http.classic.HttpClient` |
+> | `org.apache.http.client.methods.HttpGet` | `org.apache.hc.client5.http.classic.methods.HttpGet` |
+> | `org.apache.http.impl.client.HttpClients` | `org.apache.hc.client5.http.impl.classic.HttpClients` |
+> | `org.apache.http.HttpResponse` | `org.apache.hc.client5.http.classic.ClassicHttpResponse` |
+> | `org.apache.http.HttpEntity` | `org.apache.hc.core5.http.HttpEntity` |
+>
+> **API changes:** In HttpClient 5, `HttpResponse.getStatusLine().getStatusCode()`
+> has been replaced by `ClassicHttpResponse.getCode()`. The `StatusLine` class
+> has been removed entirely.
 
 ### Checklist
 
-Section: "HttpClient Migration" -> EXTRACT: entire package renamed (item 2); one package-level rule is sufficient
+Section: "HttpClient Migration" -> EXTRACT: entire package renamed (item 2); reference table illustrates the package rename — NOT separate patterns (item 4 exception); one genuine API change: getStatusLine() removed, replaced by getCode() (items 1, 4)
+
+**Why the table does NOT produce 5 separate rules:**
+- The lead paragraph says "re-import HttpClient classes from the `org.apache.hc.httpclient5` package namespace" — this is a package-level rename
+- Every row in the table maps an old class under `org.apache.http` to a new class under `org.apache.hc` — same migration action (change the import)
+- A single `PACKAGE` rule on `org.apache.http` catches all of these
+
+**Why `getStatusLine()` DOES get its own rule:**
+- The method name changed: `getStatusLine().getStatusCode()` → `getCode()`. This is not a simple import change — the method call itself must be rewritten
+- The PACKAGE rule only flags the import; it cannot detect that `response.getStatusLine()` needs to become `response.getCode()`
 
 ### patterns.json
 
-When an entire package is renamed or removed, create a **single** package-level pattern — do NOT create one rule per class. The `PACKAGE` location type matches any import from the old package.
+Two patterns — one PACKAGE rule for the namespace move, one METHOD_CALL for the genuine API change:
 
 ```json
 {
@@ -370,11 +393,36 @@ When an entire package is renamed or removed, create a **single** package-level 
 }
 ```
 
-Note: `location_type: PACKAGE` makes `java.referenced` match any class imported from the `org.apache.http` package. This single rule replaces what would otherwise be dozens of per-class rules (HttpClient, HttpGet, HttpResponse, etc.) that all have the same migration action. Only use per-class rules when individual classes have DIFFERENT migration paths.
+```json
+{
+  "source_pattern": "HttpResponse.getStatusLine() removed in HttpClient 5",
+  "target_pattern": "ClassicHttpResponse.getCode()",
+  "source_fqn": "org.apache.http.HttpResponse.getStatusLine",
+  "location_type": "METHOD_CALL",
+  "source_artifact": {
+    "group_id": "org.apache.httpcomponents",
+    "artifact_id": "httpclient",
+    "version": "4.5.14"
+  },
+  "rationale": "HttpResponse.getStatusLine() is removed in HttpClient 5; use ClassicHttpResponse.getCode() instead",
+  "complexity": "medium",
+  "category": "mandatory",
+  "concern": "http",
+  "provider_type": "java",
+  "documentation_url": "https://example.com/migration-guide#httpclient"
+}
+```
+
+Note: `location_type: PACKAGE` makes `java.referenced` match any class imported from the `org.apache.http` package. This single rule replaces what would otherwise be dozens of per-class rules (HttpClient, HttpGet, HttpResponse, etc.) that all have the same migration action. The METHOD_CALL rule for `getStatusLine` is needed because the method name itself changed — the PACKAGE rule cannot detect method-level API changes.
+
+**What would be WRONG:** Creating 5 separate rules from the reference table rows (one per class). The table is illustrating the package rename with specific examples, not listing 5 independent migration paths. All rows share the same migration action (change import prefix from `org.apache.http` to `org.apache.hc`), so one PACKAGE rule is correct.
+
+**Another common mistake:** Creating a METHOD_CALL rule for `HttpResponse.getEntity()` → `ClassicHttpResponse.getEntity()`. The method name `getEntity()` did not change — only the owning class moved packages. The PACKAGE rule already covers this. A METHOD_CALL rule is only warranted when the method NAME or SIGNATURE changed.
 
 **When to consolidate vs per-class:**
 - Guide says "re-import everything from package X to Y" → ONE package-level rule
 - Guide says "ClassA moved to X, ClassB moved to Y, ClassC was removed" → separate per-class rules (different targets)
+- Guide says "package X moved to Y" AND "method `foo()` renamed to `bar()`" → ONE package-level rule + ONE method-level rule for the rename
 
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
@@ -393,9 +441,24 @@ Note: `location_type: PACKAGE` makes `java.referenced` match any class imported 
     java.referenced:
       pattern: org.apache.http
       location: PACKAGE
+
+- ruleID: java-ee-to-quarkus-00060
+  description: "HttpResponse.getStatusLine() is removed in HttpClient 5; use ClassicHttpResponse.getCode() instead"
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/target=quarkus
+  links:
+    - url: https://example.com/migration-guide#httpclient
+      title: Migration Documentation
+  when:
+    java.referenced:
+      pattern: org.apache.http.HttpResponse.getStatusLine
+      location: METHOD_CALL
 ```
 
-### Test Data (what triggers this rule)
+### Test Data (what triggers these rules)
 
 ```java
 package com.example;
@@ -403,11 +466,217 @@ package com.example;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.HttpResponse;
 
 public class ApiClient {
-    public void fetch() {
+    public int fetch() throws Exception {
         HttpClient client = HttpClients.createDefault();
         HttpGet request = new HttpGet("https://api.example.com/data");
+        HttpResponse response = client.execute(request);
+        // PACKAGE rule catches all four imports above
+        // METHOD_CALL rule catches this specific call:
+        return response.getStatusLine().getStatusCode();
+    }
+}
+```
+
+---
+
+## Example 6: `java.referenced` with FIELD location
+
+### Guide Excerpt
+
+> ### JMS Queue Injection
+>
+> JMS `Queue` and `Topic` field declarations must be replaced with
+> SmallRye Reactive Messaging `Emitter` fields. Replace any field
+> declared as `javax.jms.Queue` with an `@Channel`-annotated `Emitter`.
+>
+> ```java
+> // Before
+> @Resource(lookup = "java:/jms/queue/MyQueue")
+> private Queue myQueue;
+>
+> // After
+> @Channel("my-queue")
+> Emitter<String> myQueueEmitter;
+> ```
+
+### Checklist
+
+Section: "JMS Queue Injection" -> EXTRACT: field type replacement (item 1); the field's declared TYPE changed from `javax.jms.Queue` to `Emitter`
+
+### patterns.json
+
+```json
+{
+  "source_pattern": "JMS Queue field declaration must be replaced with Emitter",
+  "target_pattern": "SmallRye Reactive Messaging Emitter",
+  "source_fqn": "javax.jms.Queue",
+  "location_type": "FIELD",
+  "rationale": "JMS Queue fields must be replaced with SmallRye Reactive Messaging Emitter in Quarkus",
+  "complexity": "medium",
+  "category": "mandatory",
+  "concern": "messaging",
+  "provider_type": "java",
+  "documentation_url": "https://quarkus.io/guides/jms"
+}
+```
+
+Note: `location_type: FIELD` matches when a **field is declared with** the specified type. The pattern `javax.jms.Queue` will match `private Queue myQueue;` because the field's declared type is `javax.jms.Queue`. `FIELD` and `FIELD_DECLARATION` are aliases — both map to the same analyzer behavior.
+
+### Resulting Rule YAML (produced by cmd/construct, not by you)
+
+```yaml
+- ruleID: jms-to-reactive-quarkus-00030
+  description: JMS Queue fields must be replaced with SmallRye Reactive Messaging Emitter in Quarkus
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/target=quarkus
+  when:
+    java.referenced:
+      pattern: javax.jms.Queue
+      location: FIELD
+```
+
+### Test Data (what triggers this rule)
+
+```java
+package com.example;
+
+import javax.annotation.Resource;
+import javax.jms.Queue;
+
+public class MessageService {
+    @Resource(lookup = "java:/jms/queue/MyQueue")
+    private Queue myQueue;
+}
+```
+
+### What FIELD does NOT match
+
+**Common mistake:** Using `FIELD` to detect static field/constant access. For example, this rule would NOT work:
+
+```yaml
+# WRONG — FIELD does not match static constant access
+when:
+  java.referenced:
+    pattern: org.apache.http.protocol.HttpCoreContext.HTTP_TARGET_HOST
+    location: FIELD
+```
+
+The pattern `org.apache.http.protocol.HttpCoreContext.HTTP_TARGET_HOST` is a static constant, not a type. `FIELD` only matches field declarations by their **type** (e.g., `private HttpCoreContext ctx;` would match pattern `org.apache.http.protocol.HttpCoreContext`).
+
+**Correct approach for static constant access:** Use `builtin.filecontent`:
+
+```json
+{
+  "source_fqn": "HttpCoreContext\\.HTTP_TARGET_HOST",
+  "file_pattern": ".*\\.java",
+  "provider_type": "builtin",
+  "rationale": "HttpCoreContext.HTTP_TARGET_HOST replaced by HttpClientContext.getHttpRoute().getTargetHost()"
+}
+```
+
+---
+
+## Example 7: `java.referenced` with `annotated` sub-condition
+
+### Guide Excerpt
+
+> ### MDB ActivationConfig for Queues
+>
+> Message-driven beans using `@ActivationConfigProperty` with
+> `destinationLookup` must be migrated to SmallRye `@Incoming` channels.
+>
+> ```java
+> // Before
+> @MessageDriven(activationConfig = {
+>     @ActivationConfigProperty(
+>         propertyName = "destinationLookup",
+>         propertyValue = "java:/jms/queue/MyQueue")
+> })
+> public class MyMDB implements MessageListener { ... }
+>
+> // After
+> @ApplicationScoped
+> public class MyConsumer {
+>     @Incoming("my-queue")
+>     public void onMessage(String message) { ... }
+> }
+> ```
+
+### Checklist
+
+Section: "MDB ActivationConfig for Queues" -> EXTRACT: annotation with specific element values (item 1); the `@ActivationConfigProperty` annotation with `propertyName="destinationLookup"` is the detectable signal
+
+### patterns.json
+
+```json
+{
+  "source_pattern": "@ActivationConfigProperty with destinationLookup",
+  "target_pattern": "@Incoming channel annotation",
+  "source_fqn": "javax.ejb.ActivationConfigProperty",
+  "location_type": "ANNOTATION",
+  "annotated_pattern": null,
+  "annotated_elements": [
+    {"name": "propertyName", "value": "destinationLookup"}
+  ],
+  "rationale": "MDB with destinationLookup ActivationConfigProperty must use SmallRye @Incoming",
+  "complexity": "complex",
+  "category": "mandatory",
+  "concern": "messaging",
+  "provider_type": "java",
+  "documentation_url": "https://quarkus.io/guides/jms"
+}
+```
+
+Note: The `annotated_elements` field filters the match to only `@ActivationConfigProperty` annotations where `propertyName` equals `"destinationLookup"`. Without this filter, the rule would match ALL `@ActivationConfigProperty` annotations regardless of their property name. The `annotated` sub-condition supports both `pattern` (FQN of a meta-annotation) and `elements` (name-value pairs for annotation element values).
+
+### Resulting Rule YAML (produced by cmd/construct, not by you)
+
+```yaml
+- ruleID: jms-to-reactive-quarkus-00020
+  description: MDB with destinationLookup ActivationConfigProperty must use SmallRye @Incoming
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/target=quarkus
+  when:
+    java.referenced:
+      pattern: javax.ejb.ActivationConfigProperty
+      location: ANNOTATION
+      annotated:
+        elements:
+          - name: propertyName
+            value: destinationLookup
+```
+
+### Test Data (what triggers this rule)
+
+```java
+package com.example;
+
+import javax.ejb.ActivationConfigProperty;
+import javax.ejb.MessageDriven;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+
+@MessageDriven(activationConfig = {
+    @ActivationConfigProperty(
+        propertyName = "destinationLookup",
+        propertyValue = "java:/jms/queue/MyQueue"),
+    @ActivationConfigProperty(
+        propertyName = "destinationType",
+        propertyValue = "javax.jms.Queue")
+})
+public class MyMDB implements MessageListener {
+    @Override
+    public void onMessage(Message message) {
+        // process message
     }
 }
 ```
