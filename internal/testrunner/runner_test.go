@@ -100,6 +100,29 @@ func TestReadSourceTarget_noLabels(t *testing.T) {
 	}
 }
 
+func TestReadSourceTarget_multipleLabels(t *testing.T) {
+	dir := t.TempDir()
+	rs := rules.Ruleset{
+		Name: "openjdk7+/oraclejdk7+",
+		Labels: []string{
+			"konveyor.io/source=oraclejdk7+",
+			"konveyor.io/source=oraclejdk",
+			"konveyor.io/target=openjdk7+",
+			"konveyor.io/target=openjdk",
+		},
+	}
+	data, _ := yaml.Marshal(rs)
+	os.WriteFile(filepath.Join(dir, "ruleset.yaml"), data, 0o644)
+
+	source, target := ReadSourceTarget(dir)
+	if source != "oraclejdk" {
+		t.Errorf("source = %q, want last label value %q", source, "oraclejdk")
+	}
+	if target != "openjdk" {
+		t.Errorf("target = %q, want last label value %q", target, "openjdk")
+	}
+}
+
 func TestResolveFilesRelativeToTestsDir(t *testing.T) {
 	// Simulate what Run() does: bare filenames should be joined with TestsDir.
 	testsDir := "/some/path/tests"

@@ -12,9 +12,9 @@ type Workspace struct {
 }
 
 // New creates a workspace for the given source→target migration.
-// The root directory is output/<source>-to-<target>/.
-func New(outputBase, source, target string) (*Workspace, error) {
-	root := filepath.Join(outputBase, source+"-to-"+target)
+// The root directory is output/<source>-to-<target>/ using the primary (first) source and target.
+func New(outputBase string, sources, targets []string) (*Workspace, error) {
+	root := filepath.Join(outputBase, sources[0]+"-to-"+targets[0])
 	w := &Workspace{Root: root}
 	if err := w.init(); err != nil {
 		return nil, err

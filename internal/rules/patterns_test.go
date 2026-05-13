@@ -10,14 +10,14 @@ import (
 func TestMergePatterns_Dedup(t *testing.T) {
 	parts := []*ExtractOutput{
 		{
-			Source: "sb3", Target: "sb4", Language: "java",
+			Sources: []string{"sb3"}, Targets: []string{"sb4"}, Language: "java",
 			Patterns: []MigrationPattern{
 				{SourcePattern: "A", SourceFQN: "com.example.A", Rationale: "r1", Complexity: "low", Category: "mandatory"},
 				{SourcePattern: "B", DependencyName: "org.foo.bar", Rationale: "r2", Complexity: "low", Category: "mandatory"},
 			},
 		},
 		{
-			Source: "sb3", Target: "sb4", Language: "java",
+			Sources: []string{"sb3"}, Targets: []string{"sb4"}, Language: "java",
 			Patterns: []MigrationPattern{
 				{SourcePattern: "A dup", SourceFQN: "com.example.A", Rationale: "r1-dup", Complexity: "low", Category: "mandatory"},
 				{SourcePattern: "C", SourceFQN: "com.example.C", Rationale: "r3", Complexity: "low", Category: "mandatory"},
@@ -49,11 +49,11 @@ func TestMergePatterns_Empty(t *testing.T) {
 
 func TestMergePatterns_PreservesMetadata(t *testing.T) {
 	parts := []*ExtractOutput{
-		{Source: "sb3", Target: "sb4", Language: "java"},
-		{Source: "sb3", Target: "sb4", Language: "java"},
+		{Sources: []string{"sb3"}, Targets: []string{"sb4"}, Language: "java"},
+		{Sources: []string{"sb3"}, Targets: []string{"sb4"}, Language: "java"},
 	}
 	result := MergePatterns(parts)
-	if result.Output.Source != "sb3" || result.Output.Target != "sb4" || result.Output.Language != "java" {
+	if len(result.Output.Sources) != 1 || result.Output.Sources[0] != "sb3" || len(result.Output.Targets) != 1 || result.Output.Targets[0] != "sb4" || result.Output.Language != "java" {
 		t.Errorf("metadata not preserved: %+v", result.Output)
 	}
 }
@@ -67,22 +67,22 @@ func TestConsolidatePackages_Basic(t *testing.T) {
 	}
 
 	result, absorbed := consolidatePackages(patterns)
-	if absorbed != 2 {
-		t.Fatalf("expected 2 absorbed, got %d", absorbed)
+	if absorbed != 0 {
+		t.Fatalf("expected 0 absorbed (class replacements not absorbed), got %d", absorbed)
 	}
-	if len(result) != 2 {
-		t.Fatalf("expected 2 remaining patterns, got %d", len(result))
+	if len(result) != 4 {
+		t.Fatalf("expected 4 remaining patterns, got %d", len(result))
 	}
-	// PACKAGE pattern should have enhanced message
-	if !strings.Contains(result[0].Message, "SSLConnectionSocketFactory") {
-		t.Error("PACKAGE message should contain absorbed class SSLConnectionSocketFactory")
+	// IMPORT patterns with class replacements should be kept
+	if result[1].SourceFQN != "org.apache.http.conn.ssl.SSLConnectionSocketFactory" {
+		t.Errorf("SSLConnectionSocketFactory should be kept, got %q", result[1].SourceFQN)
 	}
-	if !strings.Contains(result[0].Message, "EntityTemplate") {
-		t.Error("PACKAGE message should contain absorbed class EntityTemplate")
+	if result[2].SourceFQN != "org.apache.http.entity.EntityTemplate" {
+		t.Errorf("EntityTemplate should be kept, got %q", result[2].SourceFQN)
 	}
 	// METHOD_CALL should be kept
-	if result[1].SourceFQN != "org.apache.http.HttpResponse.getStatusLine" {
-		t.Errorf("METHOD_CALL pattern should be kept, got %q", result[1].SourceFQN)
+	if result[3].SourceFQN != "org.apache.http.HttpResponse.getStatusLine" {
+		t.Errorf("METHOD_CALL pattern should be kept, got %q", result[3].SourceFQN)
 	}
 }
 
@@ -144,8 +144,8 @@ func TestConsolidatePackages_MultiplePackages(t *testing.T) {
 func TestConsolidatePackages_ComplexityInheritance(t *testing.T) {
 	patterns := []MigrationPattern{
 		{SourceFQN: "com.example", LocationType: "PACKAGE", Message: "pkg", Complexity: "low"},
-		{SourceFQN: "com.example.HardClass", LocationType: "IMPORT", TargetPattern: "new class", Complexity: "high"},
-		{SourceFQN: "com.example.EasyClass", LocationType: "IMPORT", TargetPattern: "new class", Complexity: "trivial"},
+		{SourceFQN: "com.example.HardClass", LocationType: "IMPORT", TargetPattern: "new HardClass impl", Complexity: "high"},
+		{SourceFQN: "com.example.EasyClass", LocationType: "IMPORT", TargetPattern: "new EasyClass impl", Complexity: "trivial"},
 	}
 	result, absorbed := consolidatePackages(patterns)
 	if absorbed != 2 {
@@ -156,13 +156,79 @@ func TestConsolidatePackages_ComplexityInheritance(t *testing.T) {
 	}
 }
 
+func TestConsolidatePackages_ClassReplacementNotAbsorbed(t *testing.T) {
+	patterns := []MigrationPattern{
+		{SourceFQN: "org.apache.http", LocationType: "PACKAGE", Message: "pkg migration", Complexity: "low"},
+		// Class replacement: different name → not absorbed
+		{SourceFQN: "org.apache.http.conn.ssl.SSLConnectionSocketFactory", LocationType: "IMPORT", TargetPattern: "ClientTlsStrategyBuilder", Complexity: "medium"},
+		// Package move: same class name → absorbed
+		{SourceFQN: "org.apache.http.client.HttpClient", LocationType: "IMPORT", TargetPattern: "org.apache.hc.client5.http.classic.HttpClient", Complexity: "low"},
+		// Empty target: absorbed by default
+		{SourceFQN: "org.apache.http.util.Args", LocationType: "IMPORT", Complexity: "low"},
+		// TYPE with same class name in target: absorbed
+		{SourceFQN: "org.apache.http.entity.ContentType", LocationType: "TYPE", TargetPattern: "org.apache.hc.core5.http.ContentType", Complexity: "low"},
+	}
+
+	result, absorbed := consolidatePackages(patterns)
+	if absorbed != 3 {
+		t.Fatalf("expected 3 absorbed (HttpClient, Args, ContentType), got %d", absorbed)
+	}
+	if len(result) != 2 {
+		t.Fatalf("expected 2 remaining (PACKAGE + SSLConnectionSocketFactory), got %d", len(result))
+	}
+	if result[0].LocationType != "PACKAGE" {
+		t.Errorf("first pattern should be PACKAGE, got %q", result[0].LocationType)
+	}
+	if result[1].SourceFQN != "org.apache.http.conn.ssl.SSLConnectionSocketFactory" {
+		t.Errorf("SSLConnectionSocketFactory should be kept as standalone, got %q", result[1].SourceFQN)
+	}
+	if !strings.Contains(result[0].Message, "HttpClient") {
+		t.Error("PACKAGE message should contain absorbed class HttpClient")
+	}
+	if !strings.Contains(result[0].Message, "Args") {
+		t.Error("PACKAGE message should contain absorbed class Args")
+	}
+	if !strings.Contains(result[0].Message, "ContentType") {
+		t.Error("PACKAGE message should contain absorbed class ContentType")
+	}
+}
+
+func TestIsClassReplacement(t *testing.T) {
+	tests := []struct {
+		name      string
+		sourceFQN string
+		target    string
+		want      bool
+	}{
+		{"empty target", "com.example.Foo", "", false},
+		{"same class in target FQN", "com.example.Bar", "com.newpkg.Bar", false},
+		{"same class preceded by space", "com.example.Foo", "new Foo", false},
+		{"different class", "org.apache.http.conn.ssl.SSLConnectionSocketFactory", "ClientTlsStrategyBuilder", true},
+		{"class name is substring not word", "com.example.Client", "HttpClient5", true},
+		{"method call target", "org.apache.http.entity.EntityTemplate", "HttpEntities.create()", true},
+		{"class at start of target", "com.example.Foo", "Foo replacement", false},
+		{"class at end of target", "com.example.Foo", "use Foo", false},
+		{"class is entire target", "com.example.Foo", "Foo", false},
+		{"partial match not word boundary", "com.example.Bar", "Foobar", true},
+		{"no dot in sourceFQN", "Foo", "use Foo", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isClassReplacement(tt.sourceFQN, tt.target)
+			if got != tt.want {
+				t.Errorf("isClassReplacement(%q, %q) = %v, want %v", tt.sourceFQN, tt.target, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestWriteAndReadPatternsFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "patterns.json")
 
 	original := &ExtractOutput{
-		Source:   "sb3",
-		Target:   "sb4",
+		Sources:  []string{"sb3"},
+		Targets:  []string{"sb4"},
 		Language: "java",
 		Patterns: []MigrationPattern{
 			{SourcePattern: "A", SourceFQN: "com.A", Rationale: "r", Complexity: "low", Category: "mandatory"},
@@ -198,8 +264,8 @@ func TestWriteAndReadPatternsFile_SourceArtifact(t *testing.T) {
 	path := filepath.Join(dir, "patterns.json")
 
 	original := &ExtractOutput{
-		Source:   "httpcomponents-client-4",
-		Target:   "httpcomponents-client-5",
+		Sources:  []string{"httpcomponents-client-4"},
+		Targets:  []string{"httpcomponents-client-5"},
 		Language: "java",
 		Patterns: []MigrationPattern{
 			{
@@ -247,8 +313,8 @@ func TestWriteAndReadPatternsFile_NilSourceArtifact(t *testing.T) {
 	path := filepath.Join(dir, "patterns.json")
 
 	original := &ExtractOutput{
-		Source:   "sb3",
-		Target:   "sb4",
+		Sources:  []string{"sb3"},
+		Targets:  []string{"sb4"},
 		Language: "java",
 		Patterns: []MigrationPattern{
 			{SourcePattern: "A", SourceFQN: "com.A", Rationale: "r", Complexity: "low", Category: "mandatory"},
@@ -266,5 +332,137 @@ func TestWriteAndReadPatternsFile_NilSourceArtifact(t *testing.T) {
 
 	if read.Patterns[0].SourceArtifact != nil {
 		t.Errorf("expected nil source_artifact, got %+v", read.Patterns[0].SourceArtifact)
+	}
+}
+
+func TestInitialLabels_SingleSourceTarget(t *testing.T) {
+	labels := InitialLabels([]string{"sb3"}, []string{"sb4"})
+	if len(labels) != 3 {
+		t.Fatalf("expected 3 labels, got %d: %v", len(labels), labels)
+	}
+	if labels[0] != "konveyor.io/source=sb3" {
+		t.Errorf("labels[0] = %q, want konveyor.io/source=sb3", labels[0])
+	}
+	if labels[1] != "konveyor.io/target=sb4" {
+		t.Errorf("labels[1] = %q, want konveyor.io/target=sb4", labels[1])
+	}
+}
+
+func TestInitialLabels_EmptyArrays(t *testing.T) {
+	labels := InitialLabels(nil, nil)
+	if len(labels) != 1 || labels[0] != "konveyor.io/generated-by=ai-rule-gen" {
+		t.Errorf("InitialLabels(nil, nil) = %v, want only generated-by label", labels)
+	}
+}
+
+func TestInitialLabels_MultipleSourcesTargets(t *testing.T) {
+	labels := InitialLabels([]string{"oraclejdk7+", "oraclejdk"}, []string{"openjdk7+", "openjdk"})
+	want := []string{
+		"konveyor.io/source=oraclejdk7+",
+		"konveyor.io/source=oraclejdk",
+		"konveyor.io/target=openjdk7+",
+		"konveyor.io/target=openjdk",
+		"konveyor.io/generated-by=ai-rule-gen",
+	}
+	if len(labels) != len(want) {
+		t.Fatalf("InitialLabels() length = %d, want %d", len(labels), len(want))
+	}
+	for i, l := range labels {
+		if l != want[i] {
+			t.Errorf("labels[%d] = %q, want %q", i, l, want[i])
+		}
+	}
+}
+
+func TestMergePatterns_MergesSourcesTargets(t *testing.T) {
+	parts := []*ExtractOutput{
+		{
+			Sources: []string{"sb3", "spring-boot"}, Targets: []string{"sb4"}, Language: "java",
+			Patterns: []MigrationPattern{
+				{SourcePattern: "A", SourceFQN: "com.A", Rationale: "r", Complexity: "low", Category: "mandatory"},
+			},
+		},
+		{
+			Sources: []string{"spring-boot", "springboot"}, Targets: []string{"sb4", "spring-boot"}, Language: "java",
+			Patterns: []MigrationPattern{
+				{SourcePattern: "B", SourceFQN: "com.B", Rationale: "r", Complexity: "low", Category: "mandatory"},
+			},
+		},
+	}
+	result := MergePatterns(parts)
+	wantSources := []string{"sb3", "spring-boot", "springboot"}
+	wantTargets := []string{"sb4", "spring-boot"}
+
+	if len(result.Output.Sources) != len(wantSources) {
+		t.Fatalf("Sources = %v, want %v", result.Output.Sources, wantSources)
+	}
+	for i, s := range result.Output.Sources {
+		if s != wantSources[i] {
+			t.Errorf("Sources[%d] = %q, want %q", i, s, wantSources[i])
+		}
+	}
+	if len(result.Output.Targets) != len(wantTargets) {
+		t.Fatalf("Targets = %v, want %v", result.Output.Targets, wantTargets)
+	}
+	for i, s := range result.Output.Targets {
+		if s != wantTargets[i] {
+			t.Errorf("Targets[%d] = %q, want %q", i, s, wantTargets[i])
+		}
+	}
+}
+
+func TestUnionStrings(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b []string
+		want []string
+	}{
+		{"both empty", nil, nil, []string{}},
+		{"a only", []string{"x", "y"}, nil, []string{"x", "y"}},
+		{"b only", nil, []string{"x"}, []string{"x"}},
+		{"overlap", []string{"a", "b"}, []string{"b", "c"}, []string{"a", "b", "c"}},
+		{"duplicates in a", []string{"a", "a"}, []string{"b"}, []string{"a", "b"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := unionStrings(tt.a, tt.b)
+			if len(got) != len(tt.want) {
+				t.Fatalf("unionStrings(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("unionStrings(%v, %v)[%d] = %q, want %q", tt.a, tt.b, i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestWriteAndReadPatternsFile_MultiSourceTarget(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "patterns.json")
+
+	original := &ExtractOutput{
+		Sources:  []string{"spring-boot3", "spring-boot"},
+		Targets:  []string{"spring-boot4", "spring-boot"},
+		Language: "java",
+		Patterns: []MigrationPattern{
+			{SourcePattern: "A", SourceFQN: "com.A", Rationale: "r", Complexity: "low", Category: "mandatory"},
+		},
+	}
+
+	if err := WritePatternsFile(path, original); err != nil {
+		t.Fatalf("write failed: %v", err)
+	}
+
+	read, err := ReadPatternsFile(path)
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+	if len(read.Sources) != 2 || read.Sources[0] != "spring-boot3" {
+		t.Errorf("Sources = %v, want [spring-boot3 spring-boot]", read.Sources)
+	}
+	if len(read.Targets) != 2 || read.Targets[0] != "spring-boot4" {
+		t.Errorf("Targets = %v, want [spring-boot4 spring-boot]", read.Targets)
 	}
 }

@@ -52,6 +52,14 @@ Read and follow agents/generate-rules/SKILL.md. Input: https://github.com/spring
 
 The input can be a URL, a file path, or pasted migration guide text.
 
+You can optionally pass explicit source and target labels (multiple of each are supported):
+
+```
+/generate-rules sources=["spring-boot3","spring-boot"] targets=["spring-boot4","spring-boot"] https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+```
+
+Each source and target becomes its own `konveyor.io/source=` or `konveyor.io/target=` label on every generated rule, matching the [konveyor/rulesets](https://github.com/konveyor/rulesets) label conventions. If omitted, sources and targets are auto-detected from the guide.
+
 The agent runs the full pipeline automatically:
 
 1. **Ingest** the migration guide into clean markdown
@@ -66,11 +74,11 @@ The agent runs the full pipeline automatically:
 
 ```
 output/
-└── <source>-to-<target>/
+└── <primary-source>-to-<primary-target>-<timestamp>/
     ├── guide.md          # Ingested migration guide
-    ├── patterns.json     # Extracted migration patterns
+    ├── patterns.json     # Extracted migration patterns (sources/targets arrays)
     ├── rules/            # Rule YAML files ready for konveyor/rulesets
-    │   ├── ruleset.yaml
+    │   ├── ruleset.yaml  # Ruleset with all source/target labels
     │   ├── web.yaml
     │   └── ...
     ├── tests/            # Kantra test suites
@@ -96,7 +104,7 @@ Migration Guide → Agent extracts patterns → CLI constructs rules → CLI sca
 | Skill | Role |
 |-------|------|
 | **generate-rules** | Orchestrates the full end-to-end pipeline |
-| **rule-writer** | Reads migration guide, extracts migration patterns into `output/<source>-to-<target>/patterns.json` |
+| **rule-writer** | Reads migration guide, extracts migration patterns into `patterns.json` |
 | **test-generator** | Reads `manifest.json`, generates compilable test source code |
 | **rule-validator** | Runs kantra, interprets results, generates fix hints |
 

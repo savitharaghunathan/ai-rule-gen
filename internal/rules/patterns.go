@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 )
 
 // ArtifactCoordinates identifies a published library artifact in a package registry.
@@ -17,8 +18,8 @@ type ArtifactCoordinates struct {
 // ExtractOutput is the intermediate format between agent pattern extraction and rule construction.
 // The agent writes this as patterns.json; `rulegen construct` reads it.
 type ExtractOutput struct {
-	Source   string             `json:"source"`
-	Target   string            `json:"target"`
+	Sources  []string           `json:"sources"`
+	Targets  []string           `json:"targets"`
 	Language string             `json:"language,omitempty"`
 	Patterns []MigrationPattern `json:"patterns"`
 }
@@ -86,8 +87,8 @@ func MergePatterns(parts []*ExtractOutput) *MergeResult {
 		return &MergeResult{Output: &ExtractOutput{}}
 	}
 	merged := &ExtractOutput{
-		Source:   parts[0].Source,
-		Target:   parts[0].Target,
+		Sources:  append([]string{}, parts[0].Sources...),
+		Targets:  append([]string{}, parts[0].Targets...),
 		Language: parts[0].Language,
 	}
 
@@ -97,6 +98,8 @@ func MergePatterns(parts []*ExtractOutput) *MergeResult {
 		if merged.Language == "" && part.Language != "" {
 			merged.Language = part.Language
 		}
+		merged.Sources = unionStrings(merged.Sources, part.Sources)
+		merged.Targets = unionStrings(merged.Targets, part.Targets)
 		for _, p := range part.Patterns {
 			totalPatterns++
 			key := deduplicationKey(p)
@@ -161,7 +164,7 @@ func consolidatePackages(patterns []MigrationPattern) ([]MigrationPattern, int) 
 				bestLen = len(pfqn)
 			}
 		}
-		if bestPkg >= 0 {
+		if bestPkg >= 0 && !isClassReplacement(p.SourceFQN, p.TargetPattern) {
 			childToParent[i] = bestPkg
 		}
 	}
@@ -233,6 +236,46 @@ func complexityRank(c string) int {
 	}
 }
 
+// isClassReplacement returns true when the migration replaces a class with a
+// differently-named class (not just a package move). Such patterns should NOT
+// be absorbed into a parent PACKAGE rule.
+func isClassReplacement(sourceFQN, targetPattern string) bool {
+	if targetPattern == "" {
+		return false
+	}
+	className := sourceFQN
+	if idx := strings.LastIndex(sourceFQN, "."); idx >= 0 {
+		className = sourceFQN[idx+1:]
+	}
+	if className == "" {
+		return false
+	}
+	return !containsWord(targetPattern, className)
+}
+
+// containsWord returns true if text contains word as a standalone token,
+// bounded on both sides by a non-alphanumeric character or string edge.
+func containsWord(text, word string) bool {
+	start := 0
+	for {
+		idx := strings.Index(text[start:], word)
+		if idx < 0 {
+			return false
+		}
+		abs := start + idx
+		leftOK := abs == 0 || !isAlphanumeric(rune(text[abs-1]))
+		rightOK := abs+len(word) == len(text) || !isAlphanumeric(rune(text[abs+len(word)]))
+		if leftOK && rightOK {
+			return true
+		}
+		start = abs + 1
+	}
+}
+
+func isAlphanumeric(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
 func deduplicationKey(p MigrationPattern) string {
 	if p.SourceFQN != "" {
 		return "fqn:" + p.SourceFQN
@@ -274,10 +317,34 @@ func ComplexityToEffort(complexity string) int {
 }
 
 // InitialLabels returns the default labels for a newly generated rule.
-func InitialLabels(source, target string) []string {
-	return []string{
-		fmt.Sprintf("konveyor.io/source=%s", source),
-		fmt.Sprintf("konveyor.io/target=%s", target),
-		"konveyor.io/generated-by=ai-rule-gen",
+// Each source and target gets its own konveyor.io label.
+func InitialLabels(sources, targets []string) []string {
+	var labels []string
+	for _, s := range sources {
+		labels = append(labels, fmt.Sprintf("konveyor.io/source=%s", s))
 	}
+	for _, t := range targets {
+		labels = append(labels, fmt.Sprintf("konveyor.io/target=%s", t))
+	}
+	labels = append(labels, "konveyor.io/generated-by=ai-rule-gen")
+	return labels
+}
+
+// unionStrings returns the union of two string slices, preserving order and deduplicating.
+func unionStrings(a, b []string) []string {
+	seen := make(map[string]bool, len(a))
+	result := make([]string, 0, len(a)+len(b))
+	for _, s := range a {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+	for _, s := range b {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+	return result
 }

@@ -5,14 +5,27 @@ import (
 	"fmt"
 	"strings"
 
-	htmltomd "github.com/JohannesKaufmann/html-to-markdown/v2"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/table"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
 
 // HTMLToMarkdown converts HTML content to clean markdown.
 func HTMLToMarkdown(htmlContent string) (string, error) {
-	md, err := htmltomd.ConvertString(htmlContent)
+	conv := converter.NewConverter(
+		converter.WithPlugins(
+			base.NewBasePlugin(),
+			commonmark.NewCommonmarkPlugin(),
+			table.NewTablePlugin(
+				table.WithHeaderPromotion(true),
+				table.WithNewlineBehavior(table.NewlineBehaviorPreserve),
+			),
+		),
+	)
+	md, err := conv.ConvertString(htmlContent)
 	if err != nil {
 		return "", fmt.Errorf("converting HTML to markdown: %w", err)
 	}

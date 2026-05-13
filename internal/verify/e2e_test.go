@@ -16,8 +16,8 @@ func TestEndToEnd_VerifyToReport(t *testing.T) {
 	rulesDir := filepath.Join(dir, "rules")
 
 	extract := &rules.ExtractOutput{
-		Source:   "lib-v1",
-		Target:   "lib-v2",
+		Sources:  []string{"lib-v1"},
+		Targets:  []string{"lib-v2"},
 		Language: "java",
 		Patterns: []rules.MigrationPattern{
 			{
@@ -78,7 +78,7 @@ func TestEndToEnd_VerifyToReport(t *testing.T) {
 	}
 
 	// Step 4: Build report with per-rule status
-	report := workspace.BuildReport("lib-v1", "lib-v2", 2, 0, 0, 0, nil, nil, nil, verifiedIDs, notFoundIDs)
+	report := workspace.BuildReport([]string{"lib-v1"}, []string{"lib-v2"}, 2, 0, 0, 0, nil, nil, nil, verifiedIDs, notFoundIDs)
 
 	if len(report.Rules) != 1 {
 		t.Fatalf("report rules count = %d, want 1 (only verified/not-found rules included)", len(report.Rules))

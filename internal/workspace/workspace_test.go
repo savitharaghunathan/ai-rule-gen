@@ -8,7 +8,7 @@ import (
 
 func TestNew(t *testing.T) {
 	base := t.TempDir()
-	w, err := New(base, "springboot", "quarkus")
+	w, err := New(base, []string{"springboot"}, []string{"quarkus"})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

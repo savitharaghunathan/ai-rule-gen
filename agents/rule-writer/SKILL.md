@@ -10,8 +10,8 @@ You extract migration patterns from a migration guide and produce validated Konv
 ## Inputs
 
 - `guide` — Path to migration guide markdown file
-- `source` — Source technology (e.g., "spring-boot-3") or "auto-detect"
-- `target` — Target technology (e.g., "spring-boot-3.5") or "auto-detect"
+- `sources` — Source technology labels as a list (e.g., `["spring-boot3", "spring-boot"]`). Each becomes a `konveyor.io/source=` label. First element is the primary (used for naming). Pass "auto-detect" or omit to auto-detect from guide content.
+- `targets` — Target technology labels as a list (e.g., `["spring-boot4", "spring-boot"]`). Each becomes a `konveyor.io/target=` label. First element is the primary (used for naming). Pass "auto-detect" or omit to auto-detect from guide content.
 - `rules_dir` — Output directory for generated rules
 - `sections` — (optional) List of sections to process, each with `heading`, `start_line`, `end_line`. When provided, only process these sections (chunk mode)
 - `output_file` — (optional, default: `output/<source>-to-<target>/patterns.json`) Where to write the extracted patterns
@@ -60,7 +60,7 @@ Read these before starting:
 ### Chunk mode vs full mode vs gap mode
 
 If the `sections` input is provided, you are in **chunk mode**:
-- Source, target, and language are already provided — do NOT auto-detect
+- Sources, targets, and language are already provided — do NOT auto-detect
 - Skip step 2 (indexing) — the section list is your index
 - Read only the assigned sections from the guide using line ranges (use `Read --offset <start_line> --limit <end_line - start_line>`)
 - Skip steps 8-9 (construct/validate) — the orchestrator handles these
@@ -70,13 +70,13 @@ If neither `sections` nor `output_file` is provided, run the full workflow below
 
 ### 1. Auto-detect source/target/language (if not provided)
 
-If the orchestrator didn't provide source, target, or language, detect them from the guide content. Return a JSON object:
+If the orchestrator didn't provide sources, targets, or language, detect them from the guide content. Return a JSON object:
 
 ```json
-{"source": "...", "target": "...", "language": "..."}
+{"sources": ["spring-boot3", "spring-boot"], "targets": ["spring-boot4", "spring-boot"], "language": "java"}
 ```
 
-Use lowercase, hyphenated names (e.g., `spring-boot-3` not `Spring Boot 3`).
+Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
 
 ### 2. Index all sections
 
@@ -112,7 +112,7 @@ Process **each section from the index individually**. For each section:
 | 1 | Does the section mention a **removed** feature, library, or integration? | `*.dependency` on the removed artifact. "Removed" ALWAYS means detectable. |
 | 2 | Does the section mention a class, annotation, or interface that was **removed or relocated**? | `*.referenced` on the old FQN |
 | 3 | Does the section mention a dependency that **changed scope, was renamed, or now requires explicit versioning**? | `*.dependency` |
-| 4 | Does the section contain a **reference table** with old→new mappings? | Process every row as a separate pattern — **unless** the section describes a package-level rename (see "Package-level consolidation" below), in which case emit ONE `PACKAGE` rule and only create additional rules for rows where the method name or signature genuinely changed |
+| 4 | Does the section contain a **reference table** with old→new mappings? | Process every row as a separate pattern — **unless** the section describes a package-level rename (see "Package-level consolidation" below), in which case emit ONE `PACKAGE` rule and only create additional rules for rows where the class name changed or the method name or signature genuinely changed |
 | 5 | Does a **behavioral default change** affect users of a specific class, property, or dependency? | Detect the affected artifact, warn about new behavior (category: `potential`) |
 | 6 | Does the section mention **deprecated** starters, modules, or artifacts? | Each old→new mapping is a pattern |
 | 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
@@ -176,18 +176,34 @@ When a migration guide says an entire package is renamed or removed (e.g., "re-i
 
 **Reference tables under package renames:** The table is showing examples of what moves, not listing separate migration patterns. Emit ONE `PACKAGE` rule for the old package prefix. Do NOT process each table row as a separate pattern.
 
-**When to emit additional METHOD_CALL rules alongside a PACKAGE rule:**
-- ONLY when a method's **name or signature genuinely changed** (e.g., `getStatusLine()` was removed and replaced by `getCode()`, or `setRetryHandler(HttpRequestRetryHandler)` became `setRetryStrategy(HttpRequestRetryStrategy)`)
-- NOT when the method stayed the same but the owning class simply moved packages (e.g., `HttpResponse.getEntity()` → `ClassicHttpResponse.getEntity()` — same method `getEntity()`, the class just moved; the PACKAGE rule already covers the import change)
+**When to emit additional rules alongside a PACKAGE rule:**
+- **METHOD_CALL:** when a method's **name or signature genuinely changed** (e.g., `getStatusLine()` was removed and replaced by `getCode()`, or `setRetryHandler(HttpRequestRetryHandler)` became `setRetryStrategy(HttpRequestRetryStrategy)`)
+- **IMPORT (different API):** when a class is **replaced by a fundamentally different class** — different name, different API surface (e.g., `SSLConnectionSocketFactory` → `ClientTlsStrategyBuilder`, `HttpEntityEnclosingRequest` → `HttpEntityContainer`). A PACKAGE rule tells users to update imports; an IMPORT rule tells users the old class is gone and the replacement has a different name and usage pattern.
+- **IMPORT (class renamed):** when the **class name itself changed**, even if the API surface is similar (e.g., `BasicHttpContext` → `HttpCoreContext`, `HttpRequestBase` → `HttpUriRequestBase`, `HttpResponse` → `ClassicHttpResponse`). The PACKAGE rule fires on the old import, but the user cannot find the old class name in the new package — they need to know the new name. Emit an IMPORT rule with `source_fqn` on the old FQN and a message stating the new class name.
+- **NOT** when the class kept the same name and just moved packages (e.g., `BasicNameValuePair` stayed `BasicNameValuePair`, just under `org.apache.hc.core5.http.message` instead of `org.apache.http.message` — the PACKAGE rule already covers this since the user can find the same class name in the new package)
 
 **Decision tree:**
 
 | Scenario | Correct output |
 |---|---|
-| Section says "package X moved to Y" + table of class mappings | ONE `PACKAGE` rule on old package X |
+| Section says "package X moved to Y" + table of class mappings where class names stayed the same | ONE `PACKAGE` rule on old package X |
 | Section says "package X moved to Y" + table includes rows where a method name changed | ONE `PACKAGE` rule + ONE `METHOD_CALL` rule per genuine method rename |
+| Section says "package X moved to Y" + table includes rows where a class is replaced by a differently-named class with a different API | ONE `PACKAGE` rule + ONE `IMPORT` rule per class replacement |
+| Section says "package X moved to Y" + table includes rows where the **class name changed** (even if the API is similar) | ONE `PACKAGE` rule + ONE `IMPORT` rule per class rename |
 | Section says "ClassA moved to X, ClassB moved to Y, ClassC removed" (different targets) | Separate per-class rules |
 | Section lists method-level API changes with no common package rename | Per-row `METHOD_CALL` or `IMPORT` rules as normal |
+
+**Example — HttpClient 4→5 recipes table under a package rename:**
+
+The guide says "re-import from `org.apache.hc.httpclient5`" and provides a reference table:
+
+| Old (4.x) | New (5.x) | Rule? |
+|---|---|---|
+| `BasicNameValuePair` | `BasicNameValuePair` (same name, new package) | NO — PACKAGE rule covers it |
+| `BasicHttpContext` | `HttpCoreContext` (name changed) | YES — IMPORT rule, user can't find `BasicHttpContext` in the new package |
+| `HttpRequestBase` | `HttpUriRequestBase` (name changed) | YES — IMPORT rule |
+| `HttpResponse` | `ClassicHttpResponse` (name changed) | YES — IMPORT rule |
+| `HttpMessage.getAllHeaders()` | `MessageHeaders.getHeaders()` (method renamed) | YES — METHOD_CALL rule |
 
 See Example 5 in `references/examples/java.md` for worked examples including reference tables and METHOD_CALL alongside PACKAGE rules.
 
@@ -284,12 +300,12 @@ The message should be just the text — no headers, no labels wrapping it.
 
 ### 7. Write patterns.json
 
-Assemble the complete patterns.json with all extracted patterns and write it to the workspace at `output/<source>-to-<target>/patterns.json`:
+Assemble the complete patterns.json with all extracted patterns and write it to the workspace at `output/<primary_source>-to-<primary_target>/patterns.json`:
 
 ```json
 {
-  "source": "<source>",
-  "target": "<target>",
+  "sources": ["<primary_source>", "<additional_source>", ...],
+  "targets": ["<primary_target>", "<additional_target>", ...],
   "language": "<language>",
   "patterns": [...]
 }
@@ -300,7 +316,7 @@ Assemble the complete patterns.json with all extracted patterns and write it to 
 Run the CLI to convert patterns to validated rule YAML:
 
 ```bash
-go run ./cmd/construct --patterns output/<source>-to-<target>/patterns.json --output <rules-dir>
+go run ./cmd/construct --patterns output/<primary_source>-to-<primary_target>/patterns.json --output <rules-dir>
 ```
 
 This produces rule YAML files grouped by concern + ruleset.yaml.

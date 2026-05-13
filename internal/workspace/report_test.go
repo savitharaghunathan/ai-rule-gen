@@ -11,7 +11,7 @@ import (
 func TestBuildReport_NoKantraLimitation(t *testing.T) {
 	passed := []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"}
 	failed := []string{"rule-001", "rule-002"}
-	r := BuildReport("spring-boot-3", "spring-boot-4", 10, 8, 2, 0, passed, failed, nil, nil, nil)
+	r := BuildReport([]string{"spring-boot-3"}, []string{"spring-boot-4"}, 10, 8, 2, 0, passed, failed, nil, nil, nil)
 
 	if r.RulesTotal != 10 {
 		t.Errorf("rules_total: got %d, want 10", r.RulesTotal)
@@ -35,7 +35,7 @@ func TestBuildReport_WithKantraLimitation(t *testing.T) {
 	passed := []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7"}
 	failed := []string{"rule-003"}
 	kantra := []string{"rule-008", "rule-009"}
-	r := BuildReport("spring-boot-3", "spring-boot-4", 10, 7, 1, 2, passed, failed, kantra, nil, nil)
+	r := BuildReport([]string{"spring-boot-3"}, []string{"spring-boot-4"}, 10, 7, 1, 2, passed, failed, kantra, nil, nil)
 
 	if r.KantraLimitation != 2 {
 		t.Errorf("kantra_limitation: got %d, want 2", r.KantraLimitation)
@@ -58,7 +58,7 @@ func TestBuildReport_WithKantraLimitation(t *testing.T) {
 
 func TestBuildReport_AllKantraLimitation(t *testing.T) {
 	kantra := []string{"a", "b", "c"}
-	r := BuildReport("x", "y", 3, 0, 0, 3, nil, nil, kantra, nil, nil)
+	r := BuildReport([]string{"x"}, []string{"y"}, 3, 0, 0, 3, nil, nil, kantra, nil, nil)
 
 	if r.PassRate != 0 {
 		t.Errorf("pass_rate: got %.2f, want 0 (no testable rules)", r.PassRate)
@@ -72,7 +72,7 @@ func TestBuildReport_PerRuleStatus(t *testing.T) {
 	verified := []string{"r1", "r3"}
 	notFound := []string{"r2", "r5"}
 
-	r := BuildReport("sb3", "sb4", 5, 2, 1, 1, passed, failed, kantra, verified, notFound)
+	r := BuildReport([]string{"sb3"}, []string{"sb4"}, 5, 2, 1, 1, passed, failed, kantra, verified, notFound)
 
 	if len(r.Rules) != 5 {
 		t.Fatalf("rules count: got %d, want 5", len(r.Rules))

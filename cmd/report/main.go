@@ -12,8 +12,8 @@ func main() {
 	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
 	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
 	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
-	source := flag.String("source", "", "Source technology")
-	target := flag.String("target", "", "Target technology")
+	source := flag.String("source", "", "Source technologies (comma-separated)")
+	target := flag.String("target", "", "Target technologies (comma-separated)")
 	output := flag.String("output", "", "Output report file path (required)")
 	rulesTotal := flag.Int("rules-total", 0, "Total number of rules")
 	passed := flag.Int("passed", 0, "Number of tests passed")
@@ -33,13 +33,15 @@ func main() {
 		cli.Fail("invalid_arguments", "--output is required", "report", "set --output to a writable report.yaml path", nil)
 	}
 
+	sources := splitCSV(*source)
+	targets := splitCSV(*target)
 	passedRules := splitCSV(*passedRulesFlag)
 	failedRules := splitCSV(*failedRulesFlag)
 	kantraLimitationRules := splitCSV(*kantraLimitationRulesFlag)
 	verifiedRules := splitCSV(*verifiedRulesFlag)
 	notFoundRules := splitCSV(*notFoundRulesFlag)
 
-	report := workspace.BuildReport(*source, *target, *rulesTotal, *passed, *failed, *kantraLimitation, passedRules, failedRules, kantraLimitationRules, verifiedRules, notFoundRules)
+	report := workspace.BuildReport(sources, targets, *rulesTotal, *passed, *failed, *kantraLimitation, passedRules, failedRules, kantraLimitationRules, verifiedRules, notFoundRules)
 	if err := workspace.WriteReport(*output, report); err != nil {
 		cli.Fail("write_report_failed", err.Error(), "report", "verify output directory exists and is writable", map[string]string{"output": *output})
 	}

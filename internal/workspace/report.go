@@ -34,8 +34,8 @@ type RuleStatus struct {
 // Report holds a summary of the rule generation pipeline results.
 type Report struct {
 	GeneratedAt      string             `yaml:"generated_at" json:"generated_at"`
-	Source           string             `yaml:"source" json:"source"`
-	Target           string             `yaml:"target" json:"target"`
+	Sources          []string           `yaml:"sources" json:"sources"`
+	Targets          []string           `yaml:"targets" json:"targets"`
 	RulesTotal       int                `yaml:"rules_total" json:"rules_total"`
 	TestsPassed      int                `yaml:"tests_passed" json:"tests_passed"`
 	TestsFailed      int                `yaml:"tests_failed" json:"tests_failed"`
@@ -48,7 +48,7 @@ type Report struct {
 // BuildReport creates a report from test results with per-rule status.
 // Pass rate is computed as passed / (passed + failed) to exclude
 // rules that are correct but cannot be auto-tested by kantra.
-func BuildReport(source, target string, rulesTotal, passed, failed, kantraLimitation int, passedRules, failedRules, kantraLimitationRules, verifiedRules, notFoundRules []string) *Report {
+func BuildReport(sources, targets []string, rulesTotal, passed, failed, kantraLimitation int, passedRules, failedRules, kantraLimitationRules, verifiedRules, notFoundRules []string) *Report {
 	testable := passed + failed
 	var passRate float64
 	if testable > 0 {
@@ -97,8 +97,8 @@ func BuildReport(source, target string, rulesTotal, passed, failed, kantraLimita
 
 	return &Report{
 		GeneratedAt:      time.Now().UTC().Format(time.RFC3339),
-		Source:            source,
-		Target:            target,
+		Sources:           sources,
+		Targets:           targets,
 		RulesTotal:        rulesTotal,
 		TestsPassed:       passed,
 		TestsFailed:       failed,

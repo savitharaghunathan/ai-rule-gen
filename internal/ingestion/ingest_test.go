@@ -164,6 +164,47 @@ func TestExtractArticle_InvalidHTML(t *testing.T) {
 	}
 }
 
+func TestHTMLToMarkdown_Table(t *testing.T) {
+	html := `<table>
+		<tr><th>Old</th><th>New</th></tr>
+		<tr><td><code>getStatusLine()</code></td><td><code>getCode()</code></td></tr>
+		<tr><td><code>getAllHeaders()</code></td><td><code>getHeaders()</code></td></tr>
+	</table>`
+	md, err := HTMLToMarkdown(html)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(md, "|") {
+		t.Errorf("expected pipe table syntax, got:\n%s", md)
+	}
+	if !strings.Contains(md, "getStatusLine()") {
+		t.Error("expected table cell content preserved")
+	}
+	if !strings.Contains(md, "getCode()") {
+		t.Error("expected table cell content preserved")
+	}
+}
+
+func TestHTMLToMarkdown_TableWithBR(t *testing.T) {
+	html := `<table>
+		<tr><th>Old</th><th>New</th></tr>
+		<tr>
+			<td><code>RequestConfig.setConnectTimeout()</code><br/><code>HttpClients.setDefaultRequestConfig()</code></td>
+			<td><code>ConnectionConfig.setConnectTimeout()</code></td>
+		</tr>
+	</table>`
+	md, err := HTMLToMarkdown(html)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(md, "|") {
+		t.Errorf("expected pipe table (not skipped), got:\n%s", md)
+	}
+	if !strings.Contains(md, "RequestConfig.setConnectTimeout()") {
+		t.Errorf("expected multi-line cell content preserved, got:\n%s", md)
+	}
+}
+
 func containsStr(s, substr string) bool {
 	return len(s) >= len(substr) && strings.Contains(s, substr)
 }

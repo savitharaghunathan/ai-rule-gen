@@ -6,8 +6,8 @@ This is the contract between the agent (which extracts migration patterns) and `
 
 ```json
 {
-  "source": "spring-boot-3",
-  "target": "spring-boot-4",
+  "sources": ["spring-boot3", "spring-boot"],
+  "targets": ["spring-boot4", "spring-boot"],
   "language": "java",
   "patterns": [
     {
@@ -57,8 +57,8 @@ This is the contract between the agent (which extracts migration patterns) and `
 
 | Field | Required | Description |
 |---|---|---|
-| `source` | yes | Source technology (e.g., `spring-boot-3`, `java-ee-8`, `go-non-fips`) |
-| `target` | yes | Target technology (e.g., `spring-boot-4`, `jakarta-ee-9`, `go-fips`) |
+| `sources` | yes | Array of source technology labels (e.g., `["spring-boot3", "spring-boot"]`). Each becomes a `konveyor.io/source=` label on every rule. First element is the "primary" used for naming (rule IDs, directory, ruleset name) |
+| `targets` | yes | Array of target technology labels (e.g., `["spring-boot4", "spring-boot"]`). Each becomes a `konveyor.io/target=` label on every rule. First element is the "primary" |
 | `language` | no | Programming language: `java`, `go`, `nodejs`, `csharp`. Auto-detected from provider_type if omitted |
 | `patterns` | yes | Array of MigrationPattern objects |
 
@@ -144,7 +144,7 @@ The CLI handles all mechanical transformation:
 
 4. **Rule ID generation** — Creates sequential IDs: `<source>-to-<target>-00010`, `00020`, `00030`, etc. (increments of 10)
 
-5. **Initial labels** — Adds 5 labels: `source=`, `target=`, `generated-by=ai-rule-gen`, `test-result=untested`, `review=unreviewed`
+5. **Initial labels** — Adds one `konveyor.io/source=` label per source, one `konveyor.io/target=` label per target, and `konveyor.io/generated-by=ai-rule-gen`
 
 6. **Description** — Uses `rationale` as-is (write complete sentences)
 
@@ -160,13 +160,13 @@ The CLI handles all mechanical transformation:
 
 ## Metadata Auto-Detection
 
-If `source` and `target` are not known, the agent can auto-detect them from the migration guide content. The detection should return a JSON object:
+If `sources` and `targets` are not known, the agent can auto-detect them from the migration guide content. The detection should return a JSON object:
 
 ```json
-{"source": "...", "target": "...", "language": "..."}
+{"sources": ["spring-boot3", "spring-boot"], "targets": ["spring-boot4", "spring-boot"], "language": "java"}
 ```
 
-Use lowercase, hyphenated names (e.g., `spring-boot-3` not `Spring Boot 3`).
+Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
 
 ## Guidelines for Pattern Extraction
 

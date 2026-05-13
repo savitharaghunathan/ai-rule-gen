@@ -16,12 +16,12 @@ If no argument is provided, ask the user for the migration guide source.
 ## Inputs
 
 - `guide_source` — URL, file path, or pasted text of a migration guide
-- `source` — (optional) Source technology, e.g. "spring-boot-3". Auto-detected if omitted.
-- `target` — (optional) Target technology, e.g. "spring-boot-4". Auto-detected if omitted.
+- `sources` — (optional) Source technology labels as a list, e.g. `["spring-boot3", "spring-boot"]`. Each becomes a `konveyor.io/source=` label. First element is the primary (used for naming). Auto-detected if omitted.
+- `targets` — (optional) Target technology labels as a list, e.g. `["spring-boot4", "spring-boot"]`. Each becomes a `konveyor.io/target=` label. First element is the primary (used for naming). Auto-detected if omitted.
 - `mode` — (optional) `interactive` (default) or `non_interactive`
 - `checkpoint_behavior` — (optional) `ask` (default), `continue`, or `stop_after_extract`
 - `resume_from` — (optional) `ingest`, `extract`, `coverage`, `scaffold`, `test`, `report`
-- `migration_dir` — (optional) explicit output directory override. If omitted, auto-generated as `output/<source>-to-<target>-<YYYYMMDD-HHMMSS>`. Required when using `resume_from`.
+- `migration_dir` — (optional) explicit output directory override. If omitted, auto-generated as `output/<primary_source>-to-<primary_target>-<YYYYMMDD-HHMMSS>`. Required when using `resume_from`.
 
 ## Returns
 
@@ -184,7 +184,7 @@ Generate a timestamp once at pipeline start (`YYYYMMDD-HHMMSS` in local time).
 
 Determine the migration directory path:
 - If the user provided `migration_dir`, use that (no timestamp)
-- If the user provided `source` and `target`, use `output/<source>-to-<target>-<YYYYMMDD-HHMMSS>`
+- If the user provided `sources` and `targets` (or `source` and `target`), use `output/<primary_source>-to-<primary_target>-<YYYYMMDD-HHMMSS>` where `primary_source` is `sources[0]` and `primary_target` is `targets[0]`
 - If auto-detecting: ingest to `output/guide-temp.md` first, read the first ~50 lines to detect source/target/language (lowercase, hyphenated names like `spring-boot-3`), then use `output/<source>-to-<target>-<YYYYMMDD-HHMMSS>`
 
 ```bash
@@ -235,8 +235,8 @@ Split the content sections into **N balanced chunks** (minimum 1, maximum 5 agen
 **Purpose:** Extract migration patterns from assigned sections.
 **Inputs per invocation:**
   - guide: <migration_dir>/guide.md
-  - source: {detected source}
-  - target: {detected target}
+  - sources: {sources array (e.g., ["spring-boot3", "spring-boot"])}
+  - targets: {targets array (e.g., ["spring-boot4", "spring-boot"])}
   - rules_dir: <migration_dir>/rules
   - sections: {chunk subset — list of `{heading, start_line, end_line}` objects}
   - output_file: <migration_dir>/patterns-{chunk_number}.json
@@ -293,8 +293,8 @@ Convert gaps to sections and send back to the rule-writer in chunk mode for targ
 **Purpose:** Extract patterns from specific sections that the coverage check flagged.
 **Inputs:**
   - guide: <migration_dir>/guide.md
-  - source: {detected source}
-  - target: {detected target}
+  - sources: {sources array}
+  - targets: {targets array}
   - rules_dir: <migration_dir>/rules
   - sections: {gap sections converted to `[{heading, start_line, end_line}]` format}
   - output_file: <migration_dir>/patterns-gaps.json
@@ -461,7 +461,7 @@ If still_failing is non-empty, move on — don't block the pipeline.
 Collate pass/fail results from the test run and the fix loop. Generate `report.yaml` with per-rule test and verification status. No labels are written to rule YAML files — all pipeline metadata lives in the report.
 
 ```bash
-go run ./cmd/report <log_flags> --source <source> --target <target> --output <migration_dir>/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --passed-rules <comma-separated passed rule IDs> --failed-rules <comma-separated failed rule IDs> --kantra-limitation-rules <comma-separated kantra limitation rule IDs> --verified-rules <comma-separated verified rule IDs> --not-found-rules <comma-separated not-found rule IDs>
+go run ./cmd/report <log_flags> --source <comma-separated sources> --target <comma-separated targets> --output <migration_dir>/report.yaml --rules-total <N> --passed <P> --failed <F> --kantra-limitation <K> --passed-rules <comma-separated passed rule IDs> --failed-rules <comma-separated failed rule IDs> --kantra-limitation-rules <comma-separated kantra limitation rule IDs> --verified-rules <comma-separated verified rule IDs> --not-found-rules <comma-separated not-found rule IDs>
 ```
 
 The `--verified-rules` and `--not-found-rules` flags come from the verification mapping built in step 2c (pattern_index → rule_id via construct's pattern_rule_map).
@@ -478,7 +478,7 @@ Print a formatted summary table using GitHub-flavored markdown:
 | | |
 |---|---|
 | **Input** | <guide title or URL as a markdown link> |
-| **Migration** | <source> → <target> (<language>) |
+| **Migration** | <primary_source> → <primary_target> (<language>) |
 | **Guide** | <GUIDE_LINES> lines, <N> sections → <M> produced patterns, <K> skipped |
 | **Rules** | <rules_count> generated, **<P>/<N> passed (<percent>%)** |
 | **Verification** | <verified>/<total> source-verified, <not_found> not found, <skipped> skipped (omit row if all skipped) |

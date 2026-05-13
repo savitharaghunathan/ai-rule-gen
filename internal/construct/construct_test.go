@@ -3,6 +3,7 @@ package construct
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -193,8 +194,8 @@ func TestBuildCondition_WithAlternativeFQNs(t *testing.T) {
 
 func TestRun_MixedConditionTypes(t *testing.T) {
 	extract := &rules.ExtractOutput{
-		Source:   "test-source",
-		Target:   "test-target",
+		Sources:  []string{"test-source"},
+		Targets:  []string{"test-target"},
 		Language: "java",
 		Patterns: []rules.MigrationPattern{
 			{
@@ -259,7 +260,7 @@ func TestPatternToRule_FullDescription(t *testing.T) {
 		Category:      "mandatory",
 	}
 	idGen := rules.NewIDGenerator("test")
-	rule := patternToRule(p, idGen, "sb3", "sb4")
+	rule := patternToRule(p, idGen, []string{"sb3"}, []string{"sb4"})
 	if rule.Description != long {
 		t.Errorf("description was truncated: got %q", rule.Description)
 	}
@@ -277,7 +278,7 @@ func TestPatternToRule_LinksFromDocURL(t *testing.T) {
 		DocumentationURL: "https://example.com/migration#section",
 	}
 	idGen := rules.NewIDGenerator("test")
-	rule := patternToRule(p, idGen, "sb3", "sb4")
+	rule := patternToRule(p, idGen, []string{"sb3"}, []string{"sb4"})
 	if len(rule.Links) != 1 {
 		t.Fatalf("expected 1 link, got %d", len(rule.Links))
 	}
@@ -300,7 +301,7 @@ func TestPatternToRule_NoLinksWithoutDocURL(t *testing.T) {
 		Category:      "mandatory",
 	}
 	idGen := rules.NewIDGenerator("test")
-	rule := patternToRule(p, idGen, "sb3", "sb4")
+	rule := patternToRule(p, idGen, []string{"sb3"}, []string{"sb4"})
 	if rule.Links != nil {
 		t.Errorf("expected nil links when no documentation_url, got %v", rule.Links)
 	}
@@ -308,8 +309,8 @@ func TestPatternToRule_NoLinksWithoutDocURL(t *testing.T) {
 
 func TestRun_PatternRuleMap(t *testing.T) {
 	extract := &rules.ExtractOutput{
-		Source:   "sb3",
-		Target:   "sb4",
+		Sources:  []string{"sb3"},
+		Targets:  []string{"sb4"},
 		Language: "java",
 		Patterns: []rules.MigrationPattern{
 			{SourcePattern: "A", SourceFQN: "com.example.A", Rationale: "r1", Complexity: "low", Category: "mandatory", ProviderType: "java", LocationType: "IMPORT"},
@@ -331,5 +332,75 @@ func TestRun_PatternRuleMap(t *testing.T) {
 		if ruleID == "" {
 			t.Errorf("pattern %d has empty rule ID", idx)
 		}
+	}
+}
+
+func TestRun_MultiSourceTargetLabels(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  []string{"oraclejdk7+", "oraclejdk"},
+		Targets:  []string{"openjdk7+", "openjdk"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern: "JavaFX removed",
+				SourceFQN:     "javafx.application.Application",
+				LocationType:  "IMPORT",
+				ProviderType:  "java",
+				Rationale:     "JavaFX removed from Oracle JDK",
+				Complexity:    "high",
+				Category:      "mandatory",
+			},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	// Verify rule has all source/target labels
+	for _, rr := range result.Grouped {
+		for _, r := range rr {
+			wantLabels := map[string]bool{
+				"konveyor.io/source=oraclejdk7+":     true,
+				"konveyor.io/source=oraclejdk":        true,
+				"konveyor.io/target=openjdk7+":        true,
+				"konveyor.io/target=openjdk":           true,
+				"konveyor.io/generated-by=ai-rule-gen": true,
+			}
+			for _, l := range r.Labels {
+				delete(wantLabels, l)
+			}
+			if len(wantLabels) > 0 {
+				t.Errorf("rule %s missing labels: %v", r.RuleID, wantLabels)
+			}
+		}
+	}
+
+	// Verify ruleset has all labels
+	rs := result.Ruleset
+	if rs.Name != "openjdk7+/oraclejdk7+" {
+		t.Errorf("ruleset name: got %q, want %q", rs.Name, "openjdk7+/oraclejdk7+")
+	}
+	wantRulesetLabels := []string{
+		"konveyor.io/source=oraclejdk7+",
+		"konveyor.io/source=oraclejdk",
+		"konveyor.io/target=openjdk7+",
+		"konveyor.io/target=openjdk",
+	}
+	if len(rs.Labels) != len(wantRulesetLabels) {
+		t.Fatalf("ruleset labels = %v, want %v", rs.Labels, wantRulesetLabels)
+	}
+	for i, l := range rs.Labels {
+		if l != wantRulesetLabels[i] {
+			t.Errorf("ruleset label[%d] = %q, want %q", i, l, wantRulesetLabels[i])
+		}
+	}
+
+	// Verify rule ID prefix uses primary source/target
+	ruleID := result.PatternRuleMap[0]
+	if !strings.HasPrefix(ruleID, "oraclejdk7+-to-openjdk7+-") {
+		t.Errorf("rule ID %q should start with oraclejdk7+-to-openjdk7+-", ruleID)
 	}
 }

@@ -31,15 +31,20 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 	if len(extract.Patterns) == 0 {
 		return nil, fmt.Errorf("no patterns found in input")
 	}
+	if len(extract.Sources) == 0 || len(extract.Targets) == 0 {
+		return nil, fmt.Errorf("sources and targets are required in patterns.json")
+	}
 
-	prefix := rulePrefix(extract.Source, extract.Target)
+	sources := extract.Sources
+	targets := extract.Targets
+	prefix := rulePrefix(sources[0], targets[0])
 	idGen := rules.NewIDGenerator(prefix)
 
 	grouped := make(map[string][]rules.Rule)
 	patternRuleMap := make(map[int]string)
 
 	for i, p := range extract.Patterns {
-		rule := patternToRule(p, idGen, extract.Source, extract.Target)
+		rule := patternToRule(p, idGen, sources, targets)
 		patternRuleMap[i] = rule.RuleID
 		concern := p.Concern
 		if concern == "" {
@@ -66,13 +71,17 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 	}
 
 	// Write ruleset.yaml
+	var rulesetLabels []string
+	for _, s := range sources {
+		rulesetLabels = append(rulesetLabels, fmt.Sprintf("konveyor.io/source=%s", s))
+	}
+	for _, t := range targets {
+		rulesetLabels = append(rulesetLabels, fmt.Sprintf("konveyor.io/target=%s", t))
+	}
 	ruleset := &rules.Ruleset{
-		Name:        fmt.Sprintf("%s/%s", extract.Target, extract.Source),
-		Description: fmt.Sprintf("Rules for migrating from %s to %s", extract.Source, extract.Target),
-		Labels: []string{
-			fmt.Sprintf("konveyor.io/source=%s", extract.Source),
-			fmt.Sprintf("konveyor.io/target=%s", extract.Target),
-		},
+		Name:        fmt.Sprintf("%s/%s", targets[0], sources[0]),
+		Description: fmt.Sprintf("Rules for migrating from %s to %s", sources[0], targets[0]),
+		Labels:      rulesetLabels,
 	}
 	rulesetPath := fmt.Sprintf("%s/ruleset.yaml", outputDir)
 	if err := rules.WriteRuleset(rulesetPath, ruleset); err != nil {
@@ -98,7 +107,7 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 	}, nil
 }
 
-func patternToRule(p rules.MigrationPattern, idGen *rules.IDGenerator, source, target string) rules.Rule {
+func patternToRule(p rules.MigrationPattern, idGen *rules.IDGenerator, sources, targets []string) rules.Rule {
 	condition := buildCondition(p)
 
 	message := p.Message
@@ -111,7 +120,7 @@ func patternToRule(p rules.MigrationPattern, idGen *rules.IDGenerator, source, t
 		Description: p.Rationale,
 		Category:    rules.Category(p.Category),
 		Effort:      rules.ComplexityToEffort(p.Complexity),
-		Labels:      rules.InitialLabels(source, target),
+		Labels:      rules.InitialLabels(sources, targets),
 		Message:     message,
 		Links:       buildLinks(p),
 		When:        condition,
