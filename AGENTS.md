@@ -118,6 +118,89 @@ dependency_name, provider_type, location_type, complexity, category, concern).
 **manifest.json** — Output of `cmd/scaffold`. Tells the agent what source files
 to generate per test group.
 
+## Key Packages
+
+### `internal/rules`
+
+Core types for migration patterns and rules.
+
+- **`MigrationPattern`** — extracted pattern from a migration guide
+- **`ArtifactCoordinates`** — identifies a published library in a package registry (groupId, artifactId, version)
+- **`Rule`** — a Konveyor analyzer rule with conditions, labels, messages
+- **`ExtractOutput`** — the patterns.json schema (source, target, language, patterns)
+
+### `internal/verify`
+
+Deterministic verification of extracted patterns against real published library artifacts.
+
+- **`Verifier` interface** — per-language verification (`Verify(pattern) → Result`)
+- **`JavaVerifier`** — downloads JARs from Maven Central, runs `jar tf`, checks FQN existence
+- **`Run(extract, cacheDir)`** — verify all patterns, returns `[]Result`
+- **`Summarize(results)`** — aggregate results into verified/not_found/skipped/offline counts
+- **`CleanCache(cacheDir)`** — remove cached artifacts
+
+Cache layout: `<cacheDir>/<groupId>/<artifactId>/<version>/classes.txt`
+
+### `internal/construct`
+
+Converts patterns into rule YAML files.
+
+- **`Run(extract, rulesDir)`** — returns `Result` with `PatternRuleMap` (pattern index → rule ID)
+- `PatternRuleMap` enables post-construction operations (like verification labeling) to map pattern-level results to rule IDs
+
+### `internal/workspace`
+
+Pipeline workspace management.
+
+- **`Workspace`** — manages output directory structure
+- **`Report`** — pipeline summary with per-rule `RuleStatus` (test_status, source_verified) and optional `Verification *VerificationStats`
+- **`VerifyCacheDir()`** — returns path for cached verification artifacts
+
+## Verification
+
+The verification layer checks whether extracted FQNs actually exist in published source library artifacts. This catches hallucinated patterns that the LLM creates.
+
+1. Rule-writer agents emit `source_artifact` metadata on each pattern
+2. `cmd/verify` downloads the JAR from Maven Central and lists its classes via `jar tf`
+3. Checks if the FQN exists in the class listing
+4. Results are recorded in `report.yaml` as per-rule `source_verified` status:
+   - `source_verified: "true"` — FQN confirmed in published artifact
+   - `source_verified: "false"` — FQN not found in published artifact
+   - Omitted if verification didn't run (offline, no source_artifact, unsupported language)
+
+Currently Java only. The `Verifier` interface supports adding Go, Node.js, and C# verifiers.
+When Maven Central is unreachable, verification skips gracefully — all patterns get `skipped` status and the pipeline continues normally.
+
+## Labels
+
+Rules carry only stable metadata labels. Pipeline status (test results, verification) lives in `report.yaml`, not on rules.
+
+### Rule labels (set by `cmd/construct`)
+
+| Label | Purpose |
+|-------|---------|
+| `konveyor.io/source=<source>` | Source technology |
+| `konveyor.io/target=<target>` | Target technology |
+| `konveyor.io/generated-by=ai-rule-gen` | Generation provenance |
+
+### Report per-rule status (set by `cmd/report`)
+
+| Field | Values | Meaning |
+|-------|--------|---------|
+| `test_status` | `passed`, `failed`, `kantra-limitation`, `untested` | Kantra test result |
+| `source_verified` | `true`, `false`, or omitted | FQN verified against published artifact |
+
+## Testing
+
+```bash
+go test ./...                                    # Unit tests
+go test ./... -tags=integration -timeout 120s    # Integration tests (requires network, jar)
+```
+
+Files tagged with `//go:build integration` require external resources (Maven Central, jar command) and are skipped by default.
+
 ## Code Style
 
 Go 1.25+. Standard conventions. No LLM dependencies in Go code.
+All new code needs tests. CLI commands output JSON to stdout.
+Structured logging via `cmd/internal/cli`. Verification is additive and non-blocking.
