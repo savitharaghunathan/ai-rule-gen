@@ -87,12 +87,9 @@ Labels follow `konveyor.io/<key>=<value>` format. `go run ./cmd/construct` autom
 | `konveyor.io/source` | from patterns.json `source` | Source technology being migrated from |
 | `konveyor.io/target` | from patterns.json `target` | Target technology being migrated to |
 | `konveyor.io/generated-by` | `ai-rule-gen` | Marks rule as AI-generated |
-| `konveyor.io/test-result` | `untested` → `passed`/`failed` | Set by `go run ./cmd/stamp` after kantra tests |
 | `konveyor.io/review` | `unreviewed` | For human review tracking |
 
 Multiple source/target labels can exist for rules that apply to multiple migration paths.
-
-The `stamp` command updates `konveyor.io/test-result` from `untested` to `passed` or `failed` based on kantra results.
 
 ## Message Format
 

@@ -30,7 +30,7 @@ Some runtimes configure permissions through their UI or CLI, not config files:
 
 | Operation | Commands/Patterns |
 |-----------|-------------------|
-| shell | `go run ./cmd/{ingest,sections,merge-patterns,contract-validate,construct,validate,scaffold,sanitize,test,stamp,report,coverage} *`, `go mod *`, `go doc *`, `mkdir`, `wc`, `grep` |
+| shell | `go run ./cmd/{ingest,sections,merge-patterns,contract-validate,construct,validate,scaffold,sanitize,test,report,coverage} *`, `go mod *`, `go doc *`, `mkdir`, `wc`, `grep` |
 | read | `output/**`, `agents/*/references/**` |
 | write/edit | `output/**` |
 

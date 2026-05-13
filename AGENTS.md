@@ -28,7 +28,6 @@ cmd/                      # CLI commands (go run ./cmd/<name>)
   scaffold/               # Create test dirs, .test.yaml, manifest.json
   sanitize/               # Fix illegal XML comments in a directory
   test/                   # Run kantra tests (sequential, auto-retry timeouts)
-  stamp/                  # Update rule files with kantra pass/fail labels
   report/                 # Generate YAML summary report
   coverage/               # Post-extraction coverage check
 internal/                 # Go library code (no LLM dependencies)
@@ -80,7 +79,6 @@ go run ./cmd/contract-validate --contract agents/<skill>/contract.json --mode in
 go run ./cmd/scaffold  --rules output/<src>-to-<tgt>/rules/ --output output/<src>-to-<tgt>/tests/
 go run ./cmd/sanitize  --dir output/<src>-to-<tgt>/tests/data/
 go run ./cmd/test      --rules output/<src>-to-<tgt>/rules/ --tests output/<src>-to-<tgt>/tests/ [--files a.test.yaml,b.test.yaml] [--timeout 5m]
-go run ./cmd/stamp     --rules output/<src>-to-<tgt>/rules/ --passed id1,id2 --failed id3 [--kantra-limitation id4]
 go run ./cmd/report    --source <src> --target <tgt> --output output/<src>-to-<tgt>/report.yaml [--kantra-limitation N] [--kantra-limitation-rules id4,id5]
 go run ./cmd/coverage  --guide output/<src>-to-<tgt>/guide.md --patterns output/<src>-to-<tgt>/patterns.json [--language java]
 

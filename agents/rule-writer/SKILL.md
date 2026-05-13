@@ -118,13 +118,22 @@ Process **each section from the index individually**. For each section:
 | 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
 | 8 | Does the section mention a **version requirement** for a plugin, tool, or library? | `builtin.filecontent` (Gradle) or `builtin.xml` (Maven) |
 
-**Output format — terse for extractions, verbose for skips.**
+**Output format — verbose for ALL sections.**
 
-Run all 8 checklist items internally for every section. For output:
+Run all 8 checklist items for every section. Print the full evaluation:
 
-- **EXTRACT** — print only the verdict line:
+- **EXTRACT** — print the full 8-item evaluation AND the verdict:
   ```
-  Section: "### Liveness and Readiness Probes" → EXTRACT: detect management.health.probes.enabled property, category: potential (items 5,7)
+  Section: "### Liveness and Readiness Probes"
+    1. Removed? no
+    2. Class relocated? no
+    3. Dependency changed? no
+    4. Reference table? no
+    5. Behavioral default? yes — health probes disabled by default
+    6. Deprecated? no
+    7. Names artifact? yes — management.health.probes.enabled
+    8. Version requirement? no
+    → EXTRACT: detect management.health.probes.enabled property, category: potential (items 5,7)
   ```
 
 - **SKIP** — print the full 8-item evaluation so the decision is auditable:
@@ -138,7 +147,7 @@ Run all 8 checklist items internally for every section. For output:
     6. Deprecated? no
     7. Names artifact? no
     8. Version requirement? no
-    → SKIP: header only
+    → SKIP: no detectable artifacts
   ```
 
 - **Header-only** — one line is enough:
@@ -146,7 +155,18 @@ Run all 8 checklist items internally for every section. For output:
   Section: "## Upgrading Web Features" → SKIP: header only
   ```
 
-Skips are where errors hide, so they get the full trace. Extractions are self-validating (the rule either works or it doesn't).
+- **TABLE** — when a section contains a reference table, enumerate every row with its disposition:
+  ```
+  Table: "<section heading>" (<N> rows)
+  Row 1: OldThing → NewThing — EXTRACT as IMPORT (class renamed)
+  Row 2: OldThing → OldThing — PACKAGE covers (same name, same API)
+  Row 3: OldThing.method() → NewThing.method() — EXTRACT as IMPORT (class renamed, method unchanged)
+  Row 4: OldThing.foo() → OldThing.bar() — EXTRACT as METHOD_CALL (method renamed)
+  ...
+  ```
+  Every row must appear. This prevents silent drops. For each row, decompose: check the class/type name first, then the method/member name.
+
+Full checklist output for extractions makes every decision auditable — the orchestrator can verify that all named artifacts got a "yes" on the relevant checklist item.
 
 #### Skip reasons that indicate a checklist failure
 
@@ -257,7 +277,7 @@ Collect flagged patterns in a `suspected_kantra_limitations` list and return it 
 
 ### Choosing the right condition type
 
-See `references/condition-types.md` for the full condition-type reference and `references/patterns-json-schema.md` for which fields map to which condition type.
+See `references/languages/<language>/condition-types.md` for the language-specific condition-type reference and `references/patterns-json-schema.md` for which fields map to which condition type.
 
 **One critical rule for config properties:** Always use `application.*\\.(properties|yml)` as the `file_pattern` — this covers both `.properties` and `.yml` formats. Never use `.*\\.properties` alone (too broad) or `application.*\\.properties` alone (misses YAML configs).
 

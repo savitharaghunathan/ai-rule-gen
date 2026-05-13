@@ -26,6 +26,7 @@ type Result struct {
 	TotalSections       int   `json:"total_sections"`
 	SectionsWithContent int   `json:"sections_with_content"`
 	CoveredSections     int   `json:"covered_sections"`
+	PartiallyCovered    int   `json:"partially_covered"`
 	GapCount            int   `json:"gap_count"`
 	Gaps                []Gap `json:"gaps"`
 }
@@ -149,8 +150,16 @@ func CheckCoverage(sections []Section, scanner Scanner, patterns *rules.ExtractO
 			}
 		}
 
-		if anyCovered {
+		if len(uncovered) == 0 {
 			result.CoveredSections++
+		} else if anyCovered {
+			result.PartiallyCovered++
+			result.GapCount++
+			result.Gaps = append(result.Gaps, Gap{
+				Heading:   section.Heading,
+				Line:      section.StartLine,
+				Artifacts: uncovered,
+			})
 		} else {
 			result.GapCount++
 			result.Gaps = append(result.Gaps, Gap{
@@ -284,6 +293,11 @@ var noise = map[string]bool{
 	"final": true, "abstract": true, "return": true, "this": true,
 	"new": true, "extends": true, "implements": true, "package": true,
 	"override": true, "deprecated": true, "test": true,
+	"object": true, "exception": true, "throwable": true, "error": true,
+	"otherwise": true, "example": true, "instance": true, "instead": true,
+	"before": true, "after": true, "replace": true, "migration": true,
+	"should": true, "several": true, "custom": true, "necessary": true,
+	"always": true, "optionally": true, "advisable": true, "compatible": true,
 }
 
 var (
@@ -304,10 +318,16 @@ func isNoise(s string) bool {
 	if templateRe.MatchString(s) {
 		return true
 	}
-	if strings.Contains(s, "(") || strings.Contains(s, ")") {
-		return true
-	}
 	return false
+}
+
+// stripParens removes a trailing "()" from a string, returning the stripped
+// string and whether stripping occurred.
+func stripParens(s string) (string, bool) {
+	if strings.HasSuffix(s, "()") {
+		return s[:len(s)-2], true
+	}
+	return s, false
 }
 
 // --- Java Scanner ---
@@ -315,11 +335,12 @@ func isNoise(s string) bool {
 type javaScanner struct{}
 
 var (
-	javaFQNRe      = regexp.MustCompile(`[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}\.[A-Z]\w*`)
-	javaPropertyRe = regexp.MustCompile(`[a-z][a-z0-9]*(?:\.[a-z][a-z0-9-]*){2,}`)
-	mavenArtifactRe = regexp.MustCompile(`<artifactId>([^<]+)</artifactId>`)
-	xmlElementRe    = regexp.MustCompile(`<([a-z][a-zA-Z]{2,})>`)
-	depCoordRe      = regexp.MustCompile(`["']([a-z][a-z0-9.-]*):([a-z][a-z0-9-]+)["']`)
+	javaFQNRe       = regexp.MustCompile(`[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}\.[A-Z]\w*`)
+	javaPropertyRe  = regexp.MustCompile(`[a-z][a-z0-9]*(?:\.[a-z][a-z0-9-]*){2,}`)
+	javaPascalCaseRe = regexp.MustCompile(`\b[A-Z][a-zA-Z0-9]{4,}\b`)
+	mavenArtifactRe  = regexp.MustCompile(`<artifactId>([^<]+)</artifactId>`)
+	xmlElementRe     = regexp.MustCompile(`<([a-z][a-zA-Z]{2,})>`)
+	depCoordRe       = regexp.MustCompile(`["']([a-z][a-z0-9.-]*):([a-z][a-z0-9-]+)["']`)
 )
 
 func (s *javaScanner) Scan(content string) []string {
@@ -327,16 +348,24 @@ func (s *javaScanner) Scan(content string) []string {
 	var artifacts []string
 
 	add := func(text string) {
-		if !isNoise(text) && !seen[text] {
-			seen[text] = true
-			artifacts = append(artifacts, text)
+		stripped, _ := stripParens(text)
+		if stripped == "" {
+			return
+		}
+		if !isNoise(stripped) && !seen[stripped] {
+			seen[stripped] = true
+			artifacts = append(artifacts, stripped)
 		}
 	}
 
 	for _, ref := range extractInlineCode(content) {
 		if name, ok := strings.CutPrefix(ref, "@"); ok {
 			add(name)
-		} else if strings.Contains(ref, ".") && strings.Count(ref, ".") >= 2 {
+		} else if strings.Contains(ref, ".") && strings.Count(ref, ".") >= 1 {
+			add(ref)
+		} else if javaPascalCaseRe.MatchString(ref) {
+			add(ref)
+		} else if strings.HasSuffix(ref, "()") {
 			add(ref)
 		}
 	}
@@ -349,6 +378,9 @@ func (s *javaScanner) Scan(content string) []string {
 		if !seen[m] {
 			add(m)
 		}
+	}
+	for _, m := range javaPascalCaseRe.FindAllString(blockText, -1) {
+		add(m)
 	}
 	for _, m := range mavenArtifactRe.FindAllStringSubmatch(blockText, -1) {
 		add(m[1])

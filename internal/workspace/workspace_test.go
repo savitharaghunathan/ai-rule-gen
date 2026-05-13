@@ -19,7 +19,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Check all subdirectories exist
-	for _, dir := range []string{w.RulesDir(), w.TestsDir(), w.TestDataDir(), w.ConfidenceDir()} {
+	for _, dir := range []string{w.RulesDir(), w.TestsDir(), w.TestDataDir()} {
 		info, err := os.Stat(dir)
 		if err != nil {
 			t.Errorf("directory %s does not exist: %v", dir, err)
@@ -60,9 +60,7 @@ func TestWorkspace_Paths(t *testing.T) {
 		{"RulesDir", w.RulesDir(), "/output/java-ee-to-quarkus/rules"},
 		{"TestsDir", w.TestsDir(), "/output/java-ee-to-quarkus/tests"},
 		{"TestDataDir", w.TestDataDir(), "/output/java-ee-to-quarkus/tests/data"},
-		{"ConfidenceDir", w.ConfidenceDir(), "/output/java-ee-to-quarkus/confidence"},
 		{"RulesetPath", w.RulesetPath(), "/output/java-ee-to-quarkus/rules/ruleset.yaml"},
-		{"ScoresPath", w.ScoresPath(), "/output/java-ee-to-quarkus/confidence/scores.yaml"},
 		{"RulesFilePath(security)", w.RulesFilePath("security"), "/output/java-ee-to-quarkus/rules/security.yaml"},
 		{"RulesFilePath(empty)", w.RulesFilePath(""), "/output/java-ee-to-quarkus/rules/general.yaml"},
 	}

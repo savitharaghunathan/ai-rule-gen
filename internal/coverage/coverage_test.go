@@ -348,6 +348,119 @@ func TestNoiseFiltering(t *testing.T) {
 	}
 }
 
+func TestJavaScannerBareClassName(t *testing.T) {
+	content := "Use `TimeValue` class to define time values. Choose `PoolConcurrencyPolicy` for pool config. " +
+		"Set `StandardCookieSpec` for cookies. Use `HttpEntityContainer` instead."
+	scanner := NewScanner("java")
+	artifacts := scanner.Scan(content)
+
+	want := map[string]bool{
+		"TimeValue":             true,
+		"PoolConcurrencyPolicy": true,
+		"StandardCookieSpec":    true,
+		"HttpEntityContainer":   true,
+	}
+	for _, a := range artifacts {
+		delete(want, a)
+	}
+	for missing := range want {
+		t.Errorf("missing bare class artifact: %s (got: %v)", missing, artifacts)
+	}
+}
+
+func TestJavaScannerMethodWithParens(t *testing.T) {
+	content := "Replace `closeExpiredConnections()` with `closeExpired()`. " +
+		"Use `setRetryStrategy()` instead of `setRetryHandler()`."
+	scanner := NewScanner("java")
+	artifacts := scanner.Scan(content)
+
+	want := map[string]bool{
+		"closeExpiredConnections": true,
+		"setRetryStrategy":       true,
+		"setRetryHandler":        true,
+	}
+	for _, a := range artifacts {
+		delete(want, a)
+	}
+	for missing := range want {
+		t.Errorf("missing method artifact: %s (got: %v)", missing, artifacts)
+	}
+}
+
+func TestJavaScannerSingleDotRef(t *testing.T) {
+	content := "Specify `TLS.V_1_3` as the only enabled version. Use `PoolReusePolicy.LIFO` for connections."
+	scanner := NewScanner("java")
+	artifacts := scanner.Scan(content)
+
+	want := map[string]bool{
+		"TLS.V_1_3":          true,
+		"PoolReusePolicy.LIFO": true,
+	}
+	for _, a := range artifacts {
+		delete(want, a)
+	}
+	for missing := range want {
+		t.Errorf("missing single-dot artifact: %s (got: %v)", missing, artifacts)
+	}
+}
+
+func TestCheckCoveragePartiallyUncovered(t *testing.T) {
+	sections := []Section{
+		{
+			Heading:   "Migration Steps",
+			StartLine: 1,
+			Content:   "Use `org.apache.http.Something` for migration. Also use `TimeValue` class and `PoolConcurrencyPolicy`.",
+		},
+	}
+	patterns := &rules.ExtractOutput{
+		Patterns: []rules.MigrationPattern{
+			{SourceFQN: "org.apache.http.Something"},
+		},
+	}
+
+	result := CheckCoverage(sections, NewScanner("java"), patterns)
+	if result.GapCount != 1 {
+		t.Fatalf("expected 1 gap (partially covered), got %d", result.GapCount)
+	}
+	if result.PartiallyCovered != 1 {
+		t.Errorf("expected 1 partially covered section, got %d", result.PartiallyCovered)
+	}
+	if result.CoveredSections != 0 {
+		t.Errorf("expected 0 fully covered sections, got %d", result.CoveredSections)
+	}
+
+	found := map[string]bool{}
+	for _, a := range result.Gaps[0].Artifacts {
+		found[a] = true
+	}
+	if !found["TimeValue"] {
+		t.Errorf("expected TimeValue in uncovered artifacts, got: %v", result.Gaps[0].Artifacts)
+	}
+	if !found["PoolConcurrencyPolicy"] {
+		t.Errorf("expected PoolConcurrencyPolicy in uncovered artifacts, got: %v", result.Gaps[0].Artifacts)
+	}
+}
+
+func TestStripParens(t *testing.T) {
+	tests := []struct {
+		input    string
+		want     string
+		stripped bool
+	}{
+		{"closeExpired()", "closeExpired", true},
+		{"setRetryHandler()", "setRetryHandler", true},
+		{"TimeValue", "TimeValue", false},
+		{"org.apache.http.Something", "org.apache.http.Something", false},
+		{"()", "", true},
+	}
+	for _, tt := range tests {
+		got, stripped := stripParens(tt.input)
+		if got != tt.want || stripped != tt.stripped {
+			t.Errorf("stripParens(%q) = (%q, %v), want (%q, %v)", tt.input, got, stripped, tt.want, tt.stripped)
+		}
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && stringContains(s, substr)
 }

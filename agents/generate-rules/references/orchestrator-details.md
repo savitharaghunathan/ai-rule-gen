@@ -40,8 +40,7 @@ These are the canonical artifact checks for `resume_from`:
 - `coverage` requires `patterns.json`
 - `scaffold` requires `rules/`
 - `test` requires `rules/` and `tests/manifest.json`
-- `stamp` requires `rules/` and test execution results
-- `report` requires stamped rules or pass/fail lists
+- `report` requires source/target metadata plus pass/fail totals and rule ID lists
 
 If prerequisites are missing, fail fast with a structured error and do not infer
 or regenerate stages implicitly unless explicitly instructed.

@@ -417,7 +417,7 @@ Note: `location_type: PACKAGE` makes `java.referenced` match any class imported 
 
 **What would be WRONG:** Creating 5 separate rules from the reference table rows (one per class). The table is illustrating the package rename with specific examples, not listing 5 independent migration paths. All rows share the same migration action (change import prefix from `org.apache.http` to `org.apache.hc`), so one PACKAGE rule is correct.
 
-**Another common mistake:** Creating a METHOD_CALL rule for `HttpResponse.getEntity()` → `ClassicHttpResponse.getEntity()`. The method name `getEntity()` did not change — only the owning class moved packages. The PACKAGE rule already covers this. A METHOD_CALL rule is only warranted when the method NAME or SIGNATURE changed.
+**Watch for class renames disguised as method rows:** A table row like `HttpResponse.getEntity()` → `ClassicHttpResponse.getEntity()` looks like a method-only change because `getEntity()` is unchanged. But the *class name* changed (`HttpResponse` → `ClassicHttpResponse`) — this needs an IMPORT rule, not a METHOD_CALL rule, and the PACKAGE rule does NOT cover it. The user can't find `HttpResponse` with `getEntity()` in the new package. Always decompose table rows: check the class name first, then the method name.
 
 **When to consolidate vs per-class:**
 - Guide says "re-import everything from package X to Y" → ONE package-level rule

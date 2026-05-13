@@ -36,7 +36,6 @@ func (w *Workspace) init() error {
 		w.RulesDir(),
 		w.TestsDir(),
 		w.TestDataDir(),
-		w.ConfidenceDir(),
 	}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -61,11 +60,6 @@ func (w *Workspace) TestDataDir() string {
 	return filepath.Join(w.Root, "tests", "data")
 }
 
-// ConfidenceDir returns the path to the confidence scores directory.
-func (w *Workspace) ConfidenceDir() string {
-	return filepath.Join(w.Root, "confidence")
-}
-
 // RulesetPath returns the path to the ruleset.yaml file.
 func (w *Workspace) RulesetPath() string {
 	return filepath.Join(w.RulesDir(), "ruleset.yaml")
@@ -77,11 +71,6 @@ func (w *Workspace) RulesFilePath(concern string) string {
 		concern = "general"
 	}
 	return filepath.Join(w.RulesDir(), concern+".yaml")
-}
-
-// ScoresPath returns the path to the confidence scores file.
-func (w *Workspace) ScoresPath() string {
-	return filepath.Join(w.ConfidenceDir(), "scores.yaml")
 }
 
 // VerifyCacheDir returns the path for cached verification artifacts (JARs, class listings).
