@@ -1,5 +1,15 @@
 # Java Extraction Examples
 
+## Contents
+
+- Example 1: `java.referenced` with CONSTRUCTOR_CALL location
+- Example 2: `java.dependency` with version bounds
+- Example 3: `builtin.xml` with XPath and namespaces
+- Example 4: `java.referenced` with `source_artifact` for deterministic verification
+- Example 5: Package-level consolidation with `PACKAGE` location
+- Example 6: `java.referenced` with FIELD location
+- Example 7: `java.referenced` with `annotated` sub-condition
+
 ## Example 1: `java.referenced` with CONSTRUCTOR_CALL location
 
 ### Guide Excerpt

@@ -2,6 +2,17 @@
 
 This is the contract between the agent (which extracts migration patterns) and `go run ./cmd/construct` (which builds rule YAML files).
 
+## Contents
+
+- Format
+- Top-Level Fields
+- Pattern Fields
+- Source Artifact Resolution
+- What `go run ./cmd/construct` Does With This
+- Metadata Auto-Detection
+- Guidelines for Pattern Extraction
+- What Counts as an Extractable Pattern
+
 ## Format
 
 ```json

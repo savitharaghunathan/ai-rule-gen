@@ -1,5 +1,10 @@
 # C# Extraction Examples
 
+## Contents
+
+- Example 1: `csharp.referenced` -- namespace-level wildcard migration
+- Example 2: `csharp.referenced` -- specific FQN replacement
+
 ## Example 1: `csharp.referenced` -- namespace-level wildcard migration
 
 ### Guide Excerpt

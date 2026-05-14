@@ -2,6 +2,15 @@
 
 Universal guide for interpreting kantra test failures and fixing test data. For language-specific provider behavior, see `references/languages/<language>/fix-strategies.md`.
 
+## Contents
+
+- Kantra Output Parsing
+- Failure Types
+- Fix Loop Flow
+- Extracting Pattern Info from Rules
+- Kantra Analyze (--run-local) Output
+- Rule Integrity Principle
+
 ## Kantra Output Parsing
 
 Kantra test output contains:

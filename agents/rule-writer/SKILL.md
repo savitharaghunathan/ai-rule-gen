@@ -1,6 +1,6 @@
 ---
 name: rule-writer
-description: Extract migration patterns from a guide and produce validated Konveyor analyzer rules
+description: Extracts migration patterns from a guide and produces validated Konveyor analyzer rules. Use when processing guide sections to identify API changes, class relocations, and behavioral differences.
 ---
 
 # Rule Writer

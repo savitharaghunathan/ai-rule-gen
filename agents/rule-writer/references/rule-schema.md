@@ -1,5 +1,19 @@
 # Rule YAML Schema
 
+## Contents
+
+- Rule File Structure
+- Required Fields
+- Optional Fields
+- Categories
+- Effort / Complexity Mapping
+- Labels
+- Message Format
+- Before / After
+- Ruleset Format
+- File Organization
+- Validation Rules
+
 ## Rule File Structure
 
 Each rule YAML file contains a list of rules. Rules are grouped by concern — one file per functional area (e.g., `web.yaml`, `ejb.yaml`, `security.yaml`).

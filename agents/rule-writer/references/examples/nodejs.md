@@ -1,5 +1,10 @@
 # Node.js Extraction Examples
 
+## Contents
+
+- Example 1: `nodejs.referenced` -- component rename
+- Example 2: `builtin.filecontent` -- API removal
+
 ## Example 1: `nodejs.referenced` -- component rename
 
 ### Guide Excerpt
