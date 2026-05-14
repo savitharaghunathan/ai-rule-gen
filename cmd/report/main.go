@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
@@ -46,7 +48,20 @@ func main() {
 		cli.Fail("write_report_failed", err.Error(), "report", "verify output directory exists and is writable", map[string]string{"output": *output})
 	}
 
+	migrationDir := filepath.Dir(*output)
+	cleanupIntermediateArtifacts(migrationDir)
+
 	cli.WriteJSON(report)
+}
+
+func cleanupIntermediateArtifacts(migrationDir string) {
+	os.RemoveAll(filepath.Join(migrationDir, "verify-cache"))
+	os.RemoveAll(filepath.Join(migrationDir, "contracts"))
+
+	matches, _ := filepath.Glob(filepath.Join(migrationDir, "patterns-*.json"))
+	for _, m := range matches {
+		os.Remove(m)
+	}
 }
 
 func splitCSV(s string) []string {
