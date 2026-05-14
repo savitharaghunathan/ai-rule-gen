@@ -10,8 +10,8 @@ You extract migration patterns from a migration guide and produce validated Konv
 ## Inputs
 
 - `guide` — Path to migration guide markdown file
-- `sources` — Source technology labels as a list (e.g., `["spring-boot3", "spring-boot"]`). Each becomes a `konveyor.io/source=` label. First element is the primary (used for naming). Pass "auto-detect" or omit to auto-detect from guide content.
-- `targets` — Target technology labels as a list (e.g., `["spring-boot4", "spring-boot"]`). Each becomes a `konveyor.io/target=` label. First element is the primary (used for naming). Pass "auto-detect" or omit to auto-detect from guide content.
+- `sources` — Source technology labels as a list (e.g., `["framework-v3", "framework"]`). Each becomes a `konveyor.io/source=` label. First element is the primary (used for naming). Pass "auto-detect" or omit to auto-detect from guide content.
+- `targets` — Target technology labels as a list (e.g., `["framework-v4", "framework"]`). Each becomes a `konveyor.io/target=` label. First element is the primary (used for naming). Pass "auto-detect" or omit to auto-detect from guide content.
 - `rules_dir` — Output directory for generated rules
 - `sections` — (optional) List of sections to process, each with `heading`, `start_line`, `end_line`. When provided, only process these sections (chunk mode)
 - `output_file` — (optional, default: `output/<source>-to-<target>/patterns.json`) Where to write the extracted patterns
@@ -29,7 +29,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 **Chunk mode** (with `sections` input):
 - `patterns_count` — Number of patterns extracted
 - `output_file` — Path to the written patterns file
-- `suspected_kantra_limitations` — (optional) List of objects `{rule_pattern, reason}` where Maven Central confirmed no plain-semver version exists. The pattern is still emitted as `java.dependency`; this list signals the orchestrator to pre-classify these rules for the validator.
+- `suspected_kantra_limitations` — (optional) List of objects `{rule_pattern, reason}` where the package registry confirmed no plain-semver version exists. The pattern is still emitted as `*.dependency`; this list signals the orchestrator to pre-classify these rules for the validator.
 
 ## Permissions
 
@@ -37,7 +37,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 |-----------|---------|---------|
 | shell | `go run ./cmd/construct *` | Build rule YAML from patterns.json |
 | shell | `go run ./cmd/validate *` | Validate rule YAML structure |
-| shell | `curl -s "https://search.maven.org/solrsearch/select*"` | Verify artifact versioning scheme before choosing condition type |
+| shell | `curl -s "<package-registry-url>"` | Verify artifact versioning scheme (see language instructions for registry URL) |
 | read | `output/**` | Read migration guide |
 | read | `agents/rule-writer/references/**` | Read condition types, schema |
 | read | `agents/rule-writer/references/languages/**` | Read language-specific condition types |
@@ -53,6 +53,7 @@ Read these before starting:
 - `references/languages/<language>/condition-types.md` — Provider-specific conditions for the detected language (java, go, nodejs, csharp, python)
 - `references/builtin-conditions.md` — Language-agnostic builtin conditions (filecontent, xml, json, file, hasTags, xmlPublicID)
 - `references/rule-schema.md` — Rule YAML structure, required fields, validation rules
+- `references/languages/<language>/instructions.md` — Language-specific instructions (registry pre-checks, source artifact resolution, validation notes)
 - `references/examples/<language>.md` — Worked extraction examples for the detected language (guide text -> checklist -> patterns.json). Read ONLY the file matching the detected language.
 
 ## Workflow
@@ -73,10 +74,10 @@ If neither `sections` nor `output_file` is provided, run the full workflow below
 If the orchestrator didn't provide sources, targets, or language, detect them from the guide content. Return a JSON object:
 
 ```json
-{"sources": ["spring-boot3", "spring-boot"], "targets": ["spring-boot4", "spring-boot"], "language": "java"}
+{"sources": ["framework-v3", "framework"], "targets": ["framework-v4", "framework"], "language": "java"}
 ```
 
-Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
+Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`, `express4` not `Express 4`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
 
 ### 2. Index all sections
 
@@ -116,7 +117,7 @@ Process **each section from the index individually**. For each section:
 | 5 | Does a **behavioral default change** affect users of a specific class, property, or dependency? | Detect the affected artifact, warn about new behavior (category: `potential`) |
 | 6 | Does the section mention **deprecated** starters, modules, or artifacts? | Each old→new mapping is a pattern |
 | 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
-| 8 | Does the section mention a **version requirement** for a plugin, tool, or library? | `builtin.filecontent` (Gradle) or `builtin.xml` (Maven) |
+| 8 | Does the section mention a **version requirement** for a plugin, tool, or library? | `builtin.filecontent` or `builtin.xml` depending on build file format |
 
 **Output format — verbose for ALL sections.**
 
@@ -187,7 +188,7 @@ If your skip reason contains any of these phrases, you answered a checklist item
 
 ### Package-level consolidation (applies to checklist items 2 and 4)
 
-When a migration guide says an entire package is renamed or removed (e.g., "re-import from `org.apache.hc.httpclient5`"), create a **single rule** matching the old package with `location_type: PACKAGE` — not one rule per class. This overrides the per-row instruction in checklist item 4 when the table is under a package rename.
+When a migration guide says an entire package/module is renamed or removed, create a **single rule** matching the old package with `location_type: PACKAGE` — not one rule per class. This overrides the per-row instruction in checklist item 4 when the table is under a package rename.
 
 **How to recognize a package rename section:**
 - The lead paragraph says "re-import from," "moved to package," "namespace changed to," or similar
@@ -213,19 +214,7 @@ When a migration guide says an entire package is renamed or removed (e.g., "re-i
 | Section says "ClassA moved to X, ClassB moved to Y, ClassC removed" (different targets) | Separate per-class rules |
 | Section lists method-level API changes with no common package rename | Per-row `METHOD_CALL` or `IMPORT` rules as normal |
 
-**Example — HttpClient 4→5 recipes table under a package rename:**
-
-The guide says "re-import from `org.apache.hc.httpclient5`" and provides a reference table:
-
-| Old (4.x) | New (5.x) | Rule? |
-|---|---|---|
-| `BasicNameValuePair` | `BasicNameValuePair` (same name, new package) | NO — PACKAGE rule covers it |
-| `BasicHttpContext` | `HttpCoreContext` (name changed) | YES — IMPORT rule, user can't find `BasicHttpContext` in the new package |
-| `HttpRequestBase` | `HttpUriRequestBase` (name changed) | YES — IMPORT rule |
-| `HttpResponse` | `ClassicHttpResponse` (name changed) | YES — IMPORT rule |
-| `HttpMessage.getAllHeaders()` | `MessageHeaders.getHeaders()` (method renamed) | YES — METHOD_CALL rule |
-
-See Example 5 in `references/examples/java.md` for worked examples including reference tables and METHOD_CALL alongside PACKAGE rules.
+See `references/examples/<language>.md` for worked examples including reference tables and METHOD_CALL alongside PACKAGE rules.
 
 For each pattern, provide the fields defined in `references/patterns-json-schema.md`. At minimum: `source_pattern`, `rationale`, `complexity`, `category`.
 
@@ -235,15 +224,15 @@ For each pattern, provide the fields defined in `references/patterns-json-schema
 
 When a migration requires users to ADD something (a new annotation, a new dependency, a new config), you cannot detect its absence. Instead, detect the **artifact that is affected** and warn about the required change.
 
-For example: if `@SpringBootTest` no longer auto-configures `MockMvc`, don't try to detect "missing `@AutoConfigureMockMvc`." Instead, detect `MockMvc` class usage (IMPORT) and warn that `@AutoConfigureMockMvc` is now required.
+For example: if a test annotation no longer auto-configures a helper class, don't try to detect the missing annotation. Instead, detect the helper class usage (IMPORT) and warn that the annotation is now required.
 
 ### Source FQN must be the pre-migration (source) path
 
 The `source_fqn` field is what the rule will match against in user code. It must be the **old/source** path — the one that exists in code that has NOT been migrated yet.
 
 **Common mistake:** using the target/new package path as the pattern. Example:
-- WRONG: `org.springframework.boot.http.converter.autoconfigure.HttpMessageConverters` (this is the Spring Boot 4 path — unmigrated code doesn't have this)
-- RIGHT: `org.springframework.boot.autoconfigure.http.HttpMessageConverters` (this is the Spring Boot 3 path — what actually appears in user code before migration)
+- WRONG: `com.example.newpackage.MyClass` (this is the post-migration path — unmigrated code doesn't have this)
+- RIGHT: `com.example.oldpackage.MyClass` (this is the pre-migration path — what actually appears in user code before migration)
 
 **Verification:** For each `source_fqn`, ask: "Would this FQN appear in a project that has NOT been migrated yet?" If no, you have the wrong path.
 
@@ -253,25 +242,11 @@ The migration guide often shows both old and new paths. The old path goes in `so
 
 The most impactful change in a section is often stated in the **first paragraph** before the details. Don't skip straight to bullet lists and code examples — the opening text may describe a foundational change (e.g., an entire package rename) that the rest of the section merely elaborates on.
 
-### Maven Central pre-check for dependency patterns
+### Package registry pre-check for dependency patterns
 
-Before emitting any pattern that uses `dependency_name` (which produces a `java.dependency` condition), query Maven Central to verify the artifact's versioning scheme:
+Before emitting any pattern that uses `dependency_name` (which produces a `*.dependency` condition), verify the artifact's versioning scheme against the language's package registry. See `references/languages/<language>/instructions.md` for the registry URL, query format, and parsing logic.
 
-```bash
-curl -s "https://search.maven.org/solrsearch/select?q=g:%22<groupId>%22+AND+a:%22<artifactId>%22&core=gav&rows=10&wt=json"
-```
-
-Parse the `groupId` and `artifactId` from the rule's `dependency_name` field (dot notation — the artifactId is the last hyphen-containing segment, e.g. `org.spockframework.spock-spring` → `g:org.spockframework`, `a:spock-spring`). Parse `.response.docs[].v` for the list of published versions.
-
-**Decision:**
-
-| Finding | Action |
-|---|---|
-| Plain-semver versions exist (`^\d+\.\d+\.\d+$`) | No flag — proceed normally |
-| Only non-semver versions (e.g. `2.3-groovy-4.0`, `6.4.0.Final`) | Flag: `suspected_kantra_limitation: no_plain_semver_version` |
-| Artifact not found on Maven Central | Flag: `suspected_kantra_limitation: artifact_not_found` |
-
-**In all cases, still emit `java.dependency`** — it is the correct condition type for dependency detection. Do NOT substitute `builtin.xml` or `builtin.filecontent`. The limitation is in kantra's version comparator, not in the rule design.
+If the registry confirms no plain-semver version exists, flag the pattern as a `suspected_kantra_limitation` and still emit the `*.dependency` condition — it is the correct condition type. Kantra's version comparator may not handle non-semver strings, but that is an engine limitation, not a rule design problem.
 
 Collect flagged patterns in a `suspected_kantra_limitations` list and return it alongside `patterns_count` and `output_file`.
 
@@ -351,7 +326,7 @@ go run ./cmd/validate --rules <rules-dir>
 
 If validation fails, fix `output/<source>-to-<target>/patterns.json` and re-run construct. Common issues:
 - Missing `source_fqn` → the rule condition has no pattern to match
-- Invalid `location_type` → not one of the 14 valid Java locations
+- Invalid `location_type` → not one of the valid locations for the detected language (see condition-types.md)
 - Invalid regex in `file_pattern` → `file_pattern` must be valid Go regex, NOT glob syntax. Use `.*\\.properties` not `*.properties`
 - Duplicate `source_fqn` → same FQN appears in multiple patterns. Merge them into one
 

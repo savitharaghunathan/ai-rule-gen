@@ -6,33 +6,32 @@ This is the contract between the agent (which extracts migration patterns) and `
 
 ```json
 {
-  "sources": ["spring-boot3", "spring-boot"],
-  "targets": ["spring-boot4", "spring-boot"],
+  "sources": ["framework-v3", "framework"],
+  "targets": ["framework-v4", "framework"],
   "language": "java",
   "patterns": [
     {
-      "source_pattern": "javax.servlet.http.HttpServlet",
-      "target_pattern": "jakarta.servlet.http.HttpServlet",
-      "source_fqn": "javax.servlet.http.HttpServlet",
+      "source_pattern": "com.example.old.MyClass",
+      "target_pattern": "com.example.new.MyClass",
+      "source_fqn": "com.example.old.MyClass",
       "location_type": "IMPORT",
-      "alternative_fqns": ["javax.servlet.Servlet"],
       "source_artifact": {
-        "group_id": "javax.servlet",
-        "artifact_id": "javax.servlet-api",
-        "version": "4.0.1"
+        "group_id": "com.example",
+        "artifact_id": "example-core",
+        "version": "3.5.0"
       },
-      "rationale": "javax.servlet renamed to jakarta.servlet in Jakarta EE 9+",
+      "rationale": "com.example.old package renamed to com.example.new in v4",
       "complexity": "trivial",
       "category": "mandatory",
-      "concern": "web",
+      "concern": "core",
       "provider_type": "java",
-      "documentation_url": "https://jakarta.ee/specifications/servlet/"
+      "documentation_url": "https://example.com/migration-guide"
     },
     {
-      "source_pattern": "spring-boot-starter-undertow",
-      "dependency_name": "org.springframework.boot.spring-boot-starter-undertow",
+      "source_pattern": "old-starter-library",
+      "dependency_name": "com.example.old-starter-library",
       "upper_bound": "4.0.0",
-      "rationale": "Undertow support removed in Spring Boot 4",
+      "rationale": "Library support removed in v4",
       "complexity": "high",
       "category": "mandatory",
       "concern": "dependencies",
@@ -43,7 +42,7 @@ This is the contract between the agent (which extracts migration patterns) and `
       "xpath": "//*[local-name()='loaderImplementation']",
       "namespaces": {"m": "http://maven.apache.org/POM/4.0.0"},
       "xpath_filepaths": ["pom.xml"],
-      "rationale": "Classic uber-jar loader removed in Spring Boot 4",
+      "rationale": "Classic loader removed in v4",
       "complexity": "trivial",
       "category": "mandatory",
       "concern": "build",
@@ -52,6 +51,8 @@ This is the contract between the agent (which extracts migration patterns) and `
   ]
 }
 ```
+
+The examples above use Java, but the schema works for all languages — substitute `provider_type` and language-specific fields as needed.
 
 ## Top-Level Fields
 
@@ -81,13 +82,13 @@ This is the contract between the agent (which extracts migration patterns) and `
 | `example_after` | no | Short code example showing the target pattern |
 | `documentation_url` | recommended | URL to the migration guide section or relevant documentation. Always populate this — construct emits it as a `links:` entry in the rule YAML so users can find the original guidance |
 | `message` | no | Custom message text. If empty, auto-generated from `source_pattern: rationale` |
-| `dependency_name` | no | Maven/Go coordinate as `groupId.artifactId`. When set, produces a `*.dependency` condition |
+| `dependency_name` | no | Package coordinate in dot notation (e.g., `groupId.artifactId` for Java/Maven, `module/path` for Go). When set, produces a `*.dependency` condition |
 | `upper_bound` | no* | Version upper bound (exclusive) for dependency conditions. *At least one bound required when `dependency_name` is set |
 | `lower_bound` | no* | Version lower bound (inclusive) for dependency conditions. *At least one bound required when `dependency_name` is set |
 | `xpath` | no | XPath expression for `builtin.xml` conditions. When set, produces a `builtin.xml` condition |
 | `namespaces` | no | Namespace map for XPath (e.g., `{"m": "http://maven.apache.org/POM/4.0.0"}`) |
 | `xpath_filepaths` | no | File paths to restrict XPath matching (e.g., `["pom.xml"]`) |
-| `source_artifact` | no | Maven/package coordinates of the library that publishes the `source_fqn`. Object with `group_id`, `artifact_id`, `version`. Emit for all `*.referenced` patterns when the source library and version are known from the guide. The verifier downloads this artifact and checks that `source_fqn` exists in it |
+| `source_artifact` | no | Package coordinates of the library that publishes the `source_fqn`. Object with `group_id`, `artifact_id`, `version`. Emit for all `*.referenced` patterns when the source library and version are known from the guide. The verifier downloads this artifact and checks that `source_fqn` exists in it |
 
 **Minimum required fields per pattern:** `source_pattern`, `rationale`, `complexity`, `category`.
 
@@ -99,27 +100,15 @@ For `*.referenced` patterns (`java.referenced`, `go.referenced`, etc.), emit `so
 
 **When to emit:**
 - `*.referenced` patterns: ALWAYS when the source library and version are known from the guide context
-- `*.dependency` patterns: NOT needed (already verified by Maven pre-check)
+- `*.dependency` patterns: NOT needed (already verified by registry pre-check)
 - `builtin.*` patterns: NOT applicable
 
 **How to determine coordinates:**
-1. Read the migration guide for the source framework version (e.g., "migrating from Spring Boot 3.5.x" → version `3.5.0`)
-2. Map the FQN's package to the correct Maven artifact. Examples:
-   - `org.springframework.boot.BootstrapRegistry` → `org.springframework.boot:spring-boot:3.5.0`
-   - `org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer` → `org.springframework.boot:spring-boot-autoconfigure:3.5.0`
-   - `org.apache.http.client.HttpClient` → `org.apache.httpcomponents:httpclient:4.5.14`
+1. Read the migration guide for the source framework version (e.g., "migrating from v3.5.x" → version `3.5.0`)
+2. Map the FQN's package to the correct artifact in the language's package registry
 3. Use the **source** version (the version being migrated FROM), not the target version
 
-**Format:**
-```json
-{
-  "source_artifact": {
-    "group_id": "org.springframework.boot",
-    "artifact_id": "spring-boot",
-    "version": "3.5.0"
-  }
-}
-```
+See `references/languages/<language>/instructions.md` for language-specific coordinate format and examples.
 
 **If unsure:** Omit `source_artifact` — the verifier skips gracefully with status `skipped`. A missing `source_artifact` is better than a wrong one.
 
@@ -163,17 +152,17 @@ The CLI handles all mechanical transformation:
 If `sources` and `targets` are not known, the agent can auto-detect them from the migration guide content. The detection should return a JSON object:
 
 ```json
-{"sources": ["spring-boot3", "spring-boot"], "targets": ["spring-boot4", "spring-boot"], "language": "java"}
+{"sources": ["framework-v3", "framework"], "targets": ["framework-v4", "framework"], "language": "java"}
 ```
 
-Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
+Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`, `express4` not `Express 4`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
 
 ## Guidelines for Pattern Extraction
 
 - Extract EVERY migration pattern found in the guide — API, annotation, config, dependency, and build changes
 - One pattern per distinct change — don't combine unrelated changes
-- **Package-level vs per-class rules** — When an entire package is renamed or removed (e.g., "re-import from `org.apache.hc.httpclient5`"), create a SINGLE rule matching the old package (e.g., `org.apache.http`) with `location_type: PACKAGE`, not one rule per class. Per-class rules are only needed when individual classes within a package have different migration paths. If the migration is "everything under `com.foo` moves to `com.bar`", one package-level rule is correct and sufficient
-- Use specific FQNs — `javax.ejb.Stateless` not `javax.ejb.*` — UNLESS the entire package is being renamed/removed (see above)
+- **Package-level vs per-class rules** — When an entire package/module is renamed or removed, create a SINGLE rule matching the old package with `location_type: PACKAGE`, not one rule per class. Per-class rules are only needed when individual classes within a package have different migration paths. If the migration is "everything under `com.foo` moves to `com.bar`", one package-level rule is correct and sufficient
+- Use specific FQNs — not wildcard patterns — UNLESS the entire package is being renamed/removed (see above)
 - **`source_fqn` must be the OLD (pre-migration) path** — this is what the rule matches in user code. Never use the target/new path. The migration guide often shows both; use the "Before" path. Verification: "Would this FQN appear in code that has NOT been migrated?"
 - Set `provider_type` — the CLI uses this to pick the right condition type
 - Set `location_type` for Java/C# — critical for accurate matching
@@ -203,13 +192,13 @@ Any guide item where a user's code, config, or build file could be automatically
 | Version override property renamed or removed | `builtin.filecontent` | regex + `file_pattern` |
 | Build config element removed from XML | `builtin.xml` | `xpath` + `filepaths` |
 | Build config removed from non-XML files (Gradle, etc.) | `builtin.filecontent` | regex + `file_pattern` |
-| Minimum Java/Kotlin/runtime version requirement | `java.dependency` | detect the framework's core artifact with `upper_bound` at the target version — the version check on the framework artifact gates the migration |
+| Minimum language/runtime version requirement | `*.dependency` | detect the framework's core artifact with `upper_bound` at the target version — the version check on the framework artifact gates the migration |
 
 ### Common extraction mistakes
 
 0. **Wrong version bounds for `*.dependency`** — Choose bounds from the *semantics* of the migration, not from artifact version knowledge: (a) If the artifact is **removed or renamed** (a different artifact replaces it), use `lower_bound: 0.0.0` with no `upper_bound` — any version of the old artifact is a problem, so the artifact's presence is the signal. (b) If the **same artifact** continues to exist but changes behavior across source→target versions, use `upper_bound` equal to the framework's target version. Rule: `upper_bound` = target framework version is only valid for the framework's own artifacts — never apply it to third-party libraries (Hibernate, Elasticsearch, Spock, etc.) that have independent version numbering.
 
-   **Non-semver third-party artifacts** — Some artifacts (Spock, Hibernate, Scala, etc.) never publish plain-semver versions. `java.dependency` is still the correct condition type — do NOT substitute `builtin.xml` or `builtin.filecontent`. Instead, always run the Maven Central pre-check (see rule-writer SKILL.md) before emitting a `dependency_name` pattern. If Maven Central confirms no plain-semver version exists, flag the pattern as a suspected kantra limitation and include it in `suspected_kantra_limitations`. Kantra's version comparator cannot handle non-semver strings; this is an engine limitation, not a rule design problem.
+   **Non-semver third-party artifacts** — Some artifacts never publish plain-semver versions. `*.dependency` is still the correct condition type — do NOT substitute `builtin.xml` or `builtin.filecontent`. Instead, always run the package registry pre-check (see `references/languages/<language>/instructions.md`) before emitting a `dependency_name` pattern. If the registry confirms no plain-semver version exists, flag the pattern as a suspected kantra limitation and include it in `suspected_kantra_limitations`. Kantra's version comparator cannot handle non-semver strings; this is an engine limitation, not a rule design problem.
 
 1. **Skipping dependency renames** — A renamed artifact is a `*.dependency` pattern on the old name
 2. **Skipping feature removals** — If a removed feature had a dedicated dependency, detect it via `*.dependency`. "Removed" always means detectable
@@ -220,4 +209,4 @@ Any guide item where a user's code, config, or build file could be automatically
 7. **Missing the lead paragraph** — The first paragraph of a section often states the biggest change (e.g., an entire package rename). Don't jump straight to bullet points and miss the foundational change
 8. **Claiming "not detectable" without trying** — If a behavioral change affects users of a specific class or dependency, detect that class/dependency and warn. Detect the affected artifact, not the missing fix
 9. **Skipping behavioral default changes** — When a default flips (e.g., feature enabled→disabled, auto-config provided→removed), detect the affected class or dependency as a `potential` pattern
-10. **Skipping system requirements** — When the guide says "requires Java 17+" or "requires Kotlin 2.2+", extract a `java.dependency` pattern on the framework's core artifact (e.g., `org.springframework.spring-core` with `upper_bound` at the target version). The version check on the core artifact gates the entire migration and warns users still on an older framework version. Don't dismiss these as "informational" — they're the most impactful migration patterns
+10. **Skipping system requirements** — When the guide specifies a minimum runtime or language version, extract a `*.dependency` pattern on the framework's core artifact with `upper_bound` at the target version. The version check on the core artifact gates the entire migration and warns users still on an older framework version. Don't dismiss these as "informational" — they're the most impactful migration patterns
