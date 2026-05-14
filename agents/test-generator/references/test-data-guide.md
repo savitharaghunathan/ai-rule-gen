@@ -2,6 +2,21 @@
 
 This guide explains how to generate test source code that triggers Konveyor analyzer rules. Derived from the test data generation template.
 
+## Contents
+
+- Goal
+- Requirements
+- Source Code Must Use the OLD (Source) API
+- How the Analyzer Matches Each Condition Type
+- java.dependency version bounds
+- Output Format
+- Project Structure Per Language
+- Reading the manifest.json
+- Dependency Resolution
+- XML Sanitization
+- Merging Small Test Groups
+- Fix Iterations
+
 ## Goal
 
 For each rule, generate a COMPLETE, COMPILABLE project where the source code contains code that EXACTLY matches the rule's `when` condition pattern. The analyzer will run against this code and must find at least 1 incident per rule.

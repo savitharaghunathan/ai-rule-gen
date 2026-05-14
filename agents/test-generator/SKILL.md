@@ -1,6 +1,6 @@
 ---
 name: test-generator
-description: Generate compilable test source code that triggers Konveyor analyzer rule patterns
+description: Generates compilable test source code that triggers Konveyor analyzer rule patterns. Use when test data is needed for kantra rule validation.
 ---
 
 # Test Generator

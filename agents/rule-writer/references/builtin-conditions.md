@@ -2,6 +2,18 @@
 
 These work for any language — they match file contents, file existence, or file structure rather than resolved symbols.
 
+## Contents
+
+- builtin.filecontent
+- builtin.file
+- builtin.xml
+- builtin.json
+- builtin.hasTags
+- builtin.xmlPublicID
+- Combinators (or, and)
+- Chaining Fields
+- Choosing the Right Condition Type
+
 ## builtin.filecontent
 
 Matches regex patterns in file contents. Use this for config files, properties, XML config, or when no language-specific provider can detect the pattern.
