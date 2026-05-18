@@ -126,6 +126,33 @@ func verifyLabel(id string, verified, notFound map[string]bool) string {
 	return ""
 }
 
+// ReadReport reads a Report from a YAML file.
+// It handles both the old singular source/target format and the
+// current plural sources/targets format.
+func ReadReport(path string) (*Report, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading report %s: %w", path, err)
+	}
+	var report Report
+	if err := yaml.Unmarshal(data, &report); err != nil {
+		return nil, fmt.Errorf("parsing report %s: %w", path, err)
+	}
+
+	// Handle old singular format.
+	var raw map[string]any
+	if err := yaml.Unmarshal(data, &raw); err == nil {
+		if s, ok := raw["source"].(string); ok && len(report.Sources) == 0 {
+			report.Sources = []string{s}
+		}
+		if t, ok := raw["target"].(string); ok && len(report.Targets) == 0 {
+			report.Targets = []string{t}
+		}
+	}
+
+	return &report, nil
+}
+
 // WriteReport writes the report to a YAML file.
 func WriteReport(path string, report *Report) error {
 	data, err := yaml.Marshal(report)

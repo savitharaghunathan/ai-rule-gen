@@ -83,7 +83,7 @@ The examples above use Java, but the schema works for all languages — substitu
 | `source_fqn` | no | Fully qualified name for matching (e.g., `javax.ejb.Stateless`). Used as the `pattern` field in the rule condition |
 | `location_type` | no | Where this appears in code. Java: `TYPE`, `INHERITANCE`, `METHOD_CALL`, `CONSTRUCTOR_CALL`, `ANNOTATION`, `IMPLEMENTS_TYPE`, `ENUM`, `RETURN_TYPE`, `IMPORT`, `VARIABLE_DECLARATION`, `PACKAGE`, `FIELD`, `FIELD_DECLARATION`, `METHOD`, `CLASS`. C#: `ALL`, `METHOD`, `FIELD`, `CLASS`. Note: `FIELD` and `FIELD_DECLARATION` are aliases — both match field declarations by type, NOT static field access |
 | `alternative_fqns` | no | Alternative FQNs for the same migration (creates `or` combinator) |
-| `rationale` | yes | Why this migration is needed |
+| `rationale` | yes | Short summary of what changed (becomes the rule `description`). One sentence, max ~15 words. State the change, not the fix — e.g., "Removed in 5.x" or "Renamed to X". Migration guidance goes in `message`. |
 | `complexity` | yes | One of: `trivial`, `low`, `medium`, `high`, `expert` |
 | `category` | yes | One of: `mandatory`, `optional`, `potential` |
 | `concern` | no | Grouping key (e.g., `web`, `security`, `config`). Rules with the same concern go in the same YAML file |
@@ -92,14 +92,14 @@ The examples above use Java, but the schema works for all languages — substitu
 | `example_before` | no | Short code example showing the source pattern |
 | `example_after` | no | Short code example showing the target pattern |
 | `documentation_url` | recommended | URL to the migration guide section or relevant documentation. Always populate this — construct emits it as a `links:` entry in the rule YAML so users can find the original guidance |
-| `message` | no | Custom message text. If empty, auto-generated from `source_pattern: rationale` |
+| `message` | recommended | Detailed migration guidance shown to the user (what to replace with, caveats, behavioral differences). If empty, auto-generated from `source_pattern: rationale`. Always provide when the fix is non-obvious. |
 | `dependency_name` | no | Package coordinate in dot notation (e.g., `groupId.artifactId` for Java/Maven, `module/path` for Go). When set, produces a `*.dependency` condition |
 | `upper_bound` | no* | Version upper bound (exclusive) for dependency conditions. *At least one bound required when `dependency_name` is set |
 | `lower_bound` | no* | Version lower bound (inclusive) for dependency conditions. *At least one bound required when `dependency_name` is set |
 | `xpath` | no | XPath expression for `builtin.xml` conditions. When set, produces a `builtin.xml` condition |
 | `namespaces` | no | Namespace map for XPath (e.g., `{"m": "http://maven.apache.org/POM/4.0.0"}`) |
 | `xpath_filepaths` | no | File paths to restrict XPath matching (e.g., `["pom.xml"]`) |
-| `source_artifact` | no | Package coordinates of the library that publishes the `source_fqn`. Object with `group_id`, `artifact_id`, `version`. Emit for all `*.referenced` patterns when the source library and version are known from the guide. The verifier downloads this artifact and checks that `source_fqn` exists in it |
+| `source_artifact` | no | Package coordinates of the library that publishes the `source_fqn`. Object with `group_id`, `artifact_id`, `version`. Emit for all `*.referenced` patterns when the source library and version are known from the guide. The verifier downloads this artifact and checks that `source_fqn` exists in it. For METHOD_CALL patterns the verifier checks the class component (e.g., verifies `org.apache.http.HttpResponse` for `org.apache.http.HttpResponse.getStatusLine`). For PACKAGE patterns it checks that at least one class exists under the package prefix |
 
 **Minimum required fields per pattern:** `source_pattern`, `rationale`, `complexity`, `category`.
 
@@ -146,9 +146,9 @@ The CLI handles all mechanical transformation:
 
 5. **Initial labels** — Adds one `konveyor.io/source=` label per source, one `konveyor.io/target=` label per target, and `konveyor.io/generated-by=ai-rule-gen`
 
-6. **Description** — Uses `rationale` as-is (write complete sentences)
+6. **Description** — Uses `rationale` as-is. Keep it short — the description appears in summary views. Migration guidance belongs in `message`.
 
-7. **Message** — Uses `message` if provided, otherwise `source_pattern: rationale`
+7. **Message** — Uses `message` if provided, otherwise `source_pattern: rationale`. Use `message` for detailed migration guidance (what to replace it with, caveats, behavioral differences).
 
 8. **Links** — Creates a link from `documentation_url` if provided (title: "Migration Documentation")
 
@@ -172,7 +172,7 @@ Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`, `expr
 
 - Extract EVERY migration pattern found in the guide — API, annotation, config, dependency, and build changes
 - One pattern per distinct change — don't combine unrelated changes
-- **Package-level vs per-class rules** — When an entire package/module is renamed or removed, create a SINGLE rule matching the old package with `location_type: PACKAGE`, not one rule per class. Per-class rules are only needed when individual classes within a package have different migration paths. If the migration is "everything under `com.foo` moves to `com.bar`", one package-level rule is correct and sufficient
+- **Package-level vs per-class rules** — When an entire package/module is renamed or removed, create a SINGLE rule matching the old package with `location_type: PACKAGE`, not one rule per class. Per-class rules are only needed when individual classes within a package have different migration paths. If the migration is "everything under `com.foo` moves to `com.bar`", one package-level rule is correct and sufficient. **Asterisk rule for PACKAGE patterns:** append `*` to the `source_fqn` when target classes live in subpackages. `org.apache.http` matches types directly in that package (e.g., `org.apache.http.HttpResponse`), but `com.fasterxml.jackson*` is needed to match types in subpackages like `com.fasterxml.jackson.databind.ObjectMapper`. When in doubt, always append `*`.
 - Use specific FQNs — not wildcard patterns — UNLESS the entire package is being renamed/removed (see above)
 - **`source_fqn` must be the OLD (pre-migration) path** — this is what the rule matches in user code. Never use the target/new path. The migration guide often shows both; use the "Before" path. Verification: "Would this FQN appear in code that has NOT been migrated?"
 - Set `provider_type` — the CLI uses this to pick the right condition type
@@ -191,7 +191,7 @@ Any guide item where a user's code, config, or build file could be automatically
 |---|---|---|
 | API/class/interface moved to a new package | `*.referenced` | `source_fqn` + `location_type` |
 | Annotation renamed or moved | `*.referenced` | `source_fqn` + ANNOTATION |
-| Method removed or renamed | `*.referenced` | `source_fqn.method` + METHOD_CALL |
+| Method removed or renamed | `*.referenced` | `source_fqn` = `package.ClassName.methodName` + METHOD_CALL. The verifier checks the class exists, not the method |
 | Dependency renamed or removed | `*.dependency` | `dependency_name` + version bound |
 | Feature removed that had a dedicated dependency | `*.dependency` | `dependency_name` + version bound |
 | Feature/integration removed (no longer supported) | `*.dependency` | detect the removed library's artifact |

@@ -423,7 +423,7 @@ Two patterns — one PACKAGE rule for the namespace move, one METHOD_CALL for th
 }
 ```
 
-Note: `location_type: PACKAGE` makes `java.referenced` match any class imported from the `org.apache.http` package. This single rule replaces what would otherwise be dozens of per-class rules (HttpClient, HttpGet, HttpResponse, etc.) that all have the same migration action. The METHOD_CALL rule for `getStatusLine` is needed because the method name itself changed — the PACKAGE rule cannot detect method-level API changes.
+Note: `location_type: PACKAGE` makes `java.referenced` match any class imported from the `org.apache.http` package. This works without an asterisk because classes like `HttpResponse` live directly in `org.apache.http`. When target classes are in **subpackages**, append `*` to the pattern — e.g., `com.fasterxml.jackson*` to match `com.fasterxml.jackson.databind.ObjectMapper`. Without the asterisk, only types directly in the exact package are matched. This single rule replaces what would otherwise be dozens of per-class rules (HttpClient, HttpGet, HttpResponse, etc.) that all have the same migration action. The METHOD_CALL rule for `getStatusLine` is needed because the method name itself changed — the PACKAGE rule cannot detect method-level API changes.
 
 **What would be WRONG:** Creating 5 separate rules from the reference table rows (one per class). The table is illustrating the package rename with specific examples, not listing 5 independent migration paths. All rows share the same migration action (change import prefix from `org.apache.http` to `org.apache.hc`), so one PACKAGE rule is correct.
 
