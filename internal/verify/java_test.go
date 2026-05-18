@@ -165,6 +165,39 @@ func TestVerifyPackage(t *testing.T) {
 	}
 }
 
+func TestVerifyPackageWildcard(t *testing.T) {
+	classLines := []string{
+		"com/fasterxml/jackson/databind/ObjectMapper.class",
+		"com/fasterxml/jackson/core/JsonParser.class",
+	}
+
+	v := &JavaVerifier{}
+	pattern := rules.MigrationPattern{
+		SourceFQN:    "com.fasterxml.jackson*",
+		LocationType: "PACKAGE",
+	}
+	result := v.verifyAgainstClassList(pattern, classLines, "test.jar")
+	if result.Status != StatusVerified {
+		t.Errorf("PACKAGE wildcard verify: got %q, want verified", result.Status)
+	}
+}
+
+func TestVerifyPackageWildcardNoMatch(t *testing.T) {
+	classLines := []string{
+		"org/apache/hc/core5/http/HttpHost.class",
+	}
+
+	v := &JavaVerifier{}
+	pattern := rules.MigrationPattern{
+		SourceFQN:    "com.fasterxml.jackson*",
+		LocationType: "PACKAGE",
+	}
+	result := v.verifyAgainstClassList(pattern, classLines, "test.jar")
+	if result.Status != StatusNotFound {
+		t.Errorf("PACKAGE wildcard not found: got %q, want not_found", result.Status)
+	}
+}
+
 func TestVerifyPackageNotFound(t *testing.T) {
 	classLines := []string{
 		"org/apache/hc/core5/http/HttpHost.class",

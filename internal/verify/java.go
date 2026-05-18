@@ -109,7 +109,9 @@ func (v *JavaVerifier) verifyAgainstClassList(pattern rules.MigrationPattern, cl
 			}
 		}
 	case "PACKAGE":
-		prefix := strings.ReplaceAll(pattern.SourceFQN, ".", "/") + "/"
+		base := strings.TrimSuffix(pattern.SourceFQN, "*")
+		base = strings.TrimSuffix(base, ".")
+		prefix := strings.ReplaceAll(base, ".", "/") + "/"
 		for _, line := range classLines {
 			if strings.HasPrefix(line, prefix) {
 				return Result{
