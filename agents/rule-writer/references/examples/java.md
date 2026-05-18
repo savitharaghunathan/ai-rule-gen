@@ -9,6 +9,7 @@
 - Example 5: Package-level consolidation with `PACKAGE` location
 - Example 6: `java.referenced` with FIELD location
 - Example 7: `java.referenced` with `annotated` sub-condition
+- Example 8: `PACKAGE` with asterisk for subpackage matching
 
 ## Example 1: `java.referenced` with CONSTRUCTOR_CALL location
 
@@ -423,9 +424,11 @@ Two patterns — one PACKAGE rule for the namespace move, one METHOD_CALL for th
 }
 ```
 
-Note: `location_type: PACKAGE` makes `java.referenced` match any class imported from the `org.apache.http` package. This single rule replaces what would otherwise be dozens of per-class rules (HttpClient, HttpGet, HttpResponse, etc.) that all have the same migration action. The METHOD_CALL rule for `getStatusLine` is needed because the method name itself changed — the PACKAGE rule cannot detect method-level API changes.
+**Why one PACKAGE rule instead of five:** The guide says "re-import HttpClient classes from `org.apache.hc.httpclient5`" — every row in the table has the same migration action (change the import prefix). One PACKAGE rule on `org.apache.http` catches all of them. Creating 5 separate rules from the table rows would be wrong — the table illustrates the package rename with examples, not 5 independent migration paths.
 
-**What would be WRONG:** Creating 5 separate rules from the reference table rows (one per class). The table is illustrating the package rename with specific examples, not listing 5 independent migration paths. All rows share the same migration action (change import prefix from `org.apache.http` to `org.apache.hc`), so one PACKAGE rule is correct.
+**Why `getStatusLine()` gets its own METHOD_CALL rule:** The method name changed (`getStatusLine().getStatusCode()` → `getCode()`). The PACKAGE rule flags the import but cannot detect that the method call itself must be rewritten.
+
+**No asterisk needed here:** `org.apache.http` works without `*` because classes like `HttpResponse` and `HttpEntity` live directly in that package. See Example 8 for when `*` is required.
 
 **Watch for class renames disguised as method rows:** A table row like `HttpResponse.getEntity()` → `ClassicHttpResponse.getEntity()` looks like a method-only change because `getEntity()` is unchanged. But the *class name* changed (`HttpResponse` → `ClassicHttpResponse`) — this needs an IMPORT rule, not a METHOD_CALL rule, and the PACKAGE rule does NOT cover it. The user can't find `HttpResponse` with `getEntity()` in the new package. Always decompose table rows: check the class name first, then the method name.
 
@@ -687,6 +690,85 @@ public class MyMDB implements MessageListener {
     @Override
     public void onMessage(Message message) {
         // process message
+    }
+}
+```
+
+---
+
+## Example 8: `PACKAGE` with asterisk for subpackage matching
+
+### Guide Excerpt
+
+> ### Upgrading Jackson
+>
+> Spring Boot 4 uses Jackson 3 as its preferred JSON library. Jackson 3 uses
+> new group IDs and package names — `com.fasterxml.jackson` becomes
+> `tools.jackson`. An exception is `jackson-annotations` which continues to
+> use `com.fasterxml.jackson.core` group ID.
+
+### Checklist
+
+Section: "Upgrading Jackson" -> EXTRACT: entire package namespace renamed (item 2); `com.fasterxml.jackson` → `tools.jackson`
+
+### patterns.json
+
+```json
+{
+  "source_pattern": "Jackson 2 com.fasterxml.jackson packages replaced by tools.jackson",
+  "target_pattern": "tools.jackson",
+  "source_fqn": "com.fasterxml.jackson*",
+  "location_type": "PACKAGE",
+  "source_artifact": {
+    "group_id": "com.fasterxml.jackson.core",
+    "artifact_id": "jackson-databind",
+    "version": "2.18.0"
+  },
+  "rationale": "Jackson 3 uses tools.jackson package namespace; com.fasterxml.jackson is replaced",
+  "complexity": "medium",
+  "category": "mandatory",
+  "concern": "jackson",
+  "provider_type": "java",
+  "documentation_url": "https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson"
+}
+```
+
+**Why the asterisk is required:** No class lives directly in `com.fasterxml.jackson` — all Jackson classes are in subpackages like `com.fasterxml.jackson.databind`, `com.fasterxml.jackson.core`, `com.fasterxml.jackson.annotation`. Without `*`, the pattern `com.fasterxml.jackson` matches nothing. Appending `*` makes it `com.fasterxml.jackson*`, which matches all subpackages.
+
+**When to use `*` vs not:**
+- `org.apache.http` (no `*`) — works because `HttpResponse`, `HttpEntity` live directly in that package
+- `com.fasterxml.jackson*` (with `*`) — required because all classes are in subpackages (`databind`, `core`, etc.)
+- When in doubt, always append `*` — it never hurts
+
+### Resulting Rule YAML (produced by cmd/construct, not by you)
+
+```yaml
+- ruleID: spring-boot-3-to-spring-boot-4-00320
+  description: Jackson 3 uses tools.jackson package; com.fasterxml.jackson packages replaced
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/target=spring-boot-4
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+      pattern: com.fasterxml.jackson*
+      location: PACKAGE
+```
+
+### Test Data (what triggers this rule)
+
+```java
+package com.example;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class Application {
+    public static void main(String[] args) {
+        ObjectMapper mapper = new ObjectMapper();
     }
 }
 ```

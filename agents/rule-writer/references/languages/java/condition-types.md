@@ -23,7 +23,7 @@ Matches Java type, class, or annotation references by fully qualified name.
 | `RETURN_TYPE` | Method return type | `public EntityManager getEM()` matches pattern `javax.persistence.EntityManager` |
 | `VARIABLE_DECLARATION` | Local variable type | `DataSource ds = ...;` matches pattern `javax.sql.DataSource` |
 | `ENUM` | Enum type or constant reference — uses generic type matching | `SessionCreationPolicy.IF_REQUIRED` or full FQN `org.springframework.security.config.http.SessionCreationPolicy` |
-| `PACKAGE` | Package usage — matches any reference to types in the package (imports, fully qualified names) | `import org.apache.http.client.HttpClient;` matches pattern `org.apache.http` |
+| `PACKAGE` | Package usage — matches any reference to types in the package (imports, fully qualified names). Use asterisk suffix for subpackage matching: `org.apache.http` matches types directly in that package, `com.fasterxml.jackson*` matches types in all subpackages too. Always append `*` when the target classes live in subpackages of the pattern. | `import org.apache.http.HttpResponse;` matches pattern `org.apache.http`; `import com.fasterxml.jackson.databind.ObjectMapper;` matches pattern `com.fasterxml.jackson*` (asterisk required because `ObjectMapper` is in subpackage `databind`) |
 
 **Critical matching rules:**
 - For `METHOD_CALL`: The pattern must include the class FQN + method name (e.g., `javax.naming.InitialContext.lookup`). The analyzer resolves fully qualified names — **static imports are NOT matched by METHOD_CALL**, so never rely on static import + unqualified call.

@@ -90,6 +90,43 @@ func (v *JavaVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 	}
 
 	jarName := fmt.Sprintf("%s-%s.jar", sa.ArtifactID, sa.Version)
+	return v.verifyAgainstClassList(pattern, classLines, jarName), nil
+}
+
+func (v *JavaVerifier) verifyAgainstClassList(pattern rules.MigrationPattern, classLines []string, jarName string) Result {
+	switch strings.ToUpper(pattern.LocationType) {
+	case "METHOD_CALL":
+		classFQN := stripMethodName(pattern.SourceFQN)
+		if classFQN != pattern.SourceFQN {
+			for _, target := range fqnToClassPaths(classFQN) {
+				if findInClassList(classLines, target) {
+					return Result{
+						SourceFQN: pattern.SourceFQN,
+						Status:    StatusVerified,
+						Evidence:  fmt.Sprintf("class %s found in %s", classFQN, jarName),
+					}
+				}
+			}
+		}
+	case "PACKAGE":
+		base := strings.TrimSuffix(pattern.SourceFQN, "*")
+		base = strings.TrimSuffix(base, ".")
+		prefix := strings.ReplaceAll(base, ".", "/") + "/"
+		for _, line := range classLines {
+			if strings.HasPrefix(line, prefix) {
+				return Result{
+					SourceFQN: pattern.SourceFQN,
+					Status:    StatusVerified,
+					Evidence:  fmt.Sprintf("package found in %s", jarName),
+				}
+			}
+		}
+		return Result{
+			SourceFQN: pattern.SourceFQN,
+			Status:    StatusNotFound,
+			Reason:    fmt.Sprintf("no classes under package in %s", jarName),
+		}
+	}
 
 	for _, target := range fqnToClassPaths(pattern.SourceFQN) {
 		if findInClassList(classLines, target) {
@@ -97,7 +134,7 @@ func (v *JavaVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 				SourceFQN: pattern.SourceFQN,
 				Status:    StatusVerified,
 				Evidence:  fmt.Sprintf("found in %s", jarName),
-			}, nil
+			}
 		}
 	}
 
@@ -108,7 +145,7 @@ func (v *JavaVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 		Status:      StatusNotFound,
 		Reason:      fmt.Sprintf("not found in %s", jarName),
 		Suggestions: suggestions,
-	}, nil
+	}
 }
 
 func (v *JavaVerifier) getClassList(groupID, artifactID, version string) ([]string, error) {
@@ -180,6 +217,28 @@ func listJARClasses(jarPath string) ([]string, error) {
 		return nil, fmt.Errorf("jar tf %s: %w", jarPath, err)
 	}
 	return splitLines(string(out)), nil
+}
+
+// stripMethodName removes a trailing method name from a FQN.
+// "org.apache.http.HttpResponse.getStatusLine" → "org.apache.http.HttpResponse"
+// Returns the original FQN if no method component is detected.
+// stripMethodName removes a trailing method name from a FQN.
+// A method component is a lowercase-starting part preceded by an
+// uppercase-starting part (the class name).
+// "org.apache.http.HttpResponse.getStatusLine" → "org.apache.http.HttpResponse"
+// "org.apache.http" → "org.apache.http" (no class before "http")
+func stripMethodName(fqn string) string {
+	parts := strings.Split(fqn, ".")
+	if len(parts) < 3 {
+		return fqn
+	}
+	last := parts[len(parts)-1]
+	prev := parts[len(parts)-2]
+	if len(last) > 0 && last[0] >= 'a' && last[0] <= 'z' &&
+		len(prev) > 0 && prev[0] >= 'A' && prev[0] <= 'Z' {
+		return strings.Join(parts[:len(parts)-1], ".")
+	}
+	return fqn
 }
 
 func fqnToClassPaths(fqn string) []string {
