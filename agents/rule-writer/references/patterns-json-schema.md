@@ -80,9 +80,9 @@ The examples above use Java, but the schema works for all languages — substitu
 |---|---|---|
 | `source_pattern` | yes | What to detect in the source code (API, annotation, class, config, etc.) |
 | `target_pattern` | no | The replacement in the target technology (null if simply removed) |
-| `source_fqn` | no | Fully qualified name for matching (e.g., `javax.ejb.Stateless`). Used as the `pattern` field in the rule condition |
+| `source_fqn` | no | Fully qualified name for matching (e.g., `javax.ejb.Stateless`). Used as the `pattern` field in the rule condition. See language-specific `condition-types.md` for pattern style guidance |
 | `location_type` | no | Where this appears in code. Java: `TYPE`, `INHERITANCE`, `METHOD_CALL`, `CONSTRUCTOR_CALL`, `ANNOTATION`, `IMPLEMENTS_TYPE`, `ENUM`, `RETURN_TYPE`, `IMPORT`, `VARIABLE_DECLARATION`, `PACKAGE`, `FIELD`, `FIELD_DECLARATION`, `METHOD`, `CLASS`. C#: `ALL`, `METHOD`, `FIELD`, `CLASS`. Note: `FIELD` and `FIELD_DECLARATION` are aliases — both match field declarations by type, NOT static field access |
-| `alternative_fqns` | no | Alternative FQNs for the same migration (creates `or` combinator) |
+| `alternative_fqns` | no | Alternative FQNs for the same migration (creates `or` combinator). See language-specific `condition-types.md` for when to use |
 | `rationale` | yes | Short summary of what changed (becomes the rule `description`). One sentence, max ~15 words. State the change, not the fix — e.g., "Removed in 5.x" or "Renamed to X". Migration guidance goes in `message`. |
 | `complexity` | yes | One of: `trivial`, `low`, `medium`, `high`, `expert` |
 | `category` | yes | One of: `mandatory`, `optional`, `potential` |
@@ -175,6 +175,7 @@ Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`, `expr
 - **Package-level vs per-class rules** — When an entire package/module is renamed or removed, create a SINGLE rule matching the old package with `location_type: PACKAGE`, not one rule per class. Per-class rules are only needed when individual classes within a package have different migration paths. If the migration is "everything under `com.foo` moves to `com.bar`", one package-level rule is correct and sufficient. **Asterisk rule for PACKAGE patterns:** append `*` to the `source_fqn` when target classes live in subpackages. `org.apache.http` matches types directly in that package (e.g., `org.apache.http.HttpResponse`), but `com.fasterxml.jackson*` is needed to match types in subpackages like `com.fasterxml.jackson.databind.ObjectMapper`. When in doubt, always append `*`.
 - Use specific FQNs — not wildcard patterns — UNLESS the entire package is being renamed/removed (see above)
 - **`source_fqn` must be the OLD (pre-migration) path** — this is what the rule matches in user code. Never use the target/new path. The migration guide often shows both; use the "Before" path. Verification: "Would this FQN appear in code that has NOT been migrated?"
+- **METHOD_CALL pattern style** — See `references/languages/<language>/condition-types.md` for guidance on when to use FQN vs short method name patterns
 - Set `provider_type` — the CLI uses this to pick the right condition type
 - Set `location_type` for Java/C# — critical for accurate matching
 - For removed/renamed dependencies, use `dependency_name` + `upper_bound` — don't try to detect dependencies via `builtin.filecontent`
@@ -221,3 +222,4 @@ Any guide item where a user's code, config, or build file could be automatically
 8. **Claiming "not detectable" without trying** — If a behavioral change affects users of a specific class or dependency, detect that class/dependency and warn. Detect the affected artifact, not the missing fix
 9. **Skipping behavioral default changes** — When a default flips (e.g., feature enabled→disabled, auto-config provided→removed), detect the affected class or dependency as a `potential` pattern
 10. **Skipping system requirements** — When the guide specifies a minimum runtime or language version, extract a `*.dependency` pattern on the framework's core artifact with `upper_bound` at the target version. The version check on the core artifact gates the entire migration and warns users still on an older framework version. Don't dismiss these as "informational" — they're the most impactful migration patterns
+11. **Using `builtin.filecontent` for method calls** — Never use `provider_type: "builtin"` with a regex like `ClassName.*\.methodName` to detect method calls. Go regex `.` does not match newlines, so the pattern fails on multi-line code (builder chains, wrapped calls). Use the language-specific referenced provider with the appropriate method call location type instead. Reserve `builtin.filecontent` for configuration and build files

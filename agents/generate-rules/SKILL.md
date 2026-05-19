@@ -154,6 +154,8 @@ This returns JSON with all sections classified as `content` or `header-only`. Fi
 
 Split the content sections into **N balanced chunks** (minimum 1, maximum 5 agents). Balance by section count. Assign each chunk a number (1, 2, ..., N).
 
+**Keep related sections together.** Group sections by their top-level heading (`##`) — all subsections (`###`, `####`) under the same `##` must stay in the same chunk. Migration guides pair before/after code examples across subsections within a topic; splitting them across agents means no agent sees both sides of the diff. Balance chunks by top-level-heading groups, not by individual sections.
+
 **Invoke:** `rule-writer` (one per chunk, in parallel)
 **Purpose:** Extract migration patterns from assigned sections.
 **Inputs per invocation:**
@@ -162,6 +164,7 @@ Split the content sections into **N balanced chunks** (minimum 1, maximum 5 agen
   - targets: {targets array (e.g., ["spring-boot4", "spring-boot"])}
   - rules_dir: <migration_dir>/rules
   - sections: {chunk subset — list of `{heading, start_line, end_line}` objects}
+  - all_headings: {full list of ALL content section headings from step 2a — not just this chunk's sections. Enables each agent to detect multi-path migrations even when variant sections are in other chunks.}
   - output_file: <migration_dir>/patterns-{chunk_number}.json
 **Parallel:** yes
 **Expect:**
