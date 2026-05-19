@@ -171,7 +171,7 @@ Run all 9 checklist items for every section. Print the full evaluation:
   Every row must appear. This prevents silent drops. For each row, decompose: check the class/type name first, then the method/member name.
 
 - **CODE-DIFF** — when a section has before/after code examples, enumerate each API difference:
-  ```
+  ```text
   Code diff: "## Migration steps" (source example vs target example)
     old_module.configure(raw_value) → new_module.configure(wrapped_value) — EXTRACT (function moved + parameter type changed)
     old_module.OldName → new_module.NewName — EXTRACT (renamed)

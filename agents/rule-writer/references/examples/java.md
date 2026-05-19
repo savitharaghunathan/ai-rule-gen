@@ -845,7 +845,7 @@ Note: `source_fqn` is just the method name `setRetryHandler`, not the FQN. The c
 
 ### Test Data (what triggers this rule)
 
-Both patterns trigger the rule — the short method name matches regardless of how the receiver is obtained:
+The short method name matches regardless of how the receiver is obtained. The test data uses a direct-variable call (which kantra can resolve); the builder-chain form would also match at runtime:
 
 ```java
 package com.example;
@@ -855,12 +855,13 @@ import org.apache.http.client.HttpRequestRetryHandler;
 
 public class Application {
     public static void main(String[] args) {
-        // Direct variable — FQN pattern would match this
+        // Direct variable — used in test data (kantra resolves the type)
         HttpClientBuilder builder = HttpClientBuilder.create();
         HttpRequestRetryHandler retryHandler = null;
         builder.setRetryHandler(retryHandler);
 
-        // Builder chain — FQN pattern would NOT match this, short name does
+        // Builder chain — also matched by the short name pattern,
+        // but not used in test data because kantra can't resolve the chain
         // HttpClients.custom().setRetryHandler(retryHandler);
     }
 }
@@ -999,10 +1000,10 @@ The "obvious" FQN pattern `org.apache.http.client.config.RequestConfig.Builder.s
 
 ### Why the short method name is correct
 
-`setConnectTimeout` also exists in the target API (`ConnectionConfig.Builder.setConnectTimeout`). This creates a potential false positive on already-migrated code. But:
-- A false positive is better than a rule that never fires
-- In practice, if the user has migrated to 5.x, they won't have `org.apache.http` imports anymore — the PACKAGE rule won't fire, and the false positive is cosmetic
-- The `and`/`as`/`from` scoping pattern exists (see condition-types.md) but is NOT expressible in patterns.json — it's only available for hand-written rules
+`setConnectTimeout` also exists in the target API (`ConnectionConfig.Builder.setConnectTimeout`). The generated rule is intentionally broad — it will match ANY `setConnectTimeout` call, including already-migrated code. This is an accepted trade-off:
+- A false positive is better than a rule that never fires (the FQN form silently matches nothing)
+- The generated `patterns.json` output cannot express scoped rules — precision requires hand-written `and`/`as`/`from` conditions (see condition-types.md)
+- For automated pipelines, the broad match is correct: it flags all call sites for human review
 
 ### patterns.json
 
