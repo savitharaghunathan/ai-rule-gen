@@ -14,6 +14,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 - `targets` — Target technology labels as a list (e.g., `["framework-v4", "framework"]`). Each becomes a `konveyor.io/target=` label. First element is the primary (used for naming). Pass "auto-detect" or omit to auto-detect from guide content.
 - `rules_dir` — Output directory for generated rules
 - `sections` — (optional) List of sections to process, each with `heading`, `start_line`, `end_line`. When provided, only process these sections (chunk mode)
+- `all_headings` — (optional, chunk mode only) Full list of ALL content section headings from the guide, not just this chunk's sections. Use to detect multi-path migrations: if the headings suggest parallel migration paths (e.g., "Migration to Classic API" + "Migration to Async API"), extract source-side patterns from your sections even when the variant target lives in another chunk.
 - `output_file` — (optional, default: `output/<source>-to-<target>/patterns.json`) Where to write the extracted patterns
 
 ## Returns
@@ -64,6 +65,7 @@ If the `sections` input is provided, you are in **chunk mode**:
 - Sources, targets, and language are already provided — do NOT auto-detect
 - Skip step 2 (indexing) — the section list is your index
 - Read only the assigned sections from the guide using line ranges (use `Read --offset <start_line> --limit <end_line - start_line>`)
+- If `all_headings` is provided, scan the full heading list before extraction. If headings suggest multiple migration paths (e.g., classic + async, sync + reactive), be extra thorough: extract source-side patterns for EVERY API your sections describe — even when a source-version class might also appear in another chunk's sections. Each migration path (classic, async, streaming) produces its own rules. Don't assume another chunk will handle the async/variant path.
 - Skip steps 8-9 (construct/validate) — the orchestrator handles these
 - Write patterns to `output_file` (not `patterns.json`)
 
@@ -106,7 +108,7 @@ Process **each section from the index individually**. For each section:
 
 **The checklist is the decision.** Do not pre-judge a section as "informational" or "not actionable" before running the checklist. Read the section, then evaluate each item:
 
-#### Extraction checklist (run ALL 9 items for EVERY non-header section)
+#### Extraction checklist (run ALL 10 items for EVERY non-header section)
 
 | # | Question | If yes → extract |
 |---|----------|-------------------|
@@ -119,10 +121,11 @@ Process **each section from the index individually**. For each section:
 | 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
 | 8 | Does the section mention a **version requirement** for a plugin, tool, or library? | `builtin.filecontent` or `builtin.xml` depending on build file format |
 | 9 | Does the section contain **before/after code examples** showing source-version and target-version API usage? | Diff the code examples line by line. Each API call, class, type, constant, or import that differs between old and new code is a separate pattern. See "Code example comparison" below. |
+| 10 | Does the guide describe **multiple migration paths or API variants** (e.g., sync → async, classic → reactive, blocking → non-blocking)? | Extract source-side patterns from ALL paths. Each variant of a source-version class that maps to a different target-version class is a separate rule. |
 
 **Output format — verbose for ALL sections.**
 
-Run all 9 checklist items for every section. Print the full evaluation:
+Run all 10 checklist items for every section. Print the full evaluation:
 
 - **EXTRACT** — print the full 9-item evaluation AND the verdict:
   ```
@@ -178,6 +181,7 @@ Run all 9 checklist items for every section. Print the full evaluation:
     response.old_method() → response.new_method() — EXTRACT (method/function renamed)
     OldFactory(args) → new_create_func(args) — EXTRACT (construction API replaced)
     old_const.VALUE → new_const.VALUE — EXTRACT (constant/enum moved)
+    sync_manager = OldManager() → async_manager = AsyncNewManager() — EXTRACT (async variant of source class)
   ```
   Every difference must appear. Code examples are first-class extraction sources — they often show migration changes that prose doesn't call out explicitly.
 
@@ -191,7 +195,7 @@ If your skip reason contains any of these phrases, you answered a checklist item
 - "advisory" — check items 5, 7
 - "not detectable" — check item 7 (detect the *affected artifact*, not the *missing fix*)
 - "naming convention" / "no old-to-new rename mapping" — check items 2, 3, 6, 7 (package renames and module restructures ARE detectable)
-- "covered by other patterns" / "already covered by X section" / "covered by PACKAGE rule" — cite the exact rule_id or re-extract. **PACKAGE rules and class/method rules serve different purposes:** a PACKAGE rule tells users their imports need to change; a class-specific IMPORT or METHOD_CALL rule tells users what the replacement class or method is. Both are needed. "Covered by PACKAGE rule" is NEVER valid for skipping a class rename (e.g., `HttpResponse` → `ClassicHttpResponse`), a class replacement with a different API (e.g., `HttpPost` → `ClassicRequestBuilder`), or a method rename (e.g., `getStatusLine()` → `getCode()`). Each of these needs its own rule alongside the PACKAGE rule.
+- "covered by other patterns" / "already covered by X section" / "covered by PACKAGE rule" / "async variant of existing rule" / "already handled by sync version" — cite the exact rule_id or re-extract. **PACKAGE rules and class/method rules serve different purposes:** a PACKAGE rule tells users their imports need to change; a class-specific IMPORT or METHOD_CALL rule tells users what the replacement class or method is. Both are needed. "Covered by PACKAGE rule" is NEVER valid for skipping a class rename (e.g., `HttpResponse` → `ClassicHttpResponse`), a class replacement with a different API (e.g., `HttpPost` → `ClassicRequestBuilder`), or a method rename (e.g., `getStatusLine()` → `getCode()`). Each of these needs its own rule alongside the PACKAGE rule. Similarly, "async variant of existing rule" is NEVER valid — sync and async migration paths produce separate rules because users need different replacement guidance for each path.
 - "behavioral change" / "behavioral default change" — check item 5 (detect the affected artifact)
 - "reference table of NEW items" — check items 4, 6 (new items often imply old items were restructured)
 - "build plugin config" / "Gradle plugin version" — check item 8
@@ -210,7 +214,7 @@ When a migration guide says an entire package/module is renamed or removed, crea
 - A reference table lists old→new class mappings where every old class is under the same package prefix and every new class is under a new prefix
 - The migration action for every row is the same: change the import
 
-**Reference tables under package renames:** The table is showing examples of what moves, not listing separate migration patterns. Emit ONE `PACKAGE` rule for the old package prefix. Do NOT process each table row as a separate pattern.
+**Reference tables under package renames:** Emit ONE `PACKAGE` rule for the old package prefix. Then scan EVERY row of the table for the cases below — most package rename tables produce the PACKAGE rule **plus** several IMPORT and METHOD_CALL rules. Only skip rows where the class kept the exact same name and just moved packages.
 
 **When to emit additional rules alongside a PACKAGE rule:**
 - **METHOD_CALL:** when a method's **name or signature genuinely changed** (e.g., `getStatusLine()` was removed and replaced by `getCode()`, or `setRetryHandler(HttpRequestRetryHandler)` became `setRetryStrategy(HttpRequestRetryStrategy)`). **Pattern style:** prefer short method name patterns (e.g., `setRetryHandler` not `org.example.Builder.setRetryHandler`) when the method may be called on concrete subtypes or via builder chains — FQN patterns fail silently in these cases. **NEVER use FQN patterns that include inner class names** (e.g., `RequestConfig.Builder.setConnectTimeout`, `Config.Builder.setTimeout`). Kantra cannot resolve factory method return types (`RequestConfig.custom()` → `RequestConfig.Builder`), so these patterns compile but silently match nothing. Use the short method name instead — even if the method name also exists in the target API (e.g., both `RequestConfig` and `ConnectionConfig` have `setConnectTimeout`), a false positive on already-migrated code is better than a rule that never fires. Use `alternative_fqns` to create `or` conditions when you need FQN precision across a type hierarchy. See `references/languages/<language>/condition-types.md` for the full decision framework and `references/examples/<language>.md` Examples 9-11 for worked examples
@@ -270,6 +274,8 @@ When a section (or pair of related sections like "Preparation" and "Migration st
 Each difference is a separate pattern. If the guide shows source-version code in one section and equivalent target-version code in another, compare across sections — migration guides are organized by migration stage, not by API change.
 
 **Common miss:** treating code examples as "just showing best practices" when they actually demonstrate API changes. If the source-version code calls `client.set_timeout(60)` and the target-version code calls `config.set_timeout(Duration.minutes(1))` — that IS a migration pattern even though no prose says "set_timeout moved to config."
+
+**Signature changes are migration patterns even when the method name is unchanged.** If the source code calls `client.setSoTimeout(30000)` (int parameter) and the target code calls `client.setSoTimeout(Timeout.ofSeconds(30))` (Timeout object), that IS a METHOD_CALL pattern — the user must change every call site. Don't skip a method just because it appears in both source and target code. If the parameters, return type, or calling convention changed, extract it.
 
 **Code diffs produce rules independently of PACKAGE rules.** When you diff source-version and target-version code examples, extract a separate rule for EVERY class rename or API replacement you find — even if a PACKAGE rule already covers the old import. The PACKAGE rule fires on the import line; the class-specific rule fires on the usage site and tells the user the exact replacement. For example, if source code uses `new HttpPost(url)` and target code uses `ClassicRequestBuilder.post(url).build()`, extract an IMPORT rule for `HttpPost` even though the PACKAGE rule on `org.apache.http` also fires. The user needs to know that `HttpPost` is replaced by `ClassicRequestBuilder`, not just that the import path changed.
 
