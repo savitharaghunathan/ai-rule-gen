@@ -127,7 +127,7 @@ Process **each section from the index individually**. For each section:
 
 Run all 10 checklist items for every section. Print the full evaluation:
 
-- **EXTRACT** — print the full 9-item evaluation AND the verdict:
+- **EXTRACT** — print the full 10-item evaluation AND the verdict:
   ```
   Section: "### Liveness and Readiness Probes"
     1. Removed? no
@@ -139,10 +139,11 @@ Run all 10 checklist items for every section. Print the full evaluation:
     7. Names artifact? yes — management.health.probes.enabled
     8. Version requirement? no
     9. Code examples? no
+    10. Multiple migration paths? no
     → EXTRACT: detect management.health.probes.enabled property, category: potential (items 5,7)
   ```
 
-- **SKIP** — print the full 9-item evaluation so the decision is auditable:
+- **SKIP** — print the full 10-item evaluation so the decision is auditable:
   ```
   Section: "### Some Section"
     1. Removed? no
@@ -154,6 +155,7 @@ Run all 10 checklist items for every section. Print the full evaluation:
     7. Names artifact? no
     8. Version requirement? no
     9. Code examples? no
+    10. Multiple migration paths? no
     → SKIP: no detectable artifacts
   ```
 
