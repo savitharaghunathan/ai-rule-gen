@@ -52,6 +52,7 @@ You extract migration patterns from a migration guide and produce validated Konv
 Read these before starting:
 - `references/patterns-json-schema.md` — The patterns.json contract (what fields to extract, what the CLI does with them)
 - `references/languages/<language>/condition-types.md` — Provider-specific conditions for the detected language (java, go, nodejs, csharp, python)
+- `references/languages/<language>/checklist.md` — Language-specific extraction guidance (TABLE format, package/module consolidation, location types)
 - `references/builtin-conditions.md` — Language-agnostic builtin conditions (filecontent, xml, json, file, hasTags, xmlPublicID)
 - `references/rule-schema.md` — Rule YAML structure, required fields, validation rules
 - `references/languages/<language>/instructions.md` — Language-specific instructions (registry pre-checks, source artifact resolution, validation notes)
@@ -113,9 +114,9 @@ Process **each section from the index individually**. For each section:
 | # | Question | If yes → extract |
 |---|----------|-------------------|
 | 1 | Does the section mention a **removed** feature, library, or integration? | `*.dependency` on the removed artifact. "Removed" ALWAYS means detectable. |
-| 2 | Does the section mention a class, annotation, or interface that was **removed or relocated**? | `*.referenced` on the old FQN |
+| 2 | Does the section mention a class, type, annotation, or interface that was **removed or relocated**? | `*.referenced` on the old FQN. See `references/languages/<language>/checklist.md` for location type guidance. |
 | 3 | Does the section mention a dependency that **changed scope, was renamed, or now requires explicit versioning**? | `*.dependency` |
-| 4 | Does the section contain a **reference table** with old→new mappings? | Process every row as a separate pattern — **unless** the section describes a package-level rename (see "Package-level consolidation" below), in which case emit ONE `PACKAGE` rule and only create additional rules for rows where the class name changed or the method name or signature genuinely changed |
+| 4 | Does the section contain a **reference table** with old→new mappings? | Process every row as a separate pattern — **unless** the section describes a package/module/namespace-level rename, in which case consolidate (see "Package/module/namespace-level consolidation" below). See `references/languages/<language>/checklist.md` for language-specific location types. |
 | 5 | Does a **behavioral default change** affect users of a specific class, property, or dependency? | Detect the affected artifact, warn about new behavior (category: `potential`) |
 | 6 | Does the section mention **deprecated** starters, modules, or artifacts? | Each old→new mapping is a pattern |
 | 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
@@ -164,15 +165,8 @@ Run all 10 checklist items for every section. Print the full evaluation:
   Section: "## Upgrading Web Features" → SKIP: header only
   ```
 
-- **TABLE** — when a section contains a reference table, enumerate every row with its disposition:
-  ```
-  Table: "<section heading>" (<N> rows)
-  Row 1: OldThing → NewThing — EXTRACT as IMPORT (class renamed)
-  Row 2: OldThing → OldThing — PACKAGE covers (same name, same API)
-  Row 3: OldThing.method() → NewThing.method() — EXTRACT as IMPORT (class renamed, method unchanged)
-  Row 4: OldThing.foo() → OldThing.bar() — EXTRACT as METHOD_CALL (method renamed)
-  ...
-  ```
+- **TABLE** — when a section contains a reference table, enumerate every row with its disposition.
+  See `references/languages/<language>/checklist.md` for the language-specific TABLE format and row annotation guidance (location types, consolidation rules).
   Every row must appear. This prevents silent drops. For each row, decompose: check the class/type name first, then the method/member name.
 
 - **CODE-DIFF** — when a section has before/after code examples, enumerate each API difference:
@@ -197,7 +191,7 @@ If your skip reason contains any of these phrases, you answered a checklist item
 - "advisory" — check items 5, 7
 - "not detectable" — check item 7 (detect the *affected artifact*, not the *missing fix*)
 - "naming convention" / "no old-to-new rename mapping" — check items 2, 3, 6, 7 (package renames and module restructures ARE detectable)
-- "covered by other patterns" / "already covered by X section" / "covered by PACKAGE rule" / "async variant of existing rule" / "already handled by sync version" — cite the exact rule_id or re-extract. **PACKAGE rules and class/method rules serve different purposes:** a PACKAGE rule tells users their imports need to change; a class-specific IMPORT or METHOD_CALL rule tells users what the replacement class or method is. Both are needed. "Covered by PACKAGE rule" is NEVER valid for skipping a class rename (e.g., `HttpResponse` → `ClassicHttpResponse`), a class replacement with a different API (e.g., `HttpPost` → `ClassicRequestBuilder`), or a method rename (e.g., `getStatusLine()` → `getCode()`). Each of these needs its own rule alongside the PACKAGE rule. Similarly, "async variant of existing rule" is NEVER valid — sync and async migration paths produce separate rules because users need different replacement guidance for each path.
+- "covered by other patterns" / "already covered by X section" / "covered by package/namespace/module-level rule" / "async variant of existing rule" / "already handled by sync version" — cite the exact rule_id or re-extract. **Package/namespace/module-level rules and type/symbol-specific rules serve different purposes:** a namespace-level rule tells users their imports need to change; a type-specific rule tells users what the replacement type or function is. Both are needed. "Covered by namespace-level rule" is NEVER valid for skipping a type rename, a type replacement with a different API, or a method/function rename — each of these needs its own rule alongside the namespace-level rule (see decision tree in "Package/module/namespace-level consolidation" above). Similarly, "async variant of existing rule" is NEVER valid — sync and async migration paths produce separate rules because users need different replacement guidance for each path.
 - "behavioral change" / "behavioral default change" — check item 5 (detect the affected artifact)
 - "reference table of NEW items" — check items 4, 6 (new items often imply old items were restructured)
 - "build plugin config" / "Gradle plugin version" — check item 8
@@ -207,35 +201,35 @@ If your skip reason contains any of these phrases, you answered a checklist item
 
 **The ONLY valid skip** is a section that contains genuinely zero named artifacts — no classes, no dependencies, no properties, no annotations, no config elements, no build plugin names. This means: pure headers (`## Upgrading Web Features`), prerequisite checklists (`### Before You Start`), or link collections (`### Review Other Release Notes`). **If a section names even one concrete artifact, it is not skippable.** When in doubt, extract — false positives are cheaper than missed migrations.
 
-### Package-level consolidation (applies to checklist items 2 and 4)
+### Package/module/namespace-level consolidation (applies to checklist items 2 and 4)
 
-When a migration guide says an entire package/module is renamed or removed, create a **single rule** matching the old package with `location_type: PACKAGE` — not one rule per class. This overrides the per-row instruction in checklist item 4 when the table is under a package rename.
+When a migration guide says an entire package, module, or namespace is renamed or removed, create a **single rule** matching the old namespace — not one rule per type/symbol. This overrides the per-row instruction in checklist item 4 when the table is under a namespace rename.
 
-**How to recognize a package rename section:**
-- The lead paragraph says "re-import from," "moved to package," "namespace changed to," or similar
-- A reference table lists old→new class mappings where every old class is under the same package prefix and every new class is under a new prefix
+**How to recognize a namespace rename section:**
+- The lead paragraph says "re-import from," "moved to package/module," "namespace changed to," or similar
+- A reference table lists old→new type mappings where every old type is under the same namespace prefix and every new type is under a new prefix
 - The migration action for every row is the same: change the import
 
-**Reference tables under package renames:** Emit ONE `PACKAGE` rule for the old package prefix. Then scan EVERY row of the table for the cases below — most package rename tables produce the PACKAGE rule **plus** several IMPORT and METHOD_CALL rules. Only skip rows where the class kept the exact same name and just moved packages.
+**Reference tables under namespace renames:** Emit ONE namespace-level rule for the old prefix. Then scan EVERY row of the table for the cases below — most namespace rename tables produce the namespace rule **plus** several type-specific and method/function-specific rules. Only skip rows where the type/symbol kept the exact same name and just moved namespaces.
 
-**When to emit additional rules alongside a PACKAGE rule:**
-- **METHOD_CALL:** when a method's **name or signature genuinely changed** (e.g., `getStatusLine()` was removed and replaced by `getCode()`, or `setRetryHandler(HttpRequestRetryHandler)` became `setRetryStrategy(HttpRequestRetryStrategy)`). **Pattern style:** prefer short method name patterns (e.g., `setRetryHandler` not `org.example.Builder.setRetryHandler`) when the method may be called on concrete subtypes or via builder chains — FQN patterns fail silently in these cases. **NEVER use FQN patterns that include inner class names** (e.g., `RequestConfig.Builder.setConnectTimeout`, `Config.Builder.setTimeout`). Kantra cannot resolve factory method return types (`RequestConfig.custom()` → `RequestConfig.Builder`), so these patterns compile but silently match nothing. Use the short method name instead — even if the method name also exists in the target API (e.g., both `RequestConfig` and `ConnectionConfig` have `setConnectTimeout`), a false positive on already-migrated code is better than a rule that never fires. Use `alternative_fqns` to create `or` conditions when you need FQN precision across a type hierarchy. See `references/languages/<language>/condition-types.md` for the full decision framework and `references/examples/<language>.md` Examples 9-11 for worked examples
-- **IMPORT (different API):** when a class is **replaced by a fundamentally different class** — different name, different API surface (e.g., `SSLConnectionSocketFactory` → `ClientTlsStrategyBuilder`, `HttpEntityEnclosingRequest` → `HttpEntityContainer`). A PACKAGE rule tells users to update imports; an IMPORT rule tells users the old class is gone and the replacement has a different name and usage pattern.
-- **IMPORT (class renamed):** when the **class name itself changed**, even if the API surface is similar (e.g., `BasicHttpContext` → `HttpCoreContext`, `HttpRequestBase` → `HttpUriRequestBase`, `HttpResponse` → `ClassicHttpResponse`). The PACKAGE rule fires on the old import, but the user cannot find the old class name in the new package — they need to know the new name. Emit an IMPORT rule with `source_fqn` on the old FQN and a message stating the new class name.
-- **NOT** when the class kept the same name and just moved packages (e.g., `BasicNameValuePair` stayed `BasicNameValuePair`, just under `org.apache.hc.core5.http.message` instead of `org.apache.http.message` — the PACKAGE rule already covers this since the user can find the same class name in the new package)
+**When to emit additional rules alongside a namespace-level rule:**
+- **Method/function rename:** when a method/function's **name or signature genuinely changed** (e.g., `getStatusLine()` removed and replaced by `getCode()`, or `setRetryHandler()` became `setRetryStrategy()`). Prefer short name patterns (e.g., `setRetryHandler` not `org.example.Builder.setRetryHandler`) when the method may be called on concrete subtypes or via builder chains — FQN patterns fail silently in these cases.
+- **Type replacement (different API):** when a type is **replaced by a fundamentally different type** — different name, different API surface (e.g., `SSLConnectionSocketFactory` → `ClientTlsStrategyBuilder`). A namespace rule tells users to update imports; a type-specific rule tells users the old type is gone and the replacement has a different name and usage pattern.
+- **Type renamed:** when the **type name itself changed**, even if the API surface is similar (e.g., `BasicHttpContext` → `HttpCoreContext`, `HttpRequestBase` → `HttpUriRequestBase`). The namespace rule fires on the old import, but the user cannot find the old name in the new namespace — they need to know the new name.
+- **NOT** when the type kept the same name and just moved namespaces (e.g., `BasicNameValuePair` stayed `BasicNameValuePair`, just under a new namespace — the namespace rule already covers this since the user can find the same name in the new namespace)
 
 **Decision tree:**
 
 | Scenario | Correct output |
 |---|---|
-| Section says "package X moved to Y" + table of class mappings where class names stayed the same | ONE `PACKAGE` rule on old package X |
-| Section says "package X moved to Y" + table includes rows where a method name changed | ONE `PACKAGE` rule + ONE `METHOD_CALL` rule per genuine method rename |
-| Section says "package X moved to Y" + table includes rows where a class is replaced by a differently-named class with a different API | ONE `PACKAGE` rule + ONE `IMPORT` rule per class replacement |
-| Section says "package X moved to Y" + table includes rows where the **class name changed** (even if the API is similar) | ONE `PACKAGE` rule + ONE `IMPORT` rule per class rename |
-| Section says "ClassA moved to X, ClassB moved to Y, ClassC removed" (different targets) | Separate per-class rules |
-| Section lists method-level API changes with no common package rename | Per-row `METHOD_CALL` or `IMPORT` rules as normal |
+| Section says "namespace X moved to Y" + table of type mappings where names stayed the same | ONE namespace-level rule on old prefix X |
+| Section says "namespace X moved to Y" + table includes rows where a method/function name changed | ONE namespace-level rule + ONE method/function-level rule per genuine rename |
+| Section says "namespace X moved to Y" + table includes rows where a type is replaced by a differently-named type with a different API | ONE namespace-level rule + ONE type-specific rule per type replacement |
+| Section says "namespace X moved to Y" + table includes rows where the **type name changed** (even if the API is similar) | ONE namespace-level rule + ONE type-specific rule per type rename |
+| Section says "TypeA moved to X, TypeB moved to Y, TypeC removed" (different targets) | Separate per-type rules |
+| Section lists method/function-level API changes with no common namespace rename | Per-row method/function or type-specific rules as normal |
 
-See `references/examples/<language>.md` for worked examples including reference tables and METHOD_CALL alongside PACKAGE rules.
+See `references/languages/<language>/checklist.md` for language-specific location types and TABLE row annotation format. See `references/examples/<language>.md` for worked examples.
 
 For each pattern, provide the fields defined in `references/patterns-json-schema.md`. At minimum: `source_pattern`, `rationale`, `complexity`, `category`.
 
@@ -245,7 +239,7 @@ For each pattern, provide the fields defined in `references/patterns-json-schema
 
 When a migration requires users to ADD something (a new annotation, a new dependency, a new config), you cannot detect its absence. Instead, detect the **artifact that is affected** and warn about the required change.
 
-For example: if a test annotation no longer auto-configures a helper class, don't try to detect the missing annotation. Instead, detect the helper class usage (IMPORT) and warn that the annotation is now required.
+For example: if a test annotation no longer auto-configures a helper class, don't try to detect the missing annotation. Instead, detect the helper class usage (`*.referenced`) and warn that the annotation is now required.
 
 ### Source FQN must be the pre-migration (source) path
 
@@ -277,11 +271,11 @@ Each difference is a separate pattern. If the guide shows source-version code in
 
 **Common miss:** treating code examples as "just showing best practices" when they actually demonstrate API changes. If the source-version code calls `client.set_timeout(60)` and the target-version code calls `config.set_timeout(Duration.minutes(1))` — that IS a migration pattern even though no prose says "set_timeout moved to config."
 
-**Signature changes are migration patterns even when the method name is unchanged.** If the source code calls `client.setSoTimeout(30000)` (int parameter) and the target code calls `client.setSoTimeout(Timeout.ofSeconds(30))` (Timeout object), that IS a METHOD_CALL pattern — the user must change every call site. Don't skip a method just because it appears in both source and target code. If the parameters, return type, or calling convention changed, extract it.
+**Signature changes are migration patterns even when the method/function name is unchanged.** If the source code calls `client.set_timeout(30)` (raw int) and the target code calls `client.set_timeout(Duration.seconds(30))` (wrapper object), that IS a `*.referenced` pattern — the user must change every call site. Don't skip a method/function just because it appears in both source and target code. If the parameters, return type, or calling convention changed, extract it. See `references/languages/<language>/checklist.md` for the appropriate location type (if the language supports location filtering).
 
-**Code diffs produce rules independently of PACKAGE rules.** When you diff source-version and target-version code examples, extract a separate rule for EVERY class rename or API replacement you find — even if a PACKAGE rule already covers the old import. The PACKAGE rule fires on the import line; the class-specific rule fires on the usage site and tells the user the exact replacement. For example, if source code uses `new HttpPost(url)` and target code uses `ClassicRequestBuilder.post(url).build()`, extract an IMPORT rule for `HttpPost` even though the PACKAGE rule on `org.apache.http` also fires. The user needs to know that `HttpPost` is replaced by `ClassicRequestBuilder`, not just that the import path changed.
+**Code diffs produce rules independently of package/module-level rules.** When you diff source-version and target-version code examples, extract a separate rule for EVERY class/type rename or API replacement you find — even if a package/module-level rule already covers the old import. The package/module-level rule fires on the import line; the type-specific rule fires on the usage site and tells the user the exact replacement. For example, if source code uses `old_module.RequestBuilder(url)` and target code uses `new_module.create_request(url)`, extract a type-level rule for `RequestBuilder` even though the module-level rule also fires. The user needs to know that `RequestBuilder` is replaced by `create_request`, not just that the import path changed.
 
-**Multi-path migration guides.** When a guide describes progressive migration paths (e.g., 4.x → classic 5.x → async 5.x), extract source-side patterns from ALL paths. If the async section shows `PoolingHttpClientConnectionManager` being replaced by `PoolingAsyncClientConnectionManager`, and `PoolingHttpClientConnectionManager` exists in the source version under a different FQN, extract a rule for that source-version FQN. Users migrating directly from 4.x to 5.x async need these rules.
+**Multi-path migration guides.** When a guide describes progressive migration paths (e.g., v2 → v3-compat → v3-native), extract source-side patterns from ALL paths. If the native section shows `ConnectionPool` being replaced by `AsyncConnectionPool`, and `ConnectionPool` exists in the source version under a different qualified name, extract a rule for that source-version name. Users migrating directly from v2 to v3-native need these rules.
 
 ### Read section lead paragraphs carefully
 
