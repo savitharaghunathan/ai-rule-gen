@@ -10,6 +10,9 @@
 - Example 6: `java.referenced` with FIELD location
 - Example 7: `java.referenced` with `annotated` sub-condition
 - Example 8: `PACKAGE` with asterisk for subpackage matching
+- Example 9: Short method name for METHOD_CALL (builder chain workaround)
+- Example 10: `alternative_fqns` for type hierarchy (`or` condition)
+- Example 11: Short method name for shared method (inner class / Builder workaround)
 
 ## Example 1: `java.referenced` with CONSTRUCTOR_CALL location
 
@@ -772,3 +775,307 @@ public class Application {
     }
 }
 ```
+
+---
+
+## Example 9: Short method name for METHOD_CALL (builder chain workaround)
+
+### Guide Excerpt
+
+> ### Retry Handler Migration
+>
+> In HttpClient 5.x, `setRetryHandler(HttpRequestRetryHandler)` has been replaced
+> by `setRetryStrategy(HttpRequestRetryStrategy)`. The new strategy interface
+> provides more flexible retry control.
+>
+> ```java
+> // Before
+> HttpClients.custom().setRetryHandler(myRetryHandler);
+>
+> // After
+> HttpClients.custom().setRetryStrategy(myRetryStrategy);
+> ```
+
+### Checklist
+
+Section: "Retry Handler Migration" -> EXTRACT: method renamed (item 2); `setRetryHandler` → `setRetryStrategy`
+
+### Why a short method name is needed
+
+The FQN pattern `org.apache.http.impl.client.HttpClientBuilder.setRetryHandler` would fail in real-world code because:
+- **Builder chains:** `HttpClients.custom().setRetryHandler(handler)` — kantra can't resolve the return type of `.custom()` to know the receiver is `HttpClientBuilder`
+- **Short name `setRetryHandler`** is unique to HttpClient — no false positive risk
+
+This follows the convention in `konveyor/rulesets` production rules (e.g., `spring-framework-5.x-to-6.0-security-deprecations.yaml` uses bare method names like `getRedirectUriTemplate`).
+
+### patterns.json
+
+```json
+{
+  "source_pattern": "setRetryHandler() replaced by setRetryStrategy()",
+  "target_pattern": "HttpRequestRetryStrategy",
+  "source_fqn": "setRetryHandler",
+  "location_type": "METHOD_CALL",
+  "rationale": "setRetryHandler() renamed to setRetryStrategy() in HttpClient 5.x",
+  "complexity": "medium",
+  "category": "mandatory",
+  "concern": "http-client",
+  "provider_type": "java",
+  "documentation_url": "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+}
+```
+
+Note: `source_fqn` is just the method name `setRetryHandler`, not the FQN. The construct CLI passes this through directly as the `pattern` field, producing a rule that matches ANY class with a `setRetryHandler` method call.
+
+### Resulting Rule YAML (produced by cmd/construct, not by you)
+
+```yaml
+- ruleID: httpclient4-to-httpclient5-00120
+  description: setRetryHandler() renamed to setRetryStrategy() in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+  when:
+    java.referenced:
+        pattern: setRetryHandler
+        location: METHOD_CALL
+```
+
+### Test Data (what triggers this rule)
+
+Both patterns trigger the rule — the short method name matches regardless of how the receiver is obtained:
+
+```java
+package com.example;
+
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.client.HttpRequestRetryHandler;
+
+public class Application {
+    public static void main(String[] args) {
+        // Direct variable — FQN pattern would match this
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        HttpRequestRetryHandler retryHandler = null;
+        builder.setRetryHandler(retryHandler);
+
+        // Builder chain — FQN pattern would NOT match this, short name does
+        // HttpClients.custom().setRetryHandler(retryHandler);
+    }
+}
+```
+
+---
+
+## Example 10: `alternative_fqns` for type hierarchy (`or` condition)
+
+### Guide Excerpt
+
+> ### Connection Manager API Changes
+>
+> `closeExpiredConnections()` has been renamed to `closeExpired()` in HttpClient 5.x.
+> The method was moved from `HttpClientConnectionManager` to the `ConnPoolControl` interface.
+>
+> ```java
+> // Before
+> connectionManager.closeExpiredConnections();
+>
+> // After
+> connectionManager.closeExpired();
+> ```
+
+### Checklist
+
+Section: "Connection Manager API Changes" -> EXTRACT: method renamed (item 2); `closeExpiredConnections` → `closeExpired`
+
+### Why `alternative_fqns` is needed
+
+The FQN pattern `org.apache.http.conn.HttpClientConnectionManager.closeExpiredConnections` only matches variables declared as the interface `HttpClientConnectionManager`. In real code, variables are often declared as the concrete type `PoolingHttpClientConnectionManager` — kantra matches the declared type literally and does NOT walk up the type hierarchy.
+
+Two strategies to handle this:
+
+**Strategy A — Short method name (preferred when unique):**
+Use `source_fqn: "closeExpiredConnections"`. Simplest, matches any class. Works here because `closeExpiredConnections` is unique to HttpClient.
+
+**Strategy B — `alternative_fqns` (when you need FQN precision):**
+List both the interface and concrete type FQNs. The construct CLI generates an `or` condition:
+
+### patterns.json (Strategy B)
+
+```json
+{
+  "source_pattern": "closeExpiredConnections() renamed to closeExpired()",
+  "source_fqn": "org.apache.http.conn.HttpClientConnectionManager.closeExpiredConnections",
+  "alternative_fqns": [
+    "org.apache.http.impl.conn.PoolingHttpClientConnectionManager.closeExpiredConnections"
+  ],
+  "location_type": "METHOD_CALL",
+  "rationale": "closeExpiredConnections() renamed to closeExpired() in HttpClient 5.x",
+  "complexity": "trivial",
+  "category": "mandatory",
+  "concern": "http-client",
+  "provider_type": "java",
+  "documentation_url": "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+}
+```
+
+### Resulting Rule YAML (Strategy B — produced by cmd/construct, not by you)
+
+```yaml
+- ruleID: httpclient4-to-httpclient5-00080
+  description: closeExpiredConnections() renamed to closeExpired() in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+  when:
+    or:
+      - java.referenced:
+          pattern: org.apache.http.conn.HttpClientConnectionManager.closeExpiredConnections
+          location: METHOD_CALL
+      - java.referenced:
+          pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManager.closeExpiredConnections
+          location: METHOD_CALL
+```
+
+### Test Data (what triggers this rule)
+
+```java
+package com.example;
+
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+
+public class Application {
+    public static void main(String[] args) {
+        // Declared as interface — matches first or branch
+        HttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
+        connManager.closeExpiredConnections();
+
+        // Declared as concrete type — matches second or branch
+        PoolingHttpClientConnectionManager poolCm = new PoolingHttpClientConnectionManager();
+        poolCm.closeExpiredConnections();
+    }
+}
+```
+
+### When to use which strategy
+
+| Scenario | Strategy |
+|---|---|
+| Method name is unique to the source library | **Short name** — simplest, most resilient |
+| Method name is common across libraries (e.g., `getAllHeaders`, `close`) | **`alternative_fqns`** or **`and`/`as`/`from` scoping** |
+| You know all concrete types that implement the interface | **`alternative_fqns`** — explicit, no false positives |
+| Method is called via builder chain (`Foo.create().bar()`) | **Short name** — `alternative_fqns` can't help here |
+
+---
+
+## Example 11: Short method name for shared method (inner class / Builder workaround)
+
+### Guide Excerpt
+
+> ### Timeout Configuration Changes
+>
+> In HttpClient 5.x, `RequestConfig.custom().setConnectTimeout()` and
+> `RequestConfig.custom().setSocketTimeout()` have moved to `ConnectionConfig`:
+>
+> | HttpClient 4.x | HttpClient 5.x |
+> |---|---|
+> | `RequestConfig.custom().setConnectTimeout()` | `ConnectionConfig.custom().setConnectTimeout()` |
+> | `RequestConfig.custom().setSocketTimeout()` | `ConnectionConfig.custom().setSocketTimeout()` |
+
+### Checklist
+
+Section: "Timeout Configuration Changes" -> EXTRACT: API relocated from RequestConfig to ConnectionConfig (items 4, 6)
+
+### Why the FQN fails
+
+The "obvious" FQN pattern `org.apache.http.client.config.RequestConfig.Builder.setConnectTimeout` fails because:
+- **Inner class resolution:** `RequestConfig.custom()` returns `RequestConfig.Builder`, but kantra can't resolve the factory method return type to know the receiver is `RequestConfig.Builder`
+- **Builder chain:** The `.setConnectTimeout()` call is chained after `.custom()`, compounding the resolution failure
+- This is a **hard failure** — the rule compiles without error but silently matches nothing
+
+### Why the short method name is correct
+
+`setConnectTimeout` also exists in the target API (`ConnectionConfig.Builder.setConnectTimeout`). This creates a potential false positive on already-migrated code. But:
+- A false positive is better than a rule that never fires
+- In practice, if the user has migrated to 5.x, they won't have `org.apache.http` imports anymore — the PACKAGE rule won't fire, and the false positive is cosmetic
+- The `and`/`as`/`from` scoping pattern exists (see condition-types.md) but is NOT expressible in patterns.json — it's only available for hand-written rules
+
+### patterns.json
+
+```json
+{
+  "source_pattern": "RequestConfig.setConnectTimeout() moved to ConnectionConfig in HttpClient 5.x",
+  "target_pattern": "ConnectionConfig.custom().setConnectTimeout(Timeout)",
+  "source_fqn": "setConnectTimeout",
+  "location_type": "METHOD_CALL",
+  "source_artifact": {
+    "group_id": "org.apache.httpcomponents",
+    "artifact_id": "httpclient",
+    "version": "4.5.14"
+  },
+  "rationale": "setConnectTimeout() moved from RequestConfig to ConnectionConfig in HttpClient 5.x",
+  "complexity": "medium",
+  "category": "mandatory",
+  "concern": "connection",
+  "provider_type": "java",
+  "documentation_url": "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+}
+```
+
+Note: `source_fqn` is the bare method name `setConnectTimeout`, not the FQN `org.apache.http.client.config.RequestConfig.Builder.setConnectTimeout`. The short name matches any class with a `setConnectTimeout` method call.
+
+### Resulting Rule YAML (produced by cmd/construct, not by you)
+
+```yaml
+- ruleID: httpclient4-to-httpclient5-00200
+  description: setConnectTimeout() moved from RequestConfig to ConnectionConfig in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+  when:
+    java.referenced:
+        pattern: setConnectTimeout
+        location: METHOD_CALL
+```
+
+### Test Data (what triggers this rule)
+
+```java
+package com.example;
+
+import org.apache.http.client.config.RequestConfig;
+
+public class HttpClientFactory {
+    public RequestConfig createConfig() {
+        return RequestConfig.custom()
+            .setConnectTimeout(60000)
+            .setSocketTimeout(60000)
+            .build();
+    }
+}
+```
+
+### Hand-written scoped version (not expressible in patterns.json)
+
+For hand-written rules where false-positive control matters, use `and`/`as`/`from` scoping:
+
+```yaml
+when:
+  and:
+    - java.referenced:
+        pattern: org.apache.http*
+        location: PACKAGE
+      as: httpFile
+    - java.referenced:
+        pattern: setConnectTimeout
+        location: METHOD_CALL
+      from: httpFile
+```
+
+This restricts the `setConnectTimeout` match to files that also import from `org.apache.http`, eliminating false positives on 5.x `ConnectionConfig` code. The `and`/`as`/`from` structure is supported by kantra but cannot be expressed through the patterns.json schema — use it only for manually authored rules.

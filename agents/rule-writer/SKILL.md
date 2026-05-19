@@ -106,7 +106,7 @@ Process **each section from the index individually**. For each section:
 
 **The checklist is the decision.** Do not pre-judge a section as "informational" or "not actionable" before running the checklist. Read the section, then evaluate each item:
 
-#### Extraction checklist (run ALL 8 items for EVERY non-header section)
+#### Extraction checklist (run ALL 9 items for EVERY non-header section)
 
 | # | Question | If yes → extract |
 |---|----------|-------------------|
@@ -118,12 +118,13 @@ Process **each section from the index individually**. For each section:
 | 6 | Does the section mention **deprecated** starters, modules, or artifacts? | Each old→new mapping is a pattern |
 | 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
 | 8 | Does the section mention a **version requirement** for a plugin, tool, or library? | `builtin.filecontent` or `builtin.xml` depending on build file format |
+| 9 | Does the section contain **before/after code examples** showing source-version and target-version API usage? | Diff the code examples line by line. Each API call, class, type, constant, or import that differs between old and new code is a separate pattern. See "Code example comparison" below. |
 
 **Output format — verbose for ALL sections.**
 
-Run all 8 checklist items for every section. Print the full evaluation:
+Run all 9 checklist items for every section. Print the full evaluation:
 
-- **EXTRACT** — print the full 8-item evaluation AND the verdict:
+- **EXTRACT** — print the full 9-item evaluation AND the verdict:
   ```
   Section: "### Liveness and Readiness Probes"
     1. Removed? no
@@ -134,10 +135,11 @@ Run all 8 checklist items for every section. Print the full evaluation:
     6. Deprecated? no
     7. Names artifact? yes — management.health.probes.enabled
     8. Version requirement? no
+    9. Code examples? no
     → EXTRACT: detect management.health.probes.enabled property, category: potential (items 5,7)
   ```
 
-- **SKIP** — print the full 8-item evaluation so the decision is auditable:
+- **SKIP** — print the full 9-item evaluation so the decision is auditable:
   ```
   Section: "### Some Section"
     1. Removed? no
@@ -148,6 +150,7 @@ Run all 8 checklist items for every section. Print the full evaluation:
     6. Deprecated? no
     7. Names artifact? no
     8. Version requirement? no
+    9. Code examples? no
     → SKIP: no detectable artifacts
   ```
 
@@ -167,6 +170,17 @@ Run all 8 checklist items for every section. Print the full evaluation:
   ```
   Every row must appear. This prevents silent drops. For each row, decompose: check the class/type name first, then the method/member name.
 
+- **CODE-DIFF** — when a section has before/after code examples, enumerate each API difference:
+  ```
+  Code diff: "## Migration steps" (source example vs target example)
+    old_module.configure(raw_value) → new_module.configure(wrapped_value) — EXTRACT (function moved + parameter type changed)
+    old_module.OldName → new_module.NewName — EXTRACT (renamed)
+    response.old_method() → response.new_method() — EXTRACT (method/function renamed)
+    OldFactory(args) → new_create_func(args) — EXTRACT (construction API replaced)
+    old_const.VALUE → new_const.VALUE — EXTRACT (constant/enum moved)
+  ```
+  Every difference must appear. Code examples are first-class extraction sources — they often show migration changes that prose doesn't call out explicitly.
+
 Full checklist output for extractions makes every decision auditable — the orchestrator can verify that all named artifacts got a "yes" on the relevant checklist item.
 
 #### Skip reasons that indicate a checklist failure
@@ -177,12 +191,13 @@ If your skip reason contains any of these phrases, you answered a checklist item
 - "advisory" — check items 5, 7
 - "not detectable" — check item 7 (detect the *affected artifact*, not the *missing fix*)
 - "naming convention" / "no old-to-new rename mapping" — check items 2, 3, 6, 7 (package renames and module restructures ARE detectable)
-- "covered by other patterns" / "already covered by X section" — cite the exact rule_id or re-extract
+- "covered by other patterns" / "already covered by X section" / "covered by PACKAGE rule" — cite the exact rule_id or re-extract. **PACKAGE rules and class/method rules serve different purposes:** a PACKAGE rule tells users their imports need to change; a class-specific IMPORT or METHOD_CALL rule tells users what the replacement class or method is. Both are needed. "Covered by PACKAGE rule" is NEVER valid for skipping a class rename (e.g., `HttpResponse` → `ClassicHttpResponse`), a class replacement with a different API (e.g., `HttpPost` → `ClassicRequestBuilder`), or a method rename (e.g., `getStatusLine()` → `getCode()`). Each of these needs its own rule alongside the PACKAGE rule.
 - "behavioral change" / "behavioral default change" — check item 5 (detect the affected artifact)
 - "reference table of NEW items" — check items 4, 6 (new items often imply old items were restructured)
 - "build plugin config" / "Gradle plugin version" — check item 8
 - "no code artifacts" — check item 7 (if the section names ANY artifact, it has code artifacts)
 - "describes a compatibility helper" — check items 3, 7 (detect the OLD artifact it bridges)
+- "just a code example" / "code illustration" / "example usage" — check item 9 (code examples ARE extraction sources, not illustrations)
 
 **The ONLY valid skip** is a section that contains genuinely zero named artifacts — no classes, no dependencies, no properties, no annotations, no config elements, no build plugin names. This means: pure headers (`## Upgrading Web Features`), prerequisite checklists (`### Before You Start`), or link collections (`### Review Other Release Notes`). **If a section names even one concrete artifact, it is not skippable.** When in doubt, extract — false positives are cheaper than missed migrations.
 
@@ -198,7 +213,7 @@ When a migration guide says an entire package/module is renamed or removed, crea
 **Reference tables under package renames:** The table is showing examples of what moves, not listing separate migration patterns. Emit ONE `PACKAGE` rule for the old package prefix. Do NOT process each table row as a separate pattern.
 
 **When to emit additional rules alongside a PACKAGE rule:**
-- **METHOD_CALL:** when a method's **name or signature genuinely changed** (e.g., `getStatusLine()` was removed and replaced by `getCode()`, or `setRetryHandler(HttpRequestRetryHandler)` became `setRetryStrategy(HttpRequestRetryStrategy)`)
+- **METHOD_CALL:** when a method's **name or signature genuinely changed** (e.g., `getStatusLine()` was removed and replaced by `getCode()`, or `setRetryHandler(HttpRequestRetryHandler)` became `setRetryStrategy(HttpRequestRetryStrategy)`). **Pattern style:** prefer short method name patterns (e.g., `setRetryHandler` not `org.example.Builder.setRetryHandler`) when the method may be called on concrete subtypes or via builder chains — FQN patterns fail silently in these cases. **NEVER use FQN patterns that include inner class names** (e.g., `RequestConfig.Builder.setConnectTimeout`, `Config.Builder.setTimeout`). Kantra cannot resolve factory method return types (`RequestConfig.custom()` → `RequestConfig.Builder`), so these patterns compile but silently match nothing. Use the short method name instead — even if the method name also exists in the target API (e.g., both `RequestConfig` and `ConnectionConfig` have `setConnectTimeout`), a false positive on already-migrated code is better than a rule that never fires. Use `alternative_fqns` to create `or` conditions when you need FQN precision across a type hierarchy. See `references/languages/<language>/condition-types.md` for the full decision framework and `references/examples/<language>.md` Examples 9-11 for worked examples
 - **IMPORT (different API):** when a class is **replaced by a fundamentally different class** — different name, different API surface (e.g., `SSLConnectionSocketFactory` → `ClientTlsStrategyBuilder`, `HttpEntityEnclosingRequest` → `HttpEntityContainer`). A PACKAGE rule tells users to update imports; an IMPORT rule tells users the old class is gone and the replacement has a different name and usage pattern.
 - **IMPORT (class renamed):** when the **class name itself changed**, even if the API surface is similar (e.g., `BasicHttpContext` → `HttpCoreContext`, `HttpRequestBase` → `HttpUriRequestBase`, `HttpResponse` → `ClassicHttpResponse`). The PACKAGE rule fires on the old import, but the user cannot find the old class name in the new package — they need to know the new name. Emit an IMPORT rule with `source_fqn` on the old FQN and a message stating the new class name.
 - **NOT** when the class kept the same name and just moved packages (e.g., `BasicNameValuePair` stayed `BasicNameValuePair`, just under `org.apache.hc.core5.http.message` instead of `org.apache.http.message` — the PACKAGE rule already covers this since the user can find the same class name in the new package)
@@ -237,6 +252,28 @@ The `source_fqn` field is what the rule will match against in user code. It must
 **Verification:** For each `source_fqn`, ask: "Would this FQN appear in a project that has NOT been migrated yet?" If no, you have the wrong path.
 
 The migration guide often shows both old and new paths. The old path goes in `source_fqn`; the new path goes in `target_pattern` and the migration message.
+
+### Code example comparison (checklist item 9)
+
+Migration guides often communicate API changes implicitly through before/after code examples rather than stating them in prose. These are **first-class extraction sources** — not illustrations.
+
+When a section (or pair of related sections like "Preparation" and "Migration steps") shows source-version and target-version code doing the same thing, systematically diff them:
+
+1. **Function/method renames:** a function or method called in old code has a different name in new code
+2. **Parameter/argument changes:** same function name but different parameter types, order, or wrapping (e.g., raw int → duration object, string → enum)
+3. **Construction changes:** how an object is created differs — different constructor, factory function, or initialization pattern
+4. **Module/import changes:** different import paths, package names, or module references
+5. **Constant/enum changes:** a named constant or enum value moves to a different module or is renamed
+6. **API relocation:** a function/method moves from one module or object to another
+7. **Removed calls:** API call present in old code with no equivalent in new code
+
+Each difference is a separate pattern. If the guide shows source-version code in one section and equivalent target-version code in another, compare across sections — migration guides are organized by migration stage, not by API change.
+
+**Common miss:** treating code examples as "just showing best practices" when they actually demonstrate API changes. If the source-version code calls `client.set_timeout(60)` and the target-version code calls `config.set_timeout(Duration.minutes(1))` — that IS a migration pattern even though no prose says "set_timeout moved to config."
+
+**Code diffs produce rules independently of PACKAGE rules.** When you diff source-version and target-version code examples, extract a separate rule for EVERY class rename or API replacement you find — even if a PACKAGE rule already covers the old import. The PACKAGE rule fires on the import line; the class-specific rule fires on the usage site and tells the user the exact replacement. For example, if source code uses `new HttpPost(url)` and target code uses `ClassicRequestBuilder.post(url).build()`, extract an IMPORT rule for `HttpPost` even though the PACKAGE rule on `org.apache.http` also fires. The user needs to know that `HttpPost` is replaced by `ClassicRequestBuilder`, not just that the import path changed.
+
+**Multi-path migration guides.** When a guide describes progressive migration paths (e.g., 4.x → classic 5.x → async 5.x), extract source-side patterns from ALL paths. If the async section shows `PoolingHttpClientConnectionManager` being replaced by `PoolingAsyncClientConnectionManager`, and `PoolingHttpClientConnectionManager` exists in the source version under a different FQN, extract a rule for that source-version FQN. Users migrating directly from 4.x to 5.x async need these rules.
 
 ### Read section lead paragraphs carefully
 
