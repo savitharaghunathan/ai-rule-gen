@@ -1,0 +1,4 @@
+guide_url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+app_repo: https://github.com/savitharaghunathan/httpclient-migration
+source: httpclient4
+target: httpclient5
