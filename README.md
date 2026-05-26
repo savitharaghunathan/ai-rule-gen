@@ -162,7 +162,7 @@ Compares the source migration guide against the generated rules. Produces:
 
 ### Example report
 
-```
+```text
 ======================================================================
 EVAL REPORT
 ======================================================================

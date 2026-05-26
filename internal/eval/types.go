@@ -32,6 +32,7 @@ type RuleDetail struct {
 	Description  string       `json:"description"`
 	QualityScore int          `json:"quality_score"`
 	QualityMax   int          `json:"quality_max"`
+	HasGuidance  bool         `json:"has_guidance"`
 	Missing      []string     `json:"missing,omitempty"`
 	AppIncidents int          `json:"app_incidents,omitempty"`
 	AppFiles     []string     `json:"app_files,omitempty"`

@@ -48,6 +48,7 @@ func ScoreRule(r rules.Rule) RuleDetail {
 		Description:  r.Description,
 		QualityScore: score,
 		QualityMax:   maxScore,
+		HasGuidance:  hasGuidance,
 		Missing:      missing,
 	}
 }
@@ -76,7 +77,7 @@ func ScoreAll(ruleList []rules.Rule) (QualitySummary, []RuleDetail) {
 		if r.Effort > 0 {
 			summary.HasEffort++
 		}
-		if d.QualityScore >= 4 {
+		if d.HasGuidance {
 			summary.HasBeforeAfter++
 		}
 	}

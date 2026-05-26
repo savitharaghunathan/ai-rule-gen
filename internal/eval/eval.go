@@ -3,7 +3,6 @@ package eval
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -29,7 +28,12 @@ func RunEval(cfg Config) (*EvalResult, error) {
 	}
 
 	if cfg.AppDir != "" {
-		outputDir := filepath.Join(os.TempDir(), "eval-kantra-output")
+		outputDir, err := os.MkdirTemp("", "eval-kantra-output-*")
+		if err != nil {
+			return nil, fmt.Errorf("creating temp dir: %w", err)
+		}
+		defer os.RemoveAll(outputDir)
+
 		cov, err := RunKantraAnalyze(cfg.RulesDir, cfg.AppDir, outputDir)
 		if err != nil {
 			return nil, fmt.Errorf("app coverage: %w", err)

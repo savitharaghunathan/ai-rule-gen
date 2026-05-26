@@ -1,11 +1,13 @@
 package eval
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 	"gopkg.in/yaml.v3"
@@ -31,7 +33,10 @@ func RunKantraAnalyze(rulesDir, appDir, outputDir string) (*AppCoverage, error) 
 		return nil, fmt.Errorf("creating output dir: %w", err)
 	}
 
-	cmd := exec.Command("kantra", "analyze",
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "kantra", "analyze",
 		"-i", appDir,
 		"--rules", rulesDir,
 		"--enable-default-rulesets=false",
@@ -43,6 +48,9 @@ func RunKantraAnalyze(rulesDir, appDir, outputDir string) (*AppCoverage, error) 
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("kantra analyze timed out after 5 minutes")
+		}
 		return nil, fmt.Errorf("kantra analyze: %w", err)
 	}
 
