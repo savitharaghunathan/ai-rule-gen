@@ -38,24 +38,24 @@ Three pattern styles are supported. Choose based on how the method is called in 
 
 | Style | Pattern | Matches | Use when |
 |---|---|---|---|
-| **FQN** | `org.apache.http.HttpResponse.getStatusLine` | Only calls on variables declared as `HttpResponse` | The variable is always declared as the exact type containing the method |
-| **Short method name** | `closeExpiredConnections` | Calls on ANY class with that method name | The method may be called on concrete subtypes, via builder chains, or when the FQN would miss matches (see limitations below) |
+| **FQN** | `org.hibernate.Session.createQuery` | Only calls on variables declared as `Session` | The variable is always declared as the exact type containing the method |
+| **Short method name** | `addInterceptor` | Calls on ANY class with that method name | The method may be called on concrete subtypes, via builder chains, or when the FQN would miss matches (see limitations below) |
 | **Method signature** | `getForObject(URI,Class<Source>)` | Calls matching the method name AND parameter types | Disambiguating overloaded methods or matching specific signatures |
 
-**Examples from production rulesets (`konveyor/rulesets`):**
+**Examples:**
 
 ```yaml
-# FQN — exact type match (hibernate)
+# FQN — exact type match
 java.referenced:
-    pattern: org.hibernate.persister.entity.EntityPersister.multiload
+    pattern: org.hibernate.Session.createQuery
     location: METHOD_CALL
 
-# Short method name — avoids type hierarchy issues (spring-security)
+# Short method name — avoids type hierarchy issues
 java.referenced:
     pattern: getRedirectUriTemplate
     location: METHOD_CALL
 
-# Method signature — disambiguates overloads (spring-web)
+# Method signature — disambiguates overloads
 java.referenced:
     pattern: 'getForObject(URI,Class<Source>)'
     location: METHOD_CALL
@@ -70,40 +70,40 @@ Kantra resolves METHOD_CALL patterns by matching the **declared type of the rece
 The method is defined on an interface, but code uses a concrete implementation:
 
 ```java
-// Rule pattern: org.apache.http.conn.HttpClientConnectionManager.closeExpiredConnections
-// Variable declared as concrete type — kantra sees PoolingHttpClientConnectionManager, NOT the interface
-PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-cm.closeExpiredConnections();  // DOES NOT MATCH the interface FQN pattern
+// Rule pattern: javax.jms.MessageProducer.send
+// Variable declared as concrete type — kantra sees ActiveMQMessageProducer, NOT the interface
+ActiveMQMessageProducer producer = session.createProducer(dest);
+producer.send(message);  // DOES NOT MATCH the interface FQN pattern
 ```
 
-**Workarounds:** Use a short method name pattern (`closeExpiredConnections`), or use `alternative_fqns` to create an `or` condition covering both the interface and known concrete types.
+**Workarounds:** Use a short method name pattern (`send`), or use `alternative_fqns` to create an `or` condition covering both the interface and known concrete types.
 
 **2. Builder chain resolution**
 
 Methods called on builder chains where kantra can't resolve the return type:
 
 ```java
-// Rule pattern: org.apache.http.impl.client.HttpClientBuilder.setRetryHandler
-// kantra can't resolve the return type of HttpClients.custom() to HttpClientBuilder
-HttpClients.custom().setRetryHandler(handler);  // DOES NOT MATCH
+// Rule pattern: org.springframework.security.config.annotation.web.builders.HttpSecurity.authorizeRequests
+// kantra can't resolve the return type of http.csrf().disable() back to HttpSecurity
+http.csrf().disable().authorizeRequests();  // DOES NOT MATCH
 ```
 
-**Workaround:** Use a short method name pattern (`setRetryHandler`).
+**Workaround:** Use a short method name pattern (`authorizeRequests`).
 
 **3. Inner class / Builder class FQN resolution**
 
 FQN patterns that include an inner class name (e.g., `Config.Builder.method`) fail for the same reason as builder chains — kantra can't resolve factory method return types:
 
 ```java
-// Rule pattern: org.apache.http.client.config.RequestConfig.Builder.setConnectTimeout
-// kantra can't resolve RequestConfig.custom() → RequestConfig.Builder
-RequestConfig.custom()
-    .setConnectTimeout(60000);  // DOES NOT MATCH
+// Rule pattern: com.example.ClientConfig.Builder.setReadTimeout
+// kantra can't resolve ClientConfig.builder() → ClientConfig.Builder
+ClientConfig.builder()
+    .setReadTimeout(5000);  // DOES NOT MATCH
 ```
 
-This is a **hard failure**, not a corner case. `RequestConfig.custom()` returns `RequestConfig.Builder`, but kantra sees only `custom()` and can't map it. The pattern compiles without error but silently matches nothing.
+This is a **hard failure**, not a corner case. The factory method returns an inner `Builder` type, but kantra sees only the factory call and can't map it. The pattern compiles without error but silently matches nothing.
 
-**Workaround:** Use a short method name pattern (`setConnectTimeout`). If the method name also exists in the target API (e.g., both `RequestConfig` and `ConnectionConfig` have `setConnectTimeout`), accept the false positive risk — a rule that fires on already-migrated code is better than one that never fires. For hand-written rules (not generated via patterns.json), use `and`/`as`/`from` scoping to restrict to files importing the source package.
+**Workaround:** Use a short method name pattern (`setReadTimeout`). If the method name also exists in the target API, accept the false positive risk — a rule that fires on already-migrated code is better than one that never fires. For hand-written rules (not generated via patterns.json), use `and`/`as`/`from` scoping to restrict to files importing the source package.
 
 ### When NOT to use builtin.filecontent for method detection
 
@@ -118,26 +118,26 @@ RequestConfig.custom()
 
 Go regex `.` does not match newlines, so `.*` stops at the line break and the pattern silently fails.
 
-**Fix:** Use `java.referenced` with `location: METHOD_CALL` and a short method name pattern. If the method name is shared with the target API (e.g., both `RequestConfig` and `ConnectionConfig` have `setConnectTimeout`), scope with `and`/`as`/`from` to restrict matching to files importing the source package:
+**Fix:** Use `java.referenced` with `location: METHOD_CALL` and a short method name pattern. If the method name is shared with the target API, scope with `and`/`as`/`from` to restrict matching to files importing the source package:
 
 ```yaml
 when:
   and:
     - java.referenced:
-        pattern: org.apache.http*
+        pattern: com.old.library*
         location: PACKAGE
-      as: httpFile
+      as: oldLibFile
     - java.referenced:
-        pattern: setConnectTimeout
+        pattern: setReadTimeout
         location: METHOD_CALL
-      from: httpFile
+      from: oldLibFile
 ```
 
 **Rule of thumb:** If you're detecting a method call, use `METHOD_CALL`. Reserve `builtin.filecontent` for configuration files (`.properties`, `.yml`) and build files where no semantic analyzer exists.
 
 ### METHOD_CALL pattern style decision framework
 
-1. Is the method name unique to the migration source library? (e.g., `closeExpiredConnections`, `setRetryHandler`, `setConnectionTimeToLive`)
+1. Is the method name unique to the migration source library? (i.e., unlikely to appear in unrelated code)
    - **Yes →** Use short method name. Simple, resilient to type hierarchy and builder chains.
    - **No →** Continue to step 2.
 
@@ -160,10 +160,10 @@ Use for type hierarchy (interface + concrete types) or multiple entry points:
 when:
   or:
     - java.referenced:
-        pattern: org.apache.http.conn.HttpClientConnectionManager.closeExpiredConnections
+        pattern: javax.jms.ConnectionFactory.createConnection
         location: METHOD_CALL
     - java.referenced:
-        pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManager.closeExpiredConnections
+        pattern: javax.jms.QueueConnectionFactory.createQueueConnection
         location: METHOD_CALL
 ```
 
@@ -188,16 +188,16 @@ Use to limit a short method name to files that import from a specific package:
 when:
   and:
     - java.referenced:
-        pattern: org.apache.http*
+        pattern: javax.servlet*
         location: PACKAGE
-      as: httpFile
+      as: servletFile
     - java.referenced:
-        pattern: getAllHeaders
+        pattern: getRequestDispatcher
         location: METHOD_CALL
-      from: httpFile
+      from: servletFile
 ```
 
-The `as` names the first condition's match set. `from` restricts the second condition to files where the first matched. Note: Java rules require uppercase `Filepaths` in interpolation (`"{{httpFile.Filepaths}}"`).
+The `as` names the first condition's match set. `from` restricts the second condition to files where the first matched. Note: Java rules require uppercase `Filepaths` in interpolation (`"{{servletFile.Filepaths}}"`)
 
 ### `not` — exclude matches
 
