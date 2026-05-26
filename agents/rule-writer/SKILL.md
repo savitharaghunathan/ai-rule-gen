@@ -191,7 +191,7 @@ If your skip reason contains any of these phrases, you answered a checklist item
 - "advisory" — check items 5, 7
 - "not detectable" — check item 7 (detect the *affected artifact*, not the *missing fix*)
 - "naming convention" / "no old-to-new rename mapping" — check items 2, 3, 6, 7 (package renames and module restructures ARE detectable)
-- "covered by other patterns" / "already covered by X section" / "covered by package/namespace/module-level rule" / "async variant of existing rule" / "already handled by sync version" — cite the exact rule_id or re-extract. **Package/namespace/module-level rules and type/symbol-specific rules serve different purposes:** a namespace-level rule tells users their imports need to change; a type-specific rule tells users what the replacement type or function is. Both are needed. "Covered by namespace-level rule" is NEVER valid for skipping a type rename, a type replacement with a different API, or a method/function rename — each of these needs its own rule alongside the namespace-level rule (see decision tree in "Package/module/namespace-level consolidation" above). Similarly, "async variant of existing rule" is NEVER valid — sync and async migration paths produce separate rules because users need different replacement guidance for each path.
+- "covered by other patterns" / "already covered by X" / "handled by Y rule" — cite the exact rule_id that covers it, or re-extract. Rules at different granularities (namespace vs type vs method) serve different purposes and do not replace each other — see "Package/module/namespace-level consolidation" above for when additional rules are needed alongside a namespace-level rule.
 - "behavioral change" / "behavioral default change" — check item 5 (detect the affected artifact)
 - "reference table of NEW items" — check items 4, 6 (new items often imply old items were restructured)
 - "build plugin config" / "Gradle plugin version" — check item 8
@@ -199,7 +199,7 @@ If your skip reason contains any of these phrases, you answered a checklist item
 - "describes a compatibility helper" — check items 3, 7 (detect the OLD artifact it bridges)
 - "just a code example" / "code illustration" / "example usage" — check item 9 (code examples ARE extraction sources, not illustrations)
 
-**The ONLY valid skip** is a section that contains genuinely zero named artifacts — no classes, no dependencies, no properties, no annotations, no config elements, no build plugin names. This means: pure headers (`## Upgrading Web Features`), prerequisite checklists (`### Before You Start`), or link collections (`### Review Other Release Notes`). **If a section names even one concrete artifact, it is not skippable.** When in doubt, extract — false positives are cheaper than missed migrations.
+**Valid skips:** (1) a section that contains genuinely zero named artifacts — no classes, no dependencies, no properties, no annotations, no config elements, no build plugin names (pure headers, prerequisite checklists, link collections); (2) a section that ONLY describes **target-only artifacts** — new classes/APIs that exist only in the target version with no source-side predecessor (these belong in migration messages of related source-side rules, not as standalone rules). **If a section names even one concrete source-side artifact, it is not skippable.** When in doubt, extract — false positives are cheaper than missed migrations.
 
 ### Package/module/namespace-level consolidation (applies to checklist items 2 and 4)
 
@@ -210,19 +210,19 @@ When a migration guide says an entire package, module, or namespace is renamed o
 - A reference table lists old→new type mappings where every old type is under the same namespace prefix and every new type is under a new prefix
 - The migration action for every row is the same: change the import
 
-**Reference tables under namespace renames:** Emit ONE namespace-level rule for the old prefix. Then scan EVERY row of the table for the cases below — most namespace rename tables produce the namespace rule **plus** several type-specific and method/function-specific rules. Only skip rows where the type/symbol kept the exact same name and just moved namespaces.
+**Reference tables under namespace renames:** Emit ONE namespace-level rule for the old prefix. Then scan EVERY row of the table for the cases below — most namespace rename tables produce the namespace rule **plus** several type-specific and method/function-specific rules.
 
 **When to emit additional rules alongside a namespace-level rule:**
-- **Method/function rename:** when a method/function's **name or signature genuinely changed** (e.g., `getStatusLine()` removed and replaced by `getCode()`, or `setRetryHandler()` became `setRetryStrategy()`). Prefer short name patterns (e.g., `setRetryHandler` not `org.example.Builder.setRetryHandler`) when the method may be called on concrete subtypes or via builder chains — FQN patterns fail silently in these cases.
-- **Type replacement (different API):** when a type is **replaced by a fundamentally different type** — different name, different API surface (e.g., `SSLConnectionSocketFactory` → `ClientTlsStrategyBuilder`). A namespace rule tells users to update imports; a type-specific rule tells users the old type is gone and the replacement has a different name and usage pattern.
-- **Type renamed:** when the **type name itself changed**, even if the API surface is similar (e.g., `BasicHttpContext` → `HttpCoreContext`, `HttpRequestBase` → `HttpUriRequestBase`). The namespace rule fires on the old import, but the user cannot find the old name in the new namespace — they need to know the new name.
-- **NOT** when the type kept the same name and just moved namespaces (e.g., `BasicNameValuePair` stayed `BasicNameValuePair`, just under a new namespace — the namespace rule already covers this since the user can find the same name in the new namespace)
+- **Method/function rename or relocation:** when a method/function's **name, signature, or owning type changed** (e.g., a method was removed and replaced by a differently-named method, or a method moved to a different owning type). See `references/languages/<language>/condition-types.md` for pattern style guidance.
+- **Type replacement (different API):** when a type is **replaced by a fundamentally different type** — different name, different API surface. A namespace rule tells users to update imports; a type-specific rule tells users the old type is gone and the replacement has a different name and usage pattern.
+- **Type renamed:** when the **type name itself changed**, even if the API surface is similar. The namespace rule fires on the old import, but the user cannot find the old name in the new namespace — they need to know the new name.
+- **Same-name namespace moves:** when a **source-side** type kept the same name but moved to a new namespace, emit a per-class import rule if the type appears in the guide's code examples or reference tables. The `source_fqn` must use the OLD namespace path. The namespace rule fires once per file; per-class rules fire on each usage site and show the exact new import path. Only skip same-name moves for types that are never explicitly referenced in the guide (internal/implementation classes). Do NOT emit rules for target-only types that appear in code examples but have no source-side equivalent.
 
 **Decision tree:**
 
 | Scenario | Correct output |
 |---|---|
-| Section says "namespace X moved to Y" + table of type mappings where names stayed the same | ONE namespace-level rule on old prefix X |
+| Section says "namespace X moved to Y" + table of type mappings where names stayed the same | ONE namespace-level rule on old prefix X + per-class import rules for **source-side** types that appear in code examples or reference tables (skip target-only types) |
 | Section says "namespace X moved to Y" + table includes rows where a method/function name changed | ONE namespace-level rule + ONE method/function-level rule per genuine rename |
 | Section says "namespace X moved to Y" + table includes rows where a type is replaced by a differently-named type with a different API | ONE namespace-level rule + ONE type-specific rule per type replacement |
 | Section says "namespace X moved to Y" + table includes rows where the **type name changed** (even if the API is similar) | ONE namespace-level rule + ONE type-specific rule per type rename |
@@ -241,15 +241,21 @@ When a migration requires users to ADD something (a new annotation, a new depend
 
 For example: if a test annotation no longer auto-configures a helper class, don't try to detect the missing annotation. Instead, detect the helper class usage (`*.referenced`) and warn that the annotation is now required.
 
-### Source FQN must be the pre-migration (source) path
+### Source FQN must be a source-side (pre-migration) artifact
 
 The `source_fqn` field is what the rule will match against in user code. It must be the **old/source** path — the one that exists in code that has NOT been migrated yet.
 
-**Common mistake:** using the target/new package path as the pattern. Example:
-- WRONG: `com.example.newpackage.MyClass` (this is the post-migration path — unmigrated code doesn't have this)
-- RIGHT: `com.example.oldpackage.MyClass` (this is the pre-migration path — what actually appears in user code before migration)
+**Common mistake 1 — wrong package path:** using the target/new package path as the pattern. The `source_fqn` must be the pre-migration path that exists in unmigrated code, not the post-migration path.
 
-**Verification:** For each `source_fqn`, ask: "Would this FQN appear in a project that has NOT been migrated yet?" If no, you have the wrong path.
+**Common mistake 2 — target-only artifacts:** creating rules for classes/types that are NEW in the target version and have NO equivalent in the source version. These rules are dead — they will never fire on unmigrated code because the class doesn't exist there.
+
+**Gate — apply BEFORE emitting any pattern:** For each `source_fqn`, ask: "Does this class/type/method exist in the **source** version's library?" If no — if it only exists in the target version — do NOT emit a rule. Target-only artifacts belong in the migration message of related source-side rules, not as standalone rules.
+
+**How to recognize target-only artifacts in migration guides:**
+- The guide introduces a new class with no "replaces X" or "instead of X" context
+- The guide section describes "new features" or "new APIs" available in the target version
+- The class FQN uses the target-version namespace, not the source-version namespace
+- The class only appears in the "after" side of code examples, never in the "before" side
 
 The migration guide often shows both old and new paths. The old path goes in `source_fqn`; the new path goes in `target_pattern` and the migration message.
 
