@@ -1,0 +1,291 @@
+- ruleID: httpclient4-to-httpclient5-00030
+  description: Zero TTL means connections not reused in HttpClient 5.x
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, the `setConnectionTimeToLive(long, TimeUnit)` method signature changes to accept a `TimeValue` parameter. Additionally, HttpClient 5.0 treats zero TTL as an instruction that connections are not meant to be re-used, which differs from the 4.x behavior. If you use zero TTL, use a negative value instead for unlimited TTL.
+
+    Before:
+    ```java
+    .setConnectionTimeToLive(1, TimeUnit.MINUTES)
+    ```
+
+    After:
+    ```java
+    .setConnectionTimeToLive(TimeValue.ofMinutes(1))
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setConnectionTimeToLive
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00040
+  description: setSoTimeout(int) changed to setSoTimeout(Timeout) in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `SocketConfig.setSoTimeout(int)` now requires a `Timeout` object instead of a raw integer (milliseconds). Wrap the value with `Timeout.ofMilliseconds()` or use other `Timeout` factory methods.
+
+    Before:
+    ```java
+    SocketConfig.custom()
+        .setSoTimeout(60000)
+        .build()
+    ```
+
+    After:
+    ```java
+    SocketConfig.custom()
+        .setSoTimeout(Timeout.ofMilliseconds(60000))
+        .build()
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setSoTimeout
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00050
+  description: setConnectTimeout() moved from RequestConfig to ConnectionConfig in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `setConnectTimeout()` has moved from `RequestConfig` to `ConnectionConfig` and now requires a `Timeout` object instead of a raw integer. Note that `setSocketTimeout()` has also moved — see rule httpclient4-to-httpclient5-00060. Both timeouts should be configured together on `ConnectionConfig` and applied to the connection manager.
+
+    ```java
+    // Before (HttpClient 4.x)
+    RequestConfig.custom()
+        .setConnectTimeout(60000)
+        .build()
+
+    // After (HttpClient 5.x)
+    ConnectionConfig connConfig = ConnectionConfig.custom()
+        .setConnectTimeout(Timeout.ofMilliseconds(60000))
+        .build();
+    PoolingHttpClientConnectionManagerBuilder.create()
+        .setDefaultConnectionConfig(connConfig)
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setConnectTimeout
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00060
+  description: setSocketTimeout() removed from RequestConfig, use ConnectionConfig.setSoTimeout() in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `RequestConfig.setSocketTimeout()` has been removed. Socket timeout is now configured on `ConnectionConfig` using `setSoTimeout(Timeout)`. Note that `setConnectTimeout()` has also moved to `ConnectionConfig` — see rule httpclient4-to-httpclient5-00050. Both timeouts should be configured together on `ConnectionConfig` and applied to the connection manager.
+
+    ```java
+    // Before (HttpClient 4.x)
+    RequestConfig.custom()
+        .setSocketTimeout(60000)
+        .build()
+
+    // After (HttpClient 5.x)
+    ConnectionConfig connConfig = ConnectionConfig.custom()
+        .setSoTimeout(Timeout.ofMilliseconds(60000))
+        .build();
+    PoolingHttpClientConnectionManagerBuilder.create()
+        .setDefaultConnectionConfig(connConfig)
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setSocketTimeout
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00150
+  description: closeExpiredConnections() renamed to closeExpired() in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `closeExpiredConnections()` method on `HttpClientConnectionManager` has been renamed to `closeExpired()` on `ConnPoolControl` in HttpClient 5.x.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: closeExpiredConnections
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00160
+  description: closeIdleConnections() renamed to closeIdle() in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `closeIdleConnections()` method on `HttpClientConnectionManager` has been renamed to `closeIdle()` on `ConnPoolControl` in HttpClient 5.x.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: closeIdleConnections
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00210
+  description: setDefaultSocketConfig() moved from HttpClients builder to connection manager builder in 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `setDefaultSocketConfig()` has been moved from the `HttpClients` builder to the connection manager builder. Configure socket settings through `PoolingHttpClientConnectionManagerBuilder` or `BasicHttpClientConnectionManager` instead.
+
+    ```java
+    // Before (4.x)
+    HttpClients.custom().setDefaultSocketConfig(socketConfig);
+
+    // After (5.x)
+    PoolingHttpClientConnectionManagerBuilder.create()
+        .setDefaultSocketConfig(socketConfig);
+    // Then: HttpClients.custom().setConnectionManager(connectionManager);
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setDefaultSocketConfig
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00630
+  description: org.apache.http.config package moved to org.apache.hc.core5.http.config in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    The `org.apache.http.config` package has moved in HttpClient 5.x.
+
+    | Old class | New class |
+    |---|---|
+    | `org.apache.http.config.Registry` | `org.apache.hc.core5.http.config.Registry` |
+    | `org.apache.http.config.RegistryBuilder` | `org.apache.hc.core5.http.config.RegistryBuilder` |
+    | `org.apache.http.config.SocketConfig` | `org.apache.hc.core5.http.config.SocketConfig` |
+
+    Note: `SocketConfig.Builder.setSoTimeout()` now takes a `Timeout` object instead of `int` milliseconds.
+
+    ```java
+    // Before
+    import org.apache.http.config.SocketConfig;
+    SocketConfig.custom().setSoTimeout(5000).build();
+
+    // After
+    import org.apache.hc.core5.http.config.SocketConfig;
+    import org.apache.hc.core5.util.Timeout;
+    SocketConfig.custom().setSoTimeout(Timeout.ofSeconds(5)).build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    or:
+      - java.referenced:
+            pattern: org.apache.http.config.Registry
+            location: IMPORT
+      - java.referenced:
+            pattern: org.apache.http.config.RegistryBuilder
+            location: IMPORT
+      - java.referenced:
+            pattern: org.apache.http.config.SocketConfig
+            location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00640
+  description: org.apache.http.conn package moved to org.apache.hc.client5.http in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    The `org.apache.http.conn` package has been restructured in HttpClient 5.x.
+
+    | Old class | New class / approach |
+    |---|---|
+    | `ConnectTimeoutException` | `org.apache.hc.client5.http.ConnectTimeoutException` |
+    | `ConnectionSocketFactory` | Use `PoolingHttpClientConnectionManagerBuilder` instead of manual registry |
+    | `PlainConnectionSocketFactory` | Built-in to connection manager builder |
+    | `ManagedHttpClientConnection` | `org.apache.hc.client5.http.io.ManagedHttpClientConnection` |
+
+    In HttpClient 5.x, prefer `PoolingHttpClientConnectionManagerBuilder` over manual `ConnectionSocketFactory` registries:
+
+    ```java
+    // Before (4.x) — manual registry
+    Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+        .register("http", PlainConnectionSocketFactory.getSocketFactory())
+        .register("https", sslFactory)
+        .build();
+
+    // After (5.x) — builder pattern
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setSSLSocketFactory(sslFactory)
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    or:
+      - java.referenced:
+            pattern: org.apache.http.conn.ConnectTimeoutException
+            location: IMPORT
+      - java.referenced:
+            pattern: org.apache.http.conn.socket.ConnectionSocketFactory
+            location: IMPORT
+      - java.referenced:
+            pattern: org.apache.http.conn.socket.PlainConnectionSocketFactory
+            location: IMPORT
+      - java.referenced:
+            pattern: org.apache.http.conn.ManagedHttpClientConnection
+            location: IMPORT

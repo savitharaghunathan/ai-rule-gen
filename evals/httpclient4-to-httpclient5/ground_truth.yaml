@@ -1,0 +1,3044 @@
+schema_version: 1
+guide_url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+guide_version: "2026-05-27"
+entries:
+    - old_api: org.apache.http.auth.AUTH
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthenticationException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthOption
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthProtocolState
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthScheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthSchemeFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthSchemeProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthSchemeRegistry
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthScope
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.AuthState
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.BasicUserPrincipal
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.ChallengeState
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.ContextAwareAuthScheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.Credentials
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.InvalidCredentialsException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.KerberosCredentials
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.MalformedChallengeException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.NTCredentials
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.NTUserPrincipal
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.params.AuthParamBean
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.params.AuthParams
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.params.AuthPNames
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.auth.UsernamePasswordCredentials
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.AuthCache
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.AuthenticationHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.AuthenticationStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.BackoffManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.CircularRedirectException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.ClientProtocolException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.config.AuthSchemes
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.config.CookieSpecs
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.config.RequestConfig
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.config.RequestConfig$Builder
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.ConnectionBackoffStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.CookieStore
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.CredentialsProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.DecompressingEntity
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.DeflateDecompressingEntity
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.DeflateInputStream
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.DeflateInputStreamFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.EntityBuilder
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.GzipCompressingEntity
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.GzipDecompressingEntity
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.GZIPInputStreamFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.InputStreamFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.entity.UrlEncodedFormEntity
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.HttpClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.HttpRequestRetryHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.HttpResponseException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.AbortableHttpRequest
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.AbstractExecutionAwareRequest
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.CloseableHttpResponse
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.Configurable
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpDelete
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpEntityEnclosingRequestBase
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpExecutionAware
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpGet
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpHead
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpOptions
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpPatch
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpPost
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpPut
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpRequestBase
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpRequestWrapper
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpTrace
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.HttpUriRequest
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.methods.RequestBuilder
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.NonRepeatableRequestException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.params.AllClientPNames
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.params.AuthPolicy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.params.ClientParamBean
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.params.ClientPNames
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.params.CookiePolicy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.params.HttpClientParamConfig
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.params.HttpClientParams
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.ClientContext
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.ClientContextConfigurer
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.HttpClientContext
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.RequestAcceptEncoding
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.RequestAddCookies
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.RequestAuthCache
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.RequestClientConnControl
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.RequestDefaultHeaders
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.RequestExpectContinue
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.RequestProxyAuthentication
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.RequestTargetAuthentication
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.ResponseAuthCache
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.ResponseContentEncoding
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.protocol.ResponseProcessCookies
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.RedirectException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.RedirectHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.RedirectStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.RequestDirector
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.ResponseHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.ServiceUnavailableRetryStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.UserTokenHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.CloneUtils
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.DateUtils
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.HttpClientUtils
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.Idn
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.JdkIdn
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.Punycode
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.Rfc3492Idn
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.URIBuilder
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.URIUtils
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.URIUtils$UriFlag
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.client.utils.URLEncodedUtils
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.BasicEofSensorWatcher
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.BasicManagedEntity
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ClientConnectionManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ClientConnectionManagerFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ClientConnectionOperator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ClientConnectionRequest
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ConnectionKeepAliveStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ConnectionPoolTimeoutException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ConnectionReleaseTrigger
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ConnectionRequest
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ConnectTimeoutException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.DnsResolver
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.EofSensorInputStream
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.EofSensorWatcher
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.HttpClientConnectionManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.HttpClientConnectionOperator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.HttpConnectionFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.HttpHostConnectException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.HttpInetSocketAddress
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.HttpRoutedConnection
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ManagedClientConnection
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ManagedHttpClientConnection
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.MultihomePlainSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.OperatedClientConnection
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnConnectionParamBean
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnConnectionPNames
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnManagerParamBean
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnManagerParams
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnManagerPNames
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnPerRoute
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnPerRouteBean
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnRouteParamBean
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnRouteParams
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.params.ConnRoutePNames
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.routing.BasicRouteDirector
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.routing.HttpRoute
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.routing.HttpRouteDirector
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.routing.HttpRoutePlanner
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.routing.RouteInfo
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.routing.RouteInfo$LayerType
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.routing.RouteInfo$TunnelType
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.routing.RouteTracker
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.HostNameResolver
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.LayeredSchemeSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.LayeredSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.PlainSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.Scheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.SchemeLayeredSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.SchemeRegistry
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.SchemeSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.scheme.SocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.SchemePortResolver
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.socket.ConnectionSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.socket.LayeredConnectionSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.socket.PlainConnectionSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.AbstractVerifier
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.AllowAllHostnameVerifier
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.BrowserCompatHostnameVerifier
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.DefaultHostnameVerifier
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.NoopHostnameVerifier
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.PrivateKeyDetails
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.PrivateKeyStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.SSLConnectionSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.SSLContextBuilder
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.SSLContexts
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.SSLInitializationException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.SSLSocketFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.StrictHostnameVerifier
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.TrustAllStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.TrustSelfSignedStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.TrustStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.ssl.X509HostnameVerifier
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.UnsupportedSchemeException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.util.DnsUtils
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.util.DomainType
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.util.InetAddressUtils
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.util.PublicSuffixList
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.util.PublicSuffixListParser
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.util.PublicSuffixMatcher
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.conn.util.PublicSuffixMatcherLoader
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.ClientCookie
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CommonCookieAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.Cookie
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookieAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookieIdentityComparator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookieOrigin
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookiePathComparator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookiePriorityComparator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookieRestrictionViolationException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookieSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookieSpecFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookieSpecProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.CookieSpecRegistry
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.MalformedCookieException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.params.CookieSpecParamBean
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.params.CookieSpecPNames
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.SetCookie
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.SetCookie2
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.cookie.SM
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.AuthSchemeBase
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.BasicScheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.BasicSchemeFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.DigestScheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.DigestSchemeFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.GGSSchemeBase
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.HttpAuthenticator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.KerberosScheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.KerberosSchemeFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.NegotiateScheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.NegotiateSchemeFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.NTLMEngine
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.NTLMEngineException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.NTLMEngineImpl$CipherGen
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.NTLMScheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.NTLMSchemeFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.RFC2617Scheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.SPNegoScheme
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.SPNegoSchemeFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.SpnegoTokenGenerator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.auth.UnsupportedDigestAlgorithmException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.AbstractAuthenticationHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.AbstractHttpClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.AbstractResponseHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.AIMDBackoffManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.AutoRetryHttpClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.BasicAuthCache
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.BasicCookieStore
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.BasicCredentialsProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.BasicResponseHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.ClientParamsStack
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.CloseableHttpClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.ContentEncodingHttpClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.CookieSpecRegistries
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DecompressingHttpClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultBackoffStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultClientConnectionReuseStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultHttpClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultHttpRequestRetryHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultProxyAuthenticationHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultRedirectHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultRedirectStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultRequestDirector
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultServiceUnavailableRetryStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultTargetAuthenticationHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.DefaultUserTokenHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.EntityEnclosingRequestWrapper
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.FutureRequestExecutionMetrics
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.FutureRequestExecutionService
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.HttpAuthenticator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.HttpClientBuilder
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.HttpClients
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.HttpRequestFutureTask
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.IdleConnectionEvictor
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.LaxRedirectStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.NoopUserTokenHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.NullBackoffStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.ProxyAuthenticationStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.ProxyClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.RedirectLocations
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.RequestWrapper
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.RoutedRequest
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.StandardHttpRequestRetryHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.SystemDefaultCredentialsProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.SystemDefaultHttpClient
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.TargetAuthenticationStrategy
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.client.TunnelRefusedException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.AbstractClientConnAdapter
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.AbstractPooledConnAdapter
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.AbstractPoolEntry
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.BasicClientConnectionManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.BasicHttpClientConnectionManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.ConnectionShutdownException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultClientConnection
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultClientConnectionOperator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultHttpClientConnectionOperator
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultHttpResponseParser
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultHttpResponseParserFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultHttpRoutePlanner
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultManagedHttpClientConnection
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultProxyRoutePlanner
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultResponseParser
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultRoutePlanner
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.DefaultSchemePortResolver
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.IdleConnectionHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.InMemoryDnsResolver
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.LoggingSessionInputBuffer
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.LoggingSessionOutputBuffer
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.ManagedHttpClientConnectionFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.PoolingClientConnectionManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.ProxySelectorRoutePlanner
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.SchemeRegistryFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.SingleClientConnManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.SingleClientConnManager$ConnAdapter
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.SingleClientConnManager$PoolEntry
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.SystemDefaultDnsResolver
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.SystemDefaultRoutePlanner
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.AbstractConnPool
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.BasicPooledConnAdapter
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.BasicPoolEntry
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.BasicPoolEntryRef
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.ConnPoolByRoute
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.PoolEntryRequest
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.RouteSpecificPool
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.WaitingThread
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.tsccm.WaitingThreadAborter
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.conn.Wire
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.AbstractCookieAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.AbstractCookieSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BasicClientCookie
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BasicClientCookie2
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BasicCommentHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BasicDomainHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BasicExpiresHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BasicMaxAgeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BasicPathHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BasicSecureHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BestMatchSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BestMatchSpecFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BrowserCompatSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BrowserCompatSpecFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.BrowserCompatVersionAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.CookieSpecBase
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.DateParseException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.DateUtils
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.DefaultCookieSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.DefaultCookieSpecProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.IgnoreSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.IgnoreSpecFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.IgnoreSpecProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.LaxExpiresHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.LaxMaxAgeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.NetscapeDomainHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.NetscapeDraftHeaderParser
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.NetscapeDraftSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.NetscapeDraftSpecFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.NetscapeDraftSpecProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.PublicSuffixDomainFilter
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.PublicSuffixFilter
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.PublicSuffixListParser
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2109DomainHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2109Spec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2109SpecFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2109SpecProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2109VersionHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2965CommentUrlAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2965DiscardAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2965DomainAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2965PortAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2965Spec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2965SpecFactory
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2965SpecProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC2965VersionAttributeHandler
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC6265CookieSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC6265CookieSpecProvider
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC6265LaxSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.cookie.RFC6265StrictSpec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.BackoffStrategyExec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.ClientExecChain
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.MainClientExec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.MinimalClientExec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.ProtocolExec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.RedirectExec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.RequestAbortedException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.RetryExec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.ServiceUnavailableRetryExec
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.impl.execchain.TunnelRefusedException
+      new_api: ""
+      action_type: package_change
+      severity: high
+      guide_section: ""
+      source_quote: ""
+      reviewed_by: japicmp
+      reviewed_date: "2026-05-27"
+    - old_api: org.apache.http.HttpResponse.getStatusLine
+      new_api: org.apache.hc.core5.http.ClassicHttpResponse.getCode
+      action_type: method_rename
+      severity: high
+      guide_section: Response handling
+      source_quote: getStatusLine().getStatusCode() is replaced by getCode()
+      reviewed_by: ""
+      reviewed_date: ""

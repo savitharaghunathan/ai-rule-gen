@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-05-27T17:52:35Z",
+  "migration": "httpclient4-to-httpclient5",
+  "rule_count": 37,
+  "effective_coverage_pct": 93,
+  "quality_avg": 5.918918918918919,
+  "guidance_depth_avg": 2.918918918918919,
+  "overlap_conflict_count": 137
+}

@@ -1,12 +1,15 @@
 package eval
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -28,6 +31,7 @@ type kantraIncident struct {
 }
 
 // RunKantraAnalyze runs kantra analyze against an app with the given rules.
+// appDir is used to compute relative file paths from kantra incident URIs.
 func RunKantraAnalyze(rulesDir, appDir, outputDir string) (*AppCoverage, error) {
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return nil, fmt.Errorf("creating output dir: %w", err)
@@ -45,19 +49,25 @@ func RunKantraAnalyze(rulesDir, appDir, outputDir string) (*AppCoverage, error) 
 		"--overwrite",
 		"--no-progress",
 	)
-	cmd.Stderr = os.Stderr
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("kantra analyze timed out after 5 minutes")
 		}
+		errMsg := stderr.String()
+		if errMsg != "" {
+			return nil, fmt.Errorf("kantra analyze: %w\n%s", err, errMsg)
+		}
 		return nil, fmt.Errorf("kantra analyze: %w", err)
 	}
 
-	return parseAnalyzeOutput(filepath.Join(outputDir, "output.yaml"))
+	absApp, _ := filepath.Abs(appDir)
+	return parseAnalyzeOutput(filepath.Join(outputDir, "output.yaml"), absApp)
 }
 
-func parseAnalyzeOutput(path string) (*AppCoverage, error) {
+func parseAnalyzeOutput(path, appDir string) (*AppCoverage, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading kantra output %s: %w", path, err)
@@ -75,7 +85,7 @@ func parseAnalyzeOutput(path string) (*AppCoverage, error) {
 		for ruleID, v := range rs.Violations {
 			files := make(map[string]bool)
 			for _, inc := range v.Incidents {
-				fname := filepath.Base(inc.URI)
+				fname := relativeFromURI(inc.URI, appDir)
 				files[fname] = true
 			}
 
@@ -98,6 +108,22 @@ func parseAnalyzeOutput(path string) (*AppCoverage, error) {
 		TotalIncidents: totalIncidents,
 		Violations:     violations,
 	}, nil
+}
+
+// relativeFromURI extracts a relative file path from a kantra incident URI.
+// Kantra URIs are typically file:///absolute/path/to/File.java. If appDir is
+// provided, the result is relative to it; otherwise the full path is returned.
+func relativeFromURI(uri, appDir string) string {
+	p := uri
+	if u, err := url.Parse(uri); err == nil && u.Scheme == "file" {
+		p = u.Path
+	}
+	if appDir != "" {
+		if rel, err := filepath.Rel(appDir, p); err == nil && !strings.HasPrefix(rel, "..") {
+			return rel
+		}
+	}
+	return p
 }
 
 // FillNotFired sets the NotFired list by comparing loaded rules against violations.

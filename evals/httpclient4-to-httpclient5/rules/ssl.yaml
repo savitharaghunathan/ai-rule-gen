@@ -1,0 +1,63 @@
+- ruleID: httpclient4-to-httpclient5-00020
+  description: SSLConnectionSocketFactory replaced in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `SSLConnectionSocketFactory` has been replaced. Configure TLS on the connection manager or client builder using `ClientTlsStrategyBuilder`. The 4.x pattern of passing protocol versions and hostname verifier to the constructor is replaced by builder methods on `ClientTlsStrategyBuilder`.
+
+    ```java
+    // Before (HttpClient 4.x)
+    SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
+        SSLContexts.createSystemDefault(),
+        new String[] { "TLSv1.2" },
+        null,
+        SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+
+    // After (HttpClient 5.x)
+    PoolingHttpClientConnectionManagerBuilder.create()
+        .setTlsSocketStrategy(ClientTlsStrategyBuilder.create()
+            .setSslContext(SSLContexts.createSystemDefault())
+            .setTlsVersions(TLS.V_1_2)
+            .build())
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.ssl.SSLConnectionSocketFactory
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00660
+  description: SSLContexts moved to org.apache.hc.core5.ssl in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    `org.apache.http.ssl.SSLContexts` has moved to `org.apache.hc.core5.ssl.SSLContexts` in HttpClient 5.x. The API is identical.
+
+    ```java
+    // Before
+    import org.apache.http.ssl.SSLContexts;
+
+    // After
+    import org.apache.hc.core5.ssl.SSLContexts;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.ssl.SSLContexts
+        location: IMPORT

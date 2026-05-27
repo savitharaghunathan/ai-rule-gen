@@ -107,7 +107,7 @@ Migration Guide → Agent extracts patterns → CLI constructs rules → CLI sca
 | **rule-writer** | Reads migration guide, extracts migration patterns into `patterns.json` |
 | **test-generator** | Reads `manifest.json`, generates compilable test source code |
 | **rule-validator** | Runs kantra, interprets results, generates fix hints |
-| **eval-judge** | LLM judge — compares guide vs rules, finds missed patterns and false positives |
+| **eval** | One-stop eval — runs deterministic checks + LLM judge, finds missed patterns and false positives |
 
 Each skill follows the [Agent Skills](https://agentskills.io) format with a `SKILL.md` and optional `references/` directory.
 
@@ -126,8 +126,8 @@ go run ./cmd/eval \
   --rules-dir output/<migration>/rules \
   --app-dir /path/to/app
 
-# With LLM judge (invoke via your agent)
-# Read and follow agents/eval-judge/SKILL.md
+# Full eval (deterministic + LLM judge, invoke via your agent)
+# Read and follow agents/eval/SKILL.md
 ```
 
 ### What it measures
@@ -153,7 +153,7 @@ Runs `kantra analyze` against a real application and cross-references results:
 | **Not in app** | App doesn't use the API — rule is correct, just not exercised by this app |
 | **Incidents** | Total code locations matched across all fired rules |
 
-**LLM judge (via eval-judge skill):**
+**LLM judge (via eval skill):**
 
 Compares the source migration guide against the generated rules. Produces:
 - **Missed patterns** — guide actions with no corresponding rule (severity: high/medium/low)

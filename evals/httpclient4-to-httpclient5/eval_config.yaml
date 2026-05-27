@@ -1,4 +1,9 @@
 guide_url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
 app_repo: https://github.com/savitharaghunathan/httpclient-migration
+app_commit: ""  # pin to a specific SHA for reproducible CI runs
 source: httpclient4
 target: httpclient5
+rules_dir: evals/httpclient4-to-httpclient5/rules
+# ci_thresholds:
+#   effective_coverage_drop_pct: 5   # default
+#   quality_avg_drop: 0.0            # default: any drop fails

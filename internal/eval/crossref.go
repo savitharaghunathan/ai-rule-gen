@@ -10,12 +10,23 @@ import (
 )
 
 var skipDirs = map[string]bool{
-	"target":       true,
-	"build":        true,
-	".git":         true,
-	"node_modules": true,
-	"vendor":       true,
-	"bin":          true,
+	"target":        true,
+	"build":         true,
+	".git":          true,
+	"node_modules":  true,
+	"vendor":        true,
+	"bin":           true,
+	"dist":          true,
+	"out":           true,
+	"obj":           true,
+	"__pycache__":   true,
+	".gradle":       true,
+	".mvn":          true,
+	".idea":         true,
+	".vscode":       true,
+	".tox":          true,
+	".mypy_cache":   true,
+	"coverage":      true,
 }
 
 func CrossRefNotFired(ruleList []rules.Rule, notFired []string, appDir string) []UnmatchedRule {
@@ -223,7 +234,7 @@ func regexLiterals(pattern string) []string {
 func xpathTerms(xpath string) []string {
 	var terms []string
 	parts := strings.FieldsFunc(xpath, func(r rune) bool {
-		return r == '/' || r == '[' || r == ']' || r == '@' || r == '(' || r == ')' || r == '=' || r == '\'' || r == '"'
+		return r == '/' || r == '[' || r == ']' || r == '@' || r == '(' || r == ')' || r == '=' || r == '\'' || r == '"' || r == ' '
 	})
 	for _, p := range parts {
 		p = strings.TrimSpace(p)

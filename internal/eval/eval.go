@@ -2,6 +2,7 @@ package eval
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 
@@ -44,6 +45,8 @@ func RunEval(cfg Config) (*EvalResult, error) {
 			cov.Unmatched = CrossRefNotFired(ruleList, cov.NotFired, cfg.AppDir)
 		}
 
+		cov.SpecificityGaps = DetectSpecificityGaps(ruleList, cov, cfg.AppDir)
+
 		notInAppCount := 0
 		for _, u := range cov.Unmatched {
 			if !u.InApp {
@@ -53,7 +56,7 @@ func RunEval(cfg Config) (*EvalResult, error) {
 		cov.EffectiveTotal = cov.TotalRules - notInAppCount
 		cov.EffectiveFired = cov.RulesFired
 		if cov.EffectiveTotal > 0 {
-			cov.EffectivePct = 100 * cov.EffectiveFired / cov.EffectiveTotal
+			cov.EffectivePct = int(math.Round(100.0 * float64(cov.EffectiveFired) / float64(cov.EffectiveTotal)))
 		}
 
 		for i, d := range result.RuleDetails {
@@ -65,6 +68,8 @@ func RunEval(cfg Config) (*EvalResult, error) {
 
 		result.AppCoverage = cov
 	}
+
+	result.Overlaps = DetectOverlaps(ruleList, result.AppCoverage)
 
 	return result, nil
 }
@@ -83,6 +88,7 @@ func PrintReport(r *EvalResult) {
 	fmt.Fprintf(os.Stderr, "   Links:              %d/%d\n", q.HasLinks, q.TotalRules)
 	fmt.Fprintf(os.Stderr, "   Effort rating:      %d/%d\n", q.HasEffort, q.TotalRules)
 	fmt.Fprintf(os.Stderr, "   Before/after:       %d/%d\n", q.HasBeforeAfter, q.TotalRules)
+	fmt.Fprintf(os.Stderr, "   Guidance depth avg: %.1f/3\n", q.GuidanceDepthAvg)
 
 	for _, d := range r.RuleDetails {
 		if len(d.Missing) > 0 {
@@ -94,7 +100,7 @@ func PrintReport(r *EvalResult) {
 		c := r.AppCoverage
 		pct := 0
 		if c.TotalRules > 0 {
-			pct = 100 * c.RulesFired / c.TotalRules
+			pct = int(math.Round(100.0 * float64(c.RulesFired) / float64(c.TotalRules)))
 		}
 		fmt.Fprintf(os.Stderr, "\n## App Coverage\n")
 		fmt.Fprintf(os.Stderr, "   Rules fired:      %d/%d (%d%%)\n", c.RulesFired, c.TotalRules, pct)
@@ -130,6 +136,22 @@ func PrintReport(r *EvalResult) {
 			for _, id := range c.NotFired {
 				fmt.Fprintf(os.Stderr, "     - %s\n", id)
 			}
+		}
+	}
+
+	if len(r.Overlaps) > 0 {
+		fmt.Fprintf(os.Stderr, "\n## Overlaps (%d)\n", len(r.Overlaps))
+		for _, o := range r.Overlaps {
+			fmt.Fprintf(os.Stderr, "   %s ↔ %s [%s] %s\n", o.RuleA, o.RuleB, o.Type, o.Reason)
+		}
+	}
+
+	if r.AppCoverage != nil && len(r.AppCoverage.SpecificityGaps) > 0 {
+		gaps := r.AppCoverage.SpecificityGaps
+		fmt.Fprintf(os.Stderr, "\n## Specificity Gaps (%d imports only covered by broad rules)\n", len(gaps))
+		for _, g := range gaps {
+			files := strings.Join(g.AppFiles, ", ")
+			fmt.Fprintf(os.Stderr, "   %s → only broad rule %s (%s)\n", g.ImportFQN, g.BroadRuleID, files)
 		}
 	}
 
