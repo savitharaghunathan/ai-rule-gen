@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-05-28T21:47:24Z",
+  "migration": "spring-boot3-to-spring-boot4",
+  "rule_count": 93,
+  "effective_coverage_pct": 0,
+  "quality_avg": 5.56989247311828,
+  "guidance_depth_avg": 2.5698924731182795,
+  "overlap_conflict_count": 18,
+  "specificity_gap_count": null,
+  "guide_specificity_gap_count": null
+}

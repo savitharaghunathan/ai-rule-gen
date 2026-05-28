@@ -1,0 +1,210 @@
+- ruleID: spring-boot3-to-spring-boot4-00090
+  description: Flyway now requires spring-boot-starter-flyway instead of direct flyway-core dependency
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4.0 has a new modular design. If you were using Flyway with a direct `org.flywaydb:flyway-core` dependency, you now need to replace it with `spring-boot-starter-flyway`. The starter provides the correct modular setup for Flyway integration.
+
+    Update your `pom.xml`:
+    ```xml
+    <!-- Remove -->
+    <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+    </dependency>
+
+    <!-- Add -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.flywaydb.flyway-core
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00100
+  description: Liquibase now requires spring-boot-starter-liquibase instead of direct liquibase-core dependency
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4.0 has a new modular design. If you were using Liquibase with a direct `org.liquibase:liquibase-core` dependency, you now need to replace it with `spring-boot-starter-liquibase`. The starter provides the correct modular setup for Liquibase integration.
+
+    Update your `pom.xml`:
+    ```xml
+    <!-- Remove -->
+    <dependency>
+        <groupId>org.liquibase</groupId>
+        <artifactId>liquibase-core</artifactId>
+    </dependency>
+
+    <!-- Add -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-liquibase</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.liquibase.liquibase-core
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00270
+  description: spring-boot-starter-aop renamed to spring-boot-starter-aspectj
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-aop` starter has been renamed to `spring-boot-starter-aspectj` in Spring Boot 4.0 to clarify its scope. Replace the old dependency with the new one in your POM or Gradle build file. Before updating, review whether your application actually needs AspectJ — check for usage of annotations in the `org.aspectj.lang.annotation` package or `@Aspect` on the classpath.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aop</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aspectj</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-aop
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00280
+  description: Dependency management for Spring Retry removed; explicit version required
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Dependency management for Spring Retry has been removed from Spring Boot 4.0. If your application still relies on Spring Retry, you must now specify an explicit version in your POM or Gradle build file. Consider migrating to the new retry features in Spring Framework 7.0.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.retry</groupId>
+        <artifactId>spring-retry</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.retry</groupId>
+        <artifactId>spring-retry</artifactId>
+        <version>2.0.12</version>
+    </dependency>
+    ```
+
+    Alternatively, consider migrating to [Spring Framework's retry support](https://docs.spring.io/spring-framework/docs/7.0.x-SNAPSHOT/javadoc-api/org/springframework/core/retry/package-summary.html).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-retry
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.retry.spring-retry
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00290
+  description: spring-authorization-server.version property removed; use spring-security.version instead
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Authorization Server is now part of Spring Security. The `spring-authorization-server.version` property can no longer be used to override the version. Use `spring-security.version` instead.
+
+    ## Before
+    ```xml
+    <properties>
+        <spring-authorization-server.version>1.4.0</spring-authorization-server.version>
+    </properties>
+    ```
+
+    ## After
+    ```xml
+    <properties>
+        <spring-security.version>7.0.0</spring-security.version>
+    </properties>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-authorization-server
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring-authorization-server\.version
+        filePattern: pom\.xml
+- ruleID: spring-boot3-to-spring-boot4-00900
+  description: '@Timed requires spring-boot-starter-aspectj (renamed from spring-boot-starter-aop)'
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring-boot-starter-aop` has been renamed to `spring-boot-starter-aspectj` in Spring Boot 4. If your application uses `@Timed` from Micrometer, you need AspectJ on the classpath. Ensure that `spring-boot-starter-aspectj` is included in your dependencies. Search for usage of `org.aspectj.lang.annotation.Aspect` on the classpath of your application to confirm AspectJ is needed.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: io.micrometer.core.annotation.Timed
+        location: ANNOTATION
+- ruleID: spring-boot3-to-spring-boot4-00910
+  description: '@Counted requires spring-boot-starter-aspectj (renamed from spring-boot-starter-aop)'
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring-boot-starter-aop` has been renamed to `spring-boot-starter-aspectj` in Spring Boot 4. If your application uses `@Counted` from Micrometer, you need AspectJ on the classpath. Ensure that `spring-boot-starter-aspectj` is included in your dependencies.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: io.micrometer.core.annotation.Counted
+        location: ANNOTATION

@@ -1,0 +1,18 @@
+- ruleID: spring-boot3-to-spring-boot4-00800
+  description: spring-boot-starter-batch no longer stores metadata in database by default
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Batch can now operate without a database (in memory), and the regular `spring-boot-starter-batch` uses this simplified mode. On upgrade, Spring Batch will no longer store metadata in your existing database. To restore the previous database-backed behavior, change to `spring-boot-starter-batch-jdbc`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-batch
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-batch
+        upperbound: 4.0.0
