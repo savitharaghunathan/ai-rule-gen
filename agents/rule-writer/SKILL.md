@@ -299,7 +299,7 @@ Collect flagged patterns in a `suspected_kantra_limitations` list and return it 
 
 See `references/languages/<language>/condition-types.md` for the language-specific condition-type reference and `references/patterns-json-schema.md` for which fields map to which condition type.
 
-**One critical rule for config properties:** Always use `application.*\\.(properties|yml)` as the `file_pattern` — this covers both `.properties` and `.yml` formats. Never use `.*\\.properties` alone (too broad) or `application.*\\.properties` alone (misses YAML configs).
+**One critical rule for config properties:** Always use `application.*\\.(properties|ya?ml)` as the `file_pattern` — this covers `.properties`, `.yml`, and `.yaml` formats. Never use `.*\\.properties` alone (too broad) or `application.*\\.properties` alone (misses YAML configs).
 
 ### What counts as an extractable migration item
 

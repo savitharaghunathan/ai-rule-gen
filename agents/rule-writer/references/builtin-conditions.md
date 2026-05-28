@@ -20,7 +20,7 @@ Matches regex patterns in file contents. Use this for config files, properties, 
 
 **Fields:**
 - `pattern` (required) — Regex pattern to match in file contents (e.g., `javax\.servlet`, `spring\.jpa\.hibernate\.ddl-auto`). Must be a valid Go regex.
-- `filePattern` (optional) — Regex restricting which files to search. Must be a valid Go regex — do NOT use glob syntax (`*.properties` is invalid regex; use `.*\\.properties`). For application config properties, always use `application.*\\.(properties|yml)` to cover both formats. Never use `.*\\.properties` alone (too broad — matches any `.properties` file) or `application.*\\.properties` alone (misses YAML configs). Omit to search all files.
+- `filePattern` (optional) — Regex restricting which files to search. Must be a valid Go regex — do NOT use glob syntax (`*.properties` is invalid regex; use `.*\\.properties`). For application config properties, always use `application.*\\.(properties|ya?ml)` to cover `.properties`, `.yml`, and `.yaml` formats. Never use `.*\\.properties` alone (too broad — matches any `.properties` file) or `application.*\\.properties` alone (misses YAML configs). Omit to search all files.
 - `filepaths` (optional) — Restrict to specific file paths.
 
 ## builtin.file
