@@ -8,13 +8,17 @@ on:
       - 'agents/rule-writer/**'
       - 'cmd/eval/**'
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   discover:
     runs-on: ubuntu-latest
     outputs:
       migrations: ${{ steps.find.outputs.migrations }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - id: find
         name: Find eval cases with baselines
@@ -34,9 +38,11 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
           go-version-file: go.mod
 
@@ -65,10 +71,13 @@ jobs:
           fi
 
       - name: Clone sample app
+        env:
+          APP_REPO: ${{ steps.config.outputs.app_repo }}
+          APP_COMMIT: ${{ steps.config.outputs.app_commit }}
         run: |
-          git clone ${{ steps.config.outputs.app_repo }} /tmp/sample-app
-          if [ -n "${{ steps.config.outputs.app_commit }}" ]; then
-            cd /tmp/sample-app && git checkout ${{ steps.config.outputs.app_commit }}
+          git clone "$APP_REPO" /tmp/sample-app
+          if [ -n "$APP_COMMIT" ]; then
+            cd /tmp/sample-app && git checkout "$APP_COMMIT"
           else
             echo "::warning::app_commit not pinned — results may vary across runs"
           fi
@@ -85,7 +94,7 @@ jobs:
 
       - name: Post PR comment
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
             const fs = require('fs');

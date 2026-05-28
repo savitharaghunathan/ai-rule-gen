@@ -4,7 +4,7 @@
 
 When extracting actionable migration patterns from the guide, capture Java-specific details:
 
-```
+```yaml
 old_api: org.apache.http.HttpResponse.getStatusLine()
 new_api: response.getCode() or new StatusLine(response)
 guide_section: "Migration to classic APIs"

@@ -41,11 +41,14 @@ func main() {
 	report.Recommendations = feedback.Recommend(report)
 
 	switch *format {
-	case "json":
-		data, _ := json.MarshalIndent(report, "", "  ")
-		fmt.Println(string(data))
-	default:
+	case "text":
 		printText(report)
+	default:
+		data, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			cli.Fail("marshal_failed", err.Error(), "feedback", "check report data", nil)
+		}
+		fmt.Println(string(data))
 	}
 }
 

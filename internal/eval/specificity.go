@@ -138,9 +138,16 @@ func extractJavaLocation(cond rules.Condition) (string, string) {
 	return "", ""
 }
 
+func hasQualifiedPrefix(fqn, prefix string) bool {
+	if !strings.HasPrefix(fqn, prefix) {
+		return false
+	}
+	return len(fqn) == len(prefix) || fqn[len(prefix)] == '.'
+}
+
 func matchesBroadRule(fqn string, broad []broadRule) string {
 	for _, b := range broad {
-		if strings.HasPrefix(fqn, b.prefix) {
+		if hasQualifiedPrefix(fqn, b.prefix) {
 			return b.ruleID
 		}
 	}
@@ -149,7 +156,7 @@ func matchesBroadRule(fqn string, broad []broadRule) string {
 
 func coveredBySpecific(fqn string, specificPrefixes []string) bool {
 	for _, sp := range specificPrefixes {
-		if strings.HasPrefix(fqn, sp) || strings.HasPrefix(sp, fqn) {
+		if hasQualifiedPrefix(fqn, sp) || hasQualifiedPrefix(sp, fqn) {
 			return true
 		}
 	}

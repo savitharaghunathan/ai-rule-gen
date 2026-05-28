@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
@@ -48,7 +49,9 @@ func LoadEvalConfig(path string) (*EvalConfig, error) {
 	}
 
 	var cfg EvalConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	if err := dec.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("parsing eval config %s: %w", path, err)
 	}
 

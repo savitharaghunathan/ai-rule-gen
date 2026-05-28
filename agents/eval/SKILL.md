@@ -68,7 +68,7 @@ If the guide has multiple sub-pages, ingest each one separately into numbered fi
 
 Read the full guide content. Extract every **actionable migration pattern** into a structured migration map. Each entry should capture:
 
-```
+```yaml
 old_api: <fully qualified name or identifier of the old API>
 new_api: <replacement API or approach>
 guide_section: <section title where this was found>

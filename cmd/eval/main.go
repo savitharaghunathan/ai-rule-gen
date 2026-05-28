@@ -101,6 +101,9 @@ func inferMigration(rulesDir string) string {
 	dir := filepath.Clean(rulesDir)
 	parts := strings.Split(dir, string(filepath.Separator))
 	for i, p := range parts {
+		if p == "evals" && i+1 < len(parts) {
+			return parts[i+1]
+		}
 		if p == "output" && i+1 < len(parts) {
 			name := parts[i+1]
 			if idx := strings.LastIndex(name, "-"); idx > 0 {

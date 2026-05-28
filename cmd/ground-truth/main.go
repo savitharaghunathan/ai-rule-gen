@@ -6,11 +6,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/konveyor/ai-rule-gen/cmd/internal/cli"
 	"github.com/konveyor/ai-rule-gen/internal/groundtruth"
 	"gopkg.in/yaml.v3"
 )
 
 func main() {
+	logPath := flag.String("log", "", "Append structured output to this log file (overrides RULE_GEN_LOG)")
+	agentFlag := flag.String("agent", "", "Name of the invoking agent (for log attribution)")
+	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	oldArtifact := flag.String("old-artifact", "", "Old artifact coordinate (groupId:artifactId:version)")
 	newArtifact := flag.String("new-artifact", "", "New artifact coordinate (groupId:artifactId:version)")
 	output := flag.String("output", "", "Output path for ground_truth.yaml (default: stdout)")
@@ -19,9 +23,11 @@ func main() {
 	guideURL := flag.String("guide-url", "", "Migration guide URL for the output file")
 	flag.Parse()
 
+	cli.InitLog(*logPath, *agentFlag, *modelFlag)
+	defer cli.CloseLog()
+
 	if *oldArtifact == "" || *newArtifact == "" {
-		fmt.Fprintln(os.Stderr, "Usage: ground-truth --old-artifact G:A:V --new-artifact G:A:V [--output path] [--merge path]")
-		os.Exit(1)
+		cli.Fail("invalid_arguments", "--old-artifact and --new-artifact are required", "ground-truth", "provide Maven coordinates as groupId:artifactId:version", nil)
 	}
 
 	oldCoord, err := groundtruth.ParseCoord(*oldArtifact)

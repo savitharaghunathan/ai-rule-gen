@@ -2,6 +2,7 @@ package groundtruth
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const defaultJapicmpVersion = "0.25.0"
@@ -47,7 +49,7 @@ func DownloadJAR(coord MavenCoord, dir string) (string, error) {
 		return dest, nil
 	}
 
-	resp, err := http.Get(coord.MavenURL())
+	resp, err := httpGet(coord.MavenURL())
 	if err != nil {
 		return "", fmt.Errorf("downloading %s: %w", coord.MavenURL(), err)
 	}
@@ -68,6 +70,16 @@ func DownloadJAR(coord MavenCoord, dir string) (string, error) {
 		return "", fmt.Errorf("writing %s: %w", dest, err)
 	}
 	return dest, nil
+}
+
+func httpGet(url string) (*http.Response, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return http.DefaultClient.Do(req)
 }
 
 // JapicmpJARURL returns the Maven Central URL for the japicmp standalone JAR.
@@ -101,7 +113,7 @@ func EnsureJapicmp(jarPath string) (string, error) {
 	}
 
 	url := JapicmpJARURL(defaultJapicmpVersion)
-	resp, err := http.Get(url)
+	resp, err := httpGet(url)
 	if err != nil {
 		return "", fmt.Errorf("downloading japicmp: %w", err)
 	}

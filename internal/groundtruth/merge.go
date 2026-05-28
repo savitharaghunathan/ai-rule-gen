@@ -38,6 +38,10 @@ func WriteGroundTruth(gt *GroundTruth, path string) error {
 // are preserved. New entries for old_api values not in the existing set are added.
 // Existing japicmp-only entries are updated if a new entry exists for the same old_api.
 func Merge(existing *GroundTruth, newEntries []Entry) *GroundTruth {
+	if existing == nil {
+		return &GroundTruth{Entries: newEntries}
+	}
+
 	result := &GroundTruth{
 		SchemaVersion: existing.SchemaVersion,
 		GuideURL:      existing.GuideURL,
