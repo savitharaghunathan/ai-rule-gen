@@ -46,7 +46,7 @@ This is CRITICAL — the analyzer matches patterns against fully qualified names
 | `java.referenced` | `ANNOTATION` | USE the annotation on a class, method, or field (e.g., `@MockBean private Object svc;`). **An `import` statement alone is NOT enough** — the annotation must appear as `@AnnotationName` on an actual element. |
 | `java.referenced` | `IMPORT` | Include the import statement (e.g., `import javax.servlet.http.HttpServlet;`) |
 | `java.referenced` | `TYPE` | Declare or use the type (e.g., `HttpServlet servlet;` or a cast) |
-| `java.referenced` | `METHOD_CALL` | Call the method on an explicitly typed variable — do NOT chain calls (e.g., use `Foo f = Foo.get(); f.bar();` not `Foo.get().bar()`). JDTLS in source-only mode cannot resolve return types of chained calls without the dependency JAR. |
+| `java.referenced` | `METHOD_CALL` | Call the method on an explicitly typed variable — do NOT chain calls (e.g., use `Foo f = Foo.get(); f.bar();` not `Foo.get().bar()`). JDTLS in source-only mode cannot resolve return types of chained calls. |
 | `java.referenced` | `CONSTRUCTOR_CALL` | Use `new ClassName()` |
 | `java.referenced` | `INHERITANCE` | `class Foo extends TargetClass` |
 | `java.referenced` | `IMPLEMENTS_TYPE` | `class Foo implements TargetInterface` |
@@ -143,7 +143,7 @@ Do NOT include any other text or code blocks.
 - Build file: `go.mod` (type: go)
 - Source dir: `.` (root)
 - Main file: `main.go` (type: go)
-- After writing, run `go mod tidy` and `go mod vendor` so gopls in the kantra container can resolve modules
+- After writing, run `go mod tidy` and `go mod vendor` so gopls can resolve modules reliably
 
 ### Node.js / TypeScript
 ```
@@ -197,14 +197,14 @@ For each group:
 
 ## Dependency Resolution
 
-- **Go:** Always run `go mod tidy` then `go mod vendor` (gopls inside the kantra container can't download modules)
+- **Go:** Always run `go mod tidy` then `go mod vendor` for reproducible module resolution
 - **Java:** Do NOT run `mvn compile`, `mvn dependency:resolve`, or any Maven command. Do NOT import the project into an IDE. Kantra resolves `java.dependency` rules by parsing the pom.xml directly, and source-only analysis resolves IMPORT/ANNOTATION/TYPE patterns without downloaded JARs. Running Maven or IDE imports creates `.classpath`, `.project`, `.settings/`, `target/`, and `.factorypath` artifacts that pollute the test data.
 - **Node.js:** `npm install` only if needed for type resolution
 - **C#:** `dotnet restore` only if needed for type resolution
 
 ### Java pom.xml: prefer minimal dependencies
 
-JDTLS runs inside the kantra container with limited memory. Prefer the lightest dependency that provides the class you need — e.g., `spring-boot-autoconfigure` instead of a full starter like `spring-boot-starter-web`.
+Prefer the lightest dependency that provides the class you need — e.g., `spring-boot-autoconfigure` instead of a full starter like `spring-boot-starter-web`. Lighter dependencies reduce analysis time and avoid resolution issues.
 
 ### Use realistic dependency versions
 
@@ -232,11 +232,10 @@ After generating all test files, run `go run ./cmd/sanitize --dir <tests-dir>` t
 
 ## Merging Small Test Groups
 
-When many small test groups use the same provider (e.g., multiple groups with 1-3 `java.referenced` rules each), consider merging them into fewer groups. Each group runs a separate JDTLS session in the kantra container, and too many sessions cause OOM failures. For example, merge `jackson-1` (8 rules) and `jackson-2` (3 rules) into a single `jackson-1` group with 11 rules — one JDTLS session instead of two.
+When many small test groups use the same provider (e.g., multiple groups with 1-3 `java.referenced` rules each), consider merging them into fewer groups. Each group runs a separate JDTLS session, and too many sessions increase analysis time. For example, merge `jackson-1` (8 rules) and `jackson-2` (3 rules) into a single `jackson-1` group with 11 rules — one JDTLS session instead of two.
 
 The scaffold command groups by concern automatically, but manual merging may be needed when:
 - Multiple concerns share the same provider and have few rules each
-- Kantra tests fail with container memory errors
 
 To merge: edit the `.test.yaml` file to add the extra rule entries, and add the corresponding test code to the shared source file. Update the `rulesPath` in the `.test.yaml` if rules are in different YAML files (you can list multiple rules paths or restructure).
 

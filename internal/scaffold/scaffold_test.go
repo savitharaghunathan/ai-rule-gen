@@ -440,30 +440,3 @@ func TestRunWithBuiltinRules(t *testing.T) {
 	}
 }
 
-func TestGetLanguageConfig(t *testing.T) {
-	langsDir := setupTestLanguagesDir(t)
-
-	cfg, err := GetLanguageConfig(langsDir, "java")
-	if err != nil {
-		t.Fatalf("java config: %v", err)
-	}
-	if cfg.BuildFile != "pom.xml" {
-		t.Errorf("BuildFile = %q, want %q", cfg.BuildFile, "pom.xml")
-	}
-
-	cfg, err = GetLanguageConfig(langsDir, "python")
-	if err != nil {
-		t.Fatalf("python config: %v", err)
-	}
-	if cfg.BuildFile != "requirements.txt" {
-		t.Errorf("BuildFile = %q, want %q", cfg.BuildFile, "requirements.txt")
-	}
-	if cfg.MainFile != "main.py" {
-		t.Errorf("MainFile = %q, want %q", cfg.MainFile, "main.py")
-	}
-
-	_, err = GetLanguageConfig(langsDir, "rust")
-	if err == nil {
-		t.Error("expected rust config to fail")
-	}
-}

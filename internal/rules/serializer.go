@@ -49,19 +49,6 @@ func ReadRulesDir(dir string) ([]Rule, error) {
 	return allRules, nil
 }
 
-// ReadRuleset reads a ruleset.yaml file.
-func ReadRuleset(path string) (*Ruleset, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading ruleset file %s: %w", path, err)
-	}
-	var rs Ruleset
-	if err := yaml.Unmarshal(data, &rs); err != nil {
-		return nil, fmt.Errorf("parsing ruleset file %s: %w", path, err)
-	}
-	return &rs, nil
-}
-
 // WriteRulesFile writes rules to a YAML file.
 func WriteRulesFile(path string, rules []Rule) error {
 	data, err := yaml.Marshal(rules)

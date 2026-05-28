@@ -15,7 +15,7 @@
 | `java.referenced` | `ANNOTATION` | USE the annotation on a class, method, or field (e.g., `@MockBean private Object svc;`). **An `import` statement alone is NOT enough** — the annotation must appear as `@AnnotationName` on an actual element. |
 | `java.referenced` | `IMPORT` | Include the import statement (e.g., `import javax.servlet.http.HttpServlet;`) |
 | `java.referenced` | `TYPE` | Declare or use the type (e.g., `HttpServlet servlet;` or a cast) |
-| `java.referenced` | `METHOD_CALL` | Call the method on an explicitly typed variable — do NOT chain calls (e.g., use `Foo f = Foo.get(); f.bar();` not `Foo.get().bar()`). JDTLS in source-only mode cannot resolve return types of chained calls without the dependency JAR. |
+| `java.referenced` | `METHOD_CALL` | Call the method on an explicitly typed variable — do NOT chain calls (e.g., use `Foo f = Foo.get(); f.bar();` not `Foo.get().bar()`). JDTLS in source-only mode cannot resolve return types of chained calls. |
 | `java.referenced` | `CONSTRUCTOR_CALL` | Use `new ClassName()` |
 | `java.referenced` | `INHERITANCE` | `class Foo extends TargetClass` |
 | `java.referenced` | `IMPLEMENTS_TYPE` | `class Foo implements TargetInterface` |
@@ -31,7 +31,7 @@ Do NOT run `mvn compile`, `mvn dependency:resolve`, or any Maven command. Do NOT
 
 ### Prefer minimal dependencies
 
-JDTLS runs inside the kantra container with limited memory. Prefer the lightest dependency that provides the class you need — e.g., `spring-boot-autoconfigure` instead of a full starter like `spring-boot-starter-web`.
+Prefer the lightest dependency that provides the class you need — e.g., `spring-boot-autoconfigure` instead of a full starter like `spring-boot-starter-web`. Lighter dependencies reduce analysis time and avoid resolution issues.
 
 ### java.dependency and builtin.xml tests
 

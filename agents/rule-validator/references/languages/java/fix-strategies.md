@@ -70,4 +70,4 @@ Same as java.dependency — remove `mode: source-only` from `.test.yaml`. Ensure
 1. Do NOT run `mvn compile` — Kantra parses pom.xml directly and JDTLS resolves source-only
 2. Fix ONLY lines mentioned in errors — keep all rule-triggering code
 3. Do NOT change library versions
-4. Prefer minimal dependencies — JDTLS has limited memory in the kantra container. Use `spring-boot-autoconfigure` instead of `spring-boot-starter-web`
+4. Prefer minimal dependencies to reduce analysis time. Use `spring-boot-autoconfigure` instead of `spring-boot-starter-web`

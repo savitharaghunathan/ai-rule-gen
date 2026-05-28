@@ -1,0 +1,173 @@
+- ruleID: httpclient4-to-httpclient5-00080
+  description: EntityTemplate relocated from org.apache.http.entity in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `EntityTemplate` has been relocated from `org.apache.http.entity` to `org.apache.hc.core5.http.io.entity`. Additionally, content type is now set via the constructor rather than a separate `setContentType()` call.
+
+    Before:
+    ```java
+    import org.apache.http.entity.EntityTemplate;
+    EntityTemplate entity = new EntityTemplate(outstream -> { ... });
+    entity.setContentType(ContentType.APPLICATION_JSON.toString());
+    ```
+
+    After:
+    ```java
+    import org.apache.hc.core5.http.io.entity.EntityTemplate;
+    EntityTemplate entity = new EntityTemplate(-1, ContentType.APPLICATION_JSON, null, outstream -> { ... });
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.entity.EntityTemplate
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00090
+  description: setContentType() setter removed; content type set via entity constructor in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, the `setContentType(String)` method has been removed from HTTP entity classes. Content type should be set via the entity constructor or builder instead.
+
+    Before:
+    ```java
+    requestEntity.setContentType(ContentType.APPLICATION_JSON.toString());
+    ```
+
+    After:
+    ```java
+    // Content type is passed directly to the entity constructor
+    new EntityTemplate(-1, ContentType.APPLICATION_JSON, null, outstream -> { ... });
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setContentType
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00360
+  description: HttpEntity moved to org.apache.hc.core5.http in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `HttpEntity` has moved from `org.apache.http` to `org.apache.hc.core5.http`. Update the import. Note that `setContentType()` and `setContentEncoding()` setters have been removed — content type and encoding are now set via entity constructors or builders.
+
+    ```java
+    // Before (HttpClient 4.x)
+    import org.apache.http.HttpEntity;
+
+    // After (HttpClient 5.x)
+    import org.apache.hc.core5.http.HttpEntity;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpEntity
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00370
+  description: ContentType moved to org.apache.hc.core5.http in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `ContentType` has moved from `org.apache.http.entity` to `org.apache.hc.core5.http`. Update the import. The API (`ContentType.APPLICATION_JSON`, `ContentType.create()`, etc.) remains the same.
+
+    ```java
+    // Before (HttpClient 4.x)
+    import org.apache.http.entity.ContentType;
+
+    // After (HttpClient 5.x)
+    import org.apache.hc.core5.http.ContentType;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.entity.ContentType
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00410
+  description: setContentEncoding() removed from entity classes in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, the `setContentEncoding(String)` method has been removed from HTTP entity classes. Content encoding is now set via the entity constructor or builder instead.
+
+    ```java
+    // Before (HttpClient 4.x)
+    entity.setContentEncoding("UTF-8");
+
+    // After (HttpClient 5.x)
+    // Content encoding is passed via entity constructor
+    new StringEntity(content, ContentType.create("text/plain", StandardCharsets.UTF_8));
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setContentEncoding
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00650
+  description: StringEntity moved to org.apache.hc.core5.http.io.entity in HttpClient 5.x
+  category: mandatory
+  effort: 2
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    `org.apache.http.entity.StringEntity` has moved to `org.apache.hc.core5.http.io.entity.StringEntity` in HttpClient 5.x. The constructor now takes a `ContentType` parameter directly instead of setting it after construction.
+
+    ```java
+    // Before
+    import org.apache.http.entity.StringEntity;
+    StringEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+
+    // After
+    import org.apache.hc.core5.http.io.entity.StringEntity;
+    StringEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.entity.StringEntity
+        location: IMPORT

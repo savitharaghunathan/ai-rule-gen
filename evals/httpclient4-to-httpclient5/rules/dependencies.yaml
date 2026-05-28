@@ -1,0 +1,51 @@
+- ruleID: httpclient4-to-httpclient5-00100
+  description: Apache HttpClient 4.x replaced by HttpClient 5.x with new Maven coordinates
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Apache HttpClient 4.x (`org.apache.httpcomponents:httpclient`) has been superseded by HttpClient 5.x (`org.apache.httpcomponents.client5:httpclient5`). Add HttpClient 5.x as a new dependency and remove the old HttpClient 4.x dependency. HttpClient 5.x can be co-located with earlier major versions on the same classpath due to versioned package namespace and Maven module coordinates.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpclient
+        lowerbound: 0.0.0
+- ruleID: httpclient4-to-httpclient5-00380
+  description: Apache HttpCore 4.x replaced by HttpCore 5.x with new Maven coordinates
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Apache HttpCore 4.x (`org.apache.httpcomponents:httpcore`) has been superseded by HttpCore 5.x (`org.apache.httpcomponents.core5:httpcore5`). Update the Maven dependency coordinates. HttpCore 5.x can co-exist with 4.x on the same classpath due to versioned package namespaces.
+
+    ```xml
+    <!-- Before (HttpCore 4.x) -->
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+    </dependency>
+
+    <!-- After (HttpCore 5.x) -->
+    <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpcore
+        lowerbound: 0.0.0

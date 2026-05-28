@@ -16,6 +16,8 @@ vendor/
 /stamp
 /validate
 /verify
+/eval
+/feedback
 
 # Output
 output*/

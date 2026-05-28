@@ -1,0 +1,173 @@
+- ruleID: httpclient4-to-httpclient5-00420
+  description: org.apache.http.auth package moved to org.apache.hc.client5.http.auth in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    The `org.apache.http.auth` package has moved to `org.apache.hc.client5.http.auth` in HttpClient 5.x.
+
+    | Old class | New class |
+    |---|---|
+    | `org.apache.http.auth.AuthScope` | `org.apache.hc.client5.http.auth.AuthScope` |
+    | `org.apache.http.auth.UsernamePasswordCredentials` | `org.apache.hc.client5.http.auth.UsernamePasswordCredentials` |
+
+    Note: `UsernamePasswordCredentials` now takes `char[]` instead of `String` for the password parameter.
+
+    ```java
+    // Before (HttpClient 4.x)
+    new UsernamePasswordCredentials("user", "pass");
+
+    // After (HttpClient 5.x)
+    new UsernamePasswordCredentials("user", "pass".toCharArray());
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    or:
+      - java.referenced:
+            pattern: org.apache.http.auth.AuthScope
+            location: IMPORT
+      - java.referenced:
+            pattern: org.apache.http.auth.UsernamePasswordCredentials
+            location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00430
+  description: AuthCache moved to org.apache.hc.client5.http.auth in HttpClient 5.x
+  category: mandatory
+  effort: 2
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    `org.apache.http.client.AuthCache` has moved to `org.apache.hc.client5.http.auth.AuthCache` in HttpClient 5.x.
+
+    ```java
+    // Before
+    import org.apache.http.client.AuthCache;
+
+    // After
+    import org.apache.hc.client5.http.auth.AuthCache;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.AuthCache
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00440
+  description: BasicScheme moved to org.apache.hc.client5.http.impl.auth in HttpClient 5.x
+  category: mandatory
+  effort: 2
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    `org.apache.http.impl.auth.BasicScheme` has moved to `org.apache.hc.client5.http.impl.auth.BasicScheme` in HttpClient 5.x.
+
+    ```java
+    // Before
+    import org.apache.http.impl.auth.BasicScheme;
+
+    // After
+    import org.apache.hc.client5.http.impl.auth.BasicScheme;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.auth.BasicScheme
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00450
+  description: BasicAuthCache moved to org.apache.hc.client5.http.impl.auth in HttpClient 5.x
+  category: mandatory
+  effort: 2
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    `org.apache.http.impl.client.BasicAuthCache` has moved to `org.apache.hc.client5.http.impl.auth.BasicAuthCache` in HttpClient 5.x.
+
+    ```java
+    // Before
+    import org.apache.http.impl.client.BasicAuthCache;
+
+    // After
+    import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.BasicAuthCache
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00460
+  description: BasicCredentialsProvider moved to org.apache.hc.client5.http.impl.auth in HttpClient 5.x
+  category: mandatory
+  effort: 2
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    `org.apache.http.impl.client.BasicCredentialsProvider` has moved to `org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider` in HttpClient 5.x.
+
+    ```java
+    // Before
+    import org.apache.http.impl.client.BasicCredentialsProvider;
+
+    // After
+    import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.BasicCredentialsProvider
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00470
+  description: BasicCookieStore moved to org.apache.hc.client5.http.impl.cookie in HttpClient 5.x
+  category: mandatory
+  effort: 2
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    `org.apache.http.impl.client.BasicCookieStore` has moved to `org.apache.hc.client5.http.impl.cookie.BasicCookieStore` in HttpClient 5.x.
+
+    ```java
+    // Before
+    import org.apache.http.impl.client.BasicCookieStore;
+
+    // After
+    import org.apache.hc.client5.http.impl.cookie.BasicCookieStore;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.BasicCookieStore
+        location: IMPORT

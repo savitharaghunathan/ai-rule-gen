@@ -99,7 +99,7 @@ For package renames, the namespace-level rule uses `location_type: PACKAGE`. Add
 
 | Consolidation case (from SKILL.md) | Java location type |
 |---|---|
-| Method/function rename | `METHOD_CALL` — prefer short method name patterns (e.g., `setRetryHandler` not `org.example.Builder.setRetryHandler`). **NEVER use FQN patterns that include inner class names** (e.g., `RequestConfig.Builder.setConnectTimeout`) — kantra cannot resolve factory method return types, so these compile but silently match nothing. Use `alternative_fqns` to create `or` conditions when you need FQN precision across a type hierarchy. See `condition-types.md` for the full METHOD_CALL decision framework. |
+| Method/function rename | `METHOD_CALL` — always use FQN patterns (e.g., `org.apache.http.HttpResponse.getStatusLine`). When the method is defined on an interface but called on subtypes, add `alternative_fqns`. Never use bare method names. See `condition-types.md` for the full METHOD_CALL decision framework. |
 | Type replacement (different API) | `IMPORT` — emit with `source_fqn` on the old FQN |
 | Type renamed | `IMPORT` — emit with `source_fqn` on the old FQN and a message stating the new class name |
 | Same name, just moved packages | Skip — `PACKAGE` rule covers this |

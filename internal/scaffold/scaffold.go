@@ -577,8 +577,3 @@ func collectExtraHints(c rules.Condition, needed *map[string]bool, language stri
 	}
 }
 
-// GetLanguageConfig returns the LanguageConfig for a given language,
-// loading from the specified languages directory.
-func GetLanguageConfig(languagesDir, language string) (LanguageConfig, error) {
-	return LoadLanguageConfig(languagesDir, language)
-}

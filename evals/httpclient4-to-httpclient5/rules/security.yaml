@@ -1,0 +1,29 @@
+- ruleID: httpclient4-to-httpclient5-00230
+  description: ManagedHttpClientConnection cast for SSL session replaced by HttpCoreContext.getSSLSession()
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpcomponents-client
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpcomponents-client
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The pattern of casting to `ManagedHttpClientConnection` to access the SSL session has been replaced in HttpClient 5.x. Use `HttpCoreContext.getSSLSession()` directly instead.
+
+    ```java
+    // Before (4.x)
+    ManagedHttpClientConnection conn = (ManagedHttpClientConnection)
+        context.getAttribute(HttpCoreContext.HTTP_CONNECTION);
+    SSLSession session = conn.getSSLSession();
+
+    // After (5.x)
+    SSLSession session = context.getSSLSession();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.ManagedHttpClientConnection
+        location: IMPORT

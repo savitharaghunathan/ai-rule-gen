@@ -77,11 +77,10 @@ After generating all test files, run `go run ./cmd/sanitize --dir <tests-dir>` t
 
 ## Merging Small Test Groups
 
-When many small test groups use the same provider (e.g., multiple groups with 1-3 rules each), consider merging them into fewer groups. Each group runs a separate language server session in the kantra container, and too many sessions cause OOM failures.
+When many small test groups use the same provider (e.g., multiple groups with 1-3 rules each), consider merging them into fewer groups. Each group runs a separate language server session, and too many sessions increase analysis time.
 
 The scaffold command groups by concern automatically, but manual merging may be needed when:
 - Multiple concerns share the same provider and have few rules each
-- Kantra tests fail with container memory errors
 
 To merge: edit the `.test.yaml` file to add the extra rule entries, and add the corresponding test code to the shared source file.
 

@@ -97,13 +97,6 @@ func modelTag() string {
 	return "[model=" + modelName + "]"
 }
 
-// IsLogging reports whether session logging is active.
-func IsLogging() bool {
-	logMu.Lock()
-	defer logMu.Unlock()
-	return logFile != nil
-}
-
 func inferCmdName() string {
 	if len(os.Args) == 0 {
 		return "unknown"

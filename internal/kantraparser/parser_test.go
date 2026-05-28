@@ -43,21 +43,6 @@ func TestParseSummary(t *testing.T) {
 	}
 }
 
-func TestParseFailures(t *testing.T) {
-	output := "java-ee-to-quarkus-00010    1/1  PASSED\njava-ee-to-quarkus-00020    0/1  PASSED\njava-ee-to-quarkus-00030    0/1  PASSED  find debug data in /tmp/debug/00030"
-
-	failures := ParseFailures(output)
-	if len(failures) != 2 {
-		t.Fatalf("expected 2 failures, got %d", len(failures))
-	}
-	if failures[0].RuleID != "java-ee-to-quarkus-00020" {
-		t.Errorf("first failure rule ID = %q, want %q", failures[0].RuleID, "java-ee-to-quarkus-00020")
-	}
-	if failures[1].DebugPath != "/tmp/debug/00030" {
-		t.Errorf("second failure debug path = %q, want %q", failures[1].DebugPath, "/tmp/debug/00030")
-	}
-}
-
 func TestPassedAndFailed_withErroredRules(t *testing.T) {
 	// Simulate output where one rule fails per-rule and a group errors out entirely.
 	output := "rule-00010    1/1  PASSED\nrule-00020    0/1  PASSED"
@@ -230,16 +215,3 @@ func TestPassedAndFailed_mixedPassAndError(t *testing.T) {
 	}
 }
 
-func TestFindTestFiles(t *testing.T) {
-	dir := t.TempDir()
-	for _, name := range []string{"rules.test.yaml", "other.test.yml", "not-a-test.yaml", "readme.md"} {
-		os.WriteFile(filepath.Join(dir, name), []byte(""), 0o644)
-	}
-	files, err := FindTestFiles(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(files) != 2 {
-		t.Errorf("expected 2 test files, got %d: %v", len(files), files)
-	}
-}

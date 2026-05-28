@@ -1,0 +1,156 @@
+Example eval report generated against:
+  Rules:  output/httpclient4-to-httpclient5-20260521-163026/rules (33 rules)
+  App:    https://github.com/savitharaghunathan/httpclient-migration
+  Guide:  https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+
+Command:
+  go run ./cmd/eval \
+    --rules-dir output/httpclient4-to-httpclient5-20260521-163026/rules \
+    --app-dir /tmp/httpclient-migration
+
+======================================================================
+EVAL REPORT
+======================================================================
+
+## Rules: 33
+
+## Quality (avg 3.9/4)
+   Messages:           33/33
+   Links:              33/33
+   Effort rating:      33/33
+   Before/after:       29/33
+   httpclient4-to-httpclient5-00010: missing [before_after_guidance]
+   httpclient4-to-httpclient5-00200: missing [before_after_guidance]
+   httpclient4-to-httpclient5-00020: missing [before_after_guidance]
+   httpclient4-to-httpclient5-00030: missing [before_after_guidance]
+
+## App Coverage
+   Rules fired:      26/33 (78%)
+   Effective match:  26/27 (96%)  — excludes rules where API is absent from app
+   Incidents:        121
+
+   In app but unmatched (1 rules):
+     - httpclient4-to-httpclient5-00060 (org.apache.http.protocol.BasicHttpContext) → src/test/java/com/example/apihub/http/LoggingInterceptorTest.java
+
+   Not in app (6 rules):
+     - httpclient4-to-httpclient5-00070 (org.apache.http.client.methods.HttpRequestBase)
+     - httpclient4-to-httpclient5-00200 (org.apache.http.client.utils.URIUtils)
+     - httpclient4-to-httpclient5-00250 (setSSLSocketFactory)
+     - httpclient4-to-httpclient5-00260 (org.apache.http.impl.client.HttpClientBuilder)
+     - httpclient4-to-httpclient5-00300 (org.apache.http.message.BasicNameValuePair)
+     - httpclient4-to-httpclient5-00330 (org.apache.http.NameValuePair)
+
+======================================================================
+
+JSON output (stdout):
+
+{
+  "rule_count": 33,
+  "quality": {
+    "total_rules": 33,
+    "has_message": 33,
+    "has_links": 33,
+    "has_effort": 33,
+    "has_before_after": 29,
+    "avg_score": 3.88,
+    "max_score": 4
+  },
+  "app_coverage": {
+    "total_rules": 33,
+    "rules_fired": 26,
+    "total_incidents": 121,
+    "not_fired": [
+      "httpclient4-to-httpclient5-00060",
+      "httpclient4-to-httpclient5-00070",
+      "httpclient4-to-httpclient5-00200",
+      "httpclient4-to-httpclient5-00250",
+      "httpclient4-to-httpclient5-00260",
+      "httpclient4-to-httpclient5-00300",
+      "httpclient4-to-httpclient5-00330"
+    ],
+    "unmatched": [
+      {
+        "rule_id": "httpclient4-to-httpclient5-00060",
+        "pattern": "org.apache.http.protocol.BasicHttpContext",
+        "in_app": true,
+        "app_files": ["src/test/java/com/example/apihub/http/LoggingInterceptorTest.java"],
+        "reason": "pattern found in app source but kantra did not match"
+      },
+      {
+        "rule_id": "httpclient4-to-httpclient5-00070",
+        "pattern": "org.apache.http.client.methods.HttpRequestBase",
+        "in_app": false,
+        "reason": "not in app"
+      },
+      {
+        "rule_id": "httpclient4-to-httpclient5-00200",
+        "pattern": "org.apache.http.client.utils.URIUtils",
+        "in_app": false,
+        "reason": "not in app"
+      },
+      {
+        "rule_id": "httpclient4-to-httpclient5-00250",
+        "pattern": "setSSLSocketFactory",
+        "in_app": false,
+        "reason": "not in app"
+      },
+      {
+        "rule_id": "httpclient4-to-httpclient5-00260",
+        "pattern": "org.apache.http.impl.client.HttpClientBuilder",
+        "in_app": false,
+        "reason": "not in app"
+      },
+      {
+        "rule_id": "httpclient4-to-httpclient5-00300",
+        "pattern": "org.apache.http.message.BasicNameValuePair",
+        "in_app": false,
+        "reason": "not in app"
+      },
+      {
+        "rule_id": "httpclient4-to-httpclient5-00330",
+        "pattern": "org.apache.http.NameValuePair",
+        "in_app": false,
+        "reason": "not in app"
+      }
+    ],
+    "effective_total": 27,
+    "effective_fired": 26,
+    "effective_pct": 96,
+    "violations": {
+      "httpclient4-to-httpclient5-00010": { "incidents": 68, "files": ["AuthService.java", "ConnectionCleanupTask.java", "CustomRetryHandler.java", "EchoService.java", "HttpClientConfig.java", "HttpClientFactory.java", "LoggingInterceptor.java", "PostService.java", "WeatherService.java"] },
+      "httpclient4-to-httpclient5-00020": { "incidents": 1, "files": ["pom.xml"] },
+      "httpclient4-to-httpclient5-00030": { "incidents": 1, "files": ["pom.xml"] },
+      "httpclient4-to-httpclient5-00040": { "incidents": 1, "files": ["HttpClientFactory.java"] },
+      "httpclient4-to-httpclient5-00050": { "incidents": 1, "files": ["CustomRetryHandler.java"] },
+      "httpclient4-to-httpclient5-00080": { "incidents": 10, "files": ["AuthService.java", "EchoService.java", "LoggingInterceptor.java", "PostService.java", "WeatherService.java"] },
+      "httpclient4-to-httpclient5-00090": { "incidents": 1, "files": ["LoggingInterceptor.java"] },
+      "httpclient4-to-httpclient5-00100": { "incidents": 2, "files": ["LoggingInterceptor.java"] },
+      "httpclient4-to-httpclient5-00110": { "incidents": 1, "files": ["ConnectionCleanupTask.java"] },
+      "httpclient4-to-httpclient5-00120": { "incidents": 1, "files": ["ConnectionCleanupTask.java"] },
+      "httpclient4-to-httpclient5-00130": { "incidents": 1, "files": ["HttpClientFactory.java"] },
+      "httpclient4-to-httpclient5-00140": { "incidents": 2, "files": ["HttpClientFactory.java"] },
+      "httpclient4-to-httpclient5-00150": { "incidents": 1, "files": ["LoggingInterceptor.java"] },
+      "httpclient4-to-httpclient5-00160": { "incidents": 1, "files": ["LoggingInterceptor.java"] },
+      "httpclient4-to-httpclient5-00170": { "incidents": 3, "files": ["AuthService.java", "EchoService.java", "PostService.java"] },
+      "httpclient4-to-httpclient5-00180": { "incidents": 3, "files": ["AuthService.java", "PostService.java", "WeatherService.java"] },
+      "httpclient4-to-httpclient5-00190": { "incidents": 1, "files": ["EchoService.java"] },
+      "httpclient4-to-httpclient5-00210": { "incidents": 3, "files": ["ConnectionCleanupTask.java", "HttpClientConfig.java", "HttpClientFactory.java"] },
+      "httpclient4-to-httpclient5-00220": { "incidents": 1, "files": ["HttpClientFactory.java"] },
+      "httpclient4-to-httpclient5-00230": { "incidents": 1, "files": ["HttpClientFactory.java"] },
+      "httpclient4-to-httpclient5-00240": { "incidents": 1, "files": ["HttpClientFactory.java"] },
+      "httpclient4-to-httpclient5-00270": { "incidents": 6, "files": ["AuthService.java", "EchoService.java", "HttpClientConfig.java", "HttpClientFactory.java", "PostService.java", "WeatherService.java"] },
+      "httpclient4-to-httpclient5-00280": { "incidents": 1, "files": ["HttpClientFactory.java"] },
+      "httpclient4-to-httpclient5-00290": { "incidents": 4, "files": ["AuthService.java", "EchoService.java", "PostService.java", "WeatherService.java"] },
+      "httpclient4-to-httpclient5-00310": { "incidents": 4, "files": ["AuthService.java", "EchoService.java", "PostService.java", "WeatherService.java"] },
+      "httpclient4-to-httpclient5-00320": { "incidents": 1, "files": ["LoggingInterceptor.java"] }
+    }
+  }
+}
+
+Notes:
+  - Report goes to stderr, structured JSON goes to stdout
+  - "Rules fired" is raw kantra output (26/33 = 78%)
+  - "Effective match" excludes rules where the API is absent from the app (26/27 = 96%)
+  - The 1 "in app but unmatched" rule (00060 BasicHttpContext) is only in src/test/java,
+    which kantra excludes via JDTLS excludeTestCode=true — an engine limitation, not a rule bug
+  - rule_details array omitted for brevity (see full JSON output from cmd/eval)
