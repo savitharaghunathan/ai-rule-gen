@@ -1,0 +1,229 @@
+- ruleID: spring-boot3-to-spring-boot4-00160
+  description: Renamed to spring-boot-starter-webmvc
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-web` starter has been renamed to `spring-boot-starter-webmvc` for better alignment with its corresponding module. The old starter is deprecated and will be removed in a future release.
+
+    Update your `pom.xml`:
+    ```xml
+    <!-- Replace -->
+    <artifactId>spring-boot-starter-web</artifactId>
+    <!-- With -->
+    <artifactId>spring-boot-starter-webmvc</artifactId>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00170
+  description: Renamed to spring-boot-starter-webservices
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-web-services` starter has been renamed to `spring-boot-starter-webservices` for better alignment with its corresponding module. The old starter is deprecated and will be removed in a future release.
+
+    Update your `pom.xml`:
+    ```xml
+    <!-- Replace -->
+    <artifactId>spring-boot-starter-web-services</artifactId>
+    <!-- With -->
+    <artifactId>spring-boot-starter-webservices</artifactId>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web-services
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00460
+  description: PathRequest.toStaticResources now includes /fonts/**; exclude if needed
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    If you use `PathRequest.toStaticResources()`, this release adds a `/fonts/**` location to the common static resource locations. This path will have the same security settings as your other configured static resource locations. If you don't want `/fonts/**` to be included, exclude it:
+
+    ```java
+    pathRequest.toStaticResources().atCommonLocations().excluding(StaticResourceLocation.FONTS);
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#fonts-added-to-common-static-locations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.security.servlet.PathRequest
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00490
+  description: HttpMessageConverters deprecated; use Client/ServerHttpMessageConvertersCustomizer
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot's `HttpMessageConverters` is deprecated because Spring Framework improved converter configuration. If your application declares a custom `HttpMessageConverters` bean, this is still supported but the type is deprecated. Contributing `HttpMessageConverter` beans directly to the context is no longer supported.
+
+    Instead, declare one or more `ClientHttpMessageConvertersCustomizer` and/or `ServerHttpMessageConvertersCustomizer` beans to customize converters. Each customizer can contribute converters as "custom" converters or replace default auto-detected converters. See the [reference documentation](https://docs.spring.io/spring-boot/4.0-SNAPSHOT/reference/web/servlet.html#web.servlet.spring-mvc.message-converters) for examples.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#httpmessageconverters-deprecation
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.http.HttpMessageConverters
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00500
+  description: server.forward-headers-strategy has no effect in WAR deployments; define ForwardedHeaderFilter bean manually
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `server.forward-headers-strategy` property no longer has an effect when deploying a WAR file to an external container. If you were relying on `server.forward-headers-strategy=framework` in a WAR deployment, you must now define the `ForwardedHeaderFilter` bean yourself:
+
+    ```java
+    @Bean
+    FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
+        ForwardedHeaderFilter filter = new ForwardedHeaderFilter();
+        FilterRegistrationBean<ForwardedHeaderFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC, DispatcherType.ERROR);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
+    }
+    ```
+
+    Note: this property still works for embedded server deployments.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#forwarded-headers-strategy
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: server\.forward-headers-strategy
+        filePattern: application.*\.(properties|yml)
+- ruleID: spring-boot3-to-spring-boot4-00510
+  description: Jersey 4.0 does not support Jackson 3; use spring-boot-jackson2 for JSON processing
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4.0 supports Jersey 4.0, which does not yet support Jackson 3. To process JSON with Jersey, use `spring-boot-jackson2` either in place of or alongside `spring-boot-jackson`. Add the `spring-boot-jackson2` dependency to your project if you use Jersey with JSON.
+
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-jackson2</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#jersey
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-jersey
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00520
+  description: For WAR deployments, replace spring-boot-starter-tomcat with spring-boot-starter-tomcat-runtime
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    If you're deploying a WAR file to Tomcat, you need to switch the dependency `spring-boot-starter-tomcat` to `spring-boot-starter-tomcat-runtime`.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-tomcat</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-tomcat-runtime</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#tomcat
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-tomcat
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00880
+  description: GraphQL support moved from org.springframework.boot.autoconfigure.graphql to org.springframework.boot.graphql
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4.0 has a new modular design. GraphQL support has moved from `org.springframework.boot.autoconfigure.graphql` to the new `org.springframework.boot.graphql` package in the `spring-boot-graphql` module. Update your imports accordingly and add `spring-boot-starter-graphql` to your dependencies if not already present.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.graphql
+        location: PACKAGE
+- ruleID: spring-boot3-to-spring-boot4-00930
+  description: Contributing HttpMessageConverter beans directly to the Spring context is no longer supported
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Contributing `HttpMessageConverter` beans (like `MappingJackson2HttpMessageConverter`, `StringHttpMessageConverter`, etc.) directly to the Spring context is no longer supported in Spring Boot 4. Instead, declare `ClientHttpMessageConvertersCustomizer` and/or `ServerHttpMessageConvertersCustomizer` beans. Each customizer can contribute converters as "custom" converters considered before defaults, or replace a default auto-detected converter. See the [reference documentation](https://docs.spring.io/spring-boot/4.0-SNAPSHOT/reference/web/servlet.html#web.servlet.spring-mvc.message-converters) for examples.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#httpmessageconverters-deprecation
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.http.converter
+        location: PACKAGE

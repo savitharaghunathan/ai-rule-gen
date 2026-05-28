@@ -1,0 +1,81 @@
+- ruleID: spring-boot3-to-spring-boot4-00130
+  description: Renamed to spring-boot-starter-security-oauth2-authorization-server
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-oauth2-authorization-server` starter has been renamed to `spring-boot-starter-security-oauth2-authorization-server` for better alignment with its corresponding module. The old starter is deprecated and will be removed in a future release.
+
+    Update your `pom.xml`:
+    ```xml
+    <!-- Replace -->
+    <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
+    <!-- With -->
+    <artifactId>spring-boot-starter-security-oauth2-authorization-server</artifactId>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-oauth2-authorization-server
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00140
+  description: Renamed to spring-boot-starter-security-oauth2-client
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-oauth2-client` starter has been renamed to `spring-boot-starter-security-oauth2-client` for better alignment with its corresponding module. The old starter is deprecated and will be removed in a future release.
+
+    Update your `pom.xml`:
+    ```xml
+    <!-- Replace -->
+    <artifactId>spring-boot-starter-oauth2-client</artifactId>
+    <!-- With -->
+    <artifactId>spring-boot-starter-security-oauth2-client</artifactId>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-oauth2-client
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00150
+  description: Renamed to spring-boot-starter-security-oauth2-resource-server
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-oauth2-resource-server` starter has been renamed to `spring-boot-starter-security-oauth2-resource-server` for better alignment with its corresponding module. The old starter is deprecated and will be removed in a future release.
+
+    Update your `pom.xml`:
+    ```xml
+    <!-- Replace -->
+    <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    <!-- With -->
+    <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-oauth2-resource-server
+        lowerbound: 0.0.0

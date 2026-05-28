@@ -1,0 +1,172 @@
+schema_version: 1
+guide_url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide
+guide_version: ""
+entries:
+    - old_api: org.apache.http.conn.ssl.SSLConnectionSocketFactory
+      new_api: org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder
+      action_type: class_rename
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.impl.client.HttpClients
+      new_api: org.apache.hc.client5.http.impl.classic.HttpClients
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.client.methods.HttpPost
+      new_api: org.apache.hc.client5.http.classic.methods.HttpPost
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.entity.EntityTemplate
+      new_api: org.apache.hc.core5.http.io.entity.HttpEntities
+      action_type: class_rename
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.HttpResponse
+      new_api: org.apache.hc.core5.http.HttpResponse
+      action_type: package_change
+      severity: high
+      guide_section: "Migration recipes"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.protocol.BasicHttpContext
+      new_api: org.apache.hc.core5.http.protocol.HttpCoreContext
+      action_type: class_rename
+      severity: high
+      guide_section: "Migration recipes"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.HttpEntityEnclosingRequest
+      new_api: org.apache.hc.core5.http.HttpEntityContainer
+      action_type: class_rename
+      severity: high
+      guide_section: "Migration recipes"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.client.methods.HttpRequestBase
+      new_api: org.apache.hc.client5.http.classic.methods.HttpUriRequestBase
+      action_type: class_rename
+      severity: high
+      guide_section: "Migration recipes"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+      new_api: org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.impl.client.CloseableHttpClient
+      new_api: org.apache.hc.client5.http.impl.classic.CloseableHttpClient
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.impl.nio.client.CloseableHttpAsyncClient
+      new_api: org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient
+      action_type: class_rename
+      severity: high
+      guide_section: "Migration to async APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.impl.nio.client.HttpAsyncClients
+      new_api: org.apache.hc.client5.http.impl.async.HttpAsyncClients
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to async APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager
+      new_api: org.apache.hc.client5.http.impl.async.PoolingAsyncClientConnectionManager
+      action_type: class_rename
+      severity: high
+      guide_section: "Migration to async APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.client.config.RequestConfig
+      new_api: org.apache.hc.client5.http.config.RequestConfig
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.impl.client.BasicCookieStore
+      new_api: org.apache.hc.client5.http.impl.cookie.BasicCookieStore
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.impl.client.BasicCredentialsProvider
+      new_api: org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.client.protocol.HttpClientContext
+      new_api: org.apache.hc.client5.http.protocol.HttpClientContext
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.message.BasicNameValuePair
+      new_api: org.apache.hc.core5.http.message.BasicNameValuePair
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.entity.ContentType
+      new_api: org.apache.hc.core5.http.ContentType
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.conn.ManagedHttpClientConnection
+      new_api: org.apache.hc.core5.http.protocol.HttpCoreContext.getSSLSession()
+      action_type: method_removal
+      severity: high
+      guide_section: "Migration recipes"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.ssl.SSLContexts
+      new_api: org.apache.hc.core5.ssl.SSLContexts
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.config.SocketConfig
+      new_api: org.apache.hc.core5.http.io.SocketConfig
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.HttpEntity
+      new_api: org.apache.hc.core5.http.HttpEntity
+      action_type: package_change
+      severity: high
+      guide_section: "Migration to classic APIs"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"
+    - old_api: org.apache.http.protocol.HttpCoreContext
+      new_api: org.apache.hc.core5.http.protocol.HttpCoreContext
+      action_type: package_change
+      severity: high
+      guide_section: "Migration recipes"
+      reviewed_by: eval-skill-extract
+      reviewed_date: "2026-05-28"

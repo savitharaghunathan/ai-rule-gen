@@ -1,0 +1,53 @@
+- ruleID: spring-boot3-to-spring-boot4-00440
+  description: org.springframework.lang.Nullable removed for actuator parameters; use org.jspecify.annotations.Nullable
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    This rule matches any use of `@org.springframework.lang.Nullable`, but the breaking change specifically affects actuator endpoint method parameters (methods annotated with `@ReadOperation`, `@WriteOperation`, or `@DeleteOperation`). If your `@Nullable` usage is on actuator endpoint parameters, migrate to `@org.jspecify.annotations.Nullable`. For non-actuator usages, see the separate JSpecify migration rule.
+
+    ## Before
+    ```java
+    import org.springframework.lang.Nullable;
+
+    @ReadOperation
+    public String read(@Nullable String param) { ... }
+    ```
+
+    ## After
+    ```java
+    import org.jspecify.annotations.Nullable;
+
+    @ReadOperation
+    public String read(@Nullable String param) { ... }
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#removed-support-for-javaxannotationsnonnull-and-orgspringframeworklangnullable
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.lang.Nullable
+        location: ANNOTATION
+- ruleID: spring-boot3-to-spring-boot4-00450
+  description: Health probes now enabled by default; disable with management.endpoint.health.probes.enabled
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Liveness and readiness probes are now enabled by default in Spring Boot 4. The health endpoint now exposes the `liveness` and `readiness` groups by default. If you previously did not use these probes and do not need them, you can disable them by setting `management.endpoint.health.probes.enabled=false`. This rule fires if you already configure this property. All Spring Boot applications should be aware that health probes are now exposed by default.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#liveness-and-readiness-probes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: management\.endpoint\.health\.probes\.enabled
+        filePattern: application.*\.(properties|yml)

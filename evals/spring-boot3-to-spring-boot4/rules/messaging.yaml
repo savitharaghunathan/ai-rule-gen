@@ -1,0 +1,18 @@
+- ruleID: spring-boot3-to-spring-boot4-00030
+  description: Spring Pulsar Reactive auto-configuration removed in Spring Boot 4
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Pulsar Reactive support has been fully removed from Spring Boot 4 — there is no Spring Boot replacement. Auto-configuration for Spring Pulsar Reactive has been removed following the decision to remove reactor support in Spring Pulsar. If you require reactive Pulsar support, you must integrate the reactive Pulsar client manually outside of Spring Boot's ecosystem or drop reactive Pulsar usage entirely.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#pulsar-reactive
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-pulsar-reactive
+        lowerbound: 0.0.0

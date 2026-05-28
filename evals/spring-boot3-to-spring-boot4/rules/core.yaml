@@ -1,0 +1,173 @@
+- ruleID: spring-boot3-to-spring-boot4-00010
+  description: Spring Boot 4.0 requires Java 17+, Jakarta EE 11, Servlet 6.1, and Spring Framework 7.x
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4.0 has significant system requirement changes. It requires Java 17 or later, Kotlin 2.2+, GraalVM v25+, Jakarta EE 11, a Servlet 6.1 baseline, and Spring Framework 7.x. Review all dependencies and ensure your runtime environment meets these requirements before upgrading.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#review-system-requirements
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter
+        upperbound: 4.0.0
+- ruleID: spring-boot3-to-spring-boot4-00180
+  description: org.springframework.lang nullable annotations replaced by JSpecify annotations
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4.0 adopts JSpecify nullability annotations. If you use annotations from the `org.springframework.lang` package (e.g., `@Nullable`, `@NonNull`, `@NonNullApi`, `@NonNullFields`), you should migrate to their JSpecify equivalents. The Spring annotations are deprecated and will be removed in a future release.
+
+    This could lead to compilation failures if you use a null checker in your build or Kotlin. Review the [Spring null-safety migration guide](https://docs.spring.io/spring-framework/reference/core/null-safety.html#null-safety-migrating) for detailed instructions.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#jspecify-nullability-annotations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.lang
+        location: PACKAGE
+- ruleID: spring-boot3-to-spring-boot4-00190
+  description: BootstrapRegistry moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `BootstrapRegistry` class has moved from `org.springframework.boot` to `org.springframework.boot.bootstrap` in Spring Boot 4.0. Update your imports and any `spring.factories` entries that reference this class.
+
+    ## Before
+    ```java
+    import org.springframework.boot.BootstrapRegistry;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.bootstrap.BootstrapRegistry;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.BootstrapRegistry
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00200
+  description: BootstrapContext moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `BootstrapContext` class has moved from `org.springframework.boot` to `org.springframework.boot.bootstrap` in Spring Boot 4.0. Update your imports accordingly.
+
+    ## Before
+    ```java
+    import org.springframework.boot.BootstrapContext;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.bootstrap.BootstrapContext;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.BootstrapContext
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00210
+  description: BootstrapRegistryInitializer moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `BootstrapRegistryInitializer` class has moved from `org.springframework.boot` to `org.springframework.boot.bootstrap` in Spring Boot 4.0. Update your imports and any `spring.factories` entries accordingly.
+
+    ## Before
+    ```java
+    import org.springframework.boot.BootstrapRegistryInitializer;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.bootstrap.BootstrapRegistryInitializer;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.BootstrapRegistryInitializer
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00220
+  description: EnvironmentPostProcessor moved from org.springframework.boot.env to org.springframework.boot
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `EnvironmentPostProcessor` interface has moved from `org.springframework.boot.env` to `org.springframework.boot` in Spring Boot 4.0. The deprecated form is still available but will be removed in a future release. Update your imports and `spring.factories` entries.
+
+    ## Before
+    ```java
+    import org.springframework.boot.env.EnvironmentPostProcessor;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.EnvironmentPostProcessor;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.env.EnvironmentPostProcessor
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00230
+  description: spring.factories entries reference relocated Bootstrap/EnvironmentPostProcessor classes
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4.0 relocated `BootstrapRegistry`, `BootstrapContext`, and `BootstrapRegistryInitializer` to `org.springframework.boot.bootstrap`, and `EnvironmentPostProcessor` to `org.springframework.boot`. Update any `spring.factories` entries that reference the old package paths.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.springframework\.boot\.(BootstrapRegistry|BootstrapContext|BootstrapRegistryInitializer|env\.EnvironmentPostProcessor)
+        filePattern: .*spring\.factories

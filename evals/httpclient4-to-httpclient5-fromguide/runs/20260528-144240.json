@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-05-28T14:42:40Z",
+  "migration": "httpclient4-to-httpclient5-fromguide",
+  "rule_count": 28,
+  "effective_coverage_pct": 0,
+  "quality_avg": 5.857142857142857,
+  "guidance_depth_avg": 2.857142857142857,
+  "overlap_conflict_count": 11,
+  "specificity_gap_count": null,
+  "guide_specificity_gap_count": 13
+}
