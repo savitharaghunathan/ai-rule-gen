@@ -58,4 +58,4 @@ Same as java.dependency — remove `mode: source-only` from `.test.yaml`. Ensure
 3. Do NOT change library versions
 4. After fixing: `mvn dependency:resolve -q -B`
 
-Prefer minimal dependencies — JDTLS has limited memory in the kantra container. Use `spring-boot-autoconfigure` instead of `spring-boot-starter-web`.
+Prefer minimal dependencies to reduce analysis time. Use `spring-boot-autoconfigure` instead of `spring-boot-starter-web`.

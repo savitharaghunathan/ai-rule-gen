@@ -18,6 +18,7 @@ func main() {
 	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	rulesDir := flag.String("rules-dir", "", "Path to generated rules directory (required)")
 	appDir := flag.String("app-dir", "", "Path to app for kantra analyze coverage check")
+	groundTruthPath := flag.String("ground-truth", "", "Path to ground_truth.yaml for guide-driven gap detection")
 	save := flag.Bool("save", false, "Save results to evals/<migration>/runs/<timestamp>.json")
 	saveBaseline := flag.Bool("save-baseline", false, "Save results as evals/<migration>/det_baseline.json")
 	comparePath := flag.String("compare", "", "Path to baseline snapshot for regression comparison")
@@ -31,9 +32,24 @@ func main() {
 		cli.Fail("invalid_arguments", "--rules-dir is required", "eval", "provide a rules directory", nil)
 	}
 
+	gtPath := *groundTruthPath
+	if gtPath == "" {
+		migName := *migration
+		if migName == "" {
+			migName = inferMigration(*rulesDir)
+		}
+		if migName != "" {
+			candidate := filepath.Join("evals", migName, "ground_truth.yaml")
+			if _, err := os.Stat(candidate); err == nil {
+				gtPath = candidate
+			}
+		}
+	}
+
 	cfg := eval.Config{
-		RulesDir: *rulesDir,
-		AppDir:   *appDir,
+		RulesDir:        *rulesDir,
+		AppDir:          *appDir,
+		GroundTruthPath: gtPath,
 	}
 
 	result, err := eval.RunEval(cfg)

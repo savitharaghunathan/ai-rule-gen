@@ -17,6 +17,7 @@ func main() {
 	modelFlag := flag.String("model", "", "LLM model powering the invoking agent (for log attribution)")
 	oldArtifact := flag.String("old-artifact", "", "Old artifact coordinate (groupId:artifactId:version)")
 	newArtifact := flag.String("new-artifact", "", "New artifact coordinate (groupId:artifactId:version)")
+	fromGuide := flag.String("from-guide", "", "Extract ground truth from ingested guide markdown (bypasses japicmp)")
 	output := flag.String("output", "", "Output path for ground_truth.yaml (default: stdout)")
 	japicmpJar := flag.String("japicmp-jar", "", "Path to japicmp standalone JAR (auto-downloaded if not set)")
 	mergePath := flag.String("merge", "", "Existing ground_truth.yaml to merge with")
@@ -26,65 +27,81 @@ func main() {
 	cli.InitLog(*logPath, *agentFlag, *modelFlag)
 	defer cli.CloseLog()
 
-	if *oldArtifact == "" || *newArtifact == "" {
-		cli.Fail("invalid_arguments", "--old-artifact and --new-artifact are required", "ground-truth", "provide Maven coordinates as groupId:artifactId:version", nil)
+	if *fromGuide != "" && (*oldArtifact != "" || *newArtifact != "") {
+		cli.Fail("invalid_arguments", "--from-guide is mutually exclusive with --old-artifact/--new-artifact", "ground-truth", "use either --from-guide or --old-artifact/--new-artifact", nil)
 	}
 
-	oldCoord, err := groundtruth.ParseCoord(*oldArtifact)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-	newCoord, err := groundtruth.ParseCoord(*newArtifact)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
+	var entries []groundtruth.Entry
 
-	workDir, err := os.MkdirTemp("", "ground-truth-*")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating temp dir: %v\n", err)
-		os.Exit(1)
+	if *fromGuide != "" {
+		var err error
+		entries, err = groundtruth.ExtractFromGuide(*fromGuide)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error extracting from guide: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "Extracted %d FQNs from guide\n", len(entries))
+	} else {
+		if *oldArtifact == "" || *newArtifact == "" {
+			cli.Fail("invalid_arguments", "--old-artifact and --new-artifact are required (or use --from-guide)", "ground-truth", "provide Maven coordinates as groupId:artifactId:version", nil)
+		}
+
+		oldCoord, err := groundtruth.ParseCoord(*oldArtifact)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+		newCoord, err := groundtruth.ParseCoord(*newArtifact)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+
+		workDir, err := os.MkdirTemp("", "ground-truth-*")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error creating temp dir: %v\n", err)
+			os.Exit(1)
+		}
+		defer os.RemoveAll(workDir)
+
+		fmt.Fprintf(os.Stderr, "Downloading old artifact: %s\n", *oldArtifact)
+		oldJar, err := groundtruth.DownloadJAR(oldCoord, workDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Fprintf(os.Stderr, "Downloading new artifact: %s\n", *newArtifact)
+		newJar, err := groundtruth.DownloadJAR(newCoord, workDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Fprintf(os.Stderr, "Ensuring japicmp is available...\n")
+		japicmp, err := groundtruth.EnsureJapicmp(*japicmpJar)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+
+		diffXML := filepath.Join(workDir, "diff.xml")
+		fmt.Fprintf(os.Stderr, "Running japicmp...\n")
+		if err := groundtruth.RunJapicmp(japicmp, oldJar, newJar, diffXML); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+
+		changes, err := groundtruth.ParseJapicmpXML(diffXML)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Fprintf(os.Stderr, "Found %d breaking API changes\n", len(changes))
+
+		entries = groundtruth.ConvertChanges(changes)
 	}
-	defer os.RemoveAll(workDir)
-
-	fmt.Fprintf(os.Stderr, "Downloading old artifact: %s\n", *oldArtifact)
-	oldJar, err := groundtruth.DownloadJAR(oldCoord, workDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Fprintf(os.Stderr, "Downloading new artifact: %s\n", *newArtifact)
-	newJar, err := groundtruth.DownloadJAR(newCoord, workDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Fprintf(os.Stderr, "Ensuring japicmp is available...\n")
-	japicmp, err := groundtruth.EnsureJapicmp(*japicmpJar)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-
-	diffXML := filepath.Join(workDir, "diff.xml")
-	fmt.Fprintf(os.Stderr, "Running japicmp...\n")
-	if err := groundtruth.RunJapicmp(japicmp, oldJar, newJar, diffXML); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-
-	changes, err := groundtruth.ParseJapicmpXML(diffXML)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Fprintf(os.Stderr, "Found %d breaking API changes\n", len(changes))
-
-	entries := groundtruth.ConvertChanges(changes)
 
 	gt := &groundtruth.GroundTruth{
 		SchemaVersion: 1,

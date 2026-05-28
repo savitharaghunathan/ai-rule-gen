@@ -17,8 +17,9 @@ type DeterministicSnapshot struct {
 	EffectiveCoveragePct int      `json:"effective_coverage_pct"`
 	QualityAvg           float64  `json:"quality_avg"`
 	GuidanceDepthAvg     float64  `json:"guidance_depth_avg"`
-	OverlapConflictCount *int     `json:"overlap_conflict_count"`
-	SpecificityGapCount  *int     `json:"specificity_gap_count"`
+	OverlapConflictCount      *int     `json:"overlap_conflict_count"`
+	SpecificityGapCount       *int     `json:"specificity_gap_count"`
+	GuideSpecificityGapCount  *int     `json:"guide_specificity_gap_count"`
 }
 
 // MetricDelta describes one metric's change between runs.
@@ -56,6 +57,11 @@ func SnapshotFromResult(r *EvalResult, migration string) *DeterministicSnapshot 
 
 	overlapCount := len(r.Overlaps)
 	s.OverlapConflictCount = &overlapCount
+
+	if len(r.GuideSpecificityGaps) > 0 {
+		guideGapCount := len(r.GuideSpecificityGaps)
+		s.GuideSpecificityGapCount = &guideGapCount
+	}
 
 	return s
 }
@@ -157,6 +163,18 @@ func Compare(current, baseline *DeterministicSnapshot, thresholds CIThresholds) 
 			}
 		}
 		deltas = append(deltas, gapDelta)
+	}
+
+	if baseline.GuideSpecificityGapCount != nil && current.GuideSpecificityGapCount != nil {
+		guideGapDelta := metricDelta("guide_specificity_gap_count",
+			*baseline.GuideSpecificityGapCount, *current.GuideSpecificityGapCount)
+		if *current.GuideSpecificityGapCount > *baseline.GuideSpecificityGapCount {
+			guideGapDelta.Status = "WARN"
+			if verdict == "PASS" {
+				verdict = "REVIEW"
+			}
+		}
+		deltas = append(deltas, guideGapDelta)
 	}
 
 	ruleCountDelta := metricDelta("rule_count", baseline.RuleCount, current.RuleCount)

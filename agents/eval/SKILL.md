@@ -87,6 +87,36 @@ Skip informational content that doesn't require code changes (background context
 
 Refer to the loaded language reference for language-specific migration map examples and action types.
 
+#### Auto-generate ground truth
+
+After building the migration map, check whether `evals/<migration>/ground_truth.yaml` exists. If it does not, generate it from the migration map you just extracted:
+
+1. First, try the CLI regex extractor against the ingested guide files:
+
+```bash
+go run ./cmd/ground-truth \
+  --from-guide /tmp/eval-guide.md \
+  --guide-url <guide_url> \
+  --output evals/<migration>/ground_truth.yaml
+```
+
+2. The regex extractor only catches full FQNs that appear literally in the guide text. Most guides use short class names, so the yield is low. Supplement by appending your LLM-extracted migration map entries: for each entry in your migration map that has a fully qualified `old_api`, add it to the ground truth file if not already present:
+
+```yaml
+entries:
+  - old_api: <fully qualified old API from migration map>
+    new_api: <replacement API>
+    action_type: <from migration map>
+    severity: <from migration map>
+    guide_section: <section where found>
+    reviewed_by: eval-skill-extract
+    reviewed_date: "<today's date>"
+```
+
+Write the merged result to `evals/<migration>/ground_truth.yaml`. The deterministic eval auto-discovers this file for guide specificity gap analysis.
+
+This generated ground truth is less comprehensive than japicmp-derived ground truth (which enumerates every changed API between two JAR versions), but it covers what the guide documents — which is exactly what matters for evaluating whether the rules match the guide.
+
 ### Step 2: Load the rules
 
 Read every YAML file in `rules_dir`. For each rule, extract: `ruleID`, `description`, `message`, `when` condition (type, pattern, location), `category`, `effort`, `links`.
@@ -101,6 +131,9 @@ go run ./cmd/eval --rules-dir <rules_dir> --save --migration <migration> 2>/dev/
 
 # With app coverage (if app_dir is provided)
 go run ./cmd/eval --rules-dir <rules_dir> --app-dir <app_dir> --save --migration <migration> 2>/dev/null > /tmp/eval-det.json
+
+# With explicit ground truth (auto-inferred from evals/<migration>/ground_truth.yaml if it exists)
+go run ./cmd/eval --rules-dir <rules_dir> --ground-truth <path_to_ground_truth.yaml> --save --migration <migration> 2>/dev/null > /tmp/eval-det.json
 ```
 
 The `--save` flag persists the deterministic snapshot to `evals/<migration>/runs/<timestamp>.json` for regression tracking. If `migration` was not provided as input, omit `--migration` — the CLI infers it from the `rules_dir` path.
@@ -221,7 +254,9 @@ Be specific in gap entries — name the exact API and what the rule should detec
 
 The deterministic eval reports `specificity_gaps` in the JSON output. These are imports in the sample app that are only covered by a broad PACKAGE-level rule (e.g., `org.apache.http` at PACKAGE) but have no dedicated IMPORT/TYPE/METHOD_CALL-level rule with class-specific guidance.
 
-Include specificity gaps in the gaps section of findings.json. Each gap should recommend a specific rule with an IMPORT-level condition for the missing class. These are high-value gaps — the developer gets only generic guidance today.
+When `--ground-truth` is provided (or auto-inferred from `evals/<migration>/ground_truth.yaml`), the eval also reports `guide_specificity_gaps` — old APIs from the ground truth that lack dedicated rules. This works without a sample app, making it useful for migrations where no example application is available.
+
+Include both types of specificity gaps in the gaps section of findings.json. Each gap should recommend a specific rule with an IMPORT-level condition for the missing class. These are high-value gaps — the developer gets only generic guidance today.
 
 ### Step 6: Structured output (findings.json)
 
@@ -434,11 +469,13 @@ The key qualities of good findings:
 |-----------|---------|---------|
 | shell | `go run ./cmd/eval *` | Run deterministic eval for quality/coverage metrics |
 | shell | `go run ./cmd/ingest *` | Fetch migration guide as markdown |
+| shell | `go run ./cmd/ground-truth *` | Generate ground truth from guide or japicmp |
 | shell | `mkdir -p /tmp/eval-*` | Create run-scoped output directory |
 | read | `output/**` | Read rules, eval output |
 | read | `/tmp/**` | Read fetched guide content, eval results |
 | read | `references/**` | Read language-specific reference |
 | read | `evals/**` | Read ground truth, eval configs |
+| write | `evals/**` | Write auto-generated ground truth |
 | write | `/tmp/eval-*/**` | Write findings.json and intermediate files |
 | shell | `go run ./cmd/validate *` | Validate proposed rules (auto-fix) |
 | shell | `cp -r *` | Mirror ruleset for auto-fix |

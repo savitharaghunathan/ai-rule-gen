@@ -61,92 +61,27 @@ java.referenced:
     location: METHOD_CALL
 ```
 
-### METHOD_CALL known limitations
+### METHOD_CALL pattern style
 
-Kantra resolves METHOD_CALL patterns by matching the **declared type of the receiver variable**, not the runtime type or the interface/superclass where the method is defined. This causes two failure modes in real-world code:
+**Always use FQN patterns** (e.g., `org.apache.http.HttpResponse.getStatusLine`). The Java provider in analyzer-lsp supports fully qualified method patterns — the `source_fqn` should always include the class that declares or inherits the method.
 
-**1. Type hierarchy mismatch**
+When the method is defined on an interface but code may use concrete subtypes, add `alternative_fqns` covering the interface + known concrete types.
 
-The method is defined on an interface, but code uses a concrete implementation:
+When you need to disambiguate overloaded methods, use a method signature pattern (e.g., `getForObject(URI,Class<Source>)`).
 
-```java
-// Rule pattern: javax.jms.MessageProducer.send
-// Variable declared as concrete type — kantra sees ActiveMQMessageProducer, NOT the interface
-ActiveMQMessageProducer producer = session.createProducer(dest);
-producer.send(message);  // DOES NOT MATCH the interface FQN pattern
-```
+**Never use short method names** (e.g., bare `getStatusLine`) — these match on any class with that method name, producing false positives.
 
-**Workarounds:** Use a short method name pattern (`send`), or use `alternative_fqns` to create an `or` condition covering both the interface and known concrete types.
-
-**2. Builder chain resolution**
-
-Methods called on builder chains where kantra can't resolve the return type:
-
-```java
-// Rule pattern: org.springframework.security.config.annotation.web.builders.HttpSecurity.authorizeRequests
-// kantra can't resolve the return type of http.csrf().disable() back to HttpSecurity
-http.csrf().disable().authorizeRequests();  // DOES NOT MATCH
-```
-
-**Workaround:** Use a short method name pattern (`authorizeRequests`).
-
-**3. Inner class / Builder class FQN resolution**
-
-FQN patterns that include an inner class name (e.g., `Config.Builder.method`) fail for the same reason as builder chains — kantra can't resolve factory method return types:
-
-```java
-// Rule pattern: com.example.ClientConfig.Builder.setReadTimeout
-// kantra can't resolve ClientConfig.builder() → ClientConfig.Builder
-ClientConfig.builder()
-    .setReadTimeout(5000);  // DOES NOT MATCH
-```
-
-This is a **hard failure**, not a corner case. The factory method returns an inner `Builder` type, but kantra sees only the factory call and can't map it. The pattern compiles without error but silently matches nothing.
-
-**Workaround:** Use a short method name pattern (`setReadTimeout`). If the method name also exists in the target API, accept the false positive risk — a rule that fires on already-migrated code is better than one that never fires. For hand-written rules (not generated via patterns.json), use `and`/`as`/`from` scoping to restrict to files importing the source package.
-
-### When NOT to use builtin.filecontent for method detection
-
-Do not use `builtin.filecontent` to detect method calls, especially in builder chains.
-
-**Problem:** A regex like `RequestConfig.*\.setConnectTimeout` assumes the class name and method call are on the same line. In real code, builder chains break across lines:
-
-```java
-RequestConfig.custom()
-    .setConnectTimeout(60000)  // on a different line — regex misses this
-```
-
-Go regex `.` does not match newlines, so `.*` stops at the line break and the pattern silently fails.
-
-**Fix:** Use `java.referenced` with `location: METHOD_CALL` and a short method name pattern. If the method name is shared with the target API, scope with `and`/`as`/`from` to restrict matching to files importing the source package:
-
-```yaml
-when:
-  and:
-    - java.referenced:
-        pattern: com.old.library*
-        location: PACKAGE
-      as: oldLibFile
-    - java.referenced:
-        pattern: setReadTimeout
-        location: METHOD_CALL
-      from: oldLibFile
-```
-
-**Rule of thumb:** If you're detecting a method call, use `METHOD_CALL`. Reserve `builtin.filecontent` for configuration files (`.properties`, `.yml`) and build files where no semantic analyzer exists.
+**Never use `builtin.filecontent`** to detect method calls. Regexes break on multi-line builder chains because Go's `.` does not match newlines. Use `java.referenced` with `location: METHOD_CALL`.
 
 ### METHOD_CALL pattern style decision framework
 
-1. Is the method name unique to the migration source library? (i.e., unlikely to appear in unrelated code)
-   - **Yes →** Use short method name. Simple, resilient to type hierarchy and builder chains.
+1. Is the method defined on an interface but called on concrete subtypes?
+   - **Yes →** Use FQN with `alternative_fqns` covering the interface + known concrete types.
    - **No →** Continue to step 2.
 
-2. Can users call this method on concrete subtypes or via builder chains?
-   - **Yes →** Use short method name with `and`/`as`/`from` scoping to limit false positives (see Condition combinators below).
-   - **No (always on the exact declared type) →** Use FQN pattern.
-
-3. Do you need to disambiguate overloaded methods?
+2. Do you need to disambiguate overloaded methods?
    - **Yes →** Use method signature pattern (e.g., `getForObject(URI,Class<Source>)`).
+   - **No →** Use FQN pattern (`org.example.ClassName.methodName`).
 
 ## Condition combinators
 

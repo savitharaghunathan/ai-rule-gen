@@ -2,18 +2,20 @@ package eval
 
 // Config holds the inputs for an eval run.
 type Config struct {
-	RulesDir  string
-	AppDir    string
-	OutputDir string
+	RulesDir        string
+	AppDir          string
+	GroundTruthPath string
+	OutputDir       string
 }
 
 // EvalResult is the top-level eval output.
 type EvalResult struct {
-	RuleCount   int              `json:"rule_count"`
-	Quality     QualitySummary   `json:"quality"`
-	AppCoverage *AppCoverage     `json:"app_coverage,omitempty"`
-	RuleDetails []RuleDetail     `json:"rule_details"`
-	Overlaps    []Overlap        `json:"overlaps,omitempty"`
+	RuleCount            int              `json:"rule_count"`
+	Quality              QualitySummary   `json:"quality"`
+	AppCoverage          *AppCoverage     `json:"app_coverage,omitempty"`
+	RuleDetails          []RuleDetail     `json:"rule_details"`
+	Overlaps             []Overlap        `json:"overlaps,omitempty"`
+	GuideSpecificityGaps []SpecificityGap `json:"guide_specificity_gaps,omitempty"`
 }
 
 // QualitySummary aggregates rule quality checks.
@@ -64,12 +66,17 @@ type UnmatchedRule struct {
 	Reason   string   `json:"reason"`
 }
 
-// SpecificityGap represents an import in the app that is only covered by a
-// broad PACKAGE-level rule but has no dedicated IMPORT/TYPE-level rule.
+// SpecificityGap represents an API that is only covered by a broad
+// PACKAGE-level rule but has no dedicated IMPORT/TYPE-level rule.
+// Only gaps where the migration involves API changes (class_rename,
+// method_removal) are reported — simple package_change renames are
+// adequately covered by the broad rule.
 type SpecificityGap struct {
 	BroadRuleID string   `json:"broad_rule_id"`
 	ImportFQN   string   `json:"import_fqn"`
+	ActionType  string   `json:"action_type,omitempty"`
 	AppFiles    []string `json:"app_files,omitempty"`
+	Source      string   `json:"source,omitempty"`
 }
 
 // Violation holds per-rule analysis results.

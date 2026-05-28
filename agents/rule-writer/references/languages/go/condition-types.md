@@ -7,7 +7,7 @@ Matches Go symbol references — package imports, function calls, type usage.
 **Fields:**
 - `pattern` (required) — Full import path, optionally with symbol name (e.g., `golang.org/x/crypto/md4`, `net.IP`, `crypto/md5.New`).
 
-**Note:** `kantra test` defaults to `--run-local=true` as of kantra `586d9a4`. Go rules work without special handling in local mode.
+**Note:** The `cmd/test` runner always passes `--run-local=true` to `kantra test`. Go rules work without special handling.
 
 ## go.dependency
 

@@ -4,21 +4,13 @@ How `go.referenced` and `go.dependency` rules work in kantra, and what goes wron
 
 ## go.referenced (gopls)
 
-Kantra uses gopls to resolve Go references. The kantra container has gopls but NOT the Go toolchain.
+Kantra uses gopls to resolve Go references. Tests run locally via `--run-local=true`, using the local Go toolchain.
 
-### Container limitation
+### Vendored modules recommended
 
-gopls in the kantra container cannot resolve modules without `go`. Rules using `go.referenced` fail with "no views" errors in container mode.
-
-**Workaround:** Use `kantra analyze --run-local` for Go rules. The `cmd/test` runner detects Go provider from test files and uses `--run-local` automatically.
-
-### Vendored modules required
-
-gopls in the container can't download modules. After writing test code:
+For reproducible test results, vendor modules after writing test code:
 1. `go mod tidy`
 2. `go mod vendor`
-
-The vendor directory must be committed to the test data.
 
 ## go.dependency
 

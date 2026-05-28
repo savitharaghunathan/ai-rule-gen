@@ -325,7 +325,7 @@ The orchestrator runs tests and uses a sub-agent for LLM-driven repairs on failu
 go run ./cmd/test <log_flags> --rules <migration_dir>/rules --tests <migration_dir>/tests --timeout 5m
 ```
 
-The CLI runs each test file sequentially (avoids Docker contention) and automatically retries timed-out files once (`--retry-timeouts`, on by default). To run a subset, use `--files` with bare filenames (e.g., `--files data-1.test.yaml,data-2.test.yaml`), resolved relative to `--tests` dir.
+The CLI runs each test file sequentially and automatically retries timed-out files once (`--retry-timeouts`, on by default). Tests run locally via `--run-local=true`. To run a subset, use `--files` with bare filenames (e.g., `--files data-1.test.yaml,data-2.test.yaml`), resolved relative to `--tests` dir.
 
 Print the result:
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/konveyor/ai-rule-gen/internal/groundtruth"
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 )
 
@@ -28,6 +29,14 @@ func RunEval(cfg Config) (*EvalResult, error) {
 		RuleDetails: details,
 	}
 
+	var gt *groundtruth.GroundTruth
+	if cfg.GroundTruthPath != "" {
+		gt, err = groundtruth.ReadGroundTruth(cfg.GroundTruthPath)
+		if err != nil {
+			return nil, fmt.Errorf("loading ground truth: %w", err)
+		}
+	}
+
 	if cfg.AppDir != "" {
 		outputDir, err := os.MkdirTemp("", "eval-kantra-output-*")
 		if err != nil {
@@ -45,7 +54,7 @@ func RunEval(cfg Config) (*EvalResult, error) {
 			cov.Unmatched = CrossRefNotFired(ruleList, cov.NotFired, cfg.AppDir)
 		}
 
-		cov.SpecificityGaps = DetectSpecificityGaps(ruleList, cov, cfg.AppDir)
+		cov.SpecificityGaps = DetectSpecificityGaps(ruleList, cov, cfg.AppDir, gt)
 
 		notInAppCount := 0
 		for _, u := range cov.Unmatched {
@@ -67,6 +76,10 @@ func RunEval(cfg Config) (*EvalResult, error) {
 		}
 
 		result.AppCoverage = cov
+	}
+
+	if gt != nil {
+		result.GuideSpecificityGaps = DetectSpecificityGapsFromGuide(ruleList, gt)
 	}
 
 	result.Overlaps = DetectOverlaps(ruleList, result.AppCoverage)
@@ -148,10 +161,25 @@ func PrintReport(r *EvalResult) {
 
 	if r.AppCoverage != nil && len(r.AppCoverage.SpecificityGaps) > 0 {
 		gaps := r.AppCoverage.SpecificityGaps
-		fmt.Fprintf(os.Stderr, "\n## Specificity Gaps (%d imports only covered by broad rules)\n", len(gaps))
+		fmt.Fprintf(os.Stderr, "\n## Specificity Gaps (%d APIs with non-trivial changes only covered by broad rules)\n", len(gaps))
 		for _, g := range gaps {
 			files := strings.Join(g.AppFiles, ", ")
-			fmt.Fprintf(os.Stderr, "   %s → only broad rule %s (%s)\n", g.ImportFQN, g.BroadRuleID, files)
+			tag := ""
+			if g.ActionType != "" {
+				tag = " [" + g.ActionType + "]"
+			}
+			fmt.Fprintf(os.Stderr, "   %s%s → only broad rule %s (%s)\n", g.ImportFQN, tag, g.BroadRuleID, files)
+		}
+	}
+
+	if len(r.GuideSpecificityGaps) > 0 {
+		fmt.Fprintf(os.Stderr, "\n## Guide Specificity Gaps (%d APIs with non-trivial changes only covered by broad rules)\n", len(r.GuideSpecificityGaps))
+		for _, g := range r.GuideSpecificityGaps {
+			tag := ""
+			if g.ActionType != "" {
+				tag = " [" + g.ActionType + "]"
+			}
+			fmt.Fprintf(os.Stderr, "   %s%s → only broad rule %s\n", g.ImportFQN, tag, g.BroadRuleID)
 		}
 	}
 
