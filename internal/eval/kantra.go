@@ -129,6 +129,7 @@ func relativeFromURI(uri, appDir string) string {
 // FillNotFired sets the NotFired list by comparing loaded rules against violations.
 func FillNotFired(cov *AppCoverage, ruleList []rules.Rule) {
 	cov.TotalRules = len(ruleList)
+	cov.NotFired = cov.NotFired[:0]
 	for _, r := range ruleList {
 		if _, ok := cov.Violations[r.RuleID]; !ok {
 			cov.NotFired = append(cov.NotFired, r.RuleID)

@@ -25,7 +25,13 @@ func DetectSpecificityGaps(ruleList []rules.Rule, cov *AppCoverage, appDir strin
 		return nil
 	}
 
-	broad := findBroadRules(ruleList)
+	allBroad := findBroadRules(ruleList)
+	var broad []broadRule
+	for _, b := range allBroad {
+		if _, fired := cov.Violations[b.ruleID]; fired {
+			broad = append(broad, b)
+		}
+	}
 	if len(broad) == 0 {
 		return nil
 	}

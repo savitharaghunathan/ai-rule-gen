@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -289,7 +290,7 @@ func searchAppSource(appDir string, terms []string, extensions []string) (bool, 
 	}
 
 	matched := make(map[string]bool)
-	filepath.WalkDir(appDir, func(path string, d os.DirEntry, err error) error {
+	walkErr := filepath.WalkDir(appDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -306,6 +307,7 @@ func searchAppSource(appDir string, terms []string, extensions []string) (bool, 
 
 		data, err := os.ReadFile(path)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: crossref: cannot read %s: %v\n", path, err)
 			return nil
 		}
 		content := strings.ToLower(string(data))
@@ -321,6 +323,9 @@ func searchAppSource(appDir string, terms []string, extensions []string) (bool, 
 		}
 		return nil
 	})
+	if walkErr != nil {
+		fmt.Fprintf(os.Stderr, "warning: crossref: walking %s: %v\n", appDir, walkErr)
+	}
 
 	if len(matched) == 0 {
 		return false, nil
