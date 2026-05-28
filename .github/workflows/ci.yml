@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...
+
+  eval-smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        migration:
+          - httpclient4-to-httpclient5
+          - spring-boot3-to-spring-boot4
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install kantra
+        run: |
+          curl -sL https://github.com/konveyor/kantra/releases/latest/download/kantra.linux.amd64.zip -o /tmp/kantra.zip
+          mkdir -p "$HOME/.config/.kantra"
+          unzip -o /tmp/kantra.zip -d "$HOME/.config/.kantra"
+          install "$HOME/.config/.kantra/kantra" /usr/local/bin/kantra
+
+      - name: Read eval config
+        id: config
+        run: |
+          config="evals/${{ matrix.migration }}/eval_config.yaml"
+          app_repo=$(yq '.app_repo' "$config")
+          app_commit=$(yq '.app_commit // ""' "$config")
+          rules_dir=$(yq '.rules_dir // ""' "$config")
+          echo "app_repo=$app_repo" >> "$GITHUB_OUTPUT"
+          echo "app_commit=$app_commit" >> "$GITHUB_OUTPUT"
+          echo "rules_dir=$rules_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Clone sample app
+        env:
+          APP_REPO: ${{ steps.config.outputs.app_repo }}
+          APP_COMMIT: ${{ steps.config.outputs.app_commit }}
+        run: |
+          git clone "$APP_REPO" /tmp/sample-app
+          if [ -n "$APP_COMMIT" ]; then
+            cd /tmp/sample-app && git checkout "$APP_COMMIT"
+          fi
+
+      - name: Run deterministic eval
+        run: |
+          go run ./cmd/eval \
+            --rules-dir "${{ steps.config.outputs.rules_dir }}" \
+            --app-dir /tmp/sample-app \
+            --migration "${{ matrix.migration }}"
