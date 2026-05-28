@@ -49,9 +49,9 @@ jobs:
       - name: Install kantra
         run: |
           curl -sL https://github.com/konveyor/kantra/releases/latest/download/kantra.linux.amd64.zip -o /tmp/kantra.zip
-          unzip -o /tmp/kantra.zip -d /tmp/kantra-bin
-          install /tmp/kantra-bin/kantra /usr/local/bin/kantra
           mkdir -p "$HOME/.config/.kantra"
+          unzip -o /tmp/kantra.zip -d "$HOME/.config/.kantra"
+          install "$HOME/.config/.kantra/kantra" /usr/local/bin/kantra
 
       - name: Read eval config
         id: config
