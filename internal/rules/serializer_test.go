@@ -33,29 +33,6 @@ func TestWriteAndReadRulesFile(t *testing.T) {
 	}
 }
 
-func TestWriteAndReadRuleset(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "ruleset.yaml")
-
-	rs := &Ruleset{
-		Name:        "test/ruleset",
-		Description: "Test ruleset",
-	}
-
-	if err := WriteRuleset(path, rs); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	got, err := ReadRuleset(path)
-	if err != nil {
-		t.Fatalf("read: %v", err)
-	}
-
-	if got.Name != "test/ruleset" {
-		t.Errorf("name: got %q", got.Name)
-	}
-}
-
 func TestReadRulesDir(t *testing.T) {
 	dir := t.TempDir()
 

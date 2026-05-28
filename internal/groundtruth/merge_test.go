@@ -1,8 +1,6 @@
 package groundtruth
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -90,45 +88,6 @@ func TestMergeNilExisting(t *testing.T) {
 	}
 	if result.Entries[0].OldAPI != "org.example.Foo" {
 		t.Errorf("got %q, want org.example.Foo", result.Entries[0].OldAPI)
-	}
-}
-
-func TestReadWriteGroundTruth(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "ground_truth.yaml")
-
-	gt := &GroundTruth{
-		SchemaVersion: 1,
-		GuideURL:      "https://example.com/guide",
-		Entries: []Entry{
-			{OldAPI: "org.example.Foo", ActionType: "class_removed", Severity: "high"},
-			{OldAPI: "org.example.Bar", ActionType: "method_changed", Severity: "medium"},
-		},
-	}
-
-	if err := WriteGroundTruth(gt, path); err != nil {
-		t.Fatalf("WriteGroundTruth: %v", err)
-	}
-
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("file not created: %v", err)
-	}
-
-	loaded, err := ReadGroundTruth(path)
-	if err != nil {
-		t.Fatalf("ReadGroundTruth: %v", err)
-	}
-	if loaded.SchemaVersion != 1 {
-		t.Errorf("schema_version: got %d, want 1", loaded.SchemaVersion)
-	}
-	if loaded.GuideURL != "https://example.com/guide" {
-		t.Errorf("guide_url: got %q", loaded.GuideURL)
-	}
-	if len(loaded.Entries) != 2 {
-		t.Fatalf("got %d entries, want 2", len(loaded.Entries))
-	}
-	if loaded.Entries[0].OldAPI != "org.example.Foo" {
-		t.Errorf("entry 0: got %q", loaded.Entries[0].OldAPI)
 	}
 }
 

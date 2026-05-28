@@ -8,28 +8,6 @@ import (
 	"testing"
 )
 
-func TestInitLog_NoEnvVar(t *testing.T) {
-	t.Setenv("RULE_GEN_LOG", "")
-	InitLog("", "", "")
-	defer CloseLog()
-
-	if IsLogging() {
-		t.Error("expected logging to be inactive when RULE_GEN_LOG is empty")
-	}
-}
-
-func TestInitLog_WithEnvVar(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "test.log")
-	t.Setenv("RULE_GEN_LOG", path)
-
-	InitLog("", "", "")
-	defer CloseLog()
-
-	if !IsLogging() {
-		t.Fatal("expected logging to be active")
-	}
-}
-
 func TestInitLog_LogPathOverridesEnvVar(t *testing.T) {
 	envPath := filepath.Join(t.TempDir(), "env.log")
 	flagPath := filepath.Join(t.TempDir(), "flag.log")

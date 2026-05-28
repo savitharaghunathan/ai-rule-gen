@@ -8,9 +8,8 @@ import (
 )
 
 var (
-	fqnRe       = regexp.MustCompile(`\b([a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}\.[A-Z][A-Za-z0-9]*)\b`)
-	importRe    = regexp.MustCompile(`(?m)^\s*import\s+(?:static\s+)?([a-zA-Z0-9_.]+)\s*;`)
-	packageDotC = regexp.MustCompile(`\b([a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+)\.[A-Z]`)
+	fqnRe    = regexp.MustCompile(`\b([a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+\.[A-Z][A-Za-z0-9]*)\b`)
+	importRe = regexp.MustCompile(`(?m)^\s*import\s+(?:static\s+)?([a-zA-Z0-9_.]+)\s*;`)
 )
 
 // ExtractFromGuide reads an ingested migration guide markdown file and extracts

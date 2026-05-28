@@ -3,7 +3,6 @@ package groundtruth
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -19,18 +18,6 @@ func ReadGroundTruth(path string) (*GroundTruth, error) {
 		return nil, fmt.Errorf("parsing %s: %w", path, err)
 	}
 	return &gt, nil
-}
-
-// WriteGroundTruth writes a GroundTruth to a YAML file.
-func WriteGroundTruth(gt *GroundTruth, path string) error {
-	data, err := yaml.Marshal(gt)
-	if err != nil {
-		return fmt.Errorf("marshaling ground truth: %w", err)
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("creating directory for %s: %w", path, err)
-	}
-	return os.WriteFile(path, data, 0o644)
 }
 
 // Merge combines new entries with an existing GroundTruth.

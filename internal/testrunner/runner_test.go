@@ -5,10 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"gopkg.in/yaml.v3"
-
-	"github.com/konveyor/ai-rule-gen/internal/rules"
 )
 
 func TestFindTestFiles(t *testing.T) {
@@ -56,70 +52,6 @@ func TestFindTestFiles_empty(t *testing.T) {
 	}
 	if len(files) != 0 {
 		t.Errorf("expected 0 test files, got %d", len(files))
-	}
-}
-
-func TestReadSourceTarget(t *testing.T) {
-	dir := t.TempDir()
-	rs := rules.Ruleset{
-		Name: "spring-boot-4/spring-boot-3",
-		Labels: []string{
-			"konveyor.io/source=spring-boot-3",
-			"konveyor.io/target=spring-boot-4",
-		},
-	}
-	data, _ := yaml.Marshal(rs)
-	os.WriteFile(filepath.Join(dir, "ruleset.yaml"), data, 0o644)
-
-	source, target := ReadSourceTarget(dir)
-	if source != "spring-boot-3" {
-		t.Errorf("source = %q, want %q", source, "spring-boot-3")
-	}
-	if target != "spring-boot-4" {
-		t.Errorf("target = %q, want %q", target, "spring-boot-4")
-	}
-}
-
-func TestReadSourceTarget_missing(t *testing.T) {
-	dir := t.TempDir()
-	source, target := ReadSourceTarget(dir)
-	if source != "" || target != "" {
-		t.Errorf("expected empty source/target for missing ruleset, got %q/%q", source, target)
-	}
-}
-
-func TestReadSourceTarget_noLabels(t *testing.T) {
-	dir := t.TempDir()
-	rs := rules.Ruleset{Name: "test/test"}
-	data, _ := yaml.Marshal(rs)
-	os.WriteFile(filepath.Join(dir, "ruleset.yaml"), data, 0o644)
-
-	source, target := ReadSourceTarget(dir)
-	if source != "" || target != "" {
-		t.Errorf("expected empty source/target for no labels, got %q/%q", source, target)
-	}
-}
-
-func TestReadSourceTarget_multipleLabels(t *testing.T) {
-	dir := t.TempDir()
-	rs := rules.Ruleset{
-		Name: "openjdk7+/oraclejdk7+",
-		Labels: []string{
-			"konveyor.io/source=oraclejdk7+",
-			"konveyor.io/source=oraclejdk",
-			"konveyor.io/target=openjdk7+",
-			"konveyor.io/target=openjdk",
-		},
-	}
-	data, _ := yaml.Marshal(rs)
-	os.WriteFile(filepath.Join(dir, "ruleset.yaml"), data, 0o644)
-
-	source, target := ReadSourceTarget(dir)
-	if source != "oraclejdk" {
-		t.Errorf("source = %q, want last label value %q", source, "oraclejdk")
-	}
-	if target != "openjdk" {
-		t.Errorf("target = %q, want last label value %q", target, "openjdk")
 	}
 }
 

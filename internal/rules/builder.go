@@ -10,17 +10,6 @@ func NewJavaReferenced(pattern, location string) Condition {
 	}
 }
 
-// NewJavaReferencedAnnotated creates a java.referenced condition with an annotation filter.
-func NewJavaReferencedAnnotated(pattern, location string, annotated *Annotated) Condition {
-	return Condition{
-		JavaReferenced: &JavaReferenced{
-			Pattern:   pattern,
-			Location:  location,
-			Annotated: annotated,
-		},
-	}
-}
-
 // NewJavaDependency creates a java.dependency condition.
 func NewJavaDependency(name, lowerbound, upperbound string) Condition {
 	return Condition{
@@ -90,46 +79,11 @@ func NewBuiltinFilecontent(pattern, filePattern string) Condition {
 	}
 }
 
-// NewBuiltinFile creates a builtin.file condition.
-func NewBuiltinFile(pattern string) Condition {
-	return Condition{
-		BuiltinFile: &BuiltinFile{
-			Pattern: pattern,
-		},
-	}
-}
-
 // NewBuiltinXML creates a builtin.xml condition.
 func NewBuiltinXML(xpath string, namespaces map[string]string) Condition {
 	return Condition{
 		BuiltinXML: &BuiltinXML{
 			XPath:      xpath,
-			Namespaces: namespaces,
-		},
-	}
-}
-
-// NewBuiltinJSON creates a builtin.json condition.
-func NewBuiltinJSON(xpath string) Condition {
-	return Condition{
-		BuiltinJSON: &BuiltinJSON{
-			XPath: xpath,
-		},
-	}
-}
-
-// NewBuiltinHasTags creates a builtin.hasTags condition.
-func NewBuiltinHasTags(tags []string) Condition {
-	return Condition{
-		BuiltinHasTags: tags,
-	}
-}
-
-// NewBuiltinXMLPublicID creates a builtin.xmlPublicID condition.
-func NewBuiltinXMLPublicID(regex string, namespaces map[string]string) Condition {
-	return Condition{
-		BuiltinXMLPublicID: &BuiltinXMLPublicID{
-			Regex:      regex,
 			Namespaces: namespaces,
 		},
 	}
@@ -142,15 +96,6 @@ func NewOr(conditions ...Condition) Condition {
 		entries[i] = ConditionEntry{Condition: c}
 	}
 	return Condition{Or: entries}
-}
-
-// NewAnd creates an and combinator condition.
-func NewAnd(conditions ...Condition) Condition {
-	entries := make([]ConditionEntry, len(conditions))
-	for i, c := range conditions {
-		entries[i] = ConditionEntry{Condition: c}
-	}
-	return Condition{And: entries}
 }
 
 // WithFrom adds a "from" chaining field to a condition.

@@ -160,11 +160,6 @@ func FindTestFiles(dir string) ([]string, error) {
 	return files, err
 }
 
-// RunKantraTest executes kantra test on a single test file and returns the combined output.
-func RunKantraTest(testFile string) (string, error) {
-	return runKantraTestWithTimeout(testFile, 0)
-}
-
 // runFiles runs kantra test on each file sequentially, appending output to w.
 // Returns rule IDs from errored/timed-out files and the list of timed-out filenames.
 func runFiles(testFiles []string, timeout time.Duration, w *strings.Builder, onProgress ProgressFunc) (erroredRuleIDs, timedOutFiles []string, err error) {
@@ -239,24 +234,6 @@ func isTimeout(err error) bool {
 		return exitErr.String() == "signal: killed"
 	}
 	return errors.Is(err, context.DeadlineExceeded)
-}
-
-// ReadSourceTarget extracts source and target from ruleset.yaml labels.
-func ReadSourceTarget(rulesDir string) (source, target string) {
-	rsPath := filepath.Join(rulesDir, "ruleset.yaml")
-	rs, err := rules.ReadRuleset(rsPath)
-	if err != nil {
-		return "", ""
-	}
-	for _, l := range rs.Labels {
-		if v, ok := strings.CutPrefix(l, "konveyor.io/source="); ok {
-			source = v
-		}
-		if v, ok := strings.CutPrefix(l, "konveyor.io/target="); ok {
-			target = v
-		}
-	}
-	return source, target
 }
 
 // checkKantra verifies that kantra is installed and in PATH.
