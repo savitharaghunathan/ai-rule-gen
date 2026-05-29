@@ -1,0 +1,90 @@
+- ruleID: httpclient-4-to-httpclient-5-00090
+  description: SSLConnectionSocketFactory (org.apache.http) replaced by new SSL builder API in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.apache.http.conn.ssl.SSLConnectionSocketFactory` has been replaced in HttpClient 5.x. Use `org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder` instead. The constructor-based approach is no longer supported; use the builder pattern:
+
+    ```java
+    // HttpClient 4.x
+    new SSLConnectionSocketFactory(sslContext, new String[]{"TLSv1.2"}, null,
+        SSLConnectionSocketFactory.getDefaultHostnameVerifier())
+
+    // HttpClient 5.x
+    SSLConnectionSocketFactoryBuilder.create()
+        .setSslContext(sslContext)
+        .setTlsVersions(TLS.V_1_2)
+        .build()
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.ssl.SSLConnectionSocketFactory
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00100
+  description: SSLContexts moved from org.apache.http.ssl to org.apache.hc.core5.ssl in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`org.apache.http.ssl.SSLContexts` has been relocated to `org.apache.hc.core5.ssl.SSLContexts` in HttpClient 5.x. Update the import statement to use the new package.'
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.ssl.SSLContexts
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00170
+  description: HttpClients.custom().setSSLSocketFactory() removed; SSL config now via PoolingHttpClientConnectionManagerBuilder
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `setSSLSocketFactory()` method on `HttpClientBuilder` has been removed in HttpClient 5.x. SSL/TLS configuration must now be done via `PoolingHttpClientConnectionManagerBuilder.create().setTlsSocketStrategy(ClientTlsStrategyBuilder.create()...buildClassic())` and then passed to `HttpClients.custom().setConnectionManager(...)`.
+
+    Before:
+    ```java
+    HttpClients.custom().setSSLSocketFactory(new SSLConnectionSocketFactory(...))
+    ```
+    After:
+    ```java
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setTlsSocketStrategy(ClientTlsStrategyBuilder.create()...buildClassic())
+        .build();
+    HttpClients.custom().setConnectionManager(cm)
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClientBuilder.setSSLSocketFactory
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00330
+  description: ManagedHttpClientConnection cast to get SSL session simplified to HttpCoreContext.getSSLSession() in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: "The pattern of casting `HttpContext.getAttribute(HttpCoreContext.HTTP_CONNECTION)` to `ManagedHttpClientConnection` to access the SSL session has been simplified in HttpClient 5.x. Use `HttpCoreContext.getSSLSession()` directly.\n\nBefore:\n```java\nSSLSession sslSession = ((ManagedHttpClientConnection) \n    context.getAttribute(HttpCoreContext.HTTP_CONNECTION)).getSSLSession();\n```\nAfter:\n```java\nSSLSession sslSession = HttpCoreContext.adapt(context).getSSLSession();\n```"
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.ManagedHttpClientConnection
+        location: IMPORT

@@ -1,0 +1,70 @@
+- ruleID: httpclient-4-to-httpclient-5-00020
+  description: org.apache.httpcomponents:httpclient replaced by org.apache.hc.client5:httpclient5
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Apache HttpClient 4.x Maven coordinates `org.apache.httpcomponents:httpclient` have been replaced by `org.apache.hc.client5:httpclient5` in version 5.x. Update your `pom.xml` dependency to use the new group ID and artifact ID.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>4.5.14</version>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.apache.hc.client5</groupId>
+        <artifactId>httpclient5</artifactId>
+        <version>5.4</version>
+    </dependency>
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpclient
+        lowerbound: 0.0.0
+- ruleID: httpclient-4-to-httpclient-5-00030
+  description: org.apache.httpcomponents:httpcore replaced by org.apache.hc.core5:httpcore5
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Apache HttpCore 4.x Maven coordinates `org.apache.httpcomponents:httpcore` have been replaced by `org.apache.hc.core5:httpcore5` in version 5.x. Update your `pom.xml` dependency.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>4.4.16</version>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.apache.hc.core5</groupId>
+        <artifactId>httpcore5</artifactId>
+        <version>5.3</version>
+    </dependency>
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpcore
+        lowerbound: 0.0.0

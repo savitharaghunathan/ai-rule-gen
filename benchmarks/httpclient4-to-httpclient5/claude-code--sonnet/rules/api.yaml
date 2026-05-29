@@ -1,0 +1,315 @@
+- ruleID: httpclient-4-to-httpclient-5-00160
+  description: HttpPost constructor replaced by ClassicRequestBuilder factory method in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In HttpClient 5.x, `new HttpPost(url)` should be replaced with `ClassicRequestBuilder.post(url).setEntity(...).build()`. The `ClassicRequestBuilder` API provides a fluent builder pattern for constructing HTTP requests.
+
+    Before:
+    ```java
+    HttpPost httpPost = new HttpPost("https://example.com/post");
+    httpPost.setEntity(requestEntity);
+    ```
+    After:
+    ```java
+    ClassicHttpRequest httpPost = ClassicRequestBuilder.post("https://example.com/post")
+        .setEntity(HttpEntities.create(outstream -> { ... }, ContentType.APPLICATION_JSON))
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.methods.HttpPost
+        location: CONSTRUCTOR_CALL
+- ruleID: httpclient-4-to-httpclient-5-00220
+  description: RequestConfig.normalizeUri property removed in HttpClient 5.x; URIUtils.normalizeSyntax is no longer public
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `normalizeUri` property has been removed from `RequestConfig` in HttpClient 5.x, and `URIUtils.normalizeSyntax` is no longer public. The 5.x `URIBuilder` in httpcomponents-core provides a new public `normalizeSyntax()` method (deprecated since 5.3 and renamed to `optimize()`) that strives for more thorough RFC 3986 support with percent-encoding all components. Note the behavior differs from 4.x — review your URI normalization requirements carefully before migrating.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.config.RequestConfig.Builder.normalizeUri
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00230
+  description: URIUtils.normalizeSyntax() is no longer public in HttpClient 5.x; use URIBuilder.normalize()/optimize()
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `URIUtils` class from HttpClient 4.x has `normalizeSyntax()` as a public method. In HttpClient 5.x, `URIUtils.normalizeSyntax` is no longer public. Use `URIBuilder.normalizeSyntax()` (deprecated since 5.3) or its replacement `URIBuilder.optimize()` from `org.apache.hc.core5.net.URIBuilder` instead. Note that 5.x normalization behavior differs from 4.x.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.util.URIUtils
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00240
+  description: BasicHttpContext replaced by HttpCoreContext / HttpClientContext in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `BasicHttpContext` class has been replaced in HttpClient 5.x. Depending on the use case:
+    - For core HTTP context: use `org.apache.hc.core5.http.protocol.HttpCoreContext`
+    - For client-side context (cookies, credentials, etc.): use `org.apache.hc.client5.http.protocol.HttpClientContext`
+
+    Before:
+    ```java
+    BasicHttpContext context = new BasicHttpContext();
+    ```
+    After:
+    ```java
+    HttpClientContext context = HttpClientContext.create();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.protocol.BasicHttpContext
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00270
+  description: HttpClients.custom().addInterceptorLast() replaced by addExecInterceptorFirst() in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `addInterceptorLast()` method on `HttpClientBuilder` has been replaced by `addExecInterceptorFirst(name, interceptor)` in HttpClient 5.x. Note: for logging interceptors in particular, use `addExecInterceptorFirst` (not last) to avoid logging compressed payload data.
+
+    Before:
+    ```java
+    HttpClients.custom().addInterceptorLast(someLoggingInterceptor)
+    ```
+    After:
+    ```java
+    HttpClients.custom().addExecInterceptorFirst("logging", someLoggingInterceptor)
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClientBuilder.addInterceptorLast
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00280
+  description: HttpClients.custom().setRetryHandler() renamed to setRetryStrategy() in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `setRetryHandler()` method on `HttpClientBuilder` has been renamed to `setRetryStrategy()` in HttpClient 5.x.
+
+    Before:
+    ```java
+    HttpClients.custom().setRetryHandler(retryHandler)
+    ```
+    After:
+    ```java
+    HttpClients.custom().setRetryStrategy(retryStrategy)
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClientBuilder.setRetryHandler
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00290
+  description: HttpEntityEnclosingRequest interface replaced by HttpEntityContainer in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `HttpEntityEnclosingRequest` interface has been removed in HttpClient 5.x. Use `HttpEntityContainer` instead. In HttpClient 5.x, request entities can be enclosed with any HTTP method regardless of semantic conventions.
+
+    Before:
+    ```java
+    if (request instanceof HttpEntityEnclosingRequest) {
+        HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+    }
+    ```
+    After:
+    ```java
+    if (request instanceof HttpEntityContainer) {
+        HttpEntity entity = ((HttpEntityContainer) request).getEntity();
+    }
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.methods.HttpEntityEnclosingRequest
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00300
+  description: HttpMessage.getAllHeaders() renamed to MessageHeaders.getHeaders() in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `getAllHeaders()` method on `HttpMessage` has been renamed to `getHeaders()` in HttpClient 5.x. The owning interface has also changed from `HttpMessage` to `MessageHeaders`.
+
+    Before:
+    ```java
+    Header[] headers = response.getAllHeaders();
+    ```
+    After:
+    ```java
+    Header[] headers = response.getHeaders();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpMessage.getAllHeaders
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00310
+  description: HttpRequest.getRequestLine() removed in HttpClient 5.x; wrap with new RequestLine(request)
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `getRequestLine()` method has been removed from `HttpRequest` in HttpClient 5.x. To get request line information, wrap the request with `new RequestLine(request)`.
+
+    Before:
+    ```java
+    RequestLine line = request.getRequestLine();
+    ```
+    After:
+    ```java
+    RequestLine line = new RequestLine(request);
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpRequest.getRequestLine
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00320
+  description: HttpRequestBase renamed to HttpUriRequestBase in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `HttpRequestBase` class has been renamed to `HttpUriRequestBase` in HttpClient 5.x. Update your class hierarchy and any `instanceof` checks.
+
+    Before:
+    ```java
+    HttpRequestBase request = ...;
+    if (request instanceof HttpRequestBase) { ... }
+    ```
+    After:
+    ```java
+    HttpUriRequestBase request = ...;
+    if (request instanceof HttpUriRequestBase) { ... }
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.methods.HttpRequestBase
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00420
+  description: HttpResponse.getEntity() removed in HttpClient 5.x; cast response to ClassicHttpResponse
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `getEntity()` method has been removed from `org.apache.http.HttpResponse` in HttpClient 5.x. In 5.x the abstract `HttpResponse` interface no longer carries an entity — only `ClassicHttpResponse` (which implements `HttpEntityContainer`) does. Cast your response to `ClassicHttpResponse` before calling `getEntity()`.
+
+    ```java
+    // HttpClient 4.x
+    HttpEntity entity = response.getEntity();
+
+    // HttpClient 5.x
+    HttpEntity entity = ((ClassicHttpResponse) response).getEntity();
+    ```
+
+    Note: the PACKAGE-level rule fires on `HttpResponse` imports; this rule additionally catches every call site where `getEntity()` is invoked on an `HttpResponse`-typed variable.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpResponse.getEntity
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00430
+  description: StatusLine interface removed from org.apache.http in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `org.apache.http.StatusLine` interface has been removed in HttpClient 5.x. Code that stores or passes a `StatusLine` object must be updated. Two options:
+
+    1. **Native 5.x style** — access status code and reason directly on the response:
+    ```java
+    // HttpClient 4.x
+    StatusLine statusLine = response.getStatusLine();
+    int code = statusLine.getStatusCode();
+    String reason = statusLine.getReasonPhrase();
+
+    // HttpClient 5.x
+    int code = response.getCode();
+    String reason = response.getReasonPhrase();
+    ```
+
+    2. **Compatibility shim** — wrap the response with the new `StatusLine` class provided by HttpClient 5.x:
+    ```java
+    // HttpClient 5.x compat
+    StatusLine statusLine = new org.apache.hc.core5.http.message.StatusLine(response);
+    ```
+
+    The compat `StatusLine` is in `org.apache.hc.core5.http.message.StatusLine`, not the old `org.apache.http.StatusLine`.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.StatusLine
+        location: IMPORT

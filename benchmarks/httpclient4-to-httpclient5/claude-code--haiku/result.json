@@ -1,0 +1,21 @@
+{
+  "runtime": "claude-code",
+  "model": "haiku",
+  "model_id": "claude-haiku-4-5-20251001",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-05-29",
+  "duration_minutes": 4.0,
+  "rule_count": 26,
+  "quality_avg": 3.0,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 14,
+  "specificity_gap_count": 0,
+  "pass_rate": "26/26",
+  "eval_judge": {
+    "precision_issues": 3,
+    "coherence_issues": 26,
+    "cross_rule_issues": 5,
+    "gaps": 9
+  },
+  "notes": "All 26 rules have empty messages (': '), all use builtin.filecontent instead of java.referenced, 5 duplicate groups"
+}

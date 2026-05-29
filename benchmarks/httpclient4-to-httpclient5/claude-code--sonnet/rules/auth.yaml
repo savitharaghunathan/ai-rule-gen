@@ -1,0 +1,16 @@
+- ruleID: httpclient-4-to-httpclient-5-00130
+  description: BasicCredentialsProvider moved from org.apache.http.impl.client to org.apache.hc.client5.http.impl.auth in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`org.apache.http.impl.client.BasicCredentialsProvider` has been relocated to `org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider` in HttpClient 5.x. Update the import statement to use the new package.'
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.BasicCredentialsProvider
+        location: IMPORT

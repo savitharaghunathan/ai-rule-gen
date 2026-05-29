@@ -1,0 +1,5 @@
+- **29 rules total**, quality avg **5.93/6** — strong baseline coverage of the migration guide
+- **9 precision issues** (all `warn`): every unqualified `METHOD_CALL` rule (00050, 00060, 00070, 00080, 00120, 00190, 00200, 00210, 00220) — worst are `setConnectTimeout` and `setSocketTimeout` which are common across many Java frameworks and will produce false positives
+- **6 coherence issues** (2 `fail`, 4 `warn`): most serious are rules **00280** and **00290** — they fire on ALL HC4 `CloseableHttpClient` / `HttpClients` imports and tell developers to migrate to async classes, which is actively wrong for the majority of users following the guide's recommended classic-first migration path
+- **2 cross-rule issues**: `00130` is a duplicate of `00010` with a wrong package namespace; `00280`+`00290` contradict the classic migration guidance in `00010`
+- **3 gaps**: no rule for the `client.start()` async lifecycle requirement (high-severity silent runtime failure); no classic-path IMPORT rules for `CloseableHttpClient` and `HttpClients` (currently only async-path rules exist for these classes)

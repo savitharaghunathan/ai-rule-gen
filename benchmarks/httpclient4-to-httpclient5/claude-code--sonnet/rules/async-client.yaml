@@ -1,0 +1,177 @@
+- ruleID: httpclient-4-to-httpclient-5-00340
+  description: PoolingHttpClientConnectionManager replaced by PoolingAsyncClientConnectionManager in HttpClient 5.x async APIs
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `PoolingHttpClientConnectionManager` with `PoolingAsyncClientConnectionManagerBuilder.create()`. Note that `PoolingAsyncClientConnectionManager` uses different TLS/SSL configuration and does not support `SocketConfig` due to differences in the I/O model.
+
+    ```java
+    // Before (HttpClient 4.x)
+    PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+
+    // After (HttpClient 5.x async)
+    PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
+        .setTlsStrategy(ClientTlsStrategyBuilder.create()
+                .setSslContext(SSLContexts.createSystemDefault())
+                .buildAsync())
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00350
+  description: CloseableHttpClient replaced by CloseableHttpAsyncClient when migrating to HttpClient 5.x async APIs
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `CloseableHttpClient` with `CloseableHttpAsyncClient`. Unlike the classic client, the asynchronous client must be explicitly started before executing requests, and request results are controlled via `Future` and `FutureCallback` events.
+
+    ```java
+    // Before (HttpClient 4.x)
+    CloseableHttpClient client = HttpClients.custom().build();
+
+    // After (HttpClient 5.x async)
+    CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+        .setConnectionManager(connectionManager)
+        .build();
+    client.start(); // Must be started explicitly
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.CloseableHttpClient
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00360
+  description: Apache HttpClient 4.x async client (httpasyncclient) is replaced by HttpClient 5.x (httpclient5)
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `org.apache.httpcomponents:httpasyncclient` artifact (HttpClient 4.x async client) is replaced by `org.apache.httpcomponents.client5:httpclient5` in HttpClient 5.x. The async API is completely different — HttpClient 5.x uses an event-driven, reactive programming model based on channels and event handlers. Replace the dependency in your build file and migrate to the new async APIs.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpasyncclient
+        lowerbound: 0.0.0
+- ruleID: httpclient-4-to-httpclient-5-00370
+  description: FutureCallback moved from org.apache.http.concurrent to org.apache.hc.core5.concurrent in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `FutureCallback` interface has moved from `org.apache.http.concurrent.FutureCallback` (HttpClient 4.x async) to `org.apache.hc.core5.concurrent.FutureCallback` in HttpClient 5.x. Update your import statement.
+
+    ```java
+    // Before (HttpClient 4.x async)
+    import org.apache.http.concurrent.FutureCallback;
+
+    // After (HttpClient 5.x)
+    import org.apache.hc.core5.concurrent.FutureCallback;
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.concurrent.FutureCallback
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00380
+  description: IOReactorConfig moved from org.apache.http.impl.nio.reactor to org.apache.hc.core5.reactor in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `IOReactorConfig` class has moved from `org.apache.http.impl.nio.reactor.IOReactorConfig` (HttpClient 4.x) to `org.apache.hc.core5.reactor.IOReactorConfig` in HttpClient 5.x. Additionally, timeout values now use `Timeout` objects instead of raw integers.
+
+    ```java
+    // Before (HttpClient 4.x)
+    import org.apache.http.impl.nio.reactor.IOReactorConfig;
+    IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
+        .setSoTimeout(1000)
+        .build();
+
+    // After (HttpClient 5.x)
+    import org.apache.hc.core5.reactor.IOReactorConfig;
+    IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
+        .setSoTimeout(Timeout.ofMinutes(1))
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.nio.reactor.IOReactorConfig
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00390
+  description: PoolingNHttpClientConnectionManager (HC4 async) replaced by PoolingAsyncClientConnectionManager in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `PoolingNHttpClientConnectionManager` from HttpClient 4.x async is replaced by `PoolingAsyncClientConnectionManager` in HttpClient 5.x. Use `PoolingAsyncClientConnectionManagerBuilder.create()` to construct the new connection manager.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00400
+  description: CloseableHttpAsyncClient moved from org.apache.http.impl.nio.client to org.apache.hc.client5.http.impl.async in HttpClient 5.x
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `CloseableHttpAsyncClient` class has moved from `org.apache.http.impl.nio.client.CloseableHttpAsyncClient` (HttpClient 4.x async) to `org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient` in HttpClient 5.x. The async APIs are completely redesigned — update imports and migrate to the new event-driven model.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.nio.client.CloseableHttpAsyncClient
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00410
+  description: HttpAsyncClients factory moved from org.apache.http.impl.nio.client to org.apache.hc.client5.http.impl.async in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `HttpAsyncClients` factory class has moved from `org.apache.http.impl.nio.client.HttpAsyncClients` (HttpClient 4.x async) to `org.apache.hc.client5.http.impl.async.HttpAsyncClients` in HttpClient 5.x. Additionally, HttpClient 5.x introduces `HttpAsyncClients.customHttp2()` for HTTP/2-only async clients.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.nio.client.HttpAsyncClients
+        location: IMPORT
