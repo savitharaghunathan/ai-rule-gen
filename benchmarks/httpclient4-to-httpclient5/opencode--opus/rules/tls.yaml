@@ -1,0 +1,69 @@
+- ruleID: httpclient4-to-httpclient5-00140
+  description: ManagedHttpClientConnection removed; use HttpCoreContext.getSSLSession() instead
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `ManagedHttpClientConnection` class has been removed in HttpClient 5.x. To access the SSL session, use `HttpCoreContext.getSSLSession()` instead of casting the connection.
+
+    ## Before
+    ```java
+    import org.apache.http.conn.ManagedHttpClientConnection;
+    ((ManagedHttpClientConnection) context.getAttribute(HttpCoreContext.HTTP_CONNECTION)).getSSLSession();
+    ```
+
+    ## After
+    ```java
+    context.getSSLSession();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.ManagedHttpClientConnection
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00280
+  description: setSSLSocketFactory() removed from HttpClientBuilder in 5.x; configure TLS on connection manager
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `setSSLSocketFactory()` method has been removed from `HttpClientBuilder` in HttpClient 5.x. TLS/SSL configuration is now done on the connection manager via `PoolingHttpClientConnectionManagerBuilder.setTlsSocketStrategy()` using `ClientTlsStrategyBuilder`.
+
+    ## Before
+    ```java
+    CloseableHttpClient client = HttpClients.custom()
+        .setSSLSocketFactory(new SSLConnectionSocketFactory(
+            SSLContexts.createSystemDefault(),
+            new String[] { "TLSv1.2" },
+            null,
+            SSLConnectionSocketFactory.getDefaultHostnameVerifier()))
+        .build();
+    ```
+
+    ## After
+    ```java
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setTlsSocketStrategy(ClientTlsStrategyBuilder.create()
+            .setSslContext(SSLContexts.createSystemDefault())
+            .setTlsVersions(TLS.V_1_3)
+            .buildClassic())
+        .build();
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(cm)
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setSSLSocketFactory
+        location: METHOD_CALL

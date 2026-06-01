@@ -1,0 +1,21 @@
+{
+  "runtime": "goose",
+  "model": "sonnet",
+  "model_id": "claude-sonnet-4-20250514",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-01",
+  "duration_minutes": 21.2,
+  "rule_count": 28,
+  "quality_avg": 6.0,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 11,
+  "specificity_gap_count": 0,
+  "pass_rate": "28/28",
+  "eval_judge": {
+    "precision_issues": 7,
+    "coherence_issues": 3,
+    "cross_rule_issues": 3,
+    "gaps": 8
+  },
+  "notes": "Perfect 6.0 quality avg — every rule has complete documentation. 3 async coherence issues (00250, 00260, 00270). Only HttpPost covered, missing HttpGet/Put/Delete/Patch."
+}

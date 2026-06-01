@@ -1,0 +1,101 @@
+- ruleID: spring-boot3-to-spring-boot4-00010
+  description: Embedded executable uber jar launch scripts have been removed
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Support for embedded launch scripts (fully executable jars) has been removed. Use a systemd service file or Gradle's application plugin instead. You can still create uber jars and run them using `java -jar`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#embedded-executable-uber-jar-launch-scripts
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='plugin'][*[local-name()='artifactId'][text()='spring-boot-maven-plugin']]//*[local-name()='executable'][text()='true']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: spring-boot3-to-spring-boot4-00100
+  description: Optional dependencies no longer included in uber jars
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Optional dependencies are no longer included in uber jars by default. Add `<includeOptional>true</includeOptional>` if needed.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#optional-dependencies-in-maven
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='plugin']/*[local-name()='artifactId' and text()='spring-boot-maven-plugin']
+        filepaths:
+            - pom.xml
+- ruleID: spring-boot3-to-spring-boot4-00110
+  description: spring-authorization-server.version property removed
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Dependency management relies on Spring Security. Use `spring-security.version` instead.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-authorization-server
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring-authorization-server\.version
+        filePattern: (pom\.xml|.*\.gradle(\.kts)?)
+- ruleID: spring-boot3-to-spring-boot4-00120
+  description: Classic Uber-Jar Loader Support removed
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'loaderImplementation CLASSIC: Classic Uber-Jar Loader Support removed'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#classic-uber-jar-loader-support
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='loaderImplementation' and text()='CLASSIC']
+        filepaths:
+            - pom.xml
+- ruleID: spring-boot3-to-spring-boot4-00130
+  description: Classic Uber-Jar Loader Support removed
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'LoaderImplementation.CLASSIC: Classic Uber-Jar Loader Support removed'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#classic-uber-jar-loader-support
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: LoaderImplementation\.CLASSIC
+        filePattern: .*\.gradle(\.kts)?
+- ruleID: spring-boot3-to-spring-boot4-00140
+  description: Minimum CycloneDX Gradle plugin version is 3.0.0
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'org.cyclonedx.bom: Minimum CycloneDX Gradle plugin version is 3.0.0'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#cyclone-dx-gradle-plugin
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.cyclonedx\.bom
+        filePattern: .*\.gradle(\.kts)?

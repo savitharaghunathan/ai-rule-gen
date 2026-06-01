@@ -1,0 +1,21 @@
+{
+  "runtime": "scribe",
+  "model": "sonnet",
+  "model_id": "claude-sonnet-4-20250514",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-01",
+  "duration_minutes": null,
+  "rule_count": 14,
+  "quality_avg": 6.0,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 1,
+  "specificity_gap_count": 0,
+  "pass_rate": null,
+  "eval_judge": {
+    "precision_issues": 2,
+    "coherence_issues": 3,
+    "cross_rule_issues": 1,
+    "gaps": 29
+  },
+  "notes": "Scribe MCP server (not our pipeline). No kantra tests run. Only 14 rules (vs 30 from Scribe/Opus). Catch-all org.apache.http.* import rule instead of per-package rules. One broken rule (class-004 wrong FQN — will never fire). Perfect 6.0 quality score on all rules. 29 gaps — significantly worse coverage than Opus."
+}

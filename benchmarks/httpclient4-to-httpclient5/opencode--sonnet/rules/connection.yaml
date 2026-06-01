@@ -1,0 +1,297 @@
+- ruleID: httpclient-4-to-httpclient-5-00050
+  description: setConnectTimeout(int) replaced by setConnectTimeout(Timeout) in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `setConnectTimeout(int milliseconds)` has been replaced by `setConnectTimeout(Timeout)` in Apache HttpClient 5.x. The raw milliseconds integer parameter is replaced by a `org.apache.hc.core5.util.Timeout` object. Additionally, `setConnectTimeout` in `RequestConfig` was moved to `ConnectionConfig` in HttpClient 5.x.
+
+    ## Before
+    ```java
+    RequestConfig.custom()
+        .setConnectTimeout(60000)
+        .build();
+    ```
+
+    ## After
+    ```java
+    ConnectionConfig.custom()
+        .setConnectTimeout(Timeout.ofSeconds(60))
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setConnectTimeout
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00060
+  description: setSocketTimeout(int) moved from RequestConfig to ConnectionConfig and changed to Timeout parameter in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `setSocketTimeout(int milliseconds)` has been removed from `RequestConfig.Builder` in Apache HttpClient 5.x. Socket timeout is now configured via `ConnectionConfig.Builder.setSocketTimeout(Timeout)` using the `org.apache.hc.core5.util.Timeout` type.
+
+    ## Before
+    ```java
+    RequestConfig.custom()
+        .setSocketTimeout(60000)
+        .build();
+    ```
+
+    ## After
+    ```java
+    ConnectionConfig.custom()
+        .setSocketTimeout(Timeout.ofSeconds(60))
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setSocketTimeout
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00070
+  description: setSoTimeout(int) replaced by setSoTimeout(Timeout) in HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `SocketConfig.Builder.setSoTimeout(int milliseconds)` has been replaced by `setSoTimeout(Timeout)` in Apache HttpClient 5.x. Replace the raw int with a `org.apache.hc.core5.util.Timeout` object.
+
+    ## Before
+    ```java
+    SocketConfig.custom()
+        .setSoTimeout(60000)
+        .build();
+    ```
+
+    ## After
+    ```java
+    SocketConfig.custom()
+        .setSoTimeout(Timeout.ofSeconds(60))
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setSoTimeout
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00090
+  description: setConnectionTimeToLive(long, TimeUnit) replaced by setConnectionTimeToLive(TimeValue) in HttpClient 5.x; zero TTL now means connections are not reusable
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `HttpClientBuilder.setConnectionTimeToLive(long duration, TimeUnit timeUnit)` has been replaced by `setConnectionTimeToLive(TimeValue)` in Apache HttpClient 5.x. Additionally, a behavioral change was introduced: as of HttpClient 5.0, a zero TTL is interpreted as a signal that connections should NOT be reused. Use a negative value for unlimited TTL.
+
+    ## Before
+    ```java
+    HttpClients.custom()
+        .setConnectionTimeToLive(1, TimeUnit.MINUTES)
+        .build();
+    ```
+
+    ## After
+    ```java
+    HttpClients.custom()
+        .setConnectionTimeToLive(TimeValue.ofMinutes(1))
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setConnectionTimeToLive
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00140
+  description: closeExpiredConnections() renamed to closeExpired() and moved to ConnPoolControl in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `HttpClientConnectionManager.closeExpiredConnections()` has been renamed to `ConnPoolControl.closeExpired()` in HttpClient 5.x. The method moved from `HttpClientConnectionManager` to the `ConnPoolControl` interface. Update all call sites to use `closeExpired()` on the connection manager cast to `ConnPoolControl`.
+
+    ## Before
+    ```java
+    connectionManager.closeExpiredConnections();
+    ```
+
+    ## After
+    ```java
+    ((ConnPoolControl<?>) connectionManager).closeExpired();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: closeExpiredConnections
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00150
+  description: closeIdleConnections() renamed to closeIdle() and moved to ConnPoolControl in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `HttpClientConnectionManager.closeIdleConnections()` has been renamed to `ConnPoolControl.closeIdle()` in HttpClient 5.x. The method moved from `HttpClientConnectionManager` to the `ConnPoolControl` interface and the signature changed to accept a `TimeValue` instead of a long with TimeUnit.
+
+    ## Before
+    ```java
+    connectionManager.closeIdleConnections(30, TimeUnit.SECONDS);
+    ```
+
+    ## After
+    ```java
+    ((ConnPoolControl<?>) connectionManager).closeIdle(TimeValue.ofSeconds(30));
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: closeIdleConnections
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00170
+  description: setDefaultSocketConfig() moved from HttpClientBuilder to PoolingHttpClientConnectionManagerBuilder in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `HttpClients.custom().setDefaultSocketConfig()` is no longer available in HttpClient 5.x. Socket configuration must now be set on the connection manager using `PoolingHttpClientConnectionManagerBuilder.create().setDefaultSocketConfig()` (or `BasicHttpClientConnectionManager.setSocketConfig()`), and then the connection manager is passed to `HttpClients.custom().setConnectionManager()`.
+
+    ## Before
+    ```java
+    HttpClients.custom().setDefaultSocketConfig(socketConfig).build();
+    ```
+
+    ## After
+    ```java
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setDefaultSocketConfig(socketConfig).build();
+    HttpClients.custom().setConnectionManager(cm).build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setDefaultSocketConfig
+        location: METHOD_CALL
+- ruleID: httpclient-4-to-httpclient-5-00200
+  description: ManagedHttpClientConnection removed; use HttpCoreContext.getSSLSession() in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The pattern of casting `HttpContext.getAttribute(HttpCoreContext.HTTP_CONNECTION)` to `ManagedHttpClientConnection` to get the SSL session is no longer supported in HttpClient 5.x. Use `HttpCoreContext.getSSLSession()` directly.
+
+    ## Before
+    ```java
+    SSLSession sslSession = ((ManagedHttpClientConnection) context.getAttribute(HttpCoreContext.HTTP_CONNECTION)).getSSLSession();
+    ```
+
+    ## After
+    ```java
+    SSLSession sslSession = httpCoreContext.getSSLSession();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.conn.ManagedHttpClientConnection
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00270
+  description: PoolingHttpClientConnectionManager replaced by PoolingAsyncClientConnectionManager for async APIs
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `PoolingHttpClientConnectionManager` with `PoolingAsyncClientConnectionManager` (built via `PoolingAsyncClientConnectionManagerBuilder.create()`). Note that `PoolingAsyncClientConnectionManager` does NOT support `SocketConfig` configuration due to differences in the I/O model — socket timeout should instead be set via `ConnectionConfig.custom().setSocketTimeout(Timeout...)` and `IOReactorConfig.custom().setSoTimeout(Timeout...)`.
+
+    ```java
+    // Before (HttpClient 4.x)
+    PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+
+    // After (HttpClient 5.x async)
+    PoolingAsyncClientConnectionManager connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
+        .setTlsStrategy(ClientTlsStrategyBuilder.create()
+                .setSslContext(SSLContexts.createSystemDefault())
+                .setTlsVersions(TLS.V_1_3)
+                .buildAsync())
+        .setDefaultConnectionConfig(ConnectionConfig.custom()
+                .setSocketTimeout(Timeout.ofMinutes(1))
+                .setConnectTimeout(Timeout.ofMinutes(1))
+                .build())
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00320
+  description: PoolingHttpClientConnectionManagerBuilder replaced by PoolingAsyncClientConnectionManagerBuilder for async APIs
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `PoolingHttpClientConnectionManagerBuilder` with `PoolingAsyncClientConnectionManagerBuilder` to build the async connection manager. Use `ClientTlsStrategyBuilder.create().buildAsync()` (not `.buildClassic()`) for the TLS strategy.
+
+    ```java
+    // Before (HttpClient 4.x)
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create().build();
+
+    // After (HttpClient 5.x async)
+    PoolingAsyncClientConnectionManager cm = PoolingAsyncClientConnectionManagerBuilder.create()
+        .setTlsStrategy(ClientTlsStrategyBuilder.create()
+                .setSslContext(SSLContexts.createSystemDefault())
+                .buildAsync())
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManagerBuilder
+        location: IMPORT

@@ -1,0 +1,21 @@
+{
+  "runtime": "opencode",
+  "model": "opus",
+  "model_id": "claude-opus-4-6",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-06-01",
+  "duration_minutes": 46.5,
+  "rule_count": 91,
+  "quality_avg": 5.538461538461538,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 17,
+  "specificity_gap_count": 0,
+  "pass_rate": "83/91",
+  "eval_judge": {
+    "precision_issues": 7,
+    "coherence_issues": 4,
+    "cross_rule_issues": 2,
+    "gaps": 8
+  },
+  "notes": "7 failed kantra tests, 1 kantra-limitation. Rule 00450 detects wrong FQN (SB4 instead of SB3). Missing Flyway/Liquibase starter rules (high impact)."
+}

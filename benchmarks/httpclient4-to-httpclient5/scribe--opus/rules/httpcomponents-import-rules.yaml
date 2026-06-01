@@ -1,0 +1,560 @@
+- ruleID: httpcomponents-00001
+  description: "Detects Java import: org.apache.http.client.methods.*"
+  message: |
+    ## Migration Required: HTTP Method Classes Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, HTTP method classes are in `org.apache.http.client.methods`:
+    ```java
+    import org.apache.http.client.methods.HttpGet;
+    import org.apache.http.client.methods.HttpPost;
+    import org.apache.http.client.methods.HttpPut;
+    import org.apache.http.client.methods.HttpDelete;
+    import org.apache.http.client.methods.CloseableHttpResponse;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, these classes have moved to `org.apache.hc.client5.http.classic.methods`:
+    ```java
+    import org.apache.hc.client5.http.classic.methods.HttpGet;
+    import org.apache.hc.client5.http.classic.methods.HttpPost;
+    import org.apache.hc.client5.http.classic.methods.HttpPut;
+    import org.apache.hc.client5.http.classic.methods.HttpDelete;
+    ```
+
+    ### Additional Info
+    - The entire `org.apache.http` package namespace has been reorganized to `org.apache.hc.client5` in version 5.x
+    - Consider using `ClassicRequestBuilder` instead of direct method classes for building requests
+    - `HttpRequestBase` has been renamed to `HttpUriRequestBase`
+    - The 5.x API also supports async request building via `SimpleRequestBuilder`
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.methods.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00002
+  description: "Detects Java import: org.apache.http.impl.client.*"
+  message: |
+    ## Migration Required: Client Implementation Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, client implementation classes are in `org.apache.http.impl.client`:
+    ```java
+    import org.apache.http.impl.client.CloseableHttpClient;
+    import org.apache.http.impl.client.HttpClients;
+    import org.apache.http.impl.client.HttpClientBuilder;
+    import org.apache.http.impl.client.BasicCredentialsProvider;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, these classes have moved to `org.apache.hc.client5.http.impl.classic`:
+    ```java
+    import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+    import org.apache.hc.client5.http.impl.classic.HttpClients;
+    import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+    ```
+    Note: `BasicCredentialsProvider` has moved to `org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider`.
+
+    ### Additional Info
+    - `HttpClients.custom()` builder API is largely the same but some methods changed (e.g., `setRetryHandler()` is now `setRetryStrategy()`)
+    - `DefaultHttpRequestRetryHandler` has been replaced with `DefaultHttpRequestRetryStrategy`
+    - Connection configuration has moved from `RequestConfig` to `ConnectionConfig` on the connection manager
+    - Socket configuration is now set on the connection manager builder, not the client builder
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.impl.client.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00003
+  description: "Detects Java import: org.apache.http.impl.conn.*"
+  message: |
+    ## Migration Required: Connection Management Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, connection management classes are in `org.apache.http.impl.conn`:
+    ```java
+    import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+    import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+    import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `org.apache.hc.client5.http.impl.io` and builder pattern:
+    ```java
+    import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+    import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+    import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
+    import org.apache.hc.client5.http.impl.routing.DefaultProxyRoutePlanner;
+    ```
+
+    ### Additional Info
+    - In 5.x, prefer using `PoolingHttpClientConnectionManagerBuilder.create()` instead of calling the constructor directly
+    - TLS/SSL configuration is now set via `ClientTlsStrategyBuilder` on the connection manager builder using `setTlsSocketStrategy()`
+    - Socket and connection timeouts are configured via `setDefaultSocketConfig()` and `setDefaultConnectionConfig()` on the builder
+    - New pool policies: `PoolConcurrencyPolicy` (STRICT/LAX) and `PoolReusePolicy` (LIFO/FIFO)
+    - `closeExpiredConnections()` is now `closeExpired()`, `closeIdleConnections()` is now `closeIdle()`
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.impl.conn.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00004
+  description: "Detects Java import: org.apache.http.conn.ssl.SSLConnectionSocketFactory"
+  message: |
+    ## Migration Required: SSL/TLS Configuration Replaced
+
+    ### Before
+    In HttpComponents Client 4.x, SSL/TLS is configured using `SSLConnectionSocketFactory`:
+    ```java
+    import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+
+    SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
+        SSLContexts.createSystemDefault(),
+        new String[]{"TLSv1.2"},
+        null,
+        SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setSSLSocketFactory(sslsf)
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `ClientTlsStrategyBuilder` on the connection manager:
+    ```java
+    import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+    import org.apache.hc.core5.http2.ssl.TLS;
+
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setTlsSocketStrategy(ClientTlsStrategyBuilder.create()
+            .setSslContext(SSLContexts.createSystemDefault())
+            .setTlsVersions(TLS.V_1_3)
+            .buildClassic())
+        .build();
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(cm)
+        .build();
+    ```
+
+    ### Additional Info
+    - `SSLConnectionSocketFactory` has been completely removed in 5.x
+    - TLS strategy is configured on the connection manager builder, not the client builder
+    - HttpClient 5.x automatically disables all SSL versions and weak TLS versions
+    - Explicitly specify TLSv1.3 using `TLS.V_1_3` for best security
+    - For async clients, use `.buildAsync()` instead of `.buildClassic()`
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.conn.ssl.SSLConnectionSocketFactory"
+      location: IMPORT
+
+- ruleID: httpcomponents-00005
+  description: "Detects Java import: org.apache.http.entity.*"
+  message: |
+    ## Migration Required: Entity Classes Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, entity classes are in `org.apache.http.entity`:
+    ```java
+    import org.apache.http.entity.StringEntity;
+    import org.apache.http.entity.ByteArrayEntity;
+    import org.apache.http.entity.ContentType;
+    import org.apache.http.entity.EntityTemplate;
+    import org.apache.http.entity.FileEntity;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, entity classes have moved to `org.apache.hc.core5.http.io.entity`:
+    ```java
+    import org.apache.hc.core5.http.io.entity.StringEntity;
+    import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
+    import org.apache.hc.core5.http.ContentType;
+    import org.apache.hc.core5.http.io.entity.EntityTemplate;
+    import org.apache.hc.core5.http.io.entity.FileEntity;
+    ```
+
+    ### Additional Info
+    - `ContentType` has moved to `org.apache.hc.core5.http.ContentType`
+    - In 5.x, always set content type on the entity and let HttpClient generate headers automatically
+    - Consider using `HttpEntities.create()` factory methods for cleaner entity creation
+    - For async streaming, use `AbstractBinAsyncEntityProducer` or `AbstractCharAsyncEntityProducer`
+    - Favor response handlers over manual entity consumption for automatic connection release
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.entity.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00006
+  description: "Detects Java import: org.apache.http.client.config.*"
+  message: |
+    ## Migration Required: Client Configuration Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, client configuration classes are in `org.apache.http.client.config`:
+    ```java
+    import org.apache.http.client.config.RequestConfig;
+    import org.apache.http.client.config.CookieSpecs;
+    import org.apache.http.client.config.AuthSchemes;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, configuration classes have moved:
+    ```java
+    import org.apache.hc.client5.http.config.RequestConfig;
+    import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+    import org.apache.hc.client5.http.config.ConnectionConfig;
+    ```
+
+    ### Additional Info
+    - `CookieSpecs` constants have been replaced by `StandardCookieSpec` - use `StandardCookieSpec.STRICT`
+    - `RequestConfig.setConnectTimeout()` and `setSocketTimeout()` have moved to `ConnectionConfig` on the connection manager
+    - Timeout values now use `Timeout` objects instead of `int` milliseconds: `Timeout.ofMinutes(1)`
+    - The `normalizeUri` property has been removed from `RequestConfig` - use `URIBuilder.optimize()` instead
+    - Connection TTL is configured via `ConnectionConfig.setTimeToLive()` with `TimeValue` objects
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.config.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00007
+  description: "Detects Java import: org.apache.http.util.*"
+  message: |
+    ## Migration Required: Utility Classes Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, utility classes are in `org.apache.http.util`:
+    ```java
+    import org.apache.http.util.EntityUtils;
+    import org.apache.http.util.Args;
+    import org.apache.http.util.TextUtils;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, utility classes have moved to `org.apache.hc.core5.http.io.entity`:
+    ```java
+    import org.apache.hc.core5.http.io.entity.EntityUtils;
+    ```
+
+    ### Additional Info
+    - `EntityUtils` has moved to `org.apache.hc.core5.http.io.entity.EntityUtils`
+    - In 5.x, favor response handlers over manual `EntityUtils.toString()` calls for automatic connection release
+    - Consume response content directly from the content stream to avoid intermediate String/byte[] conversions
+    - The response handler pattern is the recommended approach in 5.x:
+      ```java
+      String result = client.execute(request, response -> {
+          return EntityUtils.toString(response.getEntity());
+      });
+      ```
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.util.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00008
+  description: "Detects Java import: org.apache.http.message.*"
+  message: |
+    ## Migration Required: Message Classes Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, message classes are in `org.apache.http.message`:
+    ```java
+    import org.apache.http.message.BasicNameValuePair;
+    import org.apache.http.message.BasicHeader;
+    import org.apache.http.message.BasicStatusLine;
+    import org.apache.http.message.BasicHttpResponse;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, message classes have moved to `org.apache.hc.core5.http.message`:
+    ```java
+    import org.apache.hc.core5.http.message.BasicNameValuePair;
+    import org.apache.hc.core5.http.message.BasicHeader;
+    import org.apache.hc.core5.http.message.StatusLine;
+    import org.apache.hc.core5.http.message.BasicClassicHttpResponse;
+    ```
+
+    ### Additional Info
+    - `BasicStatusLine` has been replaced with `StatusLine` which is constructed from a response: `new StatusLine(response)`
+    - HTTP response messages in 5.x no longer have a status line - use `response.getCode()` instead of `response.getStatusLine().getStatusCode()`
+    - `BasicHttpResponse` has been replaced with `BasicClassicHttpResponse`
+    - Request line access changed: use `new RequestLine(request)` instead of `request.getRequestLine()`
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.message.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00009
+  description: "Detects Java import: org.apache.http.client.protocol.*"
+  message: |
+    ## Migration Required: Client Protocol Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, protocol classes are in `org.apache.http.client.protocol`:
+    ```java
+    import org.apache.http.client.protocol.HttpClientContext;
+    import org.apache.http.client.protocol.RequestAcceptEncoding;
+    import org.apache.http.client.protocol.ResponseContentEncoding;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, these classes have moved:
+    ```java
+    import org.apache.hc.client5.http.protocol.HttpClientContext;
+    ```
+
+    ### Additional Info
+    - `HttpClientContext` is the preferred context class in 5.x (replaces `BasicHttpContext`)
+    - Getting the target host from context has changed: use `clientContext.getHttpRoute().getTargetHost()` instead of `context.getAttribute(HttpCoreContext.HTTP_TARGET_HOST)`
+    - Getting SSL session from context is simplified: use `context.getSSLSession()` directly
+    - Cookie store and credentials provider can be set on `HttpClientContext` for per-request customization
+    - Always use `HttpClientContext.create()` to construct context instances
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.protocol.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00010
+  description: "Detects Java import: org.apache.http.HttpEntity"
+  message: |
+    ## Migration Required: HttpEntity Interface Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, the `HttpEntity` interface is in `org.apache.http`:
+    ```java
+    import org.apache.http.HttpEntity;
+    import org.apache.http.HttpResponse;
+    import org.apache.http.HttpHost;
+    import org.apache.http.HttpRequest;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, core interfaces have moved to `org.apache.hc.core5.http`:
+    ```java
+    import org.apache.hc.core5.http.HttpEntity;
+    import org.apache.hc.core5.http.HttpResponse;
+    import org.apache.hc.core5.http.HttpHost;
+    import org.apache.hc.core5.http.HttpRequest;
+    import org.apache.hc.core5.http.ClassicHttpResponse;
+    import org.apache.hc.core5.http.ClassicHttpRequest;
+    ```
+
+    ### Additional Info
+    - Core HTTP interfaces have moved from `org.apache.http` to `org.apache.hc.core5.http`
+    - In 5.x, use `ClassicHttpResponse` and `ClassicHttpRequest` for the classic (blocking) API
+    - The `HttpEntityEnclosingRequest` interface has been replaced by `HttpEntityContainer`
+    - `HttpMessage.getAllHeaders()` has been renamed to `MessageHeaders.getHeaders()`
+    - Status code access changed: use `response.getCode()` instead of `response.getStatusLine().getStatusCode()`
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.HttpEntity"
+      location: IMPORT
+
+- ruleID: httpcomponents-00011
+  description: "Detects Java import: org.apache.http.client.utils.*"
+  message: |
+    ## Migration Required: Client Utility Classes Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, client utility classes are in `org.apache.http.client.utils`:
+    ```java
+    import org.apache.http.client.utils.URIBuilder;
+    import org.apache.http.client.utils.URIUtils;
+    import org.apache.http.client.utils.URLEncodedUtils;
+    import org.apache.http.client.utils.HttpClientUtils;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, utility classes have moved:
+    ```java
+    import org.apache.hc.core5.net.URIBuilder;
+    import org.apache.hc.core5.net.URLEncodedUtils;
+    import org.apache.hc.client5.http.utils.URIUtils;
+    ```
+
+    ### Additional Info
+    - `URIUtils.normalizeSyntax()` has been replaced with `new URIBuilder(uri).optimize().build()`
+    - The `normalizeUri` property has been removed from `RequestConfig`
+    - 5.x strives for more thorough support of RFC 3986, specifically percent-encoding all components
+    - `URIBuilder` now provides the `optimize()` method (was `normalizeSyntax()`, deprecated since 5.3)
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.utils.*"
+      location: IMPORT
+
+- ruleID: httpcomponents-00012
+  description: "Detects Java import: org.apache.http.client.ClientProtocolException"
+  message: |
+    ## Migration Required: Exception Classes Package Change
+
+    ### Before
+    In HttpComponents Client 4.x, exception classes are in `org.apache.http.client`:
+    ```java
+    import org.apache.http.client.ClientProtocolException;
+    import org.apache.http.client.HttpResponseException;
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, exception classes have moved:
+    ```java
+    import org.apache.hc.client5.http.ClientProtocolException;
+    import org.apache.hc.client5.http.HttpResponseException;
+    ```
+
+    ### Additional Info
+    - All exception classes under `org.apache.http.client` have moved to `org.apache.hc.client5.http`
+    - Exception handling patterns remain the same
+    - When using status line info in exceptions, use `new StatusLine(response).toString()` instead of `response.getStatusLine().toString()`
+    - Favor the response handler pattern which throws `ClientProtocolException` automatically on error codes
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.ClientProtocolException"
+      location: IMPORT
+
+- ruleID: httpcomponents-00027
+  description: "Detects Java import: org.apache.http.config.SocketConfig"
+  message: |
+    ## Migration Required: SocketConfig Package Change and Location
+
+    ### Before
+    In HttpComponents Client 4.x, `SocketConfig` is in `org.apache.http.config` and set on the client builder:
+    ```java
+    import org.apache.http.config.SocketConfig;
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setDefaultSocketConfig(SocketConfig.custom()
+            .setSoTimeout(60000)
+            .build())
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, `SocketConfig` has moved and is set on the connection manager builder:
+    ```java
+    import org.apache.hc.core5.http.io.SocketConfig;
+    import org.apache.hc.core5.util.Timeout;
+
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setDefaultSocketConfig(SocketConfig.custom()
+            .setSoTimeout(Timeout.ofMinutes(1))
+            .build())
+        .build();
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(cm)
+        .build();
+    ```
+
+    ### Additional Info
+    - `SocketConfig` has moved from `org.apache.http.config` to `org.apache.hc.core5.http.io`
+    - Socket configuration is now set on the connection manager builder, not the client builder
+    - `setSoTimeout(int)` now requires a `Timeout` object: `Timeout.ofMinutes(1)` or `Timeout.ofSeconds(30)`
+    - The `setDefaultSocketConfig()` method on `HttpClientBuilder` has been removed
+    - For async clients, socket timeout is configured via `IOReactorConfig` instead
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.config.SocketConfig"
+      location: IMPORT

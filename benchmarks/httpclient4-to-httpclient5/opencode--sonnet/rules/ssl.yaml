@@ -1,0 +1,37 @@
+- ruleID: httpclient-4-to-httpclient-5-00080
+  description: setSSLSocketFactory() replaced by setTlsSocketStrategy() in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `HttpClientBuilder.setSSLSocketFactory(SSLConnectionSocketFactory)` has been replaced in Apache HttpClient 5.x. Use `HttpClientBuilder.setTlsSocketStrategy(TlsSocketStrategy)` with the `ClientTlsStrategyBuilder` API instead. The `SSLConnectionSocketFactory` class has also been relocated.
+
+    ## Before
+    ```java
+    HttpClients.custom()
+        .setSSLSocketFactory(new SSLConnectionSocketFactory(
+                SSLContexts.createSystemDefault(),
+                new String[] { "TLSv1.2" },
+                null,
+                SSLConnectionSocketFactory.getDefaultHostnameVerifier()))
+        .build();
+    ```
+
+    ## After
+    ```java
+    HttpClients.custom()
+        .setTlsSocketStrategy(ClientTlsStrategyBuilder.create()
+                .setSslContext(SSLContexts.createSystemDefault())
+                .build())
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/preparation.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: setSSLSocketFactory
+        location: METHOD_CALL

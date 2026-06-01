@@ -1,0 +1,27 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00560
+  description: spring-boot-starter-tomcat must be replaced with spring-boot-starter-tomcat-runtime for WAR file deployments to Tomcat
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When deploying a WAR file to Tomcat, replace the `spring-boot-starter-tomcat` dependency with `spring-boot-starter-tomcat-runtime`. Update your `pom.xml` or `build.gradle` accordingly:
+
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-tomcat-runtime</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#tomcat
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-tomcat
+        lowerbound: 0.0.0

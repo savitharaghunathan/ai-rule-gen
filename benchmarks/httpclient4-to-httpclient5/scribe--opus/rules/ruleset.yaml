@@ -1,0 +1,7 @@
+name: httpcomponents-4to5
+description: Migration rules for Apache HttpComponents Client 4.x to 5.x. Covers package
+  renames, API changes, SSL/TLS configuration, connection management, timeout handling,
+  cookie policies, retry strategies, and Maven dependency updates.
+labels:
+- konveyor.io/source=httpcomponents4
+- konveyor.io/target=httpcomponents5

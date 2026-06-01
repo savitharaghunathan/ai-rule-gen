@@ -1,0 +1,247 @@
+- ruleID: spring-boot3-to-spring-boot4-00150
+  description: spring-boot-starter-web renamed to spring-boot-starter-webmvc
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-web` starter has been deprecated and renamed to `spring-boot-starter-webmvc`. Update your POM to use the new artifact name. The old starter remains but will be removed in a future release.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00160
+  description: spring-boot-starter-web-services renamed to spring-boot-starter-webservices
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-web-services` starter has been deprecated and renamed to `spring-boot-starter-webservices`. Update your POM to use the new artifact name. The old starter remains but will be removed in a future release.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web-services</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webservices</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web-services
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00420
+  description: /fonts/** added to common static resource locations in PathRequest
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    If you use `PathRequest.toStaticResources()`, be advised that Spring Boot 4 adds `/fonts/**` as a new common static location. This path will have the same security settings as your other configured static resource locations.
+
+    If you don't want the fonts location included, exclude it:
+
+    ```java
+    pathRequest.toStaticResources().atCommonLocations().excluding(StaticResourceLocation.FONTS);
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#fonts-added-to-common-static-locations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.security.servlet.PathRequest
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00450
+  description: HttpMessageConverters is deprecated; use ClientHttpMessageConvertersCustomizer or ServerHttpMessageConvertersCustomizer
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot's `HttpMessageConverters` class is deprecated because Spring Framework improved the converter configuration. If your application declares a custom `HttpMessageConverters` bean, it is still supported but deprecated.
+
+    If you are contributing `HttpMessageConverter` beans to the context (like a `JacksonJsonHttpMessageConverter`), this is no longer supported. Instead, declare `ClientHttpMessageConvertersCustomizer` and/or `ServerHttpMessageConvertersCustomizer` beans to customize converters. Each customizer can contribute converters as "custom" converters or replace default auto-detected converters.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#httpmessageconverters-deprecation
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.http.converter.autoconfigure.HttpMessageConverters
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00460
+  description: server.forward-headers-strategy no longer effective for WAR deployments
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `server.forward-headers-strategy` property no longer has an effect when deploying a WAR file to an external container. If you were relying on `server.forward-headers-strategy=framework` in a WAR deployment, you must now define the `ForwardedHeaderFilter` bean yourself.
+
+    ## Before
+    ```properties
+    server.forward-headers-strategy=framework
+    ```
+
+    ## After
+    ```java
+    @Bean
+    FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
+        ForwardedHeaderFilter filter = new ForwardedHeaderFilter();
+        FilterRegistrationBean<ForwardedHeaderFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC, DispatcherType.ERROR);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
+    }
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#forwarded-headers-strategy
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: server\.forward-headers-strategy
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot3-to-spring-boot4-00470
+  description: Jersey 4.0 does not yet support Jackson 3; use spring-boot-jackson2 for JSON
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4.0 supports Jersey 4.0 which does not yet support Jackson 3. To process JSON with Jersey, use `spring-boot-jackson2` either in place of or alongside `spring-boot-jackson`.
+
+    Add the `spring-boot-jackson2` dependency to your project if you use Jersey with JSON processing.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#jersey
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-jersey
+        upperbound: 4.0.0
+- ruleID: spring-boot3-to-spring-boot4-00480
+  description: For WAR deployments, switch from spring-boot-starter-tomcat to spring-boot-starter-tomcat-runtime
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    If you're deploying a WAR file to Tomcat, you need to switch the dependency from `spring-boot-starter-tomcat` to `spring-boot-starter-tomcat-runtime`.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-tomcat</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-tomcat-runtime</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#tomcat
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-tomcat
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00870
+  description: WebClient now requires dedicated spring-boot-starter-webclient starter
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4 introduces a dedicated `spring-boot-starter-webclient` for Spring's reactive `WebClient`. Previously, `WebClient` was included as part of `spring-boot-starter-webflux`. If your application uses `WebClient`, ensure you have `spring-boot-starter-webclient` in your dependencies. For test code, use `spring-boot-starter-webclient-test`. Additionally, `@SpringBootTest` no longer auto-configures `WebClient` beans.
+
+    ## Before
+    ```xml
+    <!-- WebClient was part of spring-boot-starter-webflux -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <!-- Add dedicated WebClient starter -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webclient</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#starters
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.reactive.function.client.WebClient
+        location: IMPORT

@@ -1,0 +1,76 @@
+- ruleID: spring-boot3-to-spring-boot4-00560
+  description: Several spring.data.mongodb properties renamed to spring.mongodb
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Several MongoDB properties have been renamed from `spring.data.mongodb.*` to `spring.mongodb.*`. Affected properties include: `additional-hosts`, `authentication-database`, `database`, `host`, `password`, `port`, `protocol`, `replica-set-name`, `representation.uuid`, `ssl.bundle`, `ssl.enabled`, `uri`, and `username`.
+
+    Note that `spring.data.mongodb.auto-index-creation`, `spring.data.mongodb.field-naming-strategy`, `spring.data.mongodb.gridfs.*`, and `spring.data.mongodb.repositories.type` remain unchanged.
+
+    ## Before
+    ```properties
+    spring.data.mongodb.host=localhost
+    spring.data.mongodb.port=27017
+    spring.data.mongodb.database=mydb
+    ```
+
+    ## After
+    ```properties
+    spring.mongodb.host=localhost
+    spring.mongodb.port=27017
+    spring.mongodb.database=mydb
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.(additional-hosts|authentication-database|database|host|password|port|protocol|replica-set-name|representation|ssl|uri|username)
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot3-to-spring-boot4-00570
+  description: MongoDB management properties renamed from mongo to mongodb
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    MongoDB management properties have been renamed to use `mongodb` rather than `mongo`. Update the following properties:
+
+    - `management.health.mongo.enabled` → `management.health.mongodb.enabled`
+    - `management.metrics.mongo.command.enabled` → `management.metrics.mongodb.command.enabled`
+    - `management.metrics.mongo.connectionpool.enabled` → `management.metrics.mongodb.connectionpool.enabled`
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: management\.(health|metrics)\.mongo\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot3-to-spring-boot4-00580
+  description: MongoDB no longer provides default UUID and BigDecimal representations
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Data MongoDB no longer provides defaults for UUID and BigDecimal/BigInteger representations. This aligns with the driver recommendation to not favor a particular representation. You must now explicitly configure representations using `spring.mongodb.representation.uuid` and `spring.data.mongodb.representation.big-decimal` properties.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb-uuid-and-bigdecimal-representations
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-data-mongodb
+        upperbound: 4.0.0

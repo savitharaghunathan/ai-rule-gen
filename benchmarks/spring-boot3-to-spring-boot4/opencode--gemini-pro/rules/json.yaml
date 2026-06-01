@@ -1,0 +1,84 @@
+- ruleID: spring-boot3-to-spring-boot4-00150
+  description: JsonObjectSerializer renamed to ObjectValueSerializer in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'org.springframework.boot.jackson.JsonObjectSerializer: JsonObjectSerializer renamed to ObjectValueSerializer in Spring Boot 4'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.jackson.JsonObjectSerializer
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00160
+  description: JsonValueDeserializer renamed to ObjectValueDeserializer in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'org.springframework.boot.jackson.JsonValueDeserializer: JsonValueDeserializer renamed to ObjectValueDeserializer in Spring Boot 4'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    or:
+        - java.referenced:
+            pattern: org.springframework.boot.jackson.JsonValueDeserializer
+            location: IMPORT
+        - java.referenced:
+            pattern: org.springframework.boot.jackson.JsonObjectDeserializer
+            location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00170
+  description: Jackson2ObjectMapperBuilderCustomizer renamed to JsonMapperBuilderCustomizer
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer: Jackson2ObjectMapperBuilderCustomizer renamed to JsonMapperBuilderCustomizer'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00180
+  description: '@JsonComponent renamed to @JacksonComponent'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'org.springframework.boot.jackson.JsonComponent: @JsonComponent renamed to @JacksonComponent'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.jackson.JsonComponent
+        location: ANNOTATION
+- ruleID: spring-boot3-to-spring-boot4-00190
+  description: '@JsonMixin renamed to @JacksonMixin'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'org.springframework.boot.jackson.JsonMixin: @JsonMixin renamed to @JacksonMixin'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.jackson.JsonMixin
+        location: ANNOTATION

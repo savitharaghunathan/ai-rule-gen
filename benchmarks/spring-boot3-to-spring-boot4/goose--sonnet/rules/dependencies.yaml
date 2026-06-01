@@ -1,0 +1,334 @@
+- ruleID: spring-boot3-to-spring-boot4-00090
+  description: Flyway support now requires spring-boot-starter-flyway starter POM
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4 modularization requires explicit starter POMs for technologies that previously worked with just the third-party dependency. Replace the direct `org.flywaydb:flyway-core` dependency with `org.springframework.boot:spring-boot-starter-flyway`.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.flywaydb.flyway-core
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00100
+  description: Liquibase support now requires spring-boot-starter-liquibase starter POM
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4 modularization requires explicit starter POMs for technologies that previously worked with just the third-party dependency. Replace the direct `org.liquibase:liquibase-core` dependency with `org.springframework.boot:spring-boot-starter-liquibase`.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.liquibase</groupId>
+        <artifactId>liquibase-core</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-liquibase</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.liquibase.liquibase-core
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00140
+  description: Renamed to spring-boot-starter-security-oauth2-authorization-server
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-oauth2-authorization-server` starter has been deprecated and renamed. Replace it with `spring-boot-starter-security-oauth2-authorization-server` in your POM.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security-oauth2-authorization-server</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-oauth2-authorization-server
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00150
+  description: Renamed to spring-boot-starter-security-oauth2-client
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-oauth2-client` starter has been deprecated and renamed. Replace it with `spring-boot-starter-security-oauth2-client` in your POM.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-client</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security-oauth2-client</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-oauth2-client
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00160
+  description: Renamed to spring-boot-starter-security-oauth2-resource-server
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-oauth2-resource-server` starter has been deprecated and renamed. Replace it with `spring-boot-starter-security-oauth2-resource-server` in your POM.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-oauth2-resource-server
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00170
+  description: Renamed to spring-boot-starter-webmvc
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-web` starter has been deprecated and renamed. Replace it with `spring-boot-starter-webmvc` in your POM.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00180
+  description: Renamed to spring-boot-starter-webservices
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-web-services` starter has been deprecated and renamed. Replace it with `spring-boot-starter-webservices` in your POM.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web-services</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webservices</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web-services
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00270
+  description: Renamed to spring-boot-starter-aspectj in Spring Boot 4.0
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-aop` starter has been renamed to `spring-boot-starter-aspectj` in Spring Boot 4.0 to clarify its scope. Replace the dependency in your build file. Before renaming, review if you actually need it — check for usage of AspectJ annotations (e.g., `org.aspectj.lang.annotation.Aspect`) in your application or its dependencies.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aop</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aspectj</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-aop
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00280
+  description: Dependency management for Spring Retry removed in Spring Boot 4.0
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4.0 no longer manages the version for Spring Retry. If your application uses `spring-retry`, you must now specify an explicit version in your build file. Consider migrating to the new retry features in [Spring Framework 7.0](https://docs.spring.io/spring-framework/docs/7.0.x-SNAPSHOT/javadoc-api/org/springframework/core/retry/package-summary.html) instead.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.retry</groupId>
+        <artifactId>spring-retry</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.retry</groupId>
+        <artifactId>spring-retry</artifactId>
+        <version>2.0.12</version>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-retry
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.retry.spring-retry
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00290
+  description: Now part of Spring Security; explicit dependency management removed
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Authorization Server is now [part of Spring Security](https://spring.io/blog/2025/09/11/spring-authorization-server-moving-to-spring-security-7-0). Explicit dependency management has been removed from Spring Boot 4.0. If you use the `spring-authorization-server.version` property to override the version, use `spring-security.version` instead.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-authorization-server
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.security.spring-security-oauth2-authorization-server
+        lowerbound: 0.0.0

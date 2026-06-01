@@ -1,0 +1,246 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00620
+  description: MongoDB connection properties renamed from spring.data.mongodb to spring.mongodb in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Many MongoDB configuration properties have been renamed in Spring Boot 4. Properties that previously began with `spring.data.mongodb` for connection-related settings now begin with `spring.mongodb`. For example:
+
+    - `spring.data.mongodb.host` → `spring.mongodb.host`
+    - `spring.data.mongodb.port` → `spring.mongodb.port`
+    - `spring.data.mongodb.database` → `spring.mongodb.database`
+    - `spring.data.mongodb.uri` → `spring.mongodb.uri`
+
+    Note: Properties that require Spring Data MongoDB (`auto-index-creation`, `field-naming-strategy`, `gridfs.*`, `repositories.type`) remain under `spring.data.mongodb`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.(additional-hosts|authentication-database|database|host|password|port|protocol|replica-set-name|representation\.uuid|ssl\.|uri|username)
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00630
+  description: MongoDB management properties renamed to use mongodb instead of mongo in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Management-related MongoDB properties have been renamed in Spring Boot 4 to use `mongodb` instead of `mongo`. Update the following properties:
+
+    - `management.health.mongo.enabled` → `management.health.mongodb.enabled`
+    - `management.metrics.mongo.command.enabled` → `management.metrics.mongodb.command.enabled`
+    - `management.metrics.mongo.connectionpool.enabled` → `management.metrics.mongodb.connectionpool.enabled`
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: management\.(health|metrics)\.mongo\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00640
+  description: Spring Data MongoDB no longer provides defaults for UUID and BigDecimal representations in Spring Boot 4
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Data MongoDB no longer provides defaults for `UUID` and `BigInteger`/`BigDecimal` representations in Spring Boot 4. Explicit configuration is now required to avoid unexpected representation changes when upgrading. Set the representations using the following properties:
+
+    - `spring.mongodb.representation.uuid` — set to your preferred UUID representation (e.g., `STANDARD`)
+    - `spring.data.mongodb.representation.big-decimal` — set to your preferred BigDecimal representation
+
+    This aligns with the MongoDB driver recommendation to avoid representation changes caused by library upgrades.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb-uuid-and-bigdecimal-representations
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-data-mongodb
+        upperbound: 4.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00870
+  description: spring.data.mongodb.additional-hosts was renamed to spring.mongodb.additional-hosts in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The property `spring.data.mongodb.additional-hosts` has been renamed to `spring.mongodb.additional-hosts` in Spring Boot 4. Update your `application.properties` or `application.yml` accordingly.
+
+    ## Before
+    ```properties
+    spring.data.mongodb.additional-hosts=host2:27017,host3:27017
+    ```
+
+    ## After
+    ```properties
+    spring.mongodb.additional-hosts=host2:27017,host3:27017
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.additional-hosts
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00880
+  description: spring.data.mongodb.authentication-database was renamed to spring.mongodb.authentication-database in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The property `spring.data.mongodb.authentication-database` has been renamed to `spring.mongodb.authentication-database` in Spring Boot 4. Update your `application.properties` or `application.yml` accordingly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.authentication-database
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00890
+  description: spring.data.mongodb.password was renamed to spring.mongodb.password in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The property `spring.data.mongodb.password` has been renamed to `spring.mongodb.password` in Spring Boot 4. Update your `application.properties` or `application.yml` accordingly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.password
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00900
+  description: spring.data.mongodb.protocol was renamed to spring.mongodb.protocol in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The property `spring.data.mongodb.protocol` has been renamed to `spring.mongodb.protocol` in Spring Boot 4. Update your `application.properties` or `application.yml` accordingly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.protocol
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00910
+  description: spring.data.mongodb.replica-set-name was renamed to spring.mongodb.replica-set-name in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The property `spring.data.mongodb.replica-set-name` has been renamed to `spring.mongodb.replica-set-name` in Spring Boot 4. Update your `application.properties` or `application.yml` accordingly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.replica-set-name
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00920
+  description: spring.data.mongodb.auto-index-creation remains unchanged in Spring Boot 4 but requires Spring Data MongoDB
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The property `spring.data.mongodb.auto-index-creation` is unchanged in Spring Boot 4 and remains under the `spring.data.mongodb.*` namespace. Note that this property requires Spring Data MongoDB on the classpath, unlike properties that have moved to `spring.mongodb.*` which do not. No change is required, but verify Spring Data MongoDB is included in your dependencies.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.auto-index-creation
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00930
+  description: spring.data.mongodb.field-naming-strategy remains unchanged in Spring Boot 4 but requires Spring Data MongoDB
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The property `spring.data.mongodb.field-naming-strategy` is unchanged in Spring Boot 4 and remains under the `spring.data.mongodb.*` namespace. This property requires Spring Data MongoDB. No change is required.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.field-naming-strategy
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00940
+  description: spring.data.mongodb.gridfs.bucket remains unchanged in Spring Boot 4 but requires Spring Data MongoDB
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The property `spring.data.mongodb.gridfs.bucket` is unchanged in Spring Boot 4. This property requires Spring Data MongoDB. No change is required.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.gridfs\.bucket
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00950
+  description: spring.data.mongodb.repositories.type remains unchanged in Spring Boot 4 but requires Spring Data MongoDB
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The property `spring.data.mongodb.repositories.type` is unchanged in Spring Boot 4. This property requires Spring Data MongoDB. No change is required.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mongodb
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.mongodb\.repositories\.type
+        filePattern: application.*\.(properties|ya?ml)

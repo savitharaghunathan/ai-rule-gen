@@ -1,0 +1,269 @@
+{
+  "rule_count": 30,
+  "quality": {
+    "total_rules": 30,
+    "has_message": 30,
+    "has_links": 30,
+    "has_effort": 30,
+    "has_before_after": 30,
+    "avg_score": 5.7,
+    "max_score": 6,
+    "guidance_depth_avg": 2.7
+  },
+  "rule_details": [
+    {
+      "rule_id": "httpcomponents-00013",
+      "description": "Detects Java type: org.apache.http.HttpEntityEnclosingRequest",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00014",
+      "description": "Detects Java inheritance: org.apache.http.client.methods.HttpRequestBase",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00015",
+      "description": "Detects Java constructor call: org.apache.http.impl.client.DefaultHttpRequestRetryHandler",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00016",
+      "description": "Detects Java constructor call: org.apache.http.conn.ssl.SSLConnectionSocketFactory",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00017",
+      "description": "Detects Java constructor call: org.apache.http.impl.conn.PoolingHttpClientConnectionManager",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00018",
+      "description": "Detects Java constructor call: org.apache.http.protocol.BasicHttpContext",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00019",
+      "description": "Detects Java type: org.apache.http.client.config.CookieSpecs",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00026",
+      "description": "Detects Java type: org.apache.http.client.utils.URIUtils",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00001",
+      "description": "Detects Java import: org.apache.http.client.methods.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00002",
+      "description": "Detects Java import: org.apache.http.impl.client.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00003",
+      "description": "Detects Java import: org.apache.http.impl.conn.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00004",
+      "description": "Detects Java import: org.apache.http.conn.ssl.SSLConnectionSocketFactory",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpcomponents-00005",
+      "description": "Detects Java import: org.apache.http.entity.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00006",
+      "description": "Detects Java import: org.apache.http.client.config.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00007",
+      "description": "Detects Java import: org.apache.http.util.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00008",
+      "description": "Detects Java import: org.apache.http.message.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00009",
+      "description": "Detects Java import: org.apache.http.client.protocol.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00010",
+      "description": "Detects Java import: org.apache.http.HttpEntity",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00011",
+      "description": "Detects Java import: org.apache.http.client.utils.*",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00012",
+      "description": "Detects Java import: org.apache.http.client.ClientProtocolException",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00027",
+      "description": "Detects Java import: org.apache.http.config.SocketConfig",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00030",
+      "description": "Detects Maven dependency: org.apache.httpcomponents httpclient/httpcore/httpmime/httpasyncclient",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00020",
+      "description": "Detects Java method call: org.apache.http.HttpResponse.getStatusLine(*)",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00021",
+      "description": "Detects Java method call: org.apache.http.HttpMessage.getAllHeaders(*)",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00022",
+      "description": "Detects Java method call: org.apache.http.HttpRequest.getRequestLine(*)",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00023",
+      "description": "Detects Java method call: closeExpiredConnections()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00024",
+      "description": "Detects Java method call: setRetryHandler()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00025",
+      "description": "Detects Java method call: addInterceptorLast()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00028",
+      "description": "Detects Java method call: RequestConfig.Builder.setConnectTimeout()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpcomponents-00029",
+      "description": "Detects Java method call: RequestConfig.Builder.setSocketTimeout()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    }
+  ],
+  "overlaps": [
+    {
+      "rule_a": "httpcomponents-00013",
+      "rule_b": "httpcomponents-00010",
+      "type": "pattern_overlap",
+      "reason": "httpcomponents-00010 pattern is substring of httpcomponents-00013"
+    },
+    {
+      "rule_a": "httpcomponents-00016",
+      "rule_b": "httpcomponents-00004",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.conn.ssl.SSLConnectionSocketFactory"
+    }
+  ]
+}

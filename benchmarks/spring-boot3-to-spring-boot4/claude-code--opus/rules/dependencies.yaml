@@ -1,0 +1,52 @@
+- ruleID: spring-boot3-to-spring-boot4-00270
+  description: spring-boot-starter-aop renamed to spring-boot-starter-aspectj
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-aop` has been renamed to `spring-boot-starter-aspectj` in Spring Boot 4.0 to clarify its scope. Before switching, review whether your application actually needs AspectJ:
+
+    - Check for usage of annotations in the `org.aspectj.lang.annotation` package
+    - Search for `org.aspectj.lang.annotation.Aspect` on the classpath
+
+    Replace the dependency if you confirm AspectJ is needed:
+
+    ## Before
+    ```xml
+    <artifactId>spring-boot-starter-aop</artifactId>
+    ```
+
+    ## After
+    ```xml
+    <artifactId>spring-boot-starter-aspectj</artifactId>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-aop
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00280
+  description: Spring Retry dependency management removed in Spring Boot 4
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Dependency management for Spring Retry has been removed in Spring Boot 4.0 as the Spring portfolio moves from Spring Retry to new core retry features in Spring Framework 7.0. If your application still relies on Spring Retry, you must now declare an explicit version. Consider migrating your retry logic to the new [Spring Framework retry support](https://docs.spring.io/spring-framework/docs/7.0.x-SNAPSHOT/javadoc-api/org/springframework/core/retry/package-summary.html).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-retry
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.retry.spring-retry
+        lowerbound: 0.0.0

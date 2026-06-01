@@ -1,0 +1,161 @@
+- ruleID: httpclient4-to-httpclient5-00250
+  description: Replaced by PoolingAsyncClientConnectionManager for async APIs
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `PoolingHttpClientConnectionManager` with `PoolingAsyncClientConnectionManager`. Use `PoolingAsyncClientConnectionManagerBuilder.create()` to configure the async connection manager. Note that `PoolingAsyncClientConnectionManager` uses different TLS/SSL configuration via `ClientTlsStrategyBuilder.create().buildAsync()` and does not support `SocketConfig` due to differences in the I/O model.
+
+    ## Before
+    ```java
+    PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+    ```
+
+    ## After
+    ```java
+    PoolingAsyncClientConnectionManager cm = PoolingAsyncClientConnectionManagerBuilder.create()
+        .setTlsStrategy(ClientTlsStrategyBuilder.create()
+            .setSslContext(SSLContexts.createSystemDefault())
+            .setTlsVersions(TLS.V_1_3)
+            .buildAsync())
+        .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
+        .setConnPoolPolicy(PoolReusePolicy.LIFO)
+        .setDefaultConnectionConfig(ConnectionConfig.custom()
+            .setSocketTimeout(Timeout.ofMinutes(1))
+            .setConnectTimeout(Timeout.ofMinutes(1))
+            .setTimeToLive(TimeValue.ofMinutes(10))
+            .build())
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00260
+  description: Replaced by CloseableHttpAsyncClient for async APIs
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `CloseableHttpClient` with `CloseableHttpAsyncClient`. Build the async client using `HttpAsyncClients.custom()` for general async HTTP/1.1 and HTTP/2 support, or `HttpAsyncClients.customHttp2()` for HTTP/2 only. The async client must be started with `client.start()` before executing requests. Request execution returns a `Future` and uses `FutureCallback` for asynchronous result handling. Close with `client.close(CloseMode.GRACEFUL)`.
+
+    ## Before
+    ```java
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(connectionManager)
+        .setDefaultRequestConfig(RequestConfig.custom()
+            .setCookieSpec(StandardCookieSpec.STRICT)
+            .build())
+        .build();
+    JsonNode result = client.execute(httpPost, responseHandler);
+    client.close();
+    ```
+
+    ## After
+    ```java
+    CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+        .setConnectionManager(connectionManager)
+        .setIOReactorConfig(IOReactorConfig.custom()
+            .setSoTimeout(Timeout.ofMinutes(1))
+            .build())
+        .setDefaultRequestConfig(RequestConfig.custom()
+            .setCookieSpec(StandardCookieSpec.STRICT)
+            .build())
+        .build();
+    client.start();
+    Future<?> future = client.execute(request, futureCallback);
+    client.close(CloseMode.GRACEFUL);
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.CloseableHttpClient
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00270
+  description: Replaced by HttpAsyncClients for async client construction
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace the `HttpClients` factory with `HttpAsyncClients`. Use `HttpAsyncClients.custom()` for a general-purpose async client supporting both HTTP/1.1 and HTTP/2 via TLS ALPN negotiation, or `HttpAsyncClients.customHttp2()` for an HTTP/2 only client optimized for multiplexed request execution over a single connection.
+
+    ## Before
+    ```java
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(connectionManager)
+        .build();
+    ```
+
+    ## After
+    ```java
+    CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+        .setConnectionManager(connectionManager)
+        .setIOReactorConfig(IOReactorConfig.custom()
+            .setSoTimeout(Timeout.ofMinutes(1))
+            .build())
+        .build();
+    client.start();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClients
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00280
+  description: Replaced by request builders in HttpClient 5.x async APIs
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `HttpPost` (and other `HttpRequestBase` subclasses) with request builders. For simple async handlers, use `SimpleRequestBuilder.post(url).setBody(content, contentType).build()` which returns a `SimpleHttpRequest`. For streaming async handlers, use `BasicRequestBuilder.post(url).build()` combined with custom request producers such as `JsonRequestProducers`.
+
+    ## Before
+    ```java
+    HttpPost httpPost = new HttpPost("https://httpbin.org/post");
+    EntityTemplate requestEntity = new EntityTemplate(outstream -> {
+        objectMapper.writeValue(outstream, data);
+    });
+    requestEntity.setContentType(ContentType.APPLICATION_JSON.toString());
+    httpPost.setEntity(requestEntity);
+    ```
+
+    ## After
+    ```java
+    SimpleHttpRequest httpPost = SimpleRequestBuilder.post("https://httpbin.org/post")
+        .setBody(objectMapper.writeValueAsString(data), ContentType.APPLICATION_JSON)
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.methods.HttpPost
+        location: IMPORT

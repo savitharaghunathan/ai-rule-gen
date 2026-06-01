@@ -1,0 +1,21 @@
+{
+  "runtime": "claude-code",
+  "model": "haiku",
+  "model_id": "claude-haiku-4-5-20251001",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-05-29",
+  "duration_minutes": 5.0,
+  "rule_count": 0,
+  "quality_avg": null,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 0,
+  "specificity_gap_count": 0,
+  "pass_rate": "0/0",
+  "eval_judge": {
+    "precision_issues": 0,
+    "coherence_issues": 0,
+    "cross_rule_issues": 0,
+    "gaps": 0
+  },
+  "notes": "Pipeline failed at construct stage. Extracted 83 patterns but could not construct valid rules — invalid regex, read_patterns_failed errors. No rules produced."
+}

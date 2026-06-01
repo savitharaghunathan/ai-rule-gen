@@ -1,0 +1,384 @@
+- ruleID: httpcomponents-00013
+  description: "Detects Java type: org.apache.http.HttpEntityEnclosingRequest"
+  message: |
+    ## Migration Required: HttpEntityEnclosingRequest Replaced
+
+    ### Before
+    In HttpComponents Client 4.x, `HttpEntityEnclosingRequest` is used to check if a request can carry an entity:
+    ```java
+    import org.apache.http.HttpEntityEnclosingRequest;
+
+    if (request instanceof HttpEntityEnclosingRequest) {
+        ((HttpEntityEnclosingRequest) request).setEntity(entity);
+    }
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `HttpEntityContainer` instead:
+    ```java
+    import org.apache.hc.core5.http.HttpEntityContainer;
+
+    if (request instanceof HttpEntityContainer) {
+        ((HttpEntityContainer) request).setEntity(entity);
+    }
+    ```
+
+    ### Additional Info
+    - In 5.x, any HTTP method can enclose a request entity, even if it violates the semantic of the method
+    - The `HttpEntityEnclosingRequest` interface has been removed entirely
+    - `HttpEntityContainer` provides the same `setEntity()` and `getEntity()` methods
+    - Consider using `ClassicRequestBuilder` which handles entity setting automatically
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.HttpEntityEnclosingRequest"
+      location: TYPE
+
+- ruleID: httpcomponents-00014
+  description: "Detects Java inheritance: org.apache.http.client.methods.HttpRequestBase"
+  message: |
+    ## Migration Required: HttpRequestBase Renamed
+
+    ### Before
+    In HttpComponents Client 4.x, custom request classes extend `HttpRequestBase`:
+    ```java
+    import org.apache.http.client.methods.HttpRequestBase;
+
+    public class CustomRequest extends HttpRequestBase {
+        @Override
+        public String getMethod() {
+            return "CUSTOM";
+        }
+    }
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, extend `HttpUriRequestBase` instead:
+    ```java
+    import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
+
+    public class CustomRequest extends HttpUriRequestBase {
+        public CustomRequest(String method, URI uri) {
+            super(method, uri);
+        }
+    }
+    ```
+
+    ### Additional Info
+    - `HttpRequestBase` has been renamed to `HttpUriRequestBase` in 5.x
+    - The constructor signature has changed to require both method and URI
+    - Consider using `ClassicRequestBuilder` instead of creating custom request subclasses
+    - `getRequestLine()` is no longer available on request objects - use `new RequestLine(request)` instead
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.methods.HttpRequestBase"
+      location: INHERITANCE
+
+- ruleID: httpcomponents-00015
+  description: "Detects Java constructor call: org.apache.http.impl.client.DefaultHttpRequestRetryHandler"
+  message: |
+    ## Migration Required: Retry Handler Replaced with Retry Strategy
+
+    ### Before
+    In HttpComponents Client 4.x, retry handling uses `DefaultHttpRequestRetryHandler`:
+    ```java
+    import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setRetryHandler(new DefaultHttpRequestRetryHandler(3, true))
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `DefaultHttpRequestRetryStrategy` with `setRetryStrategy()`:
+    ```java
+    import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setRetryStrategy(new DefaultHttpRequestRetryStrategy())
+        .build();
+    ```
+
+    ### Additional Info
+    - `DefaultHttpRequestRetryHandler` has been completely removed in 5.x
+    - The builder method `setRetryHandler()` has been replaced with `setRetryStrategy()`
+    - `DefaultHttpRequestRetryStrategy` implements `HttpRequestRetryStrategy` which provides more flexibility
+    - The retry strategy can be configured with max retry count, retry interval, and retriable exceptions
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.impl.client.DefaultHttpRequestRetryHandler"
+      location: CONSTRUCTOR_CALL
+
+- ruleID: httpcomponents-00016
+  description: "Detects Java constructor call: org.apache.http.conn.ssl.SSLConnectionSocketFactory"
+  message: |
+    ## Migration Required: SSLConnectionSocketFactory Constructor Removed
+
+    ### Before
+    In HttpComponents Client 4.x, SSL is configured by constructing `SSLConnectionSocketFactory`:
+    ```java
+    import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+
+    SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
+        SSLContexts.createSystemDefault(),
+        new String[]{"TLSv1.2"},
+        null,
+        SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setSSLSocketFactory(sslsf)
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `ClientTlsStrategyBuilder` on the connection manager:
+    ```java
+    import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+    import org.apache.hc.core5.http2.ssl.TLS;
+
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setTlsSocketStrategy(ClientTlsStrategyBuilder.create()
+            .setSslContext(SSLContexts.createSystemDefault())
+            .setTlsVersions(TLS.V_1_3)
+            .buildClassic())
+        .build();
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(cm)
+        .build();
+    ```
+
+    ### Additional Info
+    - `SSLConnectionSocketFactory` and its constructors have been completely removed in 5.x
+    - The builder method `setSSLSocketFactory()` on `HttpClientBuilder` no longer exists
+    - TLS configuration is now part of the connection manager setup
+    - Use `TLS.V_1_3` instead of string array `new String[]{"TLSv1.2"}`
+    - For async clients, use `ClientTlsStrategyBuilder.create()...buildAsync()`
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.conn.ssl.SSLConnectionSocketFactory"
+      location: CONSTRUCTOR_CALL
+
+- ruleID: httpcomponents-00017
+  description: "Detects Java constructor call: org.apache.http.impl.conn.PoolingHttpClientConnectionManager"
+  message: |
+    ## Migration Required: Connection Manager Uses Builder Pattern
+
+    ### Before
+    In HttpComponents Client 4.x, `PoolingHttpClientConnectionManager` is constructed directly:
+    ```java
+    import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+
+    PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+    cm.setMaxTotal(200);
+    cm.setDefaultMaxPerRoute(20);
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `PoolingHttpClientConnectionManagerBuilder`:
+    ```java
+    import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+    import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setTlsSocketStrategy(ClientTlsStrategyBuilder.create()
+            .setSslContext(SSLContexts.createSystemDefault())
+            .setTlsVersions(TLS.V_1_3)
+            .buildClassic())
+        .setDefaultSocketConfig(SocketConfig.custom()
+            .setSoTimeout(Timeout.ofMinutes(1))
+            .build())
+        .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
+        .setConnPoolPolicy(PoolReusePolicy.LIFO)
+        .setDefaultConnectionConfig(ConnectionConfig.custom()
+            .setSocketTimeout(Timeout.ofMinutes(1))
+            .setConnectTimeout(Timeout.ofMinutes(1))
+            .setTimeToLive(TimeValue.ofMinutes(10))
+            .build())
+        .build();
+    ```
+
+    ### Additional Info
+    - Direct constructor usage is replaced by `PoolingHttpClientConnectionManagerBuilder.create()`
+    - Socket config, connection config, and TLS strategy are all set on the builder
+    - New pool policies available: `PoolConcurrencyPolicy.STRICT`/`LAX` and `PoolReusePolicy.LIFO`/`FIFO`
+    - Max total and max per route can still be configured on the built connection manager
+    - `closeExpiredConnections()` is now `closeExpired()`, `closeIdleConnections()` is now `closeIdle()`
+  category: mandatory
+  effort: 5
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.impl.conn.PoolingHttpClientConnectionManager"
+      location: CONSTRUCTOR_CALL
+
+- ruleID: httpcomponents-00018
+  description: "Detects Java constructor call: org.apache.http.protocol.BasicHttpContext"
+  message: |
+    ## Migration Required: BasicHttpContext Replaced
+
+    ### Before
+    In HttpComponents Client 4.x, `BasicHttpContext` is used for request context:
+    ```java
+    import org.apache.http.protocol.BasicHttpContext;
+
+    HttpContext context = new BasicHttpContext();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `HttpClientContext.create()` instead:
+    ```java
+    import org.apache.hc.client5.http.protocol.HttpClientContext;
+
+    HttpClientContext clientContext = HttpClientContext.create();
+    clientContext.setCookieStore(new BasicCookieStore());
+    clientContext.setCredentialsProvider(new BasicCredentialsProvider());
+    clientContext.setRequestConfig(RequestConfig.custom()
+        .setCookieSpec(StandardCookieSpec.STRICT)
+        .build());
+    ```
+
+    ### Additional Info
+    - `BasicHttpContext` is replaced by `HttpClientContext` which provides typed access to client-specific attributes
+    - Use `HttpClientContext.create()` factory method instead of constructor
+    - Target host access changed: use `clientContext.getHttpRoute().getTargetHost()` instead of `context.getAttribute(HTTP_TARGET_HOST)`
+    - SSL session access simplified: use `context.getSSLSession()` directly
+    - Cookie store, credentials provider, and request config can be set per-request via context
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.protocol.BasicHttpContext"
+      location: CONSTRUCTOR_CALL
+
+- ruleID: httpcomponents-00019
+  description: "Detects Java type: org.apache.http.client.config.CookieSpecs"
+  message: |
+    ## Migration Required: CookieSpecs Constants Replaced
+
+    ### Before
+    In HttpComponents Client 4.x, cookie specifications are defined in `CookieSpecs`:
+    ```java
+    import org.apache.http.client.config.CookieSpecs;
+
+    RequestConfig config = RequestConfig.custom()
+        .setCookieSpec(CookieSpecs.STANDARD)
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `StandardCookieSpec` constants:
+    ```java
+    import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+
+    RequestConfig config = RequestConfig.custom()
+        .setCookieSpec(StandardCookieSpec.STRICT)
+        .build();
+    ```
+
+    ### Additional Info
+    - `CookieSpecs` class has been removed in 5.x
+    - `CookieSpecs.STANDARD` is replaced by `StandardCookieSpec.STRICT` (recommended)
+    - `CookieSpecs.BROWSER_COMPATIBILITY` and other legacy specs have been removed
+    - The `STRICT` policy is recommended for best standards compliance
+    - Cookie store can still be shared across threads and set per-request via `HttpClientContext`
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.config.CookieSpecs"
+      location: TYPE
+
+- ruleID: httpcomponents-00026
+  description: "Detects Java type: org.apache.http.client.utils.URIUtils"
+  message: |
+    ## Migration Required: URIUtils.normalizeSyntax() Replaced
+
+    ### Before
+    In HttpComponents Client 4.x, URI normalization uses `URIUtils`:
+    ```java
+    import org.apache.http.client.utils.URIUtils;
+
+    URI normalized = URIUtils.normalizeSyntax(uri);
+    ```
+    Or via `RequestConfig`:
+    ```java
+    RequestConfig.custom()
+        .setNormalizeUri(true)
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `URIBuilder.optimize()`:
+    ```java
+    import org.apache.hc.core5.net.URIBuilder;
+
+    URI normalized = new URIBuilder(uri).optimize().build();
+    ```
+
+    ### Additional Info
+    - `URIUtils.normalizeSyntax()` has been removed in 5.x
+    - The `normalizeUri` property has been removed from `RequestConfig`
+    - Use `new URIBuilder(uri).optimize().build()` as the replacement
+    - The `optimize()` method was previously named `normalizeSyntax()` but was deprecated since 5.3
+    - 5.x strives for more thorough support of RFC 3986, specifically percent-encoding all components
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.utils.URIUtils"
+      location: TYPE

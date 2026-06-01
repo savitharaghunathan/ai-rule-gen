@@ -1,0 +1,16 @@
+- ruleID: spring-boot3-to-spring-boot4-00020
+  description: Spock is no longer included by default in spring-boot-starter-test
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot's test starter no longer pulls in Spock by default. If your project uses Spock, you must now explicitly add a dependency on org.spockframework:spock-core and org.spockframework:spock-spring.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spock-integration
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: spock.lang.Specification
+        location: INHERITANCE

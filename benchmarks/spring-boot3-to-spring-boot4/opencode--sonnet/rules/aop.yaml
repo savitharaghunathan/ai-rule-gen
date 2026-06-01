@@ -1,0 +1,18 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00830
+  description: Usage of @Aspect requires spring-boot-starter-aspectj (renamed from spring-boot-starter-aop) in Spring Boot 4
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Usage of `@Aspect` from AspectJ requires the `spring-boot-starter-aspectj` dependency in Spring Boot 4 (renamed from `spring-boot-starter-aop`). Ensure your `pom.xml` or `build.gradle` references `spring-boot-starter-aspectj` instead of the old `spring-boot-starter-aop`. The `@Aspect` annotation itself and AspectJ API remain unchanged — only the Spring Boot starter name changed.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.aspectj.lang.annotation.Aspect
+        location: ANNOTATION

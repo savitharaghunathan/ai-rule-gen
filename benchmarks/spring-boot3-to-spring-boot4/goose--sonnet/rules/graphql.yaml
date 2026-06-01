@@ -1,0 +1,54 @@
+- ruleID: spring-boot3-to-spring-boot4-00760
+  description: GraphQL classes moved from org.springframework.boot.autoconfigure.graphql to org.springframework.boot.graphql
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4 restructured its modules so that GraphQL support is in the `spring-boot-graphql` module with root package `org.springframework.boot.graphql`. Update your imports from `org.springframework.boot.autoconfigure.graphql` to `org.springframework.boot.graphql`. You may also need to add the `spring-boot-starter-graphql` dependency.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.graphql*
+        location: PACKAGE
+- ruleID: spring-boot3-to-spring-boot4-00770
+  description: GraphQL test classes moved from org.springframework.boot.test.autoconfigure.graphql to org.springframework.boot.graphql.test
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4 restructured its test modules so that GraphQL test support is in the `spring-boot-graphql-test` module with root package `org.springframework.boot.graphql.test`. Update your imports from `org.springframework.boot.test.autoconfigure.graphql` to `org.springframework.boot.graphql.test` and add the `spring-boot-starter-graphql-test` dependency.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#test-code
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.autoconfigure.graphql*
+        location: PACKAGE
+- ruleID: spring-boot3-to-spring-boot4-00780
+  description: spring-graphql-test replaced by spring-boot-starter-graphql-test in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `org.springframework.graphql:spring-graphql-test` dependency should be replaced with `org.springframework.boot:spring-boot-starter-graphql-test`. The new starter transitively includes `spring-graphql-test` and properly configures the GraphQL test infrastructure for Spring Boot 4.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#test-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.graphql.spring-graphql-test
+        lowerbound: 0.0.0

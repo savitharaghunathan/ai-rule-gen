@@ -1,0 +1,21 @@
+- ruleID: spring-boot3-to-spring-boot4-00430
+  description: Liveness and readiness probes now enabled by default
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The liveness and readiness probes are now enabled by default in Spring Boot 4. The health endpoint now exposes the `liveness` and `readiness` groups by default.
+
+    If you do not need those probes, you can disable them by setting `management.endpoint.health.probes.enabled=false`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#liveness-and-readiness-probes
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-actuator
+        upperbound: 4.0.0

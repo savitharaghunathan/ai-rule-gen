@@ -1,0 +1,21 @@
+{
+  "runtime": "claude-code",
+  "model": "sonnet",
+  "model_id": "claude-sonnet-4-6",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-05-29",
+  "duration_minutes": 35.1,
+  "rule_count": 89,
+  "quality_avg": 5.595505617977528,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 28,
+  "specificity_gap_count": 0,
+  "pass_rate": "85/89",
+  "eval_judge": {
+    "precision_issues": 3,
+    "coherence_issues": 7,
+    "cross_rule_issues": 2,
+    "gaps": 8
+  },
+  "notes": "4 rules marked kantra-limitation. 5 coherence issues are inverted-logic config property rules that will never fire on SB3 code."
+}

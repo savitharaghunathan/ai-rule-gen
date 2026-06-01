@@ -1,0 +1,89 @@
+- ruleID: httpclient4-to-httpclient5-00170
+  description: closeExpiredConnections() renamed to closeExpired() in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `HttpClientConnectionManager.closeExpiredConnections()` method has been renamed to `ConnPoolControl.closeExpired()` in HttpClient 5.x.
+
+    ## Before
+    ```java
+    connectionManager.closeExpiredConnections();
+    ```
+
+    ## After
+    ```java
+    connectionManager.closeExpired();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: closeExpiredConnections
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00180
+  description: closeIdleConnections() renamed to closeIdle() in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `HttpClientConnectionManager.closeIdleConnections()` method has been renamed to `ConnPoolControl.closeIdle()` in HttpClient 5.x.
+
+    ## Before
+    ```java
+    connectionManager.closeIdleConnections(30, TimeUnit.SECONDS);
+    ```
+
+    ## After
+    ```java
+    connectionManager.closeIdle(TimeValue.ofSeconds(30));
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: closeIdleConnections
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00240
+  description: setDefaultSocketConfig() moved from HttpClientBuilder to connection manager builder in 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `HttpClients.custom().setDefaultSocketConfig()` method has been moved. In HttpClient 5.x, socket configuration is set on the connection manager builder instead of the HTTP client builder.
+
+    ## Before
+    ```java
+    HttpClients.custom()
+        .setDefaultSocketConfig(SocketConfig.custom()
+            .setSoTimeout(60000)
+            .build())
+        .build();
+    ```
+
+    ## After
+    ```java
+    PoolingHttpClientConnectionManagerBuilder.create()
+        .setDefaultSocketConfig(SocketConfig.custom()
+            .setSoTimeout(Timeout.ofMinutes(1))
+            .build())
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClientBuilder.setDefaultSocketConfig
+        location: METHOD_CALL

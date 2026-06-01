@@ -1,0 +1,786 @@
+{
+  "rule_count": 83,
+  "quality": {
+    "total_rules": 83,
+    "has_message": 83,
+    "has_links": 83,
+    "has_effort": 83,
+    "has_before_after": 82,
+    "avg_score": 5.481927710843373,
+    "max_score": 6,
+    "guidance_depth_avg": 2.4819277108433737
+  },
+  "rule_details": [
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00430",
+      "description": "Liveness and readiness probes are now enabled by default",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00640",
+      "description": "RabbitRetryTemplateCustomizer replaced with dedicated retry customizers",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00650",
+      "description": "spring-boot-starter-batch now operates without database by default",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00040",
+      "description": "Embedded executable uber jar launch scripts removed in Spring Boot 4",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00050",
+      "description": "Embedded executable uber jar launch scripts removed in Spring Boot 4",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00260",
+      "description": "Optional dependencies no longer included in uber jars",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00300",
+      "description": "spring-authorization-server.version property removed in Spring Boot 4.0",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00310",
+      "description": "Classic uber-jar loader removed in Spring Boot 4.0",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00320",
+      "description": "Classic uber-jar loader removed in Spring Boot 4.0",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00330",
+      "description": "CycloneDX Gradle plugin minimum version is now 3.0.0",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00750",
+      "description": "spring-boot-properties-migrator should be removed after migration",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00010",
+      "description": "Spring Boot 4.0 requires Java 17+, Jakarta EE 11, Servlet 6.1, and Spring Framework 7.x",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00190",
+      "description": "Moved from org.springframework.boot to org.springframework.boot.bootstrap",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00200",
+      "description": "Moved from org.springframework.boot to org.springframework.boot.bootstrap",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00210",
+      "description": "Moved from org.springframework.boot to org.springframework.boot.bootstrap",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00220",
+      "description": "Moved from org.springframework.boot.env to org.springframework.boot",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00230",
+      "description": "alwaysApplyingWhenNonNull() removed in Spring Boot 4.0",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00240",
+      "description": "PropertyMapper no longer calls adapter/predicate for null values",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00420",
+      "description": "Removed support for org.springframework.lang.Nullable on actuator endpoint parameters",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00090",
+      "description": "Flyway support now requires spring-boot-starter-flyway starter POM",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00100",
+      "description": "Liquibase support now requires spring-boot-starter-liquibase starter POM",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00140",
+      "description": "Renamed to spring-boot-starter-security-oauth2-authorization-server",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00150",
+      "description": "Renamed to spring-boot-starter-security-oauth2-client",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00160",
+      "description": "Renamed to spring-boot-starter-security-oauth2-resource-server",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00170",
+      "description": "Renamed to spring-boot-starter-webmvc",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00180",
+      "description": "Renamed to spring-boot-starter-webservices",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00270",
+      "description": "Renamed to spring-boot-starter-aspectj in Spring Boot 4.0",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00280",
+      "description": "Dependency management for Spring Retry removed in Spring Boot 4.0",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00290",
+      "description": "Now part of Spring Security; explicit dependency management removed",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00250",
+      "description": "DevTools Live Reload now disabled by default in Spring Boot 4.0",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00510",
+      "description": "RestClientBuilderCustomizer renamed to Rest5ClientBuilderCustomizer",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00520",
+      "description": "elasticsearch-rest-client module removed; use co.elastic.clients:elasticsearch-java",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00530",
+      "description": "elasticsearch-rest-client-sniffer module removed; sniffer built into elasticsearch-java",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00820",
+      "description": "ElasticsearchClient updated to use Rest5Client low-level transport",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00830",
+      "description": "ReactiveElasticsearchClient updated to use Rest5Client low-level transport",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00760",
+      "description": "GraphQL classes moved from org.springframework.boot.autoconfigure.graphql to org.springframework.boot.graphql",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00770",
+      "description": "GraphQL test classes moved from org.springframework.boot.test.autoconfigure.graphql to org.springframework.boot.graphql.test",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00780",
+      "description": "spring-graphql-test replaced by spring-boot-starter-graphql-test in Spring Boot 4",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00590",
+      "description": "hibernate-jpamodelgen replaced by hibernate-processor",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00600",
+      "description": "hibernate-proxool is no longer published",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00610",
+      "description": "hibernate-vibur is no longer published",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00340",
+      "description": "Jackson 3 uses tools.jackson package namespace",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00350",
+      "description": "Renamed to ObjectValueSerializer for Jackson 3 consistency",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00360",
+      "description": "Renamed to ObjectValueDeserializer for Jackson 3 consistency",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00370",
+      "description": "Renamed to JsonMapperBuilderCustomizer for Jackson 3 consistency",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00380",
+      "description": "Renamed to @JacksonComponent in Spring Boot 4.0",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00390",
+      "description": "Renamed to @JacksonMixin in Spring Boot 4.0",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00400",
+      "description": "spring.jackson.read/write properties moved to spring.jackson.json.read/write",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00410",
+      "description": "spring.jackson.parser properties replaced by spring.jackson.json.read",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00620",
+      "description": "StreamsBuilderFactoryBeanCustomizer removed; use StreamsBuilderFactoryBeanConfigurer",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00630",
+      "description": "Property spring.kafka.retry.topic.backoff.random removed; use backoff.jitter",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00030",
+      "description": "Spring Pulsar Reactive auto-configuration and starter removed",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00560",
+      "description": "Several spring.data.mongodb properties renamed to spring.mongodb",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00570",
+      "description": "MongoDB management properties renamed from mongo to mongodb",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00580",
+      "description": "MongoDB no longer provides default UUID and BigDecimal representations",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00790",
+      "description": "@Timed requires AspectJ; spring-boot-starter-aop renamed to spring-boot-starter-aspectj",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00800",
+      "description": "@Counted requires AspectJ; spring-boot-starter-aop renamed to spring-boot-starter-aspectj",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00540",
+      "description": "@EntityScan moved to org.springframework.boot.persistence.autoconfigure",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00550",
+      "description": "spring.dao.exceptiontranslation.enabled replaced by spring.persistence.exceptiontranslation.enabled",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00440",
+      "description": "PathRequest.toStaticResources() now includes /fonts/** location",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00060",
+      "description": "Spring Session Hazelcast support removed from Spring Boot",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00070",
+      "description": "Spring Session MongoDB support removed from Spring Boot",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00450",
+      "description": "Spring Session Redis properties renamed from spring.session.redis to spring.session.data.redis",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00460",
+      "description": "Spring Session MongoDB properties renamed from spring.session.mongodb to spring.session.data.mongodb",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00080",
+      "description": "Spock integration removed; Spock does not yet support Groovy 5",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00110",
+      "description": "@WithMockUser now requires spring-boot-starter-security-test to operate properly",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00120",
+      "description": "@WithUserDetails now requires spring-boot-starter-security-test to operate properly",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00130",
+      "description": "spring-boot-starter-test no longer provides all test modules; use dedicated test starters or classic starter",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00660",
+      "description": "MockitoTestExecutionListener removed; use MockitoExtension",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00670",
+      "description": "@SpringBootTest no longer auto-configures MockMvc support",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00680",
+      "description": "HtmlUnit settings in @AutoConfigureMockMvc moved under htmlUnit attribute",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00690",
+      "description": "@SpringBootTest no longer auto-configures WebTestClient beans",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00700",
+      "description": "TestRestTemplate relocated to org.springframework.boot.resttestclient package",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00710",
+      "description": "@PropertyMapping relocated from autoconfigure.properties to test.context package",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00720",
+      "description": "Skip enum relocated to PropertyMapping.Skip in test.context package",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00730",
+      "description": "@MockBean removed; use @MockitoBean from Spring Framework",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00740",
+      "description": "@SpyBean removed; use @MockitoSpyBean from Spring Framework",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00020",
+      "description": "Undertow support dropped; not compatible with Servlet 6.1",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00470",
+      "description": "HttpMessageConverters is deprecated; use customizer interfaces instead",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00480",
+      "description": "server.forward-headers-strategy no longer effective in WAR deployments",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00490",
+      "description": "Jersey 4.0 does not yet support Jackson 3; use spring-boot-jackson2",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00500",
+      "description": "WAR deployments to Tomcat require spring-boot-starter-tomcat-runtime",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00810",
+      "description": "MappingJackson2HttpMessageConverter replaced by Jackson 3 converters; bean contribution pattern changed",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    }
+  ],
+  "overlaps": [
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00430",
+      "rule_b": "spring-boot3-to-spring-boot4-00010",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00430"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00650",
+      "rule_b": "spring-boot3-to-spring-boot4-00010",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00650"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00140",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00140"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00150",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00150"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00160",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00160"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00170",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00170"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00180",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00180"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00270",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00270"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00030",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00030"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00580",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00580"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00130",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00130"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00020",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00020"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00490",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00490"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00010",
+      "rule_b": "spring-boot3-to-spring-boot4-00500",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00010 pattern is substring of spring-boot3-to-spring-boot4-00500"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00190",
+      "rule_b": "spring-boot3-to-spring-boot4-00210",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00190 pattern is substring of spring-boot3-to-spring-boot4-00210"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00170",
+      "rule_b": "spring-boot3-to-spring-boot4-00180",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00170 pattern is substring of spring-boot3-to-spring-boot4-00180"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00520",
+      "rule_b": "spring-boot3-to-spring-boot4-00530",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00520 pattern is substring of spring-boot3-to-spring-boot4-00530"
+    }
+  ]
+}

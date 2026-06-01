@@ -1,0 +1,54 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00570
+  description: org.elasticsearch.client:elasticsearch-rest-client removed; Spring Boot 4 auto-configures Rest5Client from co.elastic.clients:elasticsearch-java
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `org.elasticsearch.client:elasticsearch-rest-client` module is no longer required in Spring Boot 4. Auto-configuration for the deprecated low-level `RestClient` has been replaced with auto-configuration for `Rest5Client`. The Elasticsearch client code has been consolidated into `co.elastic.clients:elasticsearch-java`. Remove `elasticsearch-rest-client` from your dependencies and update to use the new `co.elastic.clients:elasticsearch-java` dependency.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#elasticsearch-client
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.elasticsearch.client.elasticsearch-rest-client
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00580
+  description: org.elasticsearch.client:elasticsearch-rest-client-sniffer removed; built-in sniffer support is now in co.elastic.clients:elasticsearch-java
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `org.elasticsearch.client:elasticsearch-rest-client-sniffer` module is no longer required in Spring Boot 4. Built-in sniffer support is now included in the `co.elastic.clients:elasticsearch-java` module. Remove `elasticsearch-rest-client-sniffer` from your dependencies.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#elasticsearch-client
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.elasticsearch.client.elasticsearch-rest-client-sniffer
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00590
+  description: RestClientBuilderCustomizer replaced by Rest5ClientBuilderCustomizer for Elasticsearch Rest5Client configuration
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot's `RestClientBuilderCustomizer` has been replaced by `Rest5ClientBuilderCustomizer` in Spring Boot 4. If you were using `RestClientBuilderCustomizer` to customize the Elasticsearch client, update your code to implement `Rest5ClientBuilderCustomizer` instead. The import changes from `org.springframework.boot.autoconfigure.elasticsearch.RestClientBuilderCustomizer` to `org.springframework.boot.autoconfigure.elasticsearch.Rest5ClientBuilderCustomizer`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#elasticsearch-client
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.elasticsearch.RestClientBuilderCustomizer
+        location: IMPORT

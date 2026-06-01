@@ -1,0 +1,144 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00720
+  description: MockitoTestExecutionListener removed; use MockitoExtension from Mockito directly
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot's `MockitoTestExecutionListener` has been removed (it was deprecated in Spring Boot 3.4). If your `@Mock` or `@Captor` annotated fields are no longer working, add `@ExtendWith(MockitoExtension.class)` to your test class, or use `MockitoExtension` from Mockito directly. The listener was only indirectly used, so deprecation warnings may have been easy to miss.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mockito-captor-and-mock-annotations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.autoconfigure.MockitoTestExecutionListener
+        location: IMPORT
+- ruleID: spring-boot-3-to-spring-boot-4-00730
+  description: '@SpringBootTest no longer provides MockMVC; @AutoConfigureMockMvc now required'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Using `@SpringBootTest` no longer provides MockMVC support automatically. You must now explicitly add `@AutoConfigureMockMvc` to your test class to enable MockMVC. Additionally, HtmlUnit-specific settings have moved under an `htmlUnit` attribute: replace `@AutoConfigureMockMvc(webClientEnabled=false, webDriverEnabled=false)` with `@AutoConfigureMockMvc(htmlUnit = @HtmlUnit(webClient = false, webDriver = false))`.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#using-mockmvc-and-springboottest
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+        location: ANNOTATION
+- ruleID: spring-boot-3-to-spring-boot-4-00740
+  description: '@SpringBootTest no longer auto-configures WebClient or TestRestTemplate beans'
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Using `@SpringBootTest` no longer provides `WebClient` or `TestRestTemplate` beans automatically. To use `TestRestTemplate`, add `@AutoConfigureTestRestTemplate` to your test class and add dependencies on `org.springframework.boot:spring-boot-resttestclient` and `org.springframework.boot:spring-boot-restclient`. Alternatively, consider replacing `TestRestTemplate` with the new `RestTestClient` by adding `@AutoConfigureRestTestClient`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#using-webclient-or-testresttemplate-and-springboottest
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.context.SpringBootTest
+        location: ANNOTATION
+- ruleID: spring-boot-3-to-spring-boot-4-00750
+  description: TestRestTemplate relocated to org.springframework.boot.resttestclient package
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `TestRestTemplate` class has moved to the `org.springframework.boot.resttestclient` package. Update your imports from `org.springframework.boot.test.web.client.TestRestTemplate` to `org.springframework.boot.resttestclient.TestRestTemplate`. You must also add a test-scoped dependency on `org.springframework.boot:spring-boot-resttestclient` and a runtime dependency on `org.springframework.boot:spring-boot-restclient`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#testresttemplate-failures
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.web.client.TestRestTemplate
+        location: IMPORT
+- ruleID: spring-boot-3-to-spring-boot-4-00760
+  description: '@PropertyMapping relocated from test.autoconfigure.properties to test.context'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `@PropertyMapping` annotation has moved from `org.springframework.boot.test.autoconfigure.properties` to `org.springframework.boot.test.context`. Update your imports accordingly. Additionally, the `skip` attribute now uses `org.springframework.boot.test.context.PropertyMapping.Skip` instead of `org.springframework.boot.test.autoconfigure.properties.Skip`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#propertymapping-annotation
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.autoconfigure.properties.PropertyMapping
+        location: ANNOTATION
+- ruleID: spring-boot-3-to-spring-boot-4-00770
+  description: PropertyMapping.Skip enum relocated to org.springframework.boot.test.context
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `Skip` enum (used in `@PropertyMapping`'s `skip` attribute) has moved from `org.springframework.boot.test.autoconfigure.properties.Skip` to `org.springframework.boot.test.context.PropertyMapping.Skip`. Update any import or reference to this type.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#propertymapping-annotation
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.autoconfigure.properties.Skip
+        location: IMPORT
+- ruleID: spring-boot-3-to-spring-boot-4-00780
+  description: '@MockBean removed; replaced by Spring Framework''s @MockitoBean'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring Boot''s `@MockBean` annotation has been removed. Replace it with `@MockitoBean` from Spring Framework (`org.springframework.test.context.bean.override.mockito.MockitoBean`). Note a key behavioral difference: `@MockitoBean` can be used on test class fields but NOT in `@Configuration` classes. If you were using `@MockBean` inside a `@TestConfiguration` to share mocks, migrate to declaring `@MockitoBean` on the test class itself or use `@MockitoBean(types = {...})` to mock multiple beans in one annotation.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mockbean-and-spybean-removal
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.mock.mockito.MockBean
+        location: ANNOTATION
+- ruleID: spring-boot-3-to-spring-boot-4-00790
+  description: '@SpyBean removed; replaced by Spring Framework''s @MockitoSpyBean'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring Boot''s `@SpyBean` annotation has been removed. Replace it with `@MockitoSpyBean` from Spring Framework (`org.springframework.test.context.bean.override.mockito.MockitoSpyBean`). Note a key behavioral difference: `@MockitoSpyBean` can be used on test class fields but NOT in `@Configuration` classes. If you were using `@SpyBean` inside a `@TestConfiguration` to share spies, migrate to declaring `@MockitoSpyBean` on the test class itself.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#mockbean-and-spybean-removal
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.mock.mockito.SpyBean
+        location: ANNOTATION

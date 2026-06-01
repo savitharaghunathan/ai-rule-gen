@@ -1,0 +1,249 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00010
+  description: Spring Boot 4.0 requires Java 17+, Spring Framework 7.x, and Jakarta EE 11.
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4.0 has updated system requirements. It requires Java 17 or later, Kotlin 2.2 or later (if using Kotlin), GraalVM 25+ (if using native-image), Spring Framework 7.x, and a Servlet 6.1 baseline (Jakarta EE 11). Ensure all system and dependency requirements are met before upgrading. Using the latest LTS release of Java is encouraged.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#review-system-requirements
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot
+        upperbound: 4.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00030
+  description: Undertow support has been removed from Spring Boot 4; it is not Servlet 6.1 compatible.
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4 requires a Servlet 6.1 baseline, with which Undertow is not yet compatible. Undertow support has been removed, including the Undertow starter and the ability to use Undertow as an embedded server. Replace Undertow with a Servlet 6.1-compatible server such as Tomcat or Jetty. Use `spring-boot-starter-tomcat` or `spring-boot-starter-jetty` instead.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#undertow
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-undertow
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00040
+  description: Spring Pulsar Reactive auto-configuration has been removed from Spring Boot 4.
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Following the removal of reactor support in Spring Pulsar, Spring Boot 4 no longer manages the reactive Pulsar client and auto-configuration for Spring Pulsar Reactive has been removed. Remove `spring-boot-starter-pulsar-reactive` from your dependencies. If you require reactive Pulsar support, consult the Spring Pulsar project directly for alternatives.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#pulsar-reactive
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-pulsar-reactive
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00060
+  description: Spring Session Hazelcast support has been removed from Spring Boot 4.
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Session Hazelcast is now under the leadership of the Hazelcast team and direct support has been removed from Spring Boot 4. Remove the `spring-session-hazelcast` dependency. If you require Spring Session with Hazelcast, refer to the Hazelcast team's documentation for the updated integration.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-session-hazelcast
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.session.spring-session-hazelcast
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00070
+  description: Spring Session MongoDB support has been removed from Spring Boot 4.
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Session MongoDB is now under the leadership of the MongoDB team and direct support has been removed from Spring Boot 4. Remove the `spring-session-data-mongodb` dependency managed by Spring Boot. If you require Spring Session with MongoDB, refer to the MongoDB team's documentation for the updated integration.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-session-mongodb
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.session.spring-session-data-mongodb
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00090
+  description: Flyway now requires the spring-boot-starter-flyway starter instead of a direct dependency.
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4's new modular design requires explicit starter POMs for technologies like Flyway. Replace the direct `flyway-core` dependency with `spring-boot-starter-flyway` to ensure proper auto-configuration is available.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.flywaydb.flyway-core
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00100
+  description: Liquibase now requires the spring-boot-starter-liquibase starter instead of a direct dependency.
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4's new modular design requires explicit starter POMs for technologies like Liquibase. Replace the direct `liquibase-core` dependency with `spring-boot-starter-liquibase` to ensure proper auto-configuration is available.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.liquibase</groupId>
+        <artifactId>liquibase-core</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-liquibase</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.liquibase.liquibase-core
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00140
+  description: spring-boot-starter renamed to spring-boot-starter-classic in Spring Boot 4.
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In Spring Boot 4, `spring-boot-starter` has been replaced by `spring-boot-starter-classic`. The classic starter provides all modules but excludes transitive dependencies, mimicking the previous generation of Spring Boot. For a quick upgrade path, replace `spring-boot-starter` with `spring-boot-starter-classic`. Eventually, migrate to the new focused starters for the specific technologies your application uses.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    ```
+
+    ## After (quick migration)
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-classic</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#classic-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter
+        upperbound: 4.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00290
+  description: spring-boot-starter-aop renamed to spring-boot-starter-aspectj in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring-boot-starter-aop` starter has been renamed to `spring-boot-starter-aspectj` in Spring Boot 4 to clarify its scope. Replace `spring-boot-starter-aop` with `spring-boot-starter-aspectj` in your build file. Before upgrading, review if your application actually uses AspectJ (e.g., annotations from `org.aspectj.lang.annotation`) to determine if you need this dependency at all.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-aop
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00300
+  description: Spring Boot 4 removed managed dependency for Spring Retry; explicit version now required
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4 has removed managed dependency management for Spring Retry. If your application uses Spring Retry, you must now declare an explicit version in your build file. Consider migrating to the equivalent retry features in Spring Framework 7 instead.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-retry
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.retry.spring-retry
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00310
+  description: spring-authorization-server.version property no longer works in Spring Boot 4
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Authorization Server is now part of Spring Security and Spring Boot 4 has removed explicit dependency management for it. The `spring-authorization-server.version` property no longer works. If you need to override the version, use `spring-security.version` instead.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-authorization-server
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring-authorization-server\.version
+        filePattern: pom\.xml|build\.gradle(\.kts)?

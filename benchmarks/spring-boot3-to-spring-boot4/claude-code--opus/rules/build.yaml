@@ -1,0 +1,133 @@
+- ruleID: spring-boot3-to-spring-boot4-00040
+  description: Embedded executable uber jar launch scripts removed in Spring Boot 4
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Support for embedded launch scripts used to create "fully executable" jar files has been removed in Spring Boot 4. Remove the `<executable>true</executable>` configuration from the `spring-boot-maven-plugin`. You can still create uber jars and run them using `java -jar`. For similar functionality, consider alternatives such as Gradle's application plugin.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#embedded-executable-uber-jar-launch-scripts
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='executable' and text()='true']
+        filepaths:
+            - pom.xml
+- ruleID: spring-boot3-to-spring-boot4-00050
+  description: Embedded executable uber jar launch scripts removed in Spring Boot 4
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Support for embedded launch scripts used to create "fully executable" jar files has been removed in Spring Boot 4. Remove the `launchScript()` or `launchScript { }` configuration from your Gradle build file. You can still create uber jars and run them using `java -jar`. For similar functionality, consider alternatives such as Gradle's application plugin.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#embedded-executable-uber-jar-launch-scripts
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: launchScript
+        filePattern: .*\.gradle(\.kts)?
+- ruleID: spring-boot3-to-spring-boot4-00260
+  description: Optional dependencies no longer included in uber jars by default
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Optional dependencies are no longer included in uber jars by default in Spring Boot 4.0. If you need optional dependencies in your uber jar, add `<includeOptional>true</includeOptional>` to the spring-boot-maven-plugin configuration in your pom.xml.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#optional-dependencies-in-maven
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: /m:project/m:build/m:plugins/m:plugin[m:artifactId/text()='spring-boot-maven-plugin']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: spring-boot3-to-spring-boot4-00300
+  description: Classic uber-jar loader removed in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The classic uber-jar loader has been removed in Spring Boot 4.0. Remove the `<loaderImplementation>CLASSIC</loaderImplementation>` configuration from your Maven POM.
+
+    ## Before
+    ```xml
+    <loaderImplementation>CLASSIC</loaderImplementation>
+    ```
+
+    ## After
+    Remove the `<loaderImplementation>` element entirely.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#classic-uber-jar-loader-support
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='loaderImplementation' and text()='CLASSIC']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: spring-boot3-to-spring-boot4-00310
+  description: Classic uber-jar loader removed in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The classic uber-jar loader has been removed in Spring Boot 4.0. Remove the `loaderImplementation` configuration from your Gradle build file.
+
+    ## Before
+    ```groovy
+    loaderImplementation = org.springframework.boot.loader.tools.LoaderImplementation.CLASSIC
+    ```
+
+    ## After
+    Remove the `loaderImplementation` line entirely.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#classic-uber-jar-loader-support
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: loaderImplementation.*CLASSIC
+        filePattern: .*\.gradle(\.kts)?
+- ruleID: spring-boot3-to-spring-boot4-00320
+  description: CycloneDX Gradle plugin minimum version is now 3.0.0
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The minimum supported version of the CycloneDX Gradle plugin is now 3.0.0 in Spring Boot 4.0. If you use the CycloneDX Gradle plugin, ensure you upgrade to version 3.0.0 or later.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#cyclone-dx-gradle-plugin
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.cyclonedx
+        filePattern: .*\.gradle(\.kts)?

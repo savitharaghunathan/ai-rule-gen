@@ -1,0 +1,21 @@
+{
+  "runtime": "scribe",
+  "model": "opus",
+  "model_id": "claude-opus-4-6",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-01",
+  "duration_minutes": null,
+  "rule_count": 30,
+  "quality_avg": 5.7,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 2,
+  "specificity_gap_count": 0,
+  "pass_rate": null,
+  "eval_judge": {
+    "precision_issues": 2,
+    "coherence_issues": 2,
+    "cross_rule_issues": 3,
+    "gaps": 13
+  },
+  "notes": "Scribe MCP server (not our pipeline). No kantra tests run — rules not tested against test data. Quality 5.7 driven by excellent message structure (all have links, before/after, effort). 13 gaps covering ~204/380 ground truth entries (46% coverage). No fail-severity issues."
+}

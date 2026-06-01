@@ -1,0 +1,23 @@
+- ruleID: spring-boot3-to-spring-boot4-00440
+  description: PathRequest.toStaticResources() now includes /fonts/** location
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4 adds a `/fonts/**` location to `PathRequest.toStaticResources().atCommonLocations()`. The new fonts path inherits the same security settings as your existing static resource configuration. To exclude it, use:
+
+    ```java
+    pathRequest.toStaticResources().atCommonLocations().excluding(StaticResourceLocation.FONTS);
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#fonts-added-to-common-static-locations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.security.servlet.PathRequest
+        location: IMPORT
