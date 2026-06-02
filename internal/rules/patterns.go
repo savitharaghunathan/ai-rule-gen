@@ -18,7 +18,7 @@ type ArtifactCoordinates struct {
 // ExtractOutput is the intermediate format between agent pattern extraction and rule construction.
 // The agent writes this as patterns.json; `rulegen construct` reads it.
 type ExtractOutput struct {
-	Sources  []string           `json:"sources"`
+	Sources  []string           `json:"sources,omitempty"`
 	Targets  []string           `json:"targets"`
 	Language string             `json:"language,omitempty"`
 	Patterns []MigrationPattern `json:"patterns"`

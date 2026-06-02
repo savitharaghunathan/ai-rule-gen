@@ -259,8 +259,8 @@ func TestPatternToRule_FullDescription(t *testing.T) {
 		Complexity:    "low",
 		Category:      "mandatory",
 	}
-	idGen := rules.NewIDGenerator("test")
-	rule := patternToRule(p, idGen, []string{"sb3"}, []string{"sb4"})
+	idGen := rules.NewIDGenerator()
+	rule := patternToRule(p, idGen, "core-import", []string{"sb3"}, []string{"sb4"})
 	if rule.Description != long {
 		t.Errorf("description was truncated: got %q", rule.Description)
 	}
@@ -277,8 +277,8 @@ func TestPatternToRule_LinksFromDocURL(t *testing.T) {
 		Category:         "mandatory",
 		DocumentationURL: "https://example.com/migration#section",
 	}
-	idGen := rules.NewIDGenerator("test")
-	rule := patternToRule(p, idGen, []string{"sb3"}, []string{"sb4"})
+	idGen := rules.NewIDGenerator()
+	rule := patternToRule(p, idGen, "core-import", []string{"sb3"}, []string{"sb4"})
 	if len(rule.Links) != 1 {
 		t.Fatalf("expected 1 link, got %d", len(rule.Links))
 	}
@@ -300,8 +300,8 @@ func TestPatternToRule_NoLinksWithoutDocURL(t *testing.T) {
 		Complexity:    "low",
 		Category:      "mandatory",
 	}
-	idGen := rules.NewIDGenerator("test")
-	rule := patternToRule(p, idGen, []string{"sb3"}, []string{"sb4"})
+	idGen := rules.NewIDGenerator()
+	rule := patternToRule(p, idGen, "core-import", []string{"sb3"}, []string{"sb4"})
 	if rule.Links != nil {
 		t.Errorf("expected nil links when no documentation_url, got %v", rule.Links)
 	}
@@ -398,9 +398,60 @@ func TestRun_MultiSourceTargetLabels(t *testing.T) {
 		}
 	}
 
-	// Verify rule ID prefix uses primary source/target
+	// Verify rule ID prefix uses {concern}-{change-type} format
 	ruleID := result.PatternRuleMap[0]
-	if !strings.HasPrefix(ruleID, "oraclejdk7+-to-openjdk7+-") {
-		t.Errorf("rule ID %q should start with oraclejdk7+-to-openjdk7+-", ruleID)
+	if !strings.HasPrefix(ruleID, "general-import-") {
+		t.Errorf("rule ID %q should start with general-import-", ruleID)
+	}
+}
+
+func TestRun_EmptySources(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  nil,
+		Targets:  []string{"openjdk17"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern: "SecurityManager removed",
+				SourceFQN:     "java.lang.SecurityManager",
+				LocationType:  "IMPORT",
+				ProviderType:  "java",
+				Rationale:     "SecurityManager removed in JDK 17",
+				Complexity:    "high",
+				Category:      "mandatory",
+				Concern:       "security",
+			},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if result.RulesWritten != 1 {
+		t.Errorf("rules written: got %d, want 1", result.RulesWritten)
+	}
+
+	// No source labels on rules
+	for _, rr := range result.Grouped {
+		for _, r := range rr {
+			for _, l := range r.Labels {
+				if strings.HasPrefix(l, "konveyor.io/source=") {
+					t.Errorf("rule %s should have no source label, got %q", r.RuleID, l)
+				}
+			}
+		}
+	}
+
+	// Ruleset name uses target only
+	if result.Ruleset.Name != "openjdk17" {
+		t.Errorf("ruleset name: got %q, want %q", result.Ruleset.Name, "openjdk17")
+	}
+
+	// Rule ID uses concern-summary format
+	ruleID := result.PatternRuleMap[0]
+	if !strings.HasPrefix(ruleID, "security-import-") {
+		t.Errorf("rule ID %q should start with security-import-", ruleID)
 	}
 }
