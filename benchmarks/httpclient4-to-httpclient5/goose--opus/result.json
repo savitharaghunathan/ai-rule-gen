@@ -1,0 +1,21 @@
+{
+  "runtime": "goose",
+  "model": "opus",
+  "model_id": "claude-opus-4-6",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-01",
+  "duration_minutes": 24.3,
+  "rule_count": 28,
+  "quality_avg": 5.86,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 13,
+  "specificity_gap_count": 0,
+  "pass_rate": "28/28",
+  "eval_judge": {
+    "precision_issues": 13,
+    "coherence_issues": 4,
+    "cross_rule_issues": 3,
+    "gaps": 13
+  },
+  "notes": "Goose runtime with Opus (confirmed in pipeline log). 28 rules, 28/28 pass, 0 kantra-limitation. 13 precision issues from bare METHOD_CALL patterns (only 2/16 use FQN). 2 async/classic coherence issues. Same 13 package gaps as Scribe baseline."
+}

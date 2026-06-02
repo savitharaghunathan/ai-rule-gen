@@ -25,6 +25,7 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 | Goose | Sonnet | claude-sonnet-4-20250514 | Anthropic |
 | Goose | Opus | claude-opus-4-6 | Anthropic |
 | Goose | Gemini Pro | google-vertex/gemini-3.1-pro-preview | Google |
+| OpenCode | DeepSeek V3.2 | google-vertex/deepseek-ai/deepseek-v3.2-maas | Google (Vertex) |
 | Scribe (MCP) | Sonnet | claude-sonnet-4-20250514 | Anthropic |
 | Scribe (MCP) | Opus | claude-opus-4-6 | Anthropic |
 
@@ -39,8 +40,9 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 | opencode | opus | 29 | 29/29 | 5.90 | 17 | 21.5 | 8 | 3 | 2 | 8 |
 | opencode | gemini-pro | 33 | 33/33 | 4.45 | — | 11.1 | 1 | 4 | 1 | 5 |
 | goose | sonnet | 28 | 28/28 | 6.0 | 11 | 21.2 | 7 | 3 | 3 | 8 |
-| goose | opus | — | — | — | — | — | — | — | — | — |
+| goose | opus | 28 | 28/28 | 5.86 | 13 | 24.3 | 13 | 4 | 3 | 13 |
 | goose | gemini-pro | — | — | — | — | — | — | — | — | — |
+| opencode | deepseek-v3 | 35 | 34/35 | 4.3 | 1 | 61.7 | 9 | 7 | 4 | 13 |
 | **scribe** | **sonnet** | **14** | **n/a** | **6.0** | **1** | **n/a** | **2** | **3** | **1** | **29** |
 | **scribe** | **opus** | **30** | **n/a** | **5.7** | **2** | **n/a** | **2** | **2** | **3** | **13** |
 
@@ -100,6 +102,24 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 - **3 coherence issues**: **00260** fires on `CloseableHttpClient` import but gives async-only guidance. **00270** same for `HttpClients`. **00250** same for `PoolingHttpClientConnectionManager` — all three wrong for classic migration path
 - **3 cross-rule issues**: `00010`+`00260`+`00270` contradictory guidance (package rule vs async rules), `00010` overlaps with all IMPORT rules, `00280`+`00260` both push async
 - **8 gaps**: `HttpResponse` interface split (high), `ResponseHandler` pattern (high), `CookieSpecs`, `TimeUnit`→`Timeout`/`TimeValue`, `HttpGet/Put/Delete/Patch` constructors (only `HttpPost` covered), `EntityUtils`, `BasicNameValuePair`, async streaming consumers
+
+#### OpenCode / DeepSeek V3.2 — 35 rules, 34/35 pass
+
+- **15 of 35 rules passed** eval judge review
+- **9 precision issues** (3 error, 6 warn): 13 of 16 METHOD_CALL patterns use bare names — `setConnectTimeout`, `getStatusCode`, `getAllHeaders` match across Spring, OkHttp, JDBC. Rule `00010` (`org.apache.http*` at PACKAGE) is a noise-generating superset of all specific import rules
+- **7 coherence issues** (3 error, 4 warn): **00300** async/classic confusion — detects classic `PoolingHttpClientConnectionManager` but recommends async replacement. **00060** detects wrong import path (`org.apache.http.protocol.HttpClientContext` instead of `org.apache.http.client.protocol.HttpClientContext`). **00080** failed kantra — CookieSpecs.STANDARD detection vs StandardCookieSpec.STRICT message mismatch. Most messages are boilerplate (`"<ClassName>: migration required for HttpClient 5.x"`) with no actionable detail
+- **4 cross-rule issues**: `00010` PACKAGE rule subsumes all specific import rules (error), duplicate timeout rules, overlapping connection manager guidance
+- **13 gaps**: Same 13 uncovered packages as other runs
+- **Lowest quality run** after Haiku: 25/35 missing before/after code, 3 missing links. DeepSeek generates correct rule structure but produces near-empty messages. 61.7 min — slowest of any httpclient run
+
+#### Goose / Opus — 28 rules, 28/28 pass
+
+- **12 of 28 rules passed** eval judge review
+- **13 precision issues**: 13 of 16 METHOD_CALL rules use bare method names without FQN — only `00070` (`getStatusLine`) and `00110` (`execute`) are fully qualified. 4 high-risk: `setConnectTimeout`, `setSocketTimeout`, `getAllHeaders`, `getStatusLine` (bare duplicate) match across many Java frameworks
+- **4 coherence issues**: **00250** fires on classic `PoolingHttpClientConnectionManager` import but advises async `PoolingAsyncClientConnectionManager`. **00260** fires on classic `CloseableHttpClient` import but advises `CloseableHttpAsyncClient`. **00150** `addInterceptorLast` message only covers logging use case. **00010** has formatting artifact (duplicate heading)
+- **3 cross-rule issues**: `00070`+`00240` both detect `getStatusLine` — one FQN, one bare (error-level overlap), `00010` HttpResponse import overlaps catch-all, `00130`+`00140` timeout companion rules with overlapping messages
+- **13 gaps**: Same 13 uncovered packages as other Opus runs — auth, cookie, impl.auth, impl.cookie, client.entity, conn.routing, conn.scheme, conn.socket, conn.util, conn.params, client.params, impl.conn.tsccm, impl.execchain
+- **Worst precision score** of any httpclient run (13 issues). The bare METHOD_CALL pattern problem is more severe here than in CC/Opus (9) or Goose/Sonnet (7)
 
 #### Scribe / Sonnet — 14 rules, not kantra-tested
 
