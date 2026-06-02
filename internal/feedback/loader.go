@@ -91,11 +91,19 @@ func LoadRun(dir string) (*RunSummary, error) {
 		verifiedByRuleID[rs.RuleID] = rs.SourceVerified
 	}
 
-	prefix := deriveRulePrefix(report)
-	gen := rules.NewIDGenerator(prefix)
+	prefixGens := make(map[string]*rules.IDGenerator)
 
 	for i, p := range extract.Patterns {
-		ruleID := gen.Next()
+		concern := p.Concern
+		if concern == "" {
+			concern = "general"
+		}
+		changeType := rules.ChangeType(p.LocationType, p.ProviderType, p.DependencyName, p.XPath)
+		prefix := rules.RuleIDPrefix(concern, changeType)
+		if _, ok := prefixGens[prefix]; !ok {
+			prefixGens[prefix] = rules.NewIDGenerator()
+		}
+		ruleID := prefixGens[prefix].Next(prefix)
 		outcome := PatternOutcome{
 			SourceFQN:    p.SourceFQN,
 			LocationType: p.LocationType,
@@ -169,16 +177,3 @@ func indexVerifyResults(results []verify.Result) map[int]verify.Result {
 	return m
 }
 
-func deriveRulePrefix(report *workspace.Report) string {
-	if len(report.Rules) > 0 {
-		id := report.Rules[0].RuleID
-		parts := strings.Split(id, "-")
-		if len(parts) >= 2 {
-			return strings.Join(parts[:len(parts)-1], "-")
-		}
-	}
-	if len(report.Sources) > 0 && len(report.Targets) > 0 {
-		return report.Sources[0] + "-to-" + report.Targets[0]
-	}
-	return "rule"
-}
