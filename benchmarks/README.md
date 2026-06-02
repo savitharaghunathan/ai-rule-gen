@@ -9,7 +9,8 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 - **Quality Score**: Completeness metric (max 6 pts: message presence + links + effort + before/after guidance). Measures documentation completeness, not rule correctness.
 - **Overlaps**: Count of rule pairs that fire on the same code. Overlaps can indicate specificity layering (a broad package-level rule + a specific method-level rule covering the same API), which improves developer experience. High overlap count is not inherently bad — it may mean better coverage through layered detection.
 - **Eval Judge**: LLM-based review checking precision (false positive risk), coherence (detection/guidance alignment), cross-rule conflicts, and coverage gaps vs. the migration guide.
-- **Timing**: Wall-clock from pipeline start to report completion
+- **Timing**: Wall-clock from pipeline start to report completion. "Rule Gen" = ingest through construct stages. "Test" = scaffold through kantra validation. Scribe has no test phase.
+- **Gaps**: Migration patterns from the guide with no corresponding rule. "Adjusted Gaps" accounts for broad package-level rules (e.g., `org.apache.http*` at PACKAGE) that provide generic coverage for all sub-packages — these are not counted as gaps even though guidance is not package-specific.
 - **Date**: May–June 2026
 
 ## Runtime × Model Matrix
@@ -31,20 +32,20 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 
 ## httpclient4-to-httpclient5
 
-| Runtime | Model | Rules | Pass Rate | Quality Avg | Overlaps | Time (min) | Precision | Coherence | Cross-Rule | Gaps |
-|---------|-------|-------|-----------|-------------|----------|------------|-----------|-----------|------------|------|
-| claude-code | sonnet | 43 | 42/43 | 5.95 | 3 | 20.7 | 4 | 4 (1 fail) | 3 | 1 |
-| claude-code | opus | 29 | 29/29 | 5.93 | 15 | 18.2 | 9 | 6 (2 fail) | 2 | 3 |
-| claude-code | haiku | 26 | 26/26 | 3.0 | 14 | 4.0 | 3 | 26 (all fail) | 5 | 9 |
-| opencode | sonnet | 35 | 35/35 | 5.91 | 20 | 49.2 | 12 | 5 | 3 | 9 |
-| opencode | opus | 29 | 29/29 | 5.90 | 17 | 21.5 | 8 | 3 | 2 | 8 |
-| opencode | gemini-pro | 33 | 33/33 | 4.45 | — | 11.1 | 1 | 4 | 1 | 5 |
-| goose | sonnet | 28 | 28/28 | 6.0 | 11 | 21.2 | 7 | 3 | 3 | 8 |
-| goose | opus | 28 | 28/28 | 5.86 | 13 | 24.3 | 13 | 4 | 3 | 13 |
-| goose | gemini-pro | — | — | — | — | — | — | — | — | — |
-| opencode | deepseek-v3 | 35 | 34/35 | 4.3 | 1 | 61.7 | 9 | 7 | 4 | 13 |
-| **scribe** | **sonnet** | **14** | **n/a** | **6.0** | **1** | **n/a** | **2** | **3** | **1** | **29** |
-| **scribe** | **opus** | **30** | **n/a** | **5.7** | **2** | **n/a** | **2** | **2** | **3** | **13** |
+| Runtime | Model | Rules | Pass Rate | Quality | Rule Gen (min) | Total (min) | Precision | Coherence | Cross-Rule | Gaps | Adj. Gaps |
+|---------|-------|-------|-----------|---------|----------------|-------------|-----------|-----------|------------|------|-----------|
+| claude-code | sonnet | 43 | 42/43 | 5.95 | 13.2 | 34.6 | 4 | 4 (1 fail) | 3 | 1 | 0 |
+| claude-code | opus | 29 | 29/29 | 5.93 | 12.3 | 28.5 | 9 | 6 (2 fail) | 2 | 3 | 0 |
+| claude-code | haiku | 26 | 26/26 | 3.0 | — | 4.0 | 3 | 26 (all fail) | 5 | 9 | — |
+| opencode | sonnet | 35 | 35/35 | 5.91 | 8.4 | 49.2 | 12 | 5 | 3 | 9 | 0 |
+| opencode | opus | 29 | 29/29 | 5.90 | 7.4 | 21.5 | 8 | 3 | 2 | 8 | 8 |
+| opencode | gemini-pro | 33 | 33/33 | 4.45 | — | 11.1 | 1 | 4 | 1 | 5 | — |
+| opencode | deepseek-v3 | 35 | 34/35 | 4.3 | — | 61.7 | 9 | 7 | 4 | 13 | — |
+| goose | sonnet | 28 | 28/28 | 6.0 | 11.3 | 21.2 | 7 | 3 | 3 | 8 | 0 |
+| goose | opus | 28 | 28/28 | 5.86 | 12.6 | 24.3 | 13 | 4 | 3 | 13 | 13 |
+| goose | gemini-pro | — | — | — | — | — | — | — | — | — | — |
+| scribe | sonnet | 14 | n/a | 6.0 | ~2 | ~2 | 2 | 3 | 1 | 29 | ~16 |
+| scribe | opus | 30 | n/a | 5.7 | ~3 | ~3 | 2 | 2 | 3 | 13 | 13 |
 
 ### Eval Details (httpclient4→5)
 
@@ -111,6 +112,7 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 - **4 cross-rule issues**: `00010` PACKAGE rule subsumes all specific import rules (error), duplicate timeout rules, overlapping connection manager guidance
 - **13 gaps**: Same 13 uncovered packages as other runs
 - **Lowest quality run** after Haiku: 25/35 missing before/after code, 3 missing links. DeepSeek generates correct rule structure but produces near-empty messages. 61.7 min — slowest of any httpclient run
+- **Model tier**: DeepSeek V3.2 sits between Haiku (non-functional) and Gemini Pro (functional but weak). It follows pipeline structure and passes kantra (97%) but cannot produce meaningful migration guidance
 
 #### Goose / Opus — 28 rules, 28/28 pass
 
@@ -141,27 +143,45 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 
 ### Key Findings (httpclient4→5)
 
-**Claude Code / Sonnet** produces the most comprehensive ruleset (43 rules) with highest quality scores and fewest eval judge issues. One rule fails kantra tests, but overall coverage and guidance are strong.
+**Claude Code / Sonnet** produces the most comprehensive ruleset (43 rules) with highest quality scores and fewest eval judge issues. One rule fails kantra tests, but overall coverage and guidance are strong. Rule gen takes 13.2 min; testing adds another 21 min.
 
-**Claude Code / Opus** generates fewer rules (29) but is more conservative. Higher overlap count reflects specificity layering. More precision issues from unqualified METHOD_CALL conditions.
+**Claude Code / Opus** generates fewer rules (29) but is more conservative. Higher overlap count reflects specificity layering. More precision issues from unqualified METHOD_CALL conditions. Both CC runs have a broad `org.apache.http*` PACKAGE rule that gives zero adjusted gaps.
 
 **Claude Code / Haiku** produces a non-functional ruleset: all 26 rules have empty messages, use wrong condition types, and include 5 duplicate groups.
 
-**OpenCode / Opus** generates exactly the same rule count as Claude Code / Opus (29) with identical pass rate. 8 unqualified METHOD_CALL precision issues and the same async/classic coherence pattern. 8 gaps — notably only covers `HttpPost` constructor migration, missing `HttpGet/Put/Delete/Patch`.
+**OpenCode / Opus** generates exactly the same rule count as Claude Code / Opus (29) with identical pass rate. 8 unqualified METHOD_CALL precision issues and the same async/classic coherence pattern. No catch-all rule — 8 real gaps.
 
 **OpenCode / Sonnet** generates 35 rules (fewer than Claude Code / Sonnet's 43) but has the worst precision of any run — 12 unqualified METHOD_CALL rules. Takes 2.4x longer (49 min vs 21 min) than Claude Code / Sonnet. Same async/classic coherence issue plus a wrong namespace in a duplicate package rule.
 
-**Goose / Sonnet** generates the fewest rules (28) but achieves a perfect 6.0 quality avg — every rule has complete documentation (links, effort, before/after guidance). Fewest overlaps (11) of any run. Same async/classic coherence issue and missing HTTP method constructors as other runs.
+**OpenCode / DeepSeek V3.2** generates 35 rules with the worst quality (4.3) after Haiku. Messages are boilerplate with no actionable detail — 25/35 missing before/after code. Slowest run at 61.7 min. Sits in the "follows instructions but can't reason deeply" tier.
+
+**Goose / Sonnet** generates the fewest rules (28) but achieves a perfect 6.0 quality avg — every rule has complete documentation (links, effort, before/after guidance). Fewest overlaps (11) of any run. Has a catch-all PACKAGE rule — zero adjusted gaps.
+
+**Goose / Opus** has the worst precision of any httpclient run (13 issues) — 13/16 METHOD_CALL patterns are bare names. No catch-all rule — 13 real gaps.
 
 **Sonnet across runtimes** (httpclient4→5):
 
-| Runtime | Rules | Quality | Precision | Coherence | Gaps |
-|---------|-------|---------|-----------|-----------|------|
-| Claude Code | 43 | 5.95 | 4 | 4 | 1 |
-| OpenCode | 35 | 5.91 | 12 | 5 | 9 |
-| Goose | 28 | **6.0** | 7 | 3 | 8 |
+| Runtime | Rules | Quality | Precision | Coherence | Adj. Gaps |
+|---------|-------|---------|-----------|-----------|-----------|
+| Claude Code | 43 | 5.95 | 4 | 4 | 0 |
+| OpenCode | 35 | 5.91 | 12 | 5 | 0 |
+| Goose | 28 | 6.0 | 7 | 3 | 0 |
 
-Claude Code extracts significantly more rules (43) with fewest issues. Goose produces the fewest rules but highest documentation quality. OpenCode sits in the middle on rule count but has the worst precision and gaps.
+All three Sonnet runs have package-level catch-all rules — zero adjusted gaps. Claude Code extracts significantly more rules (43) with fewest issues. Goose produces the fewest rules but highest documentation quality.
+
+**Scribe comparison** (httpclient4→5):
+
+| Metric | Our Best (CC/Sonnet) | Scribe Best (Opus) |
+|--------|---------------------|-------------------|
+| Rules | 43 | 30 |
+| Adj. gaps | 0 | 13 |
+| Rule gen time | 13.2 min | ~3 min |
+| Total time | 34.6 min | ~3 min |
+| Precision | 4 | 2 |
+| Coherence | 4 (1 fail) | 2 |
+| Kantra validated | 42/43 | none |
+
+Our skill generates more rules with zero adjusted gaps. Scribe produces cleaner individual rules (fewer precision/coherence issues) but has 13 real gaps — no catch-all rule covers the missing packages. Rule generation alone is 13 min vs ~3 min; the extra 21 min is kantra testing which catches broken rules before they ship.
 
 **Shared issue**: All Sonnet and Opus runs generate rules that tell classic `CloseableHttpClient` users to switch to async, contradicting the migration guide's classic-first path. This is a consistent LLM blind spot regardless of runtime.
 
@@ -178,6 +198,10 @@ Claude Code extracts significantly more rules (43) with fewest issues. Goose pro
 5. **Overlaps are a feature, not a bug.** Opus's higher overlap count (15 vs Sonnet's 3) reflects more specificity layering — a broad package-level import rule plus specific method-level rules for the same API. This gives developers both a high-level "this package moved" warning and targeted "change this specific call" guidance. The eval initially flagged these as conflicts, but they represent deliberate detection depth.
 
 6. **Cost-quality tradeoff is stark.** Haiku costs ~20x less per token than Opus and runs 4.5x faster, but produces zero usable output. Sonnet costs ~5x less than Opus, runs slightly slower (20.7 vs 18.2 min), and produces better results across every dimension. For this pipeline, Sonnet is the clear cost-performance winner.
+
+7. **Rule generation is only ~40% of pipeline time.** Across httpclient runs, rule generation (ingest→construct) takes 7-13 min while testing (scaffold→kantra) takes 4-8 min. The remaining time is coverage analysis and reporting. Scribe skips testing entirely (~2-3 min total), but this means broken rules like Scribe/Sonnet's `class-004` (wrong FQN, never fires) ship without detection.
+
+8. **Model capability has four tiers for agentic pipelines.** Haiku/DeepSeek V3.2 = non-functional or near-empty output. Gemini Pro = functional but weak documentation (4.3-4.5 quality). Sonnet = strong across all dimensions (5.9-6.0 quality). Opus = comparable to Sonnet but more precision issues from unqualified METHOD_CALL patterns. The jump from tier 1→2 is the "capability cliff"; the difference between tiers 3→4 is nuanced.
 
 ## spring-boot3-to-spring-boot4
 
