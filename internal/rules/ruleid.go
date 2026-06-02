@@ -65,7 +65,7 @@ func ChangeType(locationType, providerType, dependencyName, xpath string) string
 	if xpath != "" {
 		return "xml"
 	}
-	switch locationType {
+	switch strings.ToUpper(locationType) {
 	case "IMPORT", "PACKAGE":
 		return "import"
 	case "METHOD_CALL", "CONSTRUCTOR_CALL":
