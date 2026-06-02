@@ -69,7 +69,7 @@ The examples above use Java, but the schema works for all languages — substitu
 
 | Field | Required | Description |
 |---|---|---|
-| `sources` | yes | Array of source technology labels (e.g., `["spring-boot3", "spring-boot"]`). Each becomes a `konveyor.io/source=` label on every rule. First element is the "primary" used for naming (rule IDs, directory, ruleset name) |
+| `sources` | no | Array of source technology labels (e.g., `["spring-boot3", "spring-boot"]`). Each becomes a `konveyor.io/source=` label on every rule. If empty or omitted, rules will have no source label |
 | `targets` | yes | Array of target technology labels (e.g., `["spring-boot4", "spring-boot"]`). Each becomes a `konveyor.io/target=` label on every rule. First element is the "primary" |
 | `language` | no | Programming language: `java`, `go`, `nodejs`, `csharp`. Auto-detected from provider_type if omitted |
 | `patterns` | yes | Array of MigrationPattern objects |
@@ -142,7 +142,7 @@ The CLI handles all mechanical transformation:
 
 3. **Effort conversion** — Maps `complexity` to numeric effort: trivial=1, low=3, medium=5, high=7, expert=9 (default=5)
 
-4. **Rule ID generation** — Creates sequential IDs: `<source>-to-<target>-00010`, `00020`, `00030`, etc. (increments of 10)
+4. **Rule ID generation** — Creates sequential IDs: `<concern>-<change-type>-00010`, `00020`, `00030`, etc. (increments of 10). The concern is the YAML filename; the change-type is derived from the detection mechanism (`import`, `method`, `annotation`, `dependency`, `xml`, `pattern`, `type`, `change`). Numbering resets per `{concern}-{change-type}` group. Example: `security-import-00010`, `connection-method-00020`.
 
 5. **Initial labels** — Adds one `konveyor.io/source=` label per source, one `konveyor.io/target=` label per target, and `konveyor.io/generated-by=ai-rule-gen`
 

@@ -53,13 +53,13 @@ tests_failed: 1
 kantra_limitation: 0
 pass_rate: 66.67
 rules:
-  - rule_id: httpclient-4-to-httpclient-5-00010
+  - rule_id: core-import-00010
     test_status: passed
     source_verified: "true"
-  - rule_id: httpclient-4-to-httpclient-5-00020
+  - rule_id: core-method-00010
     test_status: passed
     source_verified: "false"
-  - rule_id: httpclient-4-to-httpclient-5-00030
+  - rule_id: core-change-00010
     test_status: failed
     source_verified: "true"
 `
@@ -70,9 +70,9 @@ rules:
   "targets": ["httpclient-5"],
   "language": "java",
   "patterns": [
-    {"source_fqn": "org.apache.http.HttpClient", "location_type": "PACKAGE", "category": "mandatory", "complexity": "low"},
-    {"source_fqn": "org.apache.http.HttpResponse.getStatusLine", "location_type": "METHOD_CALL", "category": "mandatory", "complexity": "medium"},
-    {"source_fqn": "org.apache.http.conn.ssl.SSLConnectionSocketFactory", "location_type": "TYPE", "category": "optional", "complexity": "high", "source_artifact": {"group_id": "org.apache.httpcomponents", "artifact_id": "httpclient", "version": "4.5.14"}}
+    {"source_pattern": "HttpClient package", "source_fqn": "org.apache.http.HttpClient", "location_type": "PACKAGE", "category": "mandatory", "complexity": "low", "concern": "core"},
+    {"source_pattern": "getStatusLine removal", "source_fqn": "org.apache.http.HttpResponse.getStatusLine", "location_type": "METHOD_CALL", "category": "mandatory", "complexity": "medium", "concern": "core"},
+    {"source_pattern": "SSL factory removal", "source_fqn": "org.apache.http.conn.ssl.SSLConnectionSocketFactory", "location_type": "TYPE", "category": "optional", "complexity": "high", "concern": "core", "source_artifact": {"group_id": "org.apache.httpcomponents", "artifact_id": "httpclient", "version": "4.5.14"}}
   ]
 }`
 	os.WriteFile(filepath.Join(dir, "patterns.json"), []byte(patternsJSON), 0o644)
@@ -141,7 +141,7 @@ tests_passed: 1
 tests_failed: 0
 pass_rate: 100
 rules:
-  - rule_id: httpclient-4-to-httpclient-5-00010
+  - rule_id: core-import-00010
     test_status: passed
 `
 	os.WriteFile(filepath.Join(dir, "report.yaml"), []byte(reportYAML), 0o644)
@@ -185,10 +185,10 @@ tests_passed: 2
 tests_failed: 0
 pass_rate: 100
 rules:
-  - rule_id: httpclient-4-to-httpclient-5-00010
+  - rule_id: core-import-00010
     test_status: passed
     source_verified: "true"
-  - rule_id: httpclient-4-to-httpclient-5-00020
+  - rule_id: core-method-00010
     test_status: passed
     source_verified: "false"
 `
@@ -199,8 +199,8 @@ rules:
   "targets": ["httpclient-5"],
   "language": "java",
   "patterns": [
-    {"source_fqn": "org.apache.http.HttpClient", "location_type": "PACKAGE", "category": "mandatory", "complexity": "low"},
-    {"source_fqn": "org.apache.http.HttpResponse.getStatusLine", "location_type": "METHOD_CALL", "category": "mandatory", "complexity": "medium"}
+    {"source_pattern": "HttpClient", "source_fqn": "org.apache.http.HttpClient", "location_type": "PACKAGE", "category": "mandatory", "complexity": "low", "concern": "core"},
+    {"source_pattern": "getStatusLine", "source_fqn": "org.apache.http.HttpResponse.getStatusLine", "location_type": "METHOD_CALL", "category": "mandatory", "complexity": "medium", "concern": "core"}
   ]
 }`
 	os.WriteFile(filepath.Join(dir, "patterns.json"), []byte(patternsJSON), 0o644)

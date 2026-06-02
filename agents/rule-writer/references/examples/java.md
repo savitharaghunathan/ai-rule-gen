@@ -76,7 +76,7 @@ Note: `location_type` is `CONSTRUCTOR_CALL` for `new InitialContext()` and `METH
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: java-ee-to-quarkus-00010
+- ruleID: di-method-00010
   description: JNDI lookups via InitialContext are not supported in Quarkus; use CDI @Inject
   category: mandatory
   effort: 5
@@ -161,7 +161,7 @@ Note: `lower_bound: "0.0.0"` means "any version" -- the dependency's mere presen
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: springboot-to-quarkus-00010
+- ruleID: web-dependency-00010
   description: Replace Spring Web with Quarkus spring-web extension
   category: mandatory
   effort: 1
@@ -230,7 +230,7 @@ Note: When `xpath` is set, construct produces a `builtin.xml` condition regardle
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: springboot-to-quarkus-00030
+- ruleID: build-xml-00010
   description: Replace Spring Boot parent POM with Quarkus BOM in dependencyManagement
   category: mandatory
   effort: 1
@@ -313,7 +313,7 @@ How to determine `source_artifact`:
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: spring-boot-3-to-spring-boot-4-00010
+- ruleID: core-import-00010
   description: BootstrapRegistry moved from org.springframework.boot to org.springframework.boot.bootstrap
   category: mandatory
   effort: 3
@@ -443,7 +443,7 @@ Two patterns — one PACKAGE rule for the namespace move, one METHOD_CALL for th
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: java-ee-to-quarkus-00050
+- ruleID: http-import-00010
   description: "Apache HttpClient 4.x (org.apache.http) is removed; re-import classes from org.apache.hc.httpclient5"
   category: mandatory
   effort: 5
@@ -458,7 +458,7 @@ Two patterns — one PACKAGE rule for the namespace move, one METHOD_CALL for th
       pattern: org.apache.http
       location: PACKAGE
 
-- ruleID: java-ee-to-quarkus-00060
+- ruleID: http-method-00010
   description: "HttpResponse.getStatusLine() is removed in HttpClient 5; use ClassicHttpResponse.getCode() instead"
   category: mandatory
   effort: 5
@@ -544,7 +544,7 @@ Note: `location_type: FIELD` matches when a **field is declared with** the speci
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: jms-to-reactive-quarkus-00030
+- ruleID: messaging-change-00010
   description: JMS Queue fields must be replaced with SmallRye Reactive Messaging Emitter in Quarkus
   category: mandatory
   effort: 5
@@ -654,7 +654,7 @@ Note: The `annotated_elements` field filters the match to only `@ActivationConfi
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: jms-to-reactive-quarkus-00020
+- ruleID: messaging-annotation-00010
   description: MDB with destinationLookup ActivationConfigProperty must use SmallRye @Incoming
   category: mandatory
   effort: 7
@@ -746,7 +746,7 @@ Section: "Upgrading Jackson" -> EXTRACT: entire package namespace renamed (item 
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: spring-boot-3-to-spring-boot-4-00320
+- ruleID: jackson-import-00010
   description: Jackson 3 uses tools.jackson package; com.fasterxml.jackson packages replaced
   category: mandatory
   effort: 5
@@ -830,7 +830,7 @@ Note: `source_fqn` is just the method name `setRetryHandler`, not the FQN. The c
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: httpclient4-to-httpclient5-00120
+- ruleID: http-client-method-00010
   description: setRetryHandler() renamed to setRetryStrategy() in HttpClient 5.x
   category: mandatory
   effort: 5
@@ -924,7 +924,7 @@ List both the interface and concrete type FQNs. The construct CLI generates an `
 ### Resulting Rule YAML (Strategy B — produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: httpclient4-to-httpclient5-00080
+- ruleID: http-client-method-00010
   description: closeExpiredConnections() renamed to closeExpired() in HttpClient 5.x
   category: mandatory
   effort: 1
@@ -1032,7 +1032,7 @@ Note: `source_fqn` is the bare method name `setConnectTimeout`, not the FQN `org
 ### Resulting Rule YAML (produced by cmd/construct, not by you)
 
 ```yaml
-- ruleID: httpclient4-to-httpclient5-00200
+- ruleID: connection-method-00010
   description: setConnectTimeout() moved from RequestConfig to ConnectionConfig in HttpClient 5.x
   category: mandatory
   effort: 5
