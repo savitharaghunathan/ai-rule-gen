@@ -4,7 +4,7 @@
 
 - **Pipeline**: Skill-based runs (Claude Code, OpenCode, Goose) invoke the `/generate-rules` skill with the same migration guide URL. Scribe uses a separate MCP-based pipeline with no kantra testing.
 - **Evaluation**: Deterministic eval (`cmd/eval`) + LLM judge (`agents/eval/SKILL.md`)
-- **Quality Score**: Completeness metric (max 6 pts: message presence + links + effort + before/after guidance). Measures documentation completeness, not rule correctness.
+- **Rule Completeness**: Completeness metric (max 6 pts: message presence + links + effort + before/after guidance). Measures documentation completeness, not rule correctness.
 - **Overlaps**: Count of rule pairs that fire on the same code. Overlaps can indicate specificity layering (a broad package-level rule + a specific method-level rule covering the same API), which improves developer experience. High overlap count is not inherently bad — it may mean better coverage through layered detection.
 - **Eval Judge**: LLM-based review checking precision (false positive risk), coherence (detection/guidance alignment), cross-rule conflicts, and coverage gaps vs. the migration guide.
 - **Timing**: Wall-clock from pipeline start to report completion. "Rule Gen" = ingest through construct stages. "Test" = scaffold through kantra validation. Scribe has no test phase.

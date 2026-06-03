@@ -12,50 +12,7 @@ Scoring definitions, runtime matrix, and reproduction steps: [methodology.md](me
 
 3. **Model capability has a hard cliff.** Four tiers emerge: (1) Haiku = non-functional (empty messages, wrong condition types, pipeline crashes), (2) DeepSeek V3.2 = follows structure but produces near-empty guidance, (3) Gemini Pro = functional but weak documentation and unique failure modes, (4) Sonnet/Opus = strong across all dimensions. There is no graceful degradation between tier 1 and tier 3 — agentic pipelines need a minimum model capability.
 
-4. **Testing catches real bugs that ship without detection otherwise.** Scribe skips kantra testing and shipped `class-004` (wrong FQN — silently never fires) undetected. The skill pipeline's test phase adds ~20 min but catches broken rules before they reach users.
-
-5. **Scribe produces cleaner individual rules; skill pipeline produces broader coverage.** Scribe/Opus has the fewest precision issues (2) and coherence issues (1–2) of any run. Skill-based runs generate 1.5–2x more rules with kantra validation but have 3–7x more coherence issues, driven by inverted-logic config detection and async/classic confusion.
-
-6. **The async/classic migration path is a consistent LLM blind spot.** Every runtime and model produces httpclient rules telling `CloseableHttpClient` users to switch to `CloseableHttpAsyncClient`. The migration guide explicitly recommends classic-first migration. This is the highest-severity systematic issue across all rulesets.
-
-7. **More rules does not mean more noise.** CC/Sonnet generates 48% more httpclient rules than CC/Opus (43 vs 29) with proportionally *fewer* eval judge issues. The additional rules cover simple class relocations and API renames that Opus skips.
-
-## Which Combination Is Best for Pattern Extraction?
-
-"Effective rules" = total rules minus precision issues minus coherence issues. This measures rules that are both present and correct — a rule with a false-positive pattern or mismatched guidance doesn't help developers.
-
-### httpclient4-to-httpclient5
-
-| Rank | Runtime | Model | Rules | Precision | Coherence | Effective | Gaps | Quality |
-|------|---------|-------|-------|-----------|-----------|-----------|------|---------|
-| 1 | Claude Code | Sonnet | 43 | 4 | 4 | **35** | 1 | 5.95 |
-| 2 | Goose | Gemini Pro | 45 | 6 | 4 | **35** | 8 | 3.51 |
-| 3 | OpenCode | Gemini Pro | 33 | 1 | 4 | **28** | 5 | 4.45 |
-| 4 | Scribe | Opus | 30 | 2 | 2 | **26** | 13 | 5.70 |
-| 5 | OpenCode | Sonnet | 35 | 12 | 5 | **18** | 9 | 5.91 |
-| 5 | OpenCode | Opus | 29 | 8 | 3 | **18** | 8 | 5.90 |
-| 5 | Goose | Sonnet | 28 | 7 | 3 | **18** | 8 | 6.00 |
-| 8 | Claude Code | Opus | 29 | 9 | 6 | **14** | 3 | 5.93 |
-| 9 | Goose | Opus | 28 | 13 | 4 | **11** | 13 | 5.86 |
-
-**CC/Sonnet** leads on effective rules (35) with the fewest gaps (1) and high quality (5.95) — the best overall extraction. Goose/Gemini ties on effective count but has 8 gaps, lower quality (3.51), and 6 rules detecting standard Java APIs (Jackson, InputStream, Future) unrelated to HttpClient. Scribe/Opus ranks 4th on effective rules but has the cleanest per-rule quality (5.70, only 2+2 issues).
-
-### spring-boot3-to-spring-boot4
-
-| Rank | Runtime | Model | Rules | Precision | Coherence | Effective | Gaps | Quality |
-|------|---------|-------|-------|-----------|-----------|-----------|------|---------|
-| 1 | OpenCode | Sonnet | 95 | 8 | 5 | **82** | 8 | 5.52 |
-| 2 | OpenCode | Opus | 91 | 7 | 4 | **80** | 8 | 5.54 |
-| 3 | Claude Code | Sonnet | 89 | 3 | 7 | **79** | 8 | 5.60 |
-| 4 | Goose | Opus | 85 | 6 | 3 | **76** | 3 | 5.48 |
-| 5 | Goose | Gemini Pro | 81 | 5 | 4 | **72** | 5 | 5.20 |
-| 6 | Goose | Sonnet | 83 | 8 | 4 | **71** | 8 | 5.48 |
-| 7 | Claude Code | Opus | 74 | 5 | 4 | **65** | 10 | 5.43 |
-| 8 | Scribe | Opus | 51 | 2 | 1 | **48** | 5 | 5.75 |
-
-Spring-boot results are tighter — the top 6 are within 15% of each other. **Goose/Opus** stands out for fewest gaps (3) with strong effective count (76). **CC/Sonnet** has the fewest precision issues (3) but the most coherence issues (7). Scribe/Opus again has the cleanest per-rule quality but significantly fewer rules (51 vs 82–95).
-
-**Extraction vs. documentation quality are different strengths.** High extraction (OpenCode/Sonnet, 95 rules) comes with more precision issues. High per-rule quality (Scribe/Opus, quality 5.75) comes with fewer rules. CC/Sonnet balances both — high extraction with fewest precision issues among skill runs.
+4. **More rules does not mean more noise.** Higher-extracting runs (CC/Sonnet: 43 httpclient, OpenCode/Sonnet: 95 spring-boot) have proportionally *fewer* eval judge issues than lower-extracting runs. The additional rules cover simple class relocations and API renames that conservative runs skip.
 
 ## Does the Runtime / Harness Matter?
 
@@ -63,7 +20,7 @@ Yes. The runtime is not a passthrough — it shapes output quality through promp
 
 ### Same model, different runtimes — Sonnet (httpclient)
 
-| Runtime | Rules | Quality | Precision | Coherence | Gaps |
+| Runtime | Rules | Rule Completeness | Precision | Coherence | Gaps |
 |---------|-------|---------|-----------|-----------|------|
 | Claude Code | 43 | 5.95 | 4 | 4 | 1 |
 | OpenCode | 35 | 5.91 | 12 | 5 | 9 |
@@ -104,7 +61,7 @@ The runtime is a significant variable. Benchmarking a model without controlling 
 
 ### Gemini Pro across runtimes (spring-boot)
 
-| Runtime | Rules | Pass Rate | Quality | Precision | Coherence | Gaps |
+| Runtime | Rules | Pass Rate | Rule Completeness | Precision | Coherence | Gaps |
 |---------|-------|-----------|---------|-----------|-----------|------|
 | OpenCode | 33 | 32/33 | 5.03 | 4 | 5 | 18 |
 | Goose | 81 | 11/81 | 5.20 | 5 | 4 | 5 |
@@ -113,8 +70,8 @@ Goose/Gemini produces 2.5x more rules than OpenCode/Gemini (81 vs 33) with far f
 
 ## httpclient4-to-httpclient5 — Full Results
 
-| Runtime | Model | Rules | Pass Rate | Quality | Rule Gen (min) | Total (min) | Precision | Coherence | Cross-Rule | Gaps | Adj. Gaps |
-|---------|-------|-------|-----------|---------|----------------|-------------|-----------|-----------|------------|------|-----------|
+| Runtime | Model | Rules | Pass Rate | Rule Completeness | Rule Gen (min) | Total (min) | Precision | Coherence | Cross-Rule | Gaps | Adj. Gaps |
+|---------|-------|-------|-----------|-------------------|----------------|-------------|-----------|-----------|------------|------|-----------|
 | claude-code | sonnet | 43 | 42/43 | 5.95 | 13.2 | 34.6 | 4 | 4 (1 fail) | 3 | 1 | 0 |
 | claude-code | opus | 29 | 29/29 | 5.93 | 12.3 | 28.5 | 9 | 6 (2 fail) | 2 | 3 | 0 |
 | claude-code | haiku | 26 | 26/26 | 3.0 | — | 4.0 | 3 | 26 (all fail) | 5 | 9 | — |
@@ -125,10 +82,30 @@ Goose/Gemini produces 2.5x more rules than OpenCode/Gemini (81 vs 33) with far f
 | goose | sonnet | 28 | 28/28 | 6.0 | 11.3 | 21.2 | 7 | 3 | 3 | 8 | 0 |
 | goose | opus | 28 | 28/28 | 5.86 | 12.6 | 24.3 | 13 | 4 | 3 | 13 | 13 |
 | goose | gemini-pro | 45 | 44/45 | 3.51 | — | — | 6 | 4 | 2 | 8 | — |
-| scribe | sonnet | 14 | n/a | 6.0 | ~2 | ~2 | 2 | 3 | 1 | 29 | ~16 |
-| scribe | opus | 30 | n/a | 5.7 | ~3 | ~3 | 2 | 2 | 3 | 13 | 13 |
+
+### Issue Rate (httpclient)
+
+Issue rate = (precision + coherence issues) / total rules.
+
+| Runtime | Model | Rules | Issues | Issue Rate | Gaps | Rule Completeness |
+|---------|-------|-------|--------|------------|------|-------------------|
+| OpenCode | Gemini Pro | 33 | 5 | 15% | 5 | 4.45 |
+| Claude Code | Sonnet | 43 | 8 | 19% | 1 | 5.95 |
+| Goose | Gemini Pro | 45 | 10 | 22% | 8 | 3.51 |
+| Goose | Sonnet | 28 | 10 | 36% | 8 | 6.00 |
+| OpenCode | Opus | 29 | 11 | 38% | 8 | 5.90 |
+| OpenCode | Sonnet | 35 | 17 | 49% | 9 | 5.91 |
+| Claude Code | Opus | 29 | 15 | 52% | 3 | 5.93 |
+| Goose | Opus | 28 | 17 | 61% | 13 | 5.86 |
 
 Per-run eval details: [eval-details.md](httpclient4-to-httpclient5/eval-details.md)
+
+### Scribe (httpclient) — not kantra-tested
+
+| Runtime | Model | Rules | Rule Completeness | Rule Gen (min) | Precision | Coherence | Cross-Rule | Gaps | Adj. Gaps |
+|---------|-------|-------|-------------------|----------------|-----------|-----------|------------|------|-----------|
+| scribe | sonnet | 14 | 6.0 | ~2 | 2 | 3 | 1 | 29 | ~16 |
+| scribe | opus | 30 | 5.7 | ~3 | 2 | 2 | 3 | 13 | 13 |
 
 ### Scribe Comparison (httpclient)
 
@@ -148,8 +125,8 @@ The skill pipeline's additional 21 min is kantra testing, which catches broken r
 
 **Note:** The spring-boot table uses a single "Time (min)" column (total wall-clock) vs. httpclient's "Rule Gen" + "Total" breakdown. Rule gen / test split data was not captured for these runs. "Adj. Gaps" is omitted — no spring-boot run uses a catch-all package rule.
 
-| Runtime | Model | Rules | Pass Rate | Quality Avg | Overlaps | Time (min) | Precision | Coherence | Cross-Rule | Gaps |
-|---------|-------|-------|-----------|-------------|----------|------------|-----------|-----------|------------|------|
+| Runtime | Model | Rules | Pass Rate | Rule Completeness | Overlaps | Time (min) | Precision | Coherence | Cross-Rule | Gaps |
+|---------|-------|-------|-----------|-------------------|----------|------------|-----------|-----------|------------|------|
 | claude-code | sonnet | 89 | 85/89 | 5.60 | 28 | 35.1 | 3 | 7 | 2 | 8 |
 | claude-code | opus | 74 | 73/74 | 5.43 | 17 | 26.7 | 5 | 4 | 3 | 10 |
 | claude-code | haiku | 0 (failed) | 0/0 | — | 0 | 5.0 | — | — | — | — |
@@ -160,9 +137,27 @@ The skill pipeline's additional 21 min is kantra testing, which catches broken r
 | goose | opus | 85 | 82/85 | 5.48 | 19 | 54.4 | 6 | 3 | 4 | 3 |
 | goose | gemini-pro | 81 | 11/81 | 5.20 | 25 | 16.7 | 5 | 4 | 2 | 5 |
 | opencode | deepseek-v3 | 31 | 0/0 | 4.35 | 18 | 53.4 | 3 | 2 | 1 | 12 |
-| scribe | opus | 51 | n/a | 5.75 | 3 | — | 2 | 1 | 1 | 5 |
+
+### Issue Rate (spring-boot)
+
+| Runtime | Model | Rules | Issues | Issue Rate | Gaps | Rule Completeness |
+|---------|-------|-------|--------|------------|------|-------------------|
+| Goose | Opus | 85 | 9 | 11% | 3 | 5.48 |
+| Goose | Gemini Pro | 81 | 9 | 11% | 5 | 5.20 |
+| Claude Code | Sonnet | 89 | 10 | 11% | 8 | 5.60 |
+| OpenCode | Opus | 91 | 11 | 12% | 8 | 5.54 |
+| Claude Code | Opus | 74 | 9 | 12% | 10 | 5.43 |
+| OpenCode | Sonnet | 95 | 13 | 14% | 8 | 5.52 |
+| Goose | Sonnet | 83 | 12 | 14% | 8 | 5.48 |
+| OpenCode | Gemini Pro | 33 | 9 | 27% | 18 | 5.03 |
 
 Per-run eval details: [eval-details.md](spring-boot3-to-spring-boot4/eval-details.md)
+
+### Scribe (spring-boot) — not kantra-tested
+
+| Runtime | Model | Rules | Rule Completeness | Overlaps | Precision | Coherence | Cross-Rule | Gaps |
+|---------|-------|-------|-------------------|----------|-----------|-----------|------------|------|
+| scribe | opus | 51 | 5.75 | 3 | 2 | 1 | 1 | 5 |
 
 ### Scribe Comparison (spring-boot)
 
