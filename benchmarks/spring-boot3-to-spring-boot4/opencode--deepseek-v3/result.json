@@ -1,0 +1,21 @@
+{
+  "runtime": "opencode",
+  "model": "deepseek-v3",
+  "model_id": "google-vertex/deepseek-ai/deepseek-v3.2-maas",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-06-03",
+  "duration_minutes": 53.4,
+  "rule_count": 31,
+  "quality_avg": 4.35,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 18,
+  "specificity_gap_count": 0,
+  "pass_rate": "0/0",
+  "eval_judge": {
+    "precision_issues": 3,
+    "coherence_issues": 2,
+    "cross_rule_issues": 1,
+    "gaps": 12
+  },
+  "notes": "OpenCode with DeepSeek V3.2 via Google Vertex. 31 rules, tests never ran (0/0). core-change-00010 has broken pattern (free text 'Spring Boot package structure changed' instead of FQN — will never fire). core-dependency-00010 fires on ALL Spring Boot projects. Missing all Jackson 2→3 migration rules, all MongoDB property renames, all config property renames. 53.4 min — slowest spring-boot run. Quality 4.35 from 20/31 missing before/after code."
+}

@@ -1,0 +1,21 @@
+{
+  "runtime": "scribe",
+  "model": "opus",
+  "model_id": "claude-opus-4-6",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-06-03",
+  "duration_minutes": null,
+  "rule_count": 51,
+  "quality_avg": 5.75,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 3,
+  "specificity_gap_count": 0,
+  "pass_rate": null,
+  "eval_judge": {
+    "precision_issues": 2,
+    "coherence_issues": 1,
+    "cross_rule_issues": 1,
+    "gaps": 5
+  },
+  "notes": "Scribe MCP server (not our pipeline). 51 rules: Java (21), properties (10), Maven XML (11), Gradle (4), YAML (3), spring.factories (2). No kantra tests — Scribe has no test loop. Quality 5.75 from consistent structured messages (all rules have ## heading, ### Before/After/Additional Info, links, effort). Only 2 precision issues: @Nullable detection too broad (fires on all Spring null-safety usage), Spring Retry wildcard import. Gradle/YAML parity gap — 4 Gradle rules vs 11 Maven, 3 YAML rules vs 10 properties. Covers Jackson 3, testing (@MockBean/@SpyBean), core (BootstrapRegistry, EnvironmentPostProcessor), messaging (Kafka, RabbitMQ), data (Elasticsearch, MongoDB, EntityScan), and dependency renames."
+}

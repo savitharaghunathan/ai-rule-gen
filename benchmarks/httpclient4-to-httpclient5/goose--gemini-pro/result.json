@@ -1,0 +1,21 @@
+{
+  "runtime": "goose",
+  "model": "gemini-pro",
+  "model_id": "gemini-2.5-pro",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-03",
+  "duration_minutes": null,
+  "rule_count": 45,
+  "quality_avg": 3.51,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 3,
+  "specificity_gap_count": 0,
+  "pass_rate": "44/45",
+  "eval_judge": {
+    "precision_issues": 6,
+    "coherence_issues": 4,
+    "cross_rule_issues": 2,
+    "gaps": 8
+  },
+  "notes": "Goose runtime with Gemini 2.5 Pro. 45 rules, 44/45 pass (dependency rule failed). All 5 METHOD_CALL patterns use FQN — best of any run. Quality 3.51 dragged down by 25/45 rules missing both links and before/after guidance. 20 messages have leading colon formatting bug. 6 false-positive-prone rules targeting generic Java types (Jackson, InputStream, Future, TimeUnit). Good async/classic coherence."
+}

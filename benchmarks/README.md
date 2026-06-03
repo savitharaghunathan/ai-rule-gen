@@ -4,7 +4,7 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 
 ## Methodology
 
-- **Pipeline**: `/generate-rules` skill invoked with the same migration guide URL
+- **Pipeline**: Skill-based runs (Claude Code, OpenCode, Goose) invoke the `/generate-rules` skill with the same migration guide URL. Scribe uses a separate MCP-based pipeline with no kantra testing.
 - **Evaluation**: Deterministic eval (`cmd/eval`) + LLM judge (`agents/eval/SKILL.md`)
 - **Quality Score**: Completeness metric (max 6 pts: message presence + links + effort + before/after guidance). Measures documentation completeness, not rule correctness.
 - **Overlaps**: Count of rule pairs that fire on the same code. Overlaps can indicate specificity layering (a broad package-level rule + a specific method-level rule covering the same API), which improves developer experience. High overlap count is not inherently bad — it may mean better coverage through layered detection.
@@ -22,13 +22,15 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 | Claude Code | Haiku | claude-haiku-4-5-20251001 | Anthropic |
 | OpenCode | Sonnet | claude-sonnet-4-20250514 | Anthropic |
 | OpenCode | Opus | claude-opus-4-6 | Anthropic |
-| OpenCode | Gemini Pro | google-vertex/gemini-3.1-pro-preview | Google |
+| OpenCode | Gemini Pro | google-vertex/gemini-3.1-pro-preview¹ | Google |
 | Goose | Sonnet | claude-sonnet-4-20250514 | Anthropic |
 | Goose | Opus | claude-opus-4-6 | Anthropic |
-| Goose | Gemini Pro | google-vertex/gemini-3.1-pro-preview | Google |
+| Goose | Gemini Pro | gemini-2.5-pro | Google |
 | OpenCode | DeepSeek V3.2 | google-vertex/deepseek-ai/deepseek-v3.2-maas | Google (Vertex) |
 | Scribe (MCP) | Sonnet | claude-sonnet-4-20250514 | Anthropic |
 | Scribe (MCP) | Opus | claude-opus-4-6 | Anthropic |
+
+¹ OpenCode's Gemini Pro model ID (`gemini-3.1-pro-preview`) does not match a known public Gemini model. Likely the same `gemini-2.5-pro` used by Goose, accessed via a different Vertex AI endpoint. Unverified.
 
 ## httpclient4-to-httpclient5
 
@@ -43,7 +45,7 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 | opencode | deepseek-v3 | 35 | 34/35 | 4.3 | — | 61.7 | 9 | 7 | 4 | 13 | — |
 | goose | sonnet | 28 | 28/28 | 6.0 | 11.3 | 21.2 | 7 | 3 | 3 | 8 | 0 |
 | goose | opus | 28 | 28/28 | 5.86 | 12.6 | 24.3 | 13 | 4 | 3 | 13 | 13 |
-| goose | gemini-pro | — | — | — | — | — | — | — | — | — | — |
+| goose | gemini-pro | 45 | 44/45 | 3.51 | — | — | 6 | 4 | 2 | 8 | — |
 | scribe | sonnet | 14 | n/a | 6.0 | ~2 | ~2 | 2 | 3 | 1 | 29 | ~16 |
 | scribe | opus | 30 | n/a | 5.7 | ~3 | ~3 | 2 | 2 | 3 | 13 | 13 |
 
@@ -59,7 +61,7 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 
 #### Claude Code / Opus — 29 rules, 29/29 pass
 
-- **9 precision issues** (all `warn`): every unqualified METHOD_CALL rule (`00050`–`00220`) — worst are `setConnectTimeout` and `setSocketTimeout` which are common across many Java frameworks
+- **9 precision issues** (all `warn`): every unqualified METHOD_CALL rule (`00050`–`00220`) — highest false-positive risk from `setConnectTimeout` and `setSocketTimeout` which are common across many Java frameworks
 - **6 coherence issues** (2 `fail`, 4 `warn`): **00280** and **00290** fire on ALL HC4 `CloseableHttpClient`/`HttpClients` imports and tell developers to migrate to async classes — actively wrong for the majority following the classic-first migration path
 - **2 cross-rule issues**: `00130` duplicates `00010` with wrong package namespace; `00280`+`00290` contradict classic migration guidance in `00010`
 - **3 gaps**: no rule for `client.start()` async lifecycle requirement (high-severity silent runtime failure); no classic-path IMPORT rules for `CloseableHttpClient` and `HttpClients`
@@ -73,7 +75,7 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 
 #### OpenCode / Opus — 29 rules, 29/29 pass
 
-- **20 of 28 rules passed** eval judge review
+- **20 of 29 rules passed** eval judge review
 - **8 precision issues**: unqualified METHOD_CALL rules — `setConnectTimeout`, `setSocketTimeout`, `setConnectionTimeToLive`, `addInterceptorLast`, `setRetryHandler`, `setSSLSocketFactory`, `closeExpiredConnections`, `closeIdleConnections`
 - **3 coherence issues**: **00250** fires on classic `PoolingHttpClientConnectionManager` import but gives async-only guidance. **00260** fires on `CloseableHttpClient` import but says replace with `CloseableHttpAsyncClient` — wrong for classic users. **00270** same issue for `HttpClients`
 - **2 cross-rule issues**: `00020`+`00280` SSL guidance overlap, `00250`+`00260`+`00270` async assumption cluster
@@ -88,10 +90,10 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 - **5 gaps**: Missing dedicated IMPORT rules for HttpGet/Put/Delete/Head/Patch/Options/Trace, RequestBuilder, CloseableHttpResponse, HttpClientContext; missing HttpContext.getAttribute recipe rule
 - **Quality note**: Very poor links coverage (2/33 = 6%) — lowest of any passing run. Quality avg 4.45 is significantly below Sonnet/Opus runs (~5.9)
 
-
+#### OpenCode / Sonnet — 35 rules, 35/35 pass
 
 - **22 of 35 rules passed** eval judge review
-- **12 precision issues**: every unqualified METHOD_CALL rule — common method names like `setConnectTimeout`, `setSoTimeout`, `getAllHeaders`, `getRequestLine` match across many Java frameworks. This is the worst precision score across all runs.
+- **12 precision issues**: every unqualified METHOD_CALL rule — common method names like `setConnectTimeout`, `setSoTimeout`, `getAllHeaders`, `getRequestLine` match across many Java frameworks. Second-most precision issues after Goose/Opus (13).
 - **5 coherence issues**: **00280** and **00290** push classic `CloseableHttpClient`/`HttpClients` users to async — wrong for classic migration path. **00300** and **00310** jump to async `SimpleRequestBuilder` for `HttpPost`/`HttpGet` instead of classic 5.x replacements. **00010**+**00120** duplicate package rules with wrong namespace (`org.apache.hc.httpclient5` instead of `org.apache.hc.client5`)
 - **3 cross-rule issues**: `00010`+`00120` duplicate detection, `00280`+`00290` contradictory async push (fail), `00270`+`00320` overlapping async connection manager guidance
 - **9 gaps**: `client.execute()` return type change, `SSLConnectionSocketFactory` removal, `StatusLine` removal, `PoolingHttpClientConnectionManager` classic migration, `HttpRequestRetryHandler` removal — 5 high-impact patterns missing
@@ -111,7 +113,7 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 - **7 coherence issues** (3 error, 4 warn): **00300** async/classic confusion — detects classic `PoolingHttpClientConnectionManager` but recommends async replacement. **00060** detects wrong import path (`org.apache.http.protocol.HttpClientContext` instead of `org.apache.http.client.protocol.HttpClientContext`). **00080** failed kantra — CookieSpecs.STANDARD detection vs StandardCookieSpec.STRICT message mismatch. Most messages are boilerplate (`"<ClassName>: migration required for HttpClient 5.x"`) with no actionable detail
 - **4 cross-rule issues**: `00010` PACKAGE rule subsumes all specific import rules (error), duplicate timeout rules, overlapping connection manager guidance
 - **13 gaps**: Same 13 uncovered packages as other runs
-- **Lowest quality run** after Haiku: 25/35 missing before/after code, 3 missing links. DeepSeek generates correct rule structure but produces near-empty messages. 61.7 min — slowest of any httpclient run
+- **Third-lowest quality** after Haiku (3.0) and Goose/Gemini (3.51): 25/35 missing before/after code, 3 missing links. DeepSeek generates correct rule structure but produces near-empty messages. 61.7 min — slowest of any httpclient run
 - **Model tier**: DeepSeek V3.2 sits between Haiku (non-functional) and Gemini Pro (functional but weak). It follows pipeline structure and passes kantra (97%) but cannot produce meaningful migration guidance
 
 #### Goose / Opus — 28 rules, 28/28 pass
@@ -121,7 +123,17 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 - **4 coherence issues**: **00250** fires on classic `PoolingHttpClientConnectionManager` import but advises async `PoolingAsyncClientConnectionManager`. **00260** fires on classic `CloseableHttpClient` import but advises `CloseableHttpAsyncClient`. **00150** `addInterceptorLast` message only covers logging use case. **00010** has formatting artifact (duplicate heading)
 - **3 cross-rule issues**: `00070`+`00240` both detect `getStatusLine` — one FQN, one bare (error-level overlap), `00010` HttpResponse import overlaps catch-all, `00130`+`00140` timeout companion rules with overlapping messages
 - **13 gaps**: Same 13 uncovered packages as other Opus runs — auth, cookie, impl.auth, impl.cookie, client.entity, conn.routing, conn.scheme, conn.socket, conn.util, conn.params, client.params, impl.conn.tsccm, impl.execchain
-- **Worst precision score** of any httpclient run (13 issues). The bare METHOD_CALL pattern problem is more severe here than in CC/Opus (9) or Goose/Sonnet (7)
+- **Most precision issues** of any httpclient run (13). The bare METHOD_CALL pattern problem is more severe here than in CC/Opus (9) or Goose/Sonnet (7)
+
+#### Goose / Gemini Pro — 45 rules, 44/45 pass
+
+- **29 of 45 rules passed** eval judge review
+- **6 precision issues** (all `fail`): 6 rules target standard Java APIs unrelated to HttpClient — `java.util.concurrent.TimeUnit`, `com.fasterxml.jackson.core.JsonFactory`, `com.fasterxml.jackson.databind.ObjectMapper`, `com.fasterxml.jackson.databind.JsonNode`, `java.io.InputStream`, `java.util.concurrent.Future`. These fire on virtually every Java project. Gemini extracted patterns from the guide's code examples rather than from the migration instructions
+- **4 coherence issues** (all `warn`): The 4 highest false-positive rules also have wrong messages — `TimeUnit` message describes HC5 best practice not migration, Jackson messages state obvious functionality, `InputStream` message is generic advice. None provide actual migration guidance
+- **2 cross-rule issues**: `00050`+`00060` CredentialsProvider/BasicCredentialsProvider near-duplicate (warn), `00070`+`00080`+`00130` three Jackson rules all noise (fail)
+- **8 gaps**: `HttpGet/Put/Delete` import rules (only `HttpPost` covered), `getRequestLine()` removal, `HttpResponse.getEntity()` type change, `setRetryHandler()→setRetryStrategy()`, `addInterceptorLast()→addExecInterceptorFirst()`, `getStatusCode()` chained call
+- **Unique strength**: All 5 METHOD_CALL patterns use FQN — best of any httpclient run. Correct async/classic coherence (no classic→async confusion). 21 TYPE-level rules covering class relocations that other runs miss
+- **Unique weakness**: The "standard Java API" false positive pattern is unique to Gemini — no other model generates rules for `InputStream`, `Future`, or `TimeUnit`
 
 #### Scribe / Sonnet — 14 rules, not kantra-tested
 
@@ -143,7 +155,7 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 
 ### Key Findings (httpclient4→5)
 
-**Claude Code / Sonnet** produces the most comprehensive ruleset (43 rules) with highest quality scores and fewest eval judge issues. One rule fails kantra tests, but overall coverage and guidance are strong. Rule gen takes 13.2 min; testing adds another 21 min.
+**Claude Code / Sonnet** generates 43 rules with quality 5.95 and the fewest precision issues (4) among Sonnet/Opus skill runs. One rule fails kantra tests. Rule gen takes 13.2 min; testing adds another 21 min.
 
 **Claude Code / Opus** generates fewer rules (29) but is more conservative. Higher overlap count reflects specificity layering. More precision issues from unqualified METHOD_CALL conditions. Both CC runs have a broad `org.apache.http*` PACKAGE rule that gives zero adjusted gaps.
 
@@ -151,13 +163,15 @@ Comparison of rule generation quality across agent runtimes and LLM models.
 
 **OpenCode / Opus** generates exactly the same rule count as Claude Code / Opus (29) with identical pass rate. 8 unqualified METHOD_CALL precision issues and the same async/classic coherence pattern. No catch-all rule — 8 real gaps.
 
-**OpenCode / Sonnet** generates 35 rules (fewer than Claude Code / Sonnet's 43) but has the worst precision of any run — 12 unqualified METHOD_CALL rules. Takes 2.4x longer (49 min vs 21 min) than Claude Code / Sonnet. Same async/classic coherence issue plus a wrong namespace in a duplicate package rule.
+**OpenCode / Sonnet** generates 35 rules with 12 precision issues — second-most after Goose/Opus (13). Slowest Sonnet run at 49 min total (vs CC/Sonnet 35 min, Goose/Sonnet 21 min). Same async/classic coherence issue plus a wrong namespace in a duplicate package rule.
 
-**OpenCode / DeepSeek V3.2** generates 35 rules with the worst quality (4.3) after Haiku. Messages are boilerplate with no actionable detail — 25/35 missing before/after code. Slowest run at 61.7 min. Sits in the "follows instructions but can't reason deeply" tier.
+**OpenCode / DeepSeek V3.2** generates 35 rules with third-lowest quality (4.3) after Haiku (3.0) and Goose/Gemini (3.51). Messages are boilerplate with no actionable detail — 25/35 missing before/after code. Slowest run at 61.7 min. Sits in the "follows instructions but can't reason deeply" tier.
 
-**Goose / Sonnet** generates the fewest rules (28) but achieves a perfect 6.0 quality avg — every rule has complete documentation (links, effort, before/after guidance). Fewest overlaps (11) of any run. Has a catch-all PACKAGE rule — zero adjusted gaps.
+**Goose / Sonnet** generates the fewest rules (28) but achieves the highest quality avg (6.0) — every rule has complete documentation (links, effort, before/after guidance). Has a catch-all PACKAGE rule — zero adjusted gaps.
 
-**Goose / Opus** has the worst precision of any httpclient run (13 issues) — 13/16 METHOD_CALL patterns are bare names. No catch-all rule — 13 real gaps.
+**Goose / Opus** has the most precision issues of any httpclient run (13) — 13/16 METHOD_CALL patterns are bare names. No catch-all rule — 13 real gaps.
+
+**Goose / Gemini Pro** generates the most rules (45) with perfect METHOD_CALL FQN qualification (5/5). However, 6 rules detect standard Java APIs (Jackson, InputStream, Future, TimeUnit) unrelated to HttpClient — a unique Gemini failure mode where it extracts patterns from code examples rather than migration instructions. Quality 3.51 (second-lowest after Haiku) driven by 42/45 missing before/after code.
 
 **Sonnet across runtimes** (httpclient4→5):
 
@@ -171,8 +185,8 @@ All three Sonnet runs have package-level catch-all rules — zero adjusted gaps.
 
 **Scribe comparison** (httpclient4→5):
 
-| Metric | Our Best (CC/Sonnet) | Scribe Best (Opus) |
-|--------|---------------------|-------------------|
+| Metric | CC/Sonnet (skill) | Scribe/Opus (MCP) |
+|--------|-------------------|-------------------|
 | Rules | 43 | 30 |
 | Adj. gaps | 0 | 13 |
 | Rule gen time | 13.2 min | ~3 min |
@@ -181,29 +195,31 @@ All three Sonnet runs have package-level catch-all rules — zero adjusted gaps.
 | Coherence | 4 (1 fail) | 2 |
 | Kantra validated | 42/43 | none |
 
-Our skill generates more rules with zero adjusted gaps. Scribe produces cleaner individual rules (fewer precision/coherence issues) but has 13 real gaps — no catch-all rule covers the missing packages. Rule generation alone is 13 min vs ~3 min; the extra 21 min is kantra testing which catches broken rules before they ship.
+CC/Sonnet (skill) generates more rules with zero adjusted gaps but has double the precision/coherence issues. Scribe/Opus (MCP) produces cleaner individual rules but has 13 real gaps — no catch-all rule covers the missing packages. Rule generation alone is 13.2 min vs ~3 min. The skill pipeline's additional 21 min is kantra testing, which catches broken rules like Scribe/Sonnet's `class-004` (wrong FQN, never fires) before they ship.
 
 **Shared issue**: All Sonnet and Opus runs generate rules that tell classic `CloseableHttpClient` users to switch to async, contradicting the migration guide's classic-first path. This is a consistent LLM blind spot regardless of runtime.
 
-### Interesting Findings
+### Interesting Findings (cross-migration)
 
 1. **Model capability has a hard threshold for agentic pipelines.** Haiku can follow instructions and produce syntactically valid YAML, but it cannot reason through the multi-step pipeline (ingest guide → extract patterns → construct rules with proper `java.referenced` conditions → generate test data → iterate on failures). It defaults to the simplest possible rule structure (`builtin.filecontent` with empty messages) and never self-corrects. This suggests agentic coding pipelines need a minimum model capability tier — there is no graceful degradation, just a cliff.
 
-2. **More rules ≠ more noise.** Sonnet generates 48% more rules than Opus (43 vs 29) but has proportionally *fewer* eval judge issues. The additional rules cover simple class relocations and API renames that Opus skips entirely. Sonnet's broader extraction captures the long tail of migration patterns without sacrificing precision.
+2. **More rules ≠ more noise (httpclient).** CC/Sonnet generates 48% more rules than CC/Opus (43 vs 29) but has proportionally *fewer* eval judge issues. The additional rules cover simple class relocations and API renames that Opus skips entirely. Broader extraction captures the long tail of migration patterns without sacrificing precision.
 
-3. **Unqualified METHOD_CALL is the top precision pitfall.** Both Sonnet (4 rules) and Opus (9 rules) generate rules that match method names like `setConnectTimeout` without qualifying the parent class. These fire on the 5.x replacement APIs too — the very code the rule tells you to write. Opus is worse here because it generates more unqualified rules and fewer qualified alternatives.
+3. **Unqualified METHOD_CALL is the top precision pitfall.** Across both migrations, rules that match method names like `setConnectTimeout` without qualifying the parent class are the #1 source of false-positive risk. These fire on unrelated frameworks (Spring, OkHttp, JDBC) and on the replacement APIs the rule tells you to adopt.
 
-4. **The async/classic migration path is a consistent LLM blind spot.** Both Sonnet and Opus produce rules telling `CloseableHttpClient` users to switch to `CloseableHttpAsyncClient`. The migration guide explicitly recommends migrating to the 5.x *classic* API first, then optionally to async. This is the highest-severity issue across both rulesets — it would actively mislead the majority of users following the guide.
+4. **The async/classic migration path is a consistent LLM blind spot (httpclient).** Every runtime and model produces rules telling `CloseableHttpClient` users to switch to `CloseableHttpAsyncClient`. The migration guide explicitly recommends migrating to the 5.x *classic* API first, then optionally to async. This is the highest-severity issue across all httpclient rulesets.
 
-5. **Overlaps are a feature, not a bug.** Opus's higher overlap count (15 vs Sonnet's 3) reflects more specificity layering — a broad package-level import rule plus specific method-level rules for the same API. This gives developers both a high-level "this package moved" warning and targeted "change this specific call" guidance. The eval initially flagged these as conflicts, but they represent deliberate detection depth.
+5. **Overlaps are a feature, not a bug.** Specificity layering — a broad package-level import rule plus specific method-level rules for the same API — gives developers both a high-level "this package moved" warning and targeted "change this specific call" guidance.
 
-6. **Cost-quality tradeoff is stark.** Haiku costs ~20x less per token than Opus and runs 4.5x faster, but produces zero usable output. Sonnet costs ~5x less than Opus, runs slightly slower (20.7 vs 18.2 min), and produces better results across every dimension. For this pipeline, Sonnet is the clear cost-performance winner.
+6. **Cost-quality tradeoff is stark.** Haiku costs ~20x less per token than Opus and runs 7x faster (4.0 vs 28.5 min total on httpclient), but produces zero usable output on both migrations. Sonnet costs ~5x less than Opus and produces more rules with fewer issues on httpclient (43 rules, 4 precision vs 29 rules, 9 precision on Claude Code).
 
-7. **Rule generation is only ~40% of pipeline time.** Across httpclient runs, rule generation (ingest→construct) takes 7-13 min while testing (scaffold→kantra) takes 4-8 min. The remaining time is coverage analysis and reporting. Scribe skips testing entirely (~2-3 min total), but this means broken rules like Scribe/Sonnet's `class-004` (wrong FQN, never fires) ship without detection.
+7. **Rule generation is only ~40% of skill pipeline time (httpclient).** Rule generation (ingest→construct) takes 7-13 min while testing (scaffold→kantra) takes 4-8 min. The remaining time is coverage analysis and reporting. Scribe skips testing entirely (~2-3 min total), but this means broken rules like Scribe/Sonnet's `class-004` (wrong FQN, never fires) ship without detection.
 
-8. **Model capability has four tiers for agentic pipelines.** Haiku/DeepSeek V3.2 = non-functional or near-empty output. Gemini Pro = functional but weak documentation (4.3-4.5 quality). Sonnet = strong across all dimensions (5.9-6.0 quality). Opus = comparable to Sonnet but more precision issues from unqualified METHOD_CALL patterns. The jump from tier 1→2 is the "capability cliff"; the difference between tiers 3→4 is nuanced.
+8. **Model capability has four tiers for agentic pipelines.** Haiku/DeepSeek V3.2 = non-functional or near-empty output. Gemini Pro = functional but weak documentation (3.5-4.5 quality, varies by runtime). Sonnet = strong across all dimensions (5.9-6.0 quality). Opus = comparable to Sonnet but more precision issues from unqualified METHOD_CALL patterns. The jump from tier 1→2 is the "capability cliff"; the difference between tiers 3→4 is nuanced. Gemini Pro shows a unique failure mode: extracting patterns from code examples rather than migration instructions, producing rules that detect standard Java APIs (InputStream, Future, TimeUnit) unrelated to the migration.
 
 ## spring-boot3-to-spring-boot4
+
+**Note:** The spring-boot table uses a single "Time (min)" column (total wall-clock) vs. httpclient's "Rule Gen" + "Total" breakdown. Rule gen / test split data was not captured for these runs. "Adj. Gaps" is also omitted — no spring-boot run uses a catch-all package rule.
 
 | Runtime | Model | Rules | Pass Rate | Quality Avg | Overlaps | Time (min) | Precision | Coherence | Cross-Rule | Gaps |
 |---------|-------|-------|-----------|-------------|----------|------------|-----------|-----------|------------|------|
@@ -215,7 +231,9 @@ Our skill generates more rules with zero adjusted gaps. Scribe produces cleaner 
 | opencode | gemini-pro | 33 | 32/33 | 5.03 | 2 | 31.7 | 4 | 5 | 2 | 18 |
 | goose | sonnet | 83 | 82/83 | 5.48 | 17 | 62.3 | 8 | 4 | 3 | 8 |
 | goose | opus | 85 | 82/85 | 5.48 | 19 | 54.4 | 6 | 3 | 4 | 3 |
-| goose | gemini-pro | — | — | — | — | — | — | — | — | — |
+| goose | gemini-pro | 81 | 11/81 | 5.20 | 25 | 16.7 | 5 | 4 | 2 | 5 |
+| opencode | deepseek-v3 | 31 | 0/0 | 4.35 | 18 | 53.4 | 3 | 2 | 1 | 12 |
+| scribe | opus | 51 | n/a | 5.75 | 3 | — | 2 | 1 | 1 | 5 |
 
 ### Eval Details (spring-boot3→4)
 
@@ -265,7 +283,7 @@ Our skill generates more rules with zero adjusted gaps. Scribe produces cleaner 
 - **5 coherence issues**: Rule **00330** is broken duplicate of 00080 — fires on any `PropertyMapper` method call (fail). Rules 00030/00040 have vague JSpecify messages. Rule 00020 misleads about Spock being re-addable. Rule **00160** names hallucinated class `JsonValueDeserializer` (guide says `JsonObjectDeserializer`)
 - **2 cross-rule issues**: Rules 00080+00330 are duplicates (fail); rules 00080+00090 overlap on PropertyMapper (warn)
 - **18 gaps**: Missing all deprecated starter renames (6 starters), config property renames (spring.session.redis, spring.data.mongodb, spring.dao, spring.kafka, spring.jackson — 8 properties), build dependency changes (hibernate-jpamodelgen, spring-boot-starter-batch, AOP starter, Tomcat WAR — 4 entries), Jackson 2→3 package migration
-- **Fewest rules of any spring-boot run** (33 vs 74-95 for other runtimes). Covers Java code-level changes (class renames, annotation changes, removed methods) but misses build file migrations and config property renames entirely
+- **Second-fewest rules of any spring-boot run** (33 — only DeepSeek has fewer at 31). Covers Java code-level changes (class renames, annotation changes, removed methods) but misses build file migrations and config property renames entirely
 
 #### Goose / Sonnet — 83 rules, 82/83 pass
 
@@ -283,17 +301,52 @@ Our skill generates more rules with zero adjusted gaps. Scribe produces cleaner 
 - **4 cross-rule issues**: `00290`+`00760` exact duplicates for classic uber-jar loader in Maven, `00300`+`00770` near-duplicates for Gradle, `00590`+`00850` near-duplicates for Kafka StreamsBuilderFactoryBeanCustomizer (one has typo variant), `00180`+`00390` overlapping `@Nullable` detection scope
 - **3 gaps**: `@SpringBootTest` no longer provides `TestRestTemplate` beans (high — need `@AutoConfigureTestRestTemplate`), Logback charset default change (low), `spring.jackson.use-jackson2-defaults` property (low)
 
+#### Goose / Gemini Pro — 81 rules, 11/81 pass
+
+- **Lowest pass rate of any spring-boot run** (14% pass, 86% failure). Most failures from `builtin.filecontent` property rules (16 MongoDB + config rules) and `java.dependency` rules that fail kantra test scaffolding ("unable to get build tool"). Only `java.referenced` rules and a few `builtin.filecontent` rules pass.
+- **5 precision issues**: `general-annotation-00010` (`@Nullable`) fires on all Spring projects (warn), `general-import-00030` (`com.fasterxml.jackson*`) too broad (warn), `dependencies-dependency-00010` fires on ANY Spring Boot project (warn), `config-pattern-00010` broad regex matches any property (fail), `testing-annotation-00010` (`@SpringBootTest`) fires on all tests not just MockMVC users (warn)
+- **4 coherence issues**: **general-import-00070** (fail) detects SB4 FQN (`org.springframework.boot.http.converter.autoconfigure.HttpMessageConverters`) instead of SB3 — will never fire on SB3 code. Same wrong-FQN bug as OpenCode/Sonnet and OpenCode/Opus. **general-annotation-00020** (fail) detects `javax.annotations.NonNull` — wrong package name. **general-annotation-00010** (warn) fires on all `@Nullable` but gives actuator-specific advice. **general-import-00050** (warn) `JsonValueDeserializer` — exists in guide but verify FQN
+- **2 cross-rule issues**: Maven/Gradle classic loader duplicates (00030+00040), three OAuth2 starter rename rules with near-identical messages (00130+00140+00150)
+- **5 gaps**: Package reorganization rules (WebMvcAutoConfiguration, ErrorMvcAutoConfiguration), `spring.jackson.use-jackson2-defaults` removal, logback charset default change, `spring-boot-starter-classic` quick migration path
+- **Unique strength**: 16 individual MongoDB property rename rules — most comprehensive MongoDB coverage of any run. Good coverage of Jackson 2→3 migration (annotations, builders, serializers). 81 rules is near the top for spring-boot runs.
+- **Quality note**: Quality avg 5.20 is good — all rules have links (20/45 had no links in the httpclient run). The high failure rate is a test scaffolding issue, not a rule quality issue — many rules are structurally correct but can't be validated by kantra.
+
+#### OpenCode / DeepSeek V3.2 — 31 rules, 0/0 tested
+
+- **Tests never ran** — pipeline scaffold stage completed but kantra tests were not executed. Pass rate is 0/0, not 0/31.
+- **3 precision issues**: `core-dependency-00010` fires on ALL Spring Boot projects (too broad), `core-annotation-00010` fires on all `@Nullable` usage not just actuator (warn), `web-change-00010` detects `org.apache.tomcat.util.modeler.Registry` which is Tomcat-internal, not typically imported by applications (warn)
+- **2 coherence issues**: **core-change-00010** (fail) — pattern is free text `"Spring Boot package structure changed"` instead of an FQN — will never fire on any code. **testing-annotation-00010/00020** combine `@MockBean` and `@SpyBean` guidance into identical messages — correct but duplicative
+- **1 cross-rule issue**: `security-dependency-00010` + `00020` + `00030` OAuth2 starter renames with identical message structure (warn — acceptable for separate dependency rules)
+- **12 gaps**: Missing ALL Jackson 2→3 migration (annotations, serializers, builders, properties — 6 rules), ALL MongoDB property renames (12+ properties), ALL session property renames, config property renames (`spring.dao`, `spring.kafka`), `@AutoConfigureMockMvc` changes, `HttpMessageConverters` deprecation, package reorganization class relocations
+- **Fewest rules of any spring-boot run** (31 vs 33-95 for others). Covers dependency changes and annotation removals but misses config properties and Jackson migration entirely. Quality 4.35 from 20/31 missing before/after code. Slowest spring-boot run at 53.4 min.
+- **Model tier confirmation**: DeepSeek V3.2 on spring-boot produces results consistent with httpclient — follows pipeline structure and generates valid rules, but cannot extract the long tail of migration patterns. Tier 2 (functional but weak).
+
+#### Scribe / Opus — 51 rules, not kantra-tested
+
+- **51 rules across 6 file types**: Java (21), properties (10), Maven XML (11), Gradle (4), YAML (3), spring.factories (2). Multi-format coverage is a Scribe strength — no other run covers spring.factories or has dedicated Gradle detection rules.
+- **2 precision issues**: `@Nullable` detection (`org.springframework.lang.Nullable` at ANNOTATION) fires on all Spring null-safety usage, not just migration-requiring cases (warn). Spring Retry wildcard import (`org.springframework.retry.{*}`) fires on projects intentionally keeping Spring Retry (warn — correctly marked optional).
+- **1 coherence issue**: PropertyMapper `alwaysApplyingWhenNonNull` (rule 012) before/after section tells users to "remove the call" without showing the equivalent replacement pattern (warn).
+- **1 cross-rule issue**: Gradle/YAML parity gap — 4 Gradle rules vs 11 Maven XML rules, 3 YAML rules vs 10 properties rules. Same migration concepts covered inconsistently across build tool formats (warn).
+- **5 gaps**: Missing Gradle equivalents for 7 Maven starter renames (aop, web-services, hibernate, elasticsearch, jackson groupId, hibernate-processor, elasticsearch-rest-client). Missing YAML equivalents for 7 property renames (session.redis, session.mongodb, data.mongodb, dao, kafka, mongo health, mongo metrics). Missing autoconfigure class relocation detection. Missing starter-data-jdbc/jpa changes. Missing GraalVM native image changes.
+- **Quality 5.75**: All 51 rules have structured `## Title` / `### Before` / `### After` / `### Additional Info` messages. All have links to specific migration guide sections, effort scores, and proper categories. Every `java.referenced` pattern uses fully qualified names. Zero METHOD_CALL qualification issues.
+- **Unique strengths**: Only run with spring.factories detection rules (BootstrapRegistryInitializer, EnvironmentPostProcessor). Only run with dedicated Gradle build file rules. Fewest precision issues (2) and coherence issues (1) of any spring-boot run. All METHOD_CALL patterns use FQN (rule 012: `org.springframework.boot.context.properties.PropertyMapper.alwaysApplyingWhenNonNull`).
+- **Note**: Scribe is an MCP server (different pipeline architecture). Rules were NOT validated with kantra tests. Pass rate is n/a.
+
 ### Key Findings (spring-boot3→4)
 
 **Claude Code / Sonnet** generates the most rules of any Claude Code run (89) with fewest precision issues (3) but the most coherence issues (7), driven by inverted-logic config property detection.
 
-**Claude Code / Opus** generates 74 rules with fewest coherence issues (4) but the most gaps (10). Avoids the inverted-logic trap but conflates three migration actions into one overloaded rule.
+**Claude Code / Opus** generates 74 rules with 4 coherence issues and the most gaps (10). Avoids the inverted-logic trap but conflates three migration actions into one overloaded rule.
 
 **OpenCode / Sonnet** produces the most rules overall (95) but introduces noise rules (`00920-00950`) firing on unchanged MongoDB properties, and a fail-severity coherence bug where rule `00530` detects the *new* SB4 FQN instead of the old SB3 one.
 
 **Goose / Sonnet** generates 83 rules — between Claude Code and OpenCode. Introduces a unique failure mode: 2 Elasticsearch rules (`00820`, `00830`) fire on the *new* API imports instead of the old ones. Shares the umbrella rule and WAR deployment coherence issues with other runs.
 
-**Goose / Opus** generates the most rules of any spring-boot run (85) with fewest gaps (3) and fewest coherence issues (3). Produces 4 duplicate/near-duplicate rule pairs that should be deduplicated. The `@Nullable`/actuator coherence mismatch (00390) is the most impactful finding. Takes 54.4 min — slower than Claude Code / Opus (26.7 min) but faster than OpenCode / Opus (46.5 min).
+**Goose / Opus** generates 85 rules with fewest gaps (3) and fewest coherence issues (3) among Sonnet/Opus skill runs. Produces 4 duplicate/near-duplicate rule pairs that should be deduplicated. The `@Nullable`/actuator coherence mismatch (00390) is the most impactful finding. Takes 54.4 min — slower than Claude Code / Opus (26.7 min) but faster than OpenCode / Opus (46.5 min).
+
+**Goose / Gemini Pro** generates 81 rules but only 11 pass kantra (14% — lowest of any spring-boot run). The failures are mostly test scaffolding issues with `builtin.filecontent` and `java.dependency` rules, not rule correctness problems. Quality 5.20 is reasonable. Same wrong-FQN bug (HttpMessageConverters) as OpenCode/Sonnet and Opus. Best MongoDB property coverage (16 individual rename rules).
+
+**OpenCode / DeepSeek V3.2** generates the fewest rules (31) with the most gaps (12). Tests never ran. Missing all Jackson 2→3, MongoDB property, and config property migrations. Confirms tier 2 (functional but weak) classification from httpclient benchmarks.
 
 **Haiku** failed to complete the pipeline on both migrations — confirming the hard capability cliff.
 
@@ -313,9 +366,34 @@ Our skill generates more rules with zero adjusted gaps. Scribe produces cleaner 
 | OpenCode | 91 | 83/91 | 7 | 4 | 8 |
 | Goose | 85 | 82/85 | 6 | 3 | 3 |
 
-Goose/Opus achieves the fewest gaps (3) and fewest coherence issues (3) of any spring-boot run. Claude Code/Opus has the fewest precision issues but the most gaps (10). OpenCode/Opus extracts the most rules but also has the most failures (8 of 91 didn't pass).
+Goose/Opus achieves the fewest gaps (3) and fewest coherence issues (3) among Opus runs. Claude Code/Opus has the fewest precision issues (5) but the most gaps (10). OpenCode/Opus extracts the most rules but also has the most failures (8 of 91 didn't pass).
 
-The same model produces meaningfully different results across runtimes. Claude Code extracts the most rules per runtime-minute and has the fewest precision issues. OpenCode extracts the most total rules but with the most issues. Goose sits in the middle. The runtime's prompt routing, tool orchestration, and context management affect output quality — not just the model.
+**Gemini Pro across runtimes** (spring-boot3→4):
+
+| Runtime | Rules | Pass Rate | Quality | Precision | Coherence | Gaps |
+|---------|-------|-----------|---------|-----------|-----------|------|
+| OpenCode | 33 | 32/33 | 5.03 | 4 | 5 | 18 |
+| Goose | 81 | 11/81 | 5.20 | 5 | 4 | 5 |
+
+Goose/Gemini produces 2.5x more rules than OpenCode/Gemini (81 vs 33) with far fewer gaps (5 vs 18), but has the lowest pass rate of any run (14%). OpenCode/Gemini has better pass rate (97%) but the fewest rules and most gaps. The high Goose failure rate is largely a test scaffolding issue — `builtin.filecontent` and `java.dependency` rules fail kantra validation at higher rates.
+
+The same model produces meaningfully different results across runtimes. Rules per minute: Claude Code/Opus 2.8, Claude Code/Sonnet 2.5, OpenCode/Sonnet 2.4, OpenCode/Opus 2.0, Goose/Opus 1.6, Goose/Sonnet 1.3. Precision issues: Claude Code/Sonnet 3 (best), Goose/Opus 6, Claude Code/Opus 5, OpenCode/Opus 7, OpenCode/Sonnet 8, Goose/Sonnet 8. The runtime's prompt routing, tool orchestration, and context management affect output quality — not just the model.
+
+**Scribe / Opus** generates 51 rules across 6 file types (Java, properties, Maven XML, Gradle, YAML, spring.factories) — the broadest format coverage of any spring-boot run. Fewest precision issues (2) and coherence issues (1) of any run. All METHOD_CALL patterns use FQN. No kantra testing. Only run with spring.factories and dedicated Gradle detection rules.
+
+**Scribe comparison** (spring-boot3→4):
+
+| Metric | CC/Sonnet (skill) | Scribe/Opus (MCP) |
+|--------|-------------------|-------------------|
+| Rules | 89 | 51 |
+| Gaps | 8 | 5 |
+| Total time | 35.1 min | — |
+| Precision | 3 | 2 |
+| Coherence | 7 | 1 |
+| Kantra validated | 85/89 | none |
+| File types | 5 (Java, XML, properties, YAML, Gradle) | 6 (Java, properties, XML, Gradle, YAML, spring.factories) |
+
+CC/Sonnet (skill) generates 74% more rules with kantra validation but has 7x the coherence issues (7 vs 1), driven by inverted-logic config property detection. Both cover similar file types (5 vs 6) — the key difference is Scribe's spring.factories detection, which no skill-based run covers. Neither approach dominates: the skill pipeline has volume and test validation; the MCP pipeline has per-rule quality and fewer coherence traps.
 
 **Cross-migration pattern**: All runtimes share the Jackson `com.fasterxml.jackson*` precision issue — a common false-positive trap when a migration renames most but not all packages under a namespace. Config-heavy migrations (spring-boot) produce lower quality scores than API-focused migrations (httpclient) because config property renames yield shallower guidance.
 
