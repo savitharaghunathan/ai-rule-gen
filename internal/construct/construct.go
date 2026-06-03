@@ -175,9 +175,6 @@ func buildSingleCondition(p rules.MigrationPattern) rules.Condition {
 
 	// Referenced and filecontent conditions
 	pattern := p.SourceFQN
-	if pattern == "" {
-		pattern = p.SourcePattern
-	}
 	switch p.ProviderType {
 	case "java":
 		return rules.NewJavaReferenced(pattern, p.LocationType)
