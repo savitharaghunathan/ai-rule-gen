@@ -1,0 +1,326 @@
+{
+  "rule_count": 33,
+  "quality": {
+    "total_rules": 33,
+    "has_message": 33,
+    "has_links": 32,
+    "has_effort": 33,
+    "has_before_after": 23,
+    "avg_score": 5.03030303030303,
+    "max_score": 6,
+    "guidance_depth_avg": 2.0606060606060606
+  },
+  "rule_details": [
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00010",
+      "description": "Embedded executable uber jar launch scripts have been removed",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00100",
+      "description": "Optional dependencies no longer included in uber jars",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00110",
+      "description": "spring-authorization-server.version property removed",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00120",
+      "description": "Classic Uber-Jar Loader Support removed",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00130",
+      "description": "Classic Uber-Jar Loader Support removed",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00140",
+      "description": "Minimum CycloneDX Gradle plugin version is 3.0.0",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00030",
+      "description": "Nullable annotations changed with JSpecify addition",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00040",
+      "description": "NonNull annotations changed with JSpecify addition",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00050",
+      "description": "BootstrapRegistry moved to org.springframework.boot.bootstrap",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00060",
+      "description": "EnvironmentPostProcessor moved to org.springframework.boot",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00070",
+      "description": "EnvironmentPostProcessor moved to org.springframework.boot",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00080",
+      "description": "PropertyMapper alwaysApplyingWhenNonNull() method removed",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00090",
+      "description": "PropertyMapper no longer calls adapter/predicate methods by default when source is null",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00330",
+      "description": "PropertyMapper API method alwaysApplyingWhenNonNull() was removed.",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00220",
+      "description": "RestClientBuilderCustomizer is replaced with Rest5ClientBuilderCustomizer",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00240",
+      "description": "StreamsBuilderFactoryBeanCustomizer has been removed",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00250",
+      "description": "RabbitRetryTemplateCustomizer has been replaced",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00260",
+      "description": "MockitoTestExecutionListener has been removed",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00270",
+      "description": "@SpringBootTest no longer provides MockMVC support",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00280",
+      "description": "TestRestTemplate has been relocated",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00290",
+      "description": "@PropertyMapping has been relocated",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00300",
+      "description": "Skip enum for @PropertyMapping has been relocated",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00310",
+      "description": "@MockBean removed in favor of @MockitoBean",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00320",
+      "description": "@SpyBean removed in favor of @MockitoSpyBean",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00150",
+      "description": "JsonObjectSerializer renamed to ObjectValueSerializer in Spring Boot 4",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00160",
+      "description": "JsonValueDeserializer renamed to ObjectValueDeserializer in Spring Boot 4",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00170",
+      "description": "Jackson2ObjectMapperBuilderCustomizer renamed to JsonMapperBuilderCustomizer",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00180",
+      "description": "@JsonComponent renamed to @JacksonComponent",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00190",
+      "description": "@JsonMixin renamed to @JacksonMixin",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00230",
+      "description": "@EntityScan moved to org.springframework.boot.persistence.autoconfigure.EntityScan",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00200",
+      "description": "PathRequest.toStaticResources() now includes /fonts/** by default",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00020",
+      "description": "Spock is no longer included by default in spring-boot-starter-test",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "spring-boot3-to-spring-boot4-00210",
+      "description": "HttpMessageConverters is deprecated. Custom converters should use ClientHttpMessageConvertersCustomizer and ServerHttpMessageConvertersCustomizer",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "before_after_guidance"
+      ]
+    }
+  ],
+  "overlaps": [
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00080",
+      "rule_b": "spring-boot3-to-spring-boot4-00330",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00330 pattern is substring of spring-boot3-to-spring-boot4-00080"
+    },
+    {
+      "rule_a": "spring-boot3-to-spring-boot4-00090",
+      "rule_b": "spring-boot3-to-spring-boot4-00330",
+      "type": "pattern_overlap",
+      "reason": "spring-boot3-to-spring-boot4-00330 pattern is substring of spring-boot3-to-spring-boot4-00090"
+    }
+  ]
+}

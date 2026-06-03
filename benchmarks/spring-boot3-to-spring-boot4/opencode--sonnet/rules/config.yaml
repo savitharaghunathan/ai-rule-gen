@@ -1,0 +1,86 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00020
+  description: Use spring-boot-properties-migrator to assist with renamed/removed configuration properties.
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Configuration properties have been renamed or removed in Spring Boot 4.0. Add the `spring-boot-properties-migrator` dependency to your project to analyze your application's environment, print diagnostics at startup, and temporarily migrate properties at runtime. Once migration is complete, remove this dependency.
+
+    ## Maven
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-properties-migrator</artifactId>
+        <scope>runtime</scope>
+    </dependency>
+    ```
+
+    ## Gradle
+    ```groovy
+    runtimeOnly("org.springframework.boot:spring-boot-properties-migrator")
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#configuration-properties-migration
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-properties-migrator
+        upperbound: 4.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00270
+  description: PropertyMapper.alwaysApplyingWhenNonNull() removed in Spring Boot 4
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `alwaysApplyingWhenNonNull()` method has been removed from `PropertyMapper` in Spring Boot 4. The `PropertyMapper` no longer calls adapter or predicate methods when the source value is `null` by default, so `alwaysApplyingWhenNonNull()` is no longer needed. Remove calls to `alwaysApplyingWhenNonNull()`. If you need to call the mapping even for `null` values, use the new `always()` method instead.
+
+    Before:
+    ```java
+    map.from(source::method).alwaysApplyingWhenNonNull().to(destination::method);
+    ```
+    After (null-safe default — no method needed):
+    ```java
+    map.from(source::method).to(destination::method);
+    ```
+    After (explicitly allow null):
+    ```java
+    map.from(source::method).always().to(destination::method);
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#property-mapper-api-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.context.properties.bind.PropertyMapper.alwaysApplyingWhenNonNull
+        location: METHOD_CALL
+- ruleID: spring-boot-3-to-spring-boot-4-00800
+  description: Configuration properties were renamed or removed in Spring Boot 4; update application.properties/application.yml
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4 renamed or removed several configuration properties. Review your `application.properties` and `application.yml` files for properties that may have changed. Use the `spring-boot-properties-migrator` module temporarily to identify and auto-migrate renamed properties at startup. Remove the migrator dependency once migration is complete.
+
+    See the migration guide for the full list of renamed/removed properties.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#configuration-properties-migration
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.datasource\.
+        filePattern: application.*\.(properties|ya?ml)

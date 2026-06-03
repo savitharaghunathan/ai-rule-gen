@@ -1,0 +1,21 @@
+{
+  "runtime": "goose",
+  "model": "opus",
+  "model_id": "claude-opus-4-6",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-06-01",
+  "duration_minutes": 54.4,
+  "rule_count": 85,
+  "quality_avg": 5.48,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 19,
+  "specificity_gap_count": 0,
+  "pass_rate": "82/85",
+  "eval_judge": {
+    "precision_issues": 6,
+    "coherence_issues": 3,
+    "cross_rule_issues": 4,
+    "gaps": 3
+  },
+  "notes": "Goose runtime with Opus (confirmed in pipeline log). 85 rules, 82 passed, 0 failed, 3 kantra-limitation. 19 overlaps mostly from 00010 being substring of many Spring Boot rules. 4 duplicate/near-duplicate rule pairs. 00390 @Nullable/actuator coherence mismatch is the most impactful issue."
+}

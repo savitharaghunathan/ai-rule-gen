@@ -1,0 +1,18 @@
+- ruleID: spring-boot3-to-spring-boot4-00020
+  description: Undertow support dropped in Spring Boot 4 due to Servlet 6.1 incompatibility
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4 requires a Servlet 6.1 baseline, with which Undertow is not yet compatible. Undertow support is dropped, including the Undertow starter and the ability to use Undertow as an embedded server. Migrate to Tomcat (`spring-boot-starter-tomcat`) or Jetty (`spring-boot-starter-jetty`) instead.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#undertow
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-undertow
+        lowerbound: 0.0.0

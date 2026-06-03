@@ -1,0 +1,260 @@
+- ruleID: httpclient4-to-httpclient5-00020
+  description: Package namespace changed to org.apache.hc.* in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove old `org.apache.http` imports and re-import HttpClient classes from the 5.x package namespace (e.g. `org.apache.hc.client5.http`). Most old interfaces and classes should resolve automatically.
+  when:
+    java.referenced:
+        pattern: org.apache.http*
+        location: PACKAGE
+- ruleID: httpclient4-to-httpclient5-00030
+  description: Replaced by HttpCoreContext or HttpClientContext in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `BasicHttpContext` with `HttpCoreContext` or `HttpClientContext`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.protocol.BasicHttpContext
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00040
+  description: Replaced by ConnPoolControl.closeExpired() in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `HttpClientConnectionManager.closeExpiredConnections()` with `ConnPoolControl.closeExpired()`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.HttpClientConnectionManager.closeExpiredConnections
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00050
+  description: Replaced by ConnPoolControl.closeIdle() in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `HttpClientConnectionManager.closeIdleConnections()` with `ConnPoolControl.closeIdle()`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.HttpClientConnectionManager.closeIdleConnections
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00060
+  description: Replaced by addExecInterceptorFirst in 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `addInterceptorLast(<some logging interceptor>)` with `addExecInterceptorFirst("...", <some logging interceptor>)`. Otherwise, compressed payload may be logged.
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClientBuilder.addInterceptorLast
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00070
+  description: Socket config moved to ConnectionManager in 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Socket configuration is now applied to the connection manager. Use `PoolingHttpClientConnectionManagerBuilder.create().setDefaultSocketConfig(...)` or `BasicHttpClientConnectionManager.setSocketConfig(...)`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClientBuilder.setDefaultSocketConfig
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00080
+  description: Renamed to setRetryStrategy in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'HttpClientBuilder.setRetryHandler(): Renamed to setRetryStrategy in 5.x'
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClientBuilder.setRetryHandler
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00090
+  description: Replaced by HttpEntityContainer in 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `HttpEntityEnclosingRequest` interface with `HttpEntityContainer`. In HttpClient 5.x one can enclose a request entity with any HTTP method even if it violates semantic of the method.
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpEntityEnclosingRequest
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00100
+  description: Replaced by MessageHeaders.getHeaders() in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'HttpMessage.getAllHeaders(): Replaced by MessageHeaders.getHeaders() in 5.x'
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpMessage.getAllHeaders
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00110
+  description: Replaced by new RequestLine(request) in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'HttpRequest.getRequestLine(): Replaced by new RequestLine(request) in 5.x'
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpRequest.getRequestLine
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00120
+  description: Replaced by HttpUriRequestBase in 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'org.apache.http.client.methods.HttpRequestBase: Replaced by HttpUriRequestBase in 5.x'
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.methods.HttpRequestBase
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00130
+  description: Replaced by ClassicHttpResponse.getEntity() in 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: In 5.x, `getEntity()` is not available on the base `HttpResponse`. Cast to or use `ClassicHttpResponse.getEntity()`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpResponse.getEntity
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00140
+  description: HTTP response messages no longer have a status line in 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Use response code directly with `HttpResponse.getCode()`, or if you need the status line object, use `new StatusLine(response)`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.HttpResponse.getStatusLine
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00150
+  description: Status line was removed; use HttpResponse.getCode() directly
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'StatusLine.getStatusCode(): Status line was removed; use HttpResponse.getCode() directly'
+  when:
+    java.referenced:
+        pattern: org.apache.http.StatusLine.getStatusCode
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00160
+  description: Connection timeouts moved to ConnectionConfig in 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Use `ConnectionConfig.custom().setConnectTimeout()` on the connection manager instead of `RequestConfig`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.config.RequestConfig.Builder.setConnectTimeout
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00170
+  description: Socket timeouts moved to ConnectionConfig in 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Use `ConnectionConfig.custom().setSocketTimeout()` on the connection manager instead of `RequestConfig`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.config.RequestConfig.Builder.setSocketTimeout
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00180
+  description: Removed and no longer public in 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The 4.x `URIUtils.normalizeSyntax` is no longer public. The 5.x `URIBuilder` in `httpcomponents-core` has a new public `normalizeSyntax` method (deprecated and renamed to `optimize` since 5.3) which strives for more thorough support of RFC 3986.
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.utils.URIUtils.normalizeSyntax
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00190
+  description: The normalizeUri property has been removed in 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'RequestConfig.Builder.setNormalizeUri(): The normalizeUri property has been removed in 5.x'
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.config.RequestConfig.Builder.setNormalizeUri
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00200
+  description: Zero TTL behavior changed to mean no re-use in 5.x
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: As of version 5.0 HttpClient treats zero TTL as an instruction that connections are not meant to be re-used. Previously it may have meant infinite TTL.
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClientBuilder.setConnectionTimeToLive
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00210
+  description: In 5.x, connection managers should be created using PoolingHttpClientConnectionManagerBuilder
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Use `PoolingHttpClientConnectionManagerBuilder.create()...build()` to create connection managers with custom parameters.
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+        location: CONSTRUCTOR_CALL

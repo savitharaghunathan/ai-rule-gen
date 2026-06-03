@@ -1,0 +1,205 @@
+- ruleID: spring-boot3-to-spring-boot4-00010
+  description: Spring Boot 4.0 requires Java 17+, Jakarta EE 11, Servlet 6.1, and Spring Framework 7.x
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring Boot 4.0 has updated system requirements: Java 17 or later (latest LTS recommended), Kotlin 2.2+, GraalVM v25+ for native images, Jakarta EE 11 with Servlet 6.1 baseline, and Spring Framework 7.x. Review your project''s runtime environment and managed dependencies before upgrading.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#review-system-requirements
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter
+        upperbound: 4.0.0
+- ruleID: spring-boot3-to-spring-boot4-00190
+  description: Moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `BootstrapRegistry` has moved from `org.springframework.boot` to `org.springframework.boot.bootstrap` in Spring Boot 4.0. Update your import statement to use the new package.
+
+    ## Before
+    ```java
+    import org.springframework.boot.BootstrapRegistry;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.bootstrap.BootstrapRegistry;
+    ```
+
+    Also update any `spring.factories` entries referencing the old package.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.BootstrapRegistry
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00200
+  description: Moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `BootstrapContext` has moved from `org.springframework.boot` to `org.springframework.boot.bootstrap` in Spring Boot 4.0. Update your import statement to use the new package.
+
+    ## Before
+    ```java
+    import org.springframework.boot.BootstrapContext;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.bootstrap.BootstrapContext;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.BootstrapContext
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00210
+  description: Moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `BootstrapRegistryInitializer` has moved from `org.springframework.boot` to `org.springframework.boot.bootstrap` in Spring Boot 4.0. Update your import statement and any `spring.factories` entries referencing the old package.
+
+    ## Before
+    ```java
+    import org.springframework.boot.BootstrapRegistryInitializer;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.bootstrap.BootstrapRegistryInitializer;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.BootstrapRegistryInitializer
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00220
+  description: Moved from org.springframework.boot.env to org.springframework.boot
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `EnvironmentPostProcessor` has moved from `org.springframework.boot.env` to `org.springframework.boot` in Spring Boot 4.0. The deprecated form is still available in 4.0 but will be removed later. Update your import statement and any `spring.factories` entries.
+
+    ## Before
+    ```java
+    import org.springframework.boot.env.EnvironmentPostProcessor;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.EnvironmentPostProcessor;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.env.EnvironmentPostProcessor
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00230
+  description: alwaysApplyingWhenNonNull() removed in Spring Boot 4.0
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `alwaysApplyingWhenNonNull()` method has been removed from `PropertyMapper` in Spring Boot 4.0. The `PropertyMapper` no longer calls adapter or predicate methods when the source value is `null` by default, making this method unnecessary. If you need to perform a mapping even for `null` values, use the new `always()` method instead.
+
+    ## Before
+    ```java
+    PropertyMapper mapper = PropertyMapper.get().alwaysApplyingWhenNonNull();
+    mapper.from(source::method).to(destination::method);
+    ```
+
+    ## After
+    ```java
+    PropertyMapper mapper = PropertyMapper.get();
+    mapper.from(source::method).to(destination::method);
+    // Or if you need null-value mapping:
+    mapper.from(source::method).always().to(destination::method);
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#property-mapper-api-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: alwaysApplyingWhenNonNull
+        location: METHOD_CALL
+- ruleID: spring-boot3-to-spring-boot4-00240
+  description: PropertyMapper no longer calls adapter/predicate for null values
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'The `PropertyMapper` class in Spring Boot 4.0 no longer calls adapter or predicate methods when the source value is `null`. Previously, `map.from(source::method).to(destination::method)` would call `destination.method(null)` if `source.method()` returned `null`. Now it skips the mapping entirely. If you rely on null-value mapping, use the new `always()` method: `map.from(source::method).always().to(destination::method)`. Review [commit 239f384ac0](https://github.com/spring-projects/spring-boot/commit/239f384ac0893d151b89f204886874c6adb00001) for examples of how Spring Boot adapted to this change.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#property-mapper-api-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.context.properties.PropertyMapper
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00420
+  description: Removed support for org.springframework.lang.Nullable on actuator endpoint parameters
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `org.springframework.lang.Nullable` annotation is no longer supported for declaring optional actuator endpoint parameters. If you are using this annotation on actuator endpoint parameters, migrate to `org.jspecify.annotations.Nullable` instead.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#removed-support-for-javaxannotationsnonnull-and-orgspringframeworklangnullable
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.lang.Nullable
+        location: ANNOTATION

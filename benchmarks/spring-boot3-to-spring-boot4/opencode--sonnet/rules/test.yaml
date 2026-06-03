@@ -1,0 +1,128 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00080
+  description: Spring Boot's Spock integration has been removed as Spock does not yet support Groovy 5.
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4's Spock integration has been removed because Spock does not yet support Groovy 5. Remove `spock-spring` and any Spock-based test infrastructure that depends on Spring Boot's Spock integration. Monitor the Spock project for Groovy 5 compatibility updates before re-integrating.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spock-integration
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.spockframework.spock-spring
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00110
+  description: spring-security-test now requires spring-boot-starter-security-test in Spring Boot 4.
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4's modular test infrastructure requires `spring-boot-starter-security-test` for `@WithMockUser` and `@WithUserDetails` to operate properly. Replace the direct `spring-security-test` test dependency with `spring-boot-starter-security-test`.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#test-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.security.spring-security-test
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00120
+  description: '@WithMockUser now requires spring-boot-starter-security-test to operate properly in Spring Boot 4.'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: In Spring Boot 4, `@WithMockUser` from `spring-security-test` requires the `spring-boot-starter-security-test` dependency to operate properly. Add `spring-boot-starter-security-test` as a test dependency to ensure security test annotations function correctly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#test-code
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.security.test.context.support.WithMockUser
+        location: ANNOTATION
+- ruleID: spring-boot-3-to-spring-boot-4-00130
+  description: '@WithUserDetails now requires spring-boot-starter-security-test to operate properly in Spring Boot 4.'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: In Spring Boot 4, `@WithUserDetails` from `spring-security-test` requires the `spring-boot-starter-security-test` dependency to operate properly. Add `spring-boot-starter-security-test` as a test dependency to ensure security test annotations function correctly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#test-code
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.security.test.context.support.WithUserDetails
+        location: ANNOTATION
+- ruleID: spring-boot-3-to-spring-boot-4-00150
+  description: spring-boot-starter-test renamed to spring-boot-starter-test-classic in Spring Boot 4.
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In Spring Boot 4, `spring-boot-starter-test` has been replaced by `spring-boot-starter-test-classic`. The classic test starter provides all test modules but excludes transitive dependencies. For a quick upgrade path, replace `spring-boot-starter-test` with `spring-boot-starter-test-classic`. Note that `spring-boot-starter-test` is now brought transitively by technology-specific test starters, so you may instead list the specific technology test starters for the modules under test.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    ```
+
+    ## After (quick migration)
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test-classic</artifactId>
+        <scope>test</scope>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#classic-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-test
+        upperbound: 4.0.0

@@ -1,0 +1,13 @@
+- ruleID: httpclient4-to-httpclient5-00010
+  description: HttpClient 4.x must be replaced with HttpClient 5.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Add HttpClient 5.x as a new dependency to the project and remove HttpClient 4.x. The new Maven coordinates and package namespaces differ.
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpclient
+        upperbound: 5.0.0

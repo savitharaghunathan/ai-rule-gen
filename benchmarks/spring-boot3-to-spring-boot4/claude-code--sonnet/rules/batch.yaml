@@ -1,0 +1,18 @@
+- ruleID: spring-boot3-to-spring-boot4-00800
+  description: spring-boot-starter-batch now uses in-memory mode by default; use spring-boot-starter-batch-jdbc for database persistence
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Batch in Spring Boot 4 now operates in in-memory mode by default. The `spring-boot-starter-batch` no longer stores metadata in your existing database. If you rely on database-backed job metadata persistence, change your starter dependency to `spring-boot-starter-batch-jdbc` to restore the previous behavior.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-batch
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-batch
+        upperbound: 4.0.0

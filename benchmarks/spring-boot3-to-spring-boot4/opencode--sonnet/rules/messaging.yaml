@@ -1,0 +1,54 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00680
+  description: StreamBuilderFactoryBeanCustomizer removed; replaced by StreamsBuilderFactoryBeanConfigurer
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot's `StreamBuilderFactoryBeanCustomizer` has been removed. Replace it with Spring Kafka's `StreamsBuilderFactoryBeanConfigurer` from `org.springframework.kafka.config`. Note that the new configurer implements `Ordered` with a default value of `0`, so if you rely on ordering of multiple customizers, set the order explicitly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#kafka-streams-customization
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.kafka.StreamBuilderFactoryBeanCustomizer
+        location: IMPORT
+- ruleID: spring-boot-3-to-spring-boot-4-00690
+  description: spring.kafka.retry.topic.backoff.random removed; replaced by spring.kafka.retry.topic.backoff.jitter
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring.kafka.retry.topic.backoff.random` property has been removed. Replace it with `spring.kafka.retry.topic.backoff.jitter`, which provides more flexible backoff configuration. This change is a consequence of Spring Kafka moving its retry capabilities from Spring Retry to Spring Framework.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-kafka-retry-features
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.kafka\.retry\.topic\.backoff\.random
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00700
+  description: RabbitRetryTemplateCustomizer removed; replaced by dedicated customizer interfaces
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring Boot''s `RabbitRetryTemplateCustomizer` has been removed. It has been replaced by two dedicated customizer interfaces: `RabbitTemplateRetrySettingsCustomizer` (for customizing `RetryTemplate` retry settings) and `RabbitListenerRetrySettingsCustomizer` (for message listener retry settings). Migrate your implementation to the appropriate interface based on what you were customizing.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-amqp-retry-features
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.amqp.rabbit.retry.RabbitRetryTemplateCustomizer
+        location: IMPORT

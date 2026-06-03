@@ -1,0 +1,162 @@
+- ruleID: httpclient4-to-httpclient5-00220
+  description: SSLConnectionSocketFactory replaced by ClientTlsStrategyBuilder
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: In HttpClient 5.x, SSLConnectionSocketFactory is replaced by `ClientTlsStrategyBuilder` (or `DefaultClientTlsStrategy`) for configuring SSL/TLS.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.1.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.ssl.SSLConnectionSocketFactory
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00230
+  description: CookieStore relocated to org.apache.hc package namespace
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove old `org.apache.http` imports and re-import HttpClient classes from the `org.apache.hc.client5.http.cookie` package namespace.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.1.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.CookieStore
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00240
+  description: BasicCookieStore relocated to org.apache.hc package namespace
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove old `org.apache.http` imports and re-import from the `org.apache.hc.client5.http.cookie` package namespace.
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.BasicCookieStore
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00250
+  description: CredentialsProvider relocated to org.apache.hc package namespace
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove old `org.apache.http` imports and re-import from the `org.apache.hc.client5.http.auth` package namespace.
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.CredentialsProvider
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00260
+  description: BasicCredentialsProvider relocated to org.apache.hc package namespace
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove old `org.apache.http` imports and re-import from the `org.apache.hc.client5.http.auth` package namespace.
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.BasicCredentialsProvider
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00270
+  description: HttpPost constructor replaced by RequestBuilder methods
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: In HttpClient 5.x classic APIs, use `ClassicRequestBuilder.post(...)` instead of `new HttpPost(...)`. For async APIs, use `SimpleRequestBuilder.post(...)` or `BasicRequestBuilder.post(...)`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.methods.HttpPost
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00280
+  description: NameValuePair relocated to org.apache.hc package namespace
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove old `org.apache.http` imports and re-import from the `org.apache.hc.core5.http` package namespace.
+  when:
+    java.referenced:
+        pattern: org.apache.http.NameValuePair
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00290
+  description: BasicNameValuePair relocated to org.apache.hc package namespace
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove old `org.apache.http` imports and re-import from the `org.apache.hc.core5.http.message` package namespace.
+  when:
+    java.referenced:
+        pattern: org.apache.http.message.BasicNameValuePair
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00300
+  description: EntityTemplate replaced by HttpEntities.create()
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: In HttpClient 5.x, `EntityTemplate` is removed. Use `HttpEntities.create(...)` instead to generate request entities.
+  when:
+    java.referenced:
+        pattern: org.apache.http.entity.EntityTemplate
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00310
+  description: ContentType relocated to org.apache.hc package namespace
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove old `org.apache.http` imports and re-import from the `org.apache.hc.core5.http` package namespace.
+  when:
+    java.referenced:
+        pattern: org.apache.http.entity.ContentType
+        location: IMPORT
+- ruleID: httpclient4-to-httpclient5-00320
+  description: getSSLSession() access moved to HttpCoreContext
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `((ManagedHttpClientConnection) HttpContext.getAttribute(HttpCoreContext.HTTP_CONNECTION)).getSSLSession()` with `HttpCoreContext.getSSLSession()`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.conn.ManagedHttpClientConnection.getSSLSession
+        location: METHOD_CALL
+- ruleID: httpclient4-to-httpclient5-00330
+  description: CloseableHttpClient alternatives for async
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: When migrating to HttpClient 5.x async APIs, replace `CloseableHttpClient` with `CloseableHttpAsyncClient`.
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.CloseableHttpClient
+        location: IMPORT

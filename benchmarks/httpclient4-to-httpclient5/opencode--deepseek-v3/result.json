@@ -1,0 +1,21 @@
+{
+  "runtime": "opencode",
+  "model": "deepseek-v3",
+  "model_id": "google-vertex/deepseek-ai/deepseek-v3.2-maas",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-01",
+  "duration_minutes": 61.7,
+  "rule_count": 35,
+  "quality_avg": 4.3,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 1,
+  "specificity_gap_count": 0,
+  "pass_rate": "34/35",
+  "eval_judge": {
+    "precision_issues": 9,
+    "coherence_issues": 7,
+    "cross_rule_issues": 4,
+    "gaps": 13
+  },
+  "notes": "DeepSeek V3.2 via Google Vertex. 34/35 pass (00080 failed). Quality 4.3 driven by 25/35 missing before/after code, 3 missing links. Most messages are boilerplate with no actionable detail. 13/16 METHOD_CALL bare names. Rule 00060 has wrong import path. Rule 00300 async/classic confusion. Slowest run at 61.7 min."
+}

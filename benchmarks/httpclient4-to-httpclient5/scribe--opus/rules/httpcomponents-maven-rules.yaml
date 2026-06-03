@@ -1,0 +1,53 @@
+- ruleID: httpcomponents-00030
+  description: "Detects Maven dependency: org.apache.httpcomponents httpclient/httpcore/httpmime/httpasyncclient"
+  message: |
+    ## Migration Required: Maven Dependency Update for HttpComponents 5.x
+
+    ### Before
+    HttpComponents Client 4.x uses the `org.apache.httpcomponents` group ID:
+    ```xml
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>4.5.x</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>4.4.x</version>
+    </dependency>
+    ```
+
+    ### After
+    HttpComponents Client 5.x uses a new group ID `org.apache.httpcomponents.client5`:
+    ```xml
+    <dependency>
+        <groupId>org.apache.httpcomponents.client5</groupId>
+        <artifactId>httpclient5</artifactId>
+        <version>5.6.x</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5</artifactId>
+        <version>5.3.x</version>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - The Maven group ID changed from `org.apache.httpcomponents` to `org.apache.httpcomponents.client5`
+    - The artifact ID changed from `httpclient` to `httpclient5`
+    - `httpcore` is now `httpcore5` under `org.apache.httpcomponents.core5`
+    - `httpmime` is now `httpclient5` (MIME support is integrated)
+    - `httpasyncclient` is now part of `httpclient5` (async support is integrated)
+    - Both 4.x and 5.x can coexist in the classpath during migration due to different package namespaces
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/"
+  when:
+    builtin.xml:
+      xpath: "//dependencies/dependency[groupId='org.apache.httpcomponents' and (artifactId='httpclient' or artifactId='httpcore' or artifactId='httpmime' or artifactId='httpasyncclient')]"

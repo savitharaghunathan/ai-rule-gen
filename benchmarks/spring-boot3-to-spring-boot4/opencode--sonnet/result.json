@@ -1,0 +1,21 @@
+{
+  "runtime": "opencode",
+  "model": "sonnet",
+  "model_id": "claude-sonnet-4-6",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-06-01",
+  "duration_minutes": 39.4,
+  "rule_count": 95,
+  "quality_avg": 5.515789473684211,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 31,
+  "specificity_gap_count": 0,
+  "pass_rate": "92/95",
+  "eval_judge": {
+    "precision_issues": 8,
+    "coherence_issues": 5,
+    "cross_rule_issues": 3,
+    "gaps": 8
+  },
+  "notes": "2 rules failed kantra tests, 1 kantra-limitation. 4 noise rules (00920-00950) detect unchanged MongoDB properties. Rule 00530 detects wrong FQN (SB4 instead of SB3)."
+}

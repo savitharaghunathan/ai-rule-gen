@@ -1,0 +1,270 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00350
+  description: 'Jackson 3 uses new package names: com.fasterxml.jackson moved to tools.jackson'
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring Boot 4 uses Jackson 3 as its preferred JSON library. Jackson 3 uses new package names: `com.fasterxml.jackson` has moved to `tools.jackson`. Exception: `jackson-annotations` continues to use `com.fasterxml.jackson.annotation`. Update all Jackson imports accordingly. See the Jackson 3.0 wiki for full details: https://github.com/FasterXML/jackson/wiki/Jackson-Release-3.0'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: com.fasterxml.jackson*
+        location: PACKAGE
+- ruleID: spring-boot-3-to-spring-boot-4-00360
+  description: Jackson 2 group ID com.fasterxml.jackson.core replaced by tools.jackson in Jackson 3
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring Boot 4 uses Jackson 3, which has new Maven group IDs. The `com.fasterxml.jackson.core:jackson-databind` artifact is replaced by `tools.jackson:jackson-databind`. Update your Maven/Gradle dependencies to use the new `tools.jackson` group IDs. Note: `jackson-annotations` is an exception and retains the `com.fasterxml.jackson.core` group ID.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.fasterxml.jackson.core.jackson-databind
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00370
+  description: Jackson 2 group ID com.fasterxml.jackson.core replaced by tools.jackson in Jackson 3
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4 uses Jackson 3, which has new Maven group IDs. The `com.fasterxml.jackson.core:jackson-core` artifact is replaced by `tools.jackson:jackson-core`. Update your Maven/Gradle dependencies to use the new `tools.jackson` group IDs.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.fasterxml.jackson.core.jackson-core
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00380
+  description: JsonObjectSerializer renamed to ObjectValueSerializer in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `JsonObjectSerializer` class has been renamed to `ObjectValueSerializer` in Spring Boot 4 for consistency with Jackson 3. Replace all usages of `JsonObjectSerializer` with `ObjectValueSerializer`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.jackson.JsonObjectSerializer
+        location: IMPORT
+- ruleID: spring-boot-3-to-spring-boot-4-00390
+  description: JsonValueDeserializer renamed to ObjectValueDeserializer in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `JsonValueDeserializer` class has been renamed to `ObjectValueDeserializer` in Spring Boot 4 for consistency with Jackson 3. Replace all usages of `JsonValueDeserializer` with `ObjectValueDeserializer`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.jackson.JsonValueDeserializer
+        location: IMPORT
+- ruleID: spring-boot-3-to-spring-boot-4-00400
+  description: Jackson2ObjectMapperBuilderCustomizer renamed to JsonMapperBuilderCustomizer in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `Jackson2ObjectMapperBuilderCustomizer` interface has been renamed to `JsonMapperBuilderCustomizer` in Spring Boot 4. Replace all usages with `JsonMapperBuilderCustomizer`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer
+        location: IMPORT
+- ruleID: spring-boot-3-to-spring-boot-4-00410
+  description: '@JsonComponent renamed to @JacksonComponent in Spring Boot 4'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `@JsonComponent` annotation has been renamed to `@JacksonComponent` in Spring Boot 4 to clarify that it is Jackson-specific and not limited to JSON. Replace `@JsonComponent` with `@JacksonComponent`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.jackson.JsonComponent
+        location: ANNOTATION
+- ruleID: spring-boot-3-to-spring-boot-4-00420
+  description: '@JsonMixin renamed to @JacksonMixin in Spring Boot 4'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `@JsonMixin` annotation has been renamed to `@JacksonMixin` in Spring Boot 4. Replace `@JsonMixin` with `@JacksonMixin`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.jackson.JsonMixin
+        location: ANNOTATION
+- ruleID: spring-boot-3-to-spring-boot-4-00430
+  description: spring.jackson.read.* properties moved to spring.jackson.json.read in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring.jackson.read.*` properties have moved to `spring.jackson.json.read.*` in Spring Boot 4. Update your application configuration to use the new property prefix.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jackson\.read\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00440
+  description: spring.jackson.write.* properties moved to spring.jackson.json.write in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring.jackson.write.*` properties have moved to `spring.jackson.json.write.*` in Spring Boot 4. Update your application configuration to use the new property prefix.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jackson\.write\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00450
+  description: spring.jackson.parser.* properties replaced by spring.jackson.json.read in Spring Boot 4
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring.jackson.parser.*` properties have been replaced in Spring Boot 4. Where a Jackson 2 `JsonParser.Feature` has an equivalent Jackson 3 `JsonReadFeature`, use `spring.jackson.json.read.*` instead. Where there is no `JsonReadFeature` equivalent, use a `JsonMapperBuilderCustomizer` to apply the configuration programmatically.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jackson\.parser\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00460
+  description: Jackson module auto-detection now enabled by default in Spring Boot 4
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: In Spring Boot 4, Jackson will automatically detect and register all modules present on the classpath. Previously (Spring Boot 3), only 'well-known' modules were registered. This behavioral change may affect your application. To disable this new behavior, set `spring.jackson.find-and-add-modules=false`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jackson\.find-and-add-modules
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00470
+  description: spring.jackson.use-jackson2-defaults is a temporary compatibility property in Spring Boot 4
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring.jackson.use-jackson2-defaults=true` property provides a temporary compatibility mode aligning Jackson 3's auto-configured `JsonMapper` defaults with those of Jackson 2 in Spring Boot 3.x. This is intended as a temporary migration aid. Plan to remove this property and fully adopt Jackson 3 defaults.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#jackson-2-compatibility
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jackson\.use-jackson2-defaults
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-3-to-spring-boot-4-00480
+  description: spring-boot-jackson2 is a deprecated compatibility module in Spring Boot 4
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring-boot-jackson2` module is provided in Spring Boot 4.0 as a deprecated stop-gap for applications that need more time to migrate from Jackson 2 to Jackson 3. This module will be removed in a future release. Plan to migrate your application to Jackson 3 and remove this dependency.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#jackson-2-compatibility
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-jackson2
+        lowerbound: 0.0.0
+- ruleID: spring-boot-3-to-spring-boot-4-00840
+  description: spring.jackson2.* properties indicate use of the deprecated Jackson 2 compatibility module in Spring Boot 4
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Properties under the `spring.jackson2.*` prefix are provided by the deprecated `spring-boot-jackson2` compatibility module in Spring Boot 4. This module is a stop-gap for users who cannot yet migrate to Jackson 3 and will be removed in a future release. Migrate to Jackson 3 and remove the `spring-boot-jackson2` dependency as soon as possible. Jackson 3 configuration uses the `spring.jackson.*` prefix.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#jackson-2-compatibility
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jackson2\.
+        filePattern: application.*\.(properties|ya?ml)

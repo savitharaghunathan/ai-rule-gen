@@ -1,0 +1,18 @@
+- ruleID: spring-boot3-to-spring-boot4-00210
+  description: Logback default charset harmonized to UTF-8 for file and console logs in Spring Boot 4
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The default charset for Logback has changed in Spring Boot 4.0 to align with Log4j2. Log files now use UTF-8 by default, and console logs use `Console#charset()` if available, falling back to UTF-8. If your application previously relied on a different charset (e.g., the system default), you may see behavioral differences in log output encoding. Review your Logback configuration if charset was a concern.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#logback-default-charset
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: ch.qos.logback.logback-classic
+        upperbound: 4.0.0

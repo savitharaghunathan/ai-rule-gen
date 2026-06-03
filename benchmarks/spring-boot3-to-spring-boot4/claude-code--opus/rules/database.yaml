@@ -1,0 +1,36 @@
+- ruleID: spring-boot3-to-spring-boot4-00090
+  description: Direct Flyway dependency must be replaced with spring-boot-starter-flyway
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4's modular design requires using starter POMs for technologies that previously only needed a direct third-party dependency. Replace the direct `org.flywaydb:flyway-core` dependency with `org.springframework.boot:spring-boot-starter-flyway` to ensure proper auto-configuration support.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.flywaydb.flyway-core
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00100
+  description: Direct Liquibase dependency must be replaced with spring-boot-starter-liquibase
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4's modular design requires using starter POMs for technologies that previously only needed a direct third-party dependency. Replace the direct `org.liquibase:liquibase-core` dependency with `org.springframework.boot:spring-boot-starter-liquibase` to ensure proper auto-configuration support.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.liquibase.liquibase-core
+        lowerbound: 0.0.0

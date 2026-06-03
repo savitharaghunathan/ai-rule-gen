@@ -1,0 +1,312 @@
+- ruleID: httpclient4-to-httpclient5-00010
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.methods.HttpGet
+- ruleID: httpclient4-to-httpclient5-00020
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.methods.HttpPost
+- ruleID: httpclient4-to-httpclient5-00030
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.methods.CloseableHttpResponse
+- ruleID: httpclient4-to-httpclient5-00040
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.StatusLine
+- ruleID: httpclient4-to-httpclient5-00050
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.StatusLine
+- ruleID: httpclient4-to-httpclient5-00060
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client5.http.classic.methods.ClassicRequestBuilder
+- ruleID: httpclient4-to-httpclient5-00070
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client5.http.classic.methods.ClassicRequestBuilder
+- ruleID: httpclient4-to-httpclient5-00080
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.impl.client.HttpClients
+- ruleID: httpclient4-to-httpclient5-00090
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.methods.HttpGet
+- ruleID: httpclient4-to-httpclient5-00100
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.HttpClient
+- ruleID: httpclient4-to-httpclient5-00110
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.impl.auth.BasicScheme
+- ruleID: httpclient4-to-httpclient5-00120
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.auth.UsernamePasswordCredentials
+- ruleID: httpclient4-to-httpclient5-00130
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.impl.client.HttpClientBuilder
+- ruleID: httpclient4-to-httpclient5-00140
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.conn.routing.HttpRoute
+- ruleID: httpclient4-to-httpclient5-00150
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+- ruleID: httpclient4-to-httpclient5-00160
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.HttpHost
+- ruleID: httpclient4-to-httpclient5-00170
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.config.RequestConfig
+- ruleID: httpclient4-to-httpclient5-00180
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.ssl.SSLContexts
+- ruleID: httpclient4-to-httpclient5-00190
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: javax.net.ssl.SSLContext
+- ruleID: httpclient4-to-httpclient5-00200
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.conn.routing.HttpRoute
+- ruleID: httpclient4-to-httpclient5-00210
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.HttpClient
+- ruleID: httpclient4-to-httpclient5-00220
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.entity.mime.MultipartEntityBuilder
+- ruleID: httpclient4-to-httpclient5-00230
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.HttpClient
+- ruleID: httpclient4-to-httpclient5-00240
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.HttpClient
+- ruleID: httpclient4-to-httpclient5-00250
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.util.EntityUtils
+- ruleID: httpclient4-to-httpclient5-00260
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/source=httpclient
+    - konveyor.io/target=httpclient5
+    - konveyor.io/target=httpclient
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ': '
+  when:
+    builtin.filecontent:
+        pattern: org.apache.http.client.HttpClient

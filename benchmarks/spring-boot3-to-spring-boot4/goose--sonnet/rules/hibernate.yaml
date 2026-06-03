@@ -1,0 +1,71 @@
+- ruleID: spring-boot3-to-spring-boot4-00590
+  description: hibernate-jpamodelgen replaced by hibernate-processor
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `hibernate-jpamodelgen` artifact has been replaced by `hibernate-processor`. Update your dependency from `org.hibernate.orm:hibernate-jpamodelgen` to `org.hibernate.orm:hibernate-processor`.
+
+    ## Before
+    ```xml
+    <dependency>
+        <groupId>org.hibernate.orm</groupId>
+        <artifactId>hibernate-jpamodelgen</artifactId>
+    </dependency>
+    ```
+
+    ## After
+    ```xml
+    <dependency>
+        <groupId>org.hibernate.orm</groupId>
+        <artifactId>hibernate-processor</artifactId>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#hibernate-dependency-management
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.orm.hibernate-jpamodelgen
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00600
+  description: hibernate-proxool is no longer published
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `hibernate-proxool` artifact is no longer published by Hibernate. You must migrate to an alternative connection pooling solution such as HikariCP (Spring Boot's default connection pool).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#hibernate-dependency-management
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.orm.hibernate-proxool
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00610
+  description: hibernate-vibur is no longer published
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `hibernate-vibur` artifact is no longer published by Hibernate. You must migrate to an alternative connection pooling solution such as HikariCP (Spring Boot's default connection pool).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#hibernate-dependency-management
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.orm.hibernate-vibur
+        lowerbound: 0.0.0

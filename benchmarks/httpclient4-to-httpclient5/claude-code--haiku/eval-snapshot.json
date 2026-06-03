@@ -1,0 +1,413 @@
+{
+  "rule_count": 26,
+  "quality": {
+    "total_rules": 26,
+    "has_message": 26,
+    "has_links": 0,
+    "has_effort": 26,
+    "has_before_after": 0,
+    "avg_score": 3,
+    "max_score": 6,
+    "guidance_depth_avg": 1
+  },
+  "rule_details": [
+    {
+      "rule_id": "httpclient4-to-httpclient5-00010",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00020",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00030",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00040",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00050",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00060",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00070",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00080",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00090",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00100",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00110",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00120",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00130",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00140",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00150",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00160",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00170",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00180",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00190",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00200",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00210",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00220",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00230",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00240",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00250",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00260",
+      "description": "",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    }
+  ],
+  "overlaps": [
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00090",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.methods.HttpGet"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00040",
+      "rule_b": "httpclient4-to-httpclient5-00050",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.StatusLine"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00060",
+      "rule_b": "httpclient4-to-httpclient5-00070",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client5.http.classic.methods.ClassicRequestBuilder"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00100",
+      "rule_b": "httpclient4-to-httpclient5-00210",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00100",
+      "rule_b": "httpclient4-to-httpclient5-00230",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00100",
+      "rule_b": "httpclient4-to-httpclient5-00240",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00100",
+      "rule_b": "httpclient4-to-httpclient5-00260",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00140",
+      "rule_b": "httpclient4-to-httpclient5-00200",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.conn.routing.HttpRoute"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00210",
+      "rule_b": "httpclient4-to-httpclient5-00230",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00210",
+      "rule_b": "httpclient4-to-httpclient5-00240",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00210",
+      "rule_b": "httpclient4-to-httpclient5-00260",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00230",
+      "rule_b": "httpclient4-to-httpclient5-00240",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00230",
+      "rule_b": "httpclient4-to-httpclient5-00260",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00240",
+      "rule_b": "httpclient4-to-httpclient5-00260",
+      "type": "duplicate_pattern",
+      "reason": "identical pattern: org.apache.http.client.HttpClient"
+    }
+  ]
+}

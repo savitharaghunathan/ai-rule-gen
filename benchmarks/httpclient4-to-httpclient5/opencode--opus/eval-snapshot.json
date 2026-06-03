@@ -1,0 +1,351 @@
+{
+  "rule_count": 29,
+  "quality": {
+    "total_rules": 29,
+    "has_message": 29,
+    "has_links": 29,
+    "has_effort": 29,
+    "has_before_after": 29,
+    "avg_score": 5.896551724137931,
+    "max_score": 6,
+    "guidance_depth_avg": 2.896551724137931
+  },
+  "rule_details": [
+    {
+      "rule_id": "httpclient4-to-httpclient5-00250",
+      "description": "PoolingHttpClientConnectionManager replaced by PoolingAsyncClientConnectionManager in HttpClient 5.x async APIs",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00260",
+      "description": "CloseableHttpClient replaced by CloseableHttpAsyncClient in HttpClient 5.x async APIs",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00270",
+      "description": "HttpClients factory replaced by HttpAsyncClients in HttpClient 5.x async APIs",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00170",
+      "description": "closeExpiredConnections() renamed to closeExpired() in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00180",
+      "description": "closeIdleConnections() renamed to closeIdle() in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00240",
+      "description": "setDefaultSocketConfig() moved from HttpClientBuilder to connection manager builder in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00090",
+      "description": "HttpClient 4.x dependency replaced by org.apache.httpcomponents.client5:httpclient5",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00100",
+      "description": "HttpCore 4.x dependency replaced by org.apache.httpcomponents.core5:httpcore5",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00010",
+      "description": "org.apache.http package renamed to org.apache.hc.client5 / org.apache.hc.core5 in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00020",
+      "description": "SSLConnectionSocketFactory replaced by ClientTlsStrategyBuilder in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00030",
+      "description": "new HttpPost() replaced by ClassicRequestBuilder.post() in HttpClient 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00040",
+      "description": "EntityTemplate replaced by HttpEntities.create() in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00050",
+      "description": "getStatusLine() removed in HttpClient 5.x; use getCode() or new StatusLine(response)",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00060",
+      "description": "setConnectTimeout() moved from RequestConfig to ConnectionConfig in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00070",
+      "description": "setSocketTimeout() moved from RequestConfig to ConnectionConfig in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00080",
+      "description": "setConnectionTimeToLive() renamed to setTimeToLive() on ConnectionConfig in HttpClient 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00110",
+      "description": "HttpEntityEnclosingRequest replaced by HttpEntityContainer in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00120",
+      "description": "BasicHttpContext replaced by HttpCoreContext or HttpClientContext in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00130",
+      "description": "HttpRequestBase renamed to HttpUriRequestBase in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00150",
+      "description": "getRequestLine() removed; use new RequestLine(request) instead",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00160",
+      "description": "getAllHeaders() renamed to getHeaders() in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00190",
+      "description": "addInterceptorLast() replaced by addExecInterceptorFirst() in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00200",
+      "description": "setRetryHandler() renamed to setRetryStrategy() in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00210",
+      "description": "HTTP_TARGET_HOST constant removed; use getHttpRoute().getTargetHost()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00290",
+      "description": "HttpResponse renamed to ClassicHttpResponse for classic APIs in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00140",
+      "description": "ManagedHttpClientConnection removed; use HttpCoreContext.getSSLSession() instead",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00280",
+      "description": "setSSLSocketFactory() removed from HttpClientBuilder in 5.x; configure TLS on connection manager",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00220",
+      "description": "normalizeUri property removed from RequestConfig in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00230",
+      "description": "URIUtils.normalizeSyntax() no longer public; use URIBuilder.optimize()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    }
+  ],
+  "overlaps": [
+    {
+      "rule_a": "httpclient4-to-httpclient5-00250",
+      "rule_b": "httpclient4-to-httpclient5-00010",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00250"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00260",
+      "rule_b": "httpclient4-to-httpclient5-00010",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00260"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00270",
+      "rule_b": "httpclient4-to-httpclient5-00010",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00270"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00240",
+      "rule_b": "httpclient4-to-httpclient5-00010",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00240"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00020",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00020"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00030",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00030"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00040",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00040"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00050",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00050"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00110",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00110"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00120",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00120"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00130",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00130"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00150",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00150"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00160",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00160"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00290",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00290"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00140",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00140"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00010",
+      "rule_b": "httpclient4-to-httpclient5-00230",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00010 pattern is substring of httpclient4-to-httpclient5-00230"
+    },
+    {
+      "rule_a": "httpclient4-to-httpclient5-00050",
+      "rule_b": "httpclient4-to-httpclient5-00290",
+      "type": "pattern_overlap",
+      "reason": "httpclient4-to-httpclient5-00290 pattern is substring of httpclient4-to-httpclient5-00050"
+    }
+  ]
+}

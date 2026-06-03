@@ -1,0 +1,21 @@
+{
+  "runtime": "claude-code",
+  "model": "opus",
+  "model_id": "claude-opus-4-6",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-05-29",
+  "duration_minutes": 18.2,
+  "rule_count": 29,
+  "quality_avg": 5.931034482758621,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 15,
+  "specificity_gap_count": 0,
+  "pass_rate": "29/29",
+  "eval_judge": {
+    "precision_issues": 9,
+    "coherence_issues": 6,
+    "cross_rule_issues": 2,
+    "gaps": 3
+  },
+  "notes": ""
+}

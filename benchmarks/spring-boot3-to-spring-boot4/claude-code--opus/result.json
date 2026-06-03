@@ -1,0 +1,21 @@
+{
+  "runtime": "claude-code",
+  "model": "opus",
+  "model_id": "claude-opus-4-6",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-06-01",
+  "duration_minutes": 26.7,
+  "rule_count": 74,
+  "quality_avg": 5.4324324324324325,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 17,
+  "specificity_gap_count": 0,
+  "pass_rate": "73/74",
+  "eval_judge": {
+    "precision_issues": 5,
+    "coherence_issues": 4,
+    "cross_rule_issues": 3,
+    "gaps": 10
+  },
+  "notes": "1 rule marked kantra-limitation. Rule 00010 conflates 3 distinct migration actions. Duplicate pair 00440/00730."
+}

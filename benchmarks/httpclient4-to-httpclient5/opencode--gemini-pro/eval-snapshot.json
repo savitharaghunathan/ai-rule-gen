@@ -1,0 +1,379 @@
+{
+  "rule_count": 33,
+  "quality": {
+    "total_rules": 33,
+    "has_message": 33,
+    "has_links": 2,
+    "has_effort": 33,
+    "has_before_after": 26,
+    "avg_score": 4.454545454545454,
+    "max_score": 6,
+    "guidance_depth_avg": 2.393939393939394
+  },
+  "rule_details": [
+    {
+      "rule_id": "httpclient4-to-httpclient5-00220",
+      "description": "SSLConnectionSocketFactory replaced by ClientTlsStrategyBuilder",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00230",
+      "description": "CookieStore relocated to org.apache.hc package namespace",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00240",
+      "description": "BasicCookieStore relocated to org.apache.hc package namespace",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00250",
+      "description": "CredentialsProvider relocated to org.apache.hc package namespace",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00260",
+      "description": "BasicCredentialsProvider relocated to org.apache.hc package namespace",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00270",
+      "description": "HttpPost constructor replaced by RequestBuilder methods",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00280",
+      "description": "NameValuePair relocated to org.apache.hc package namespace",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00290",
+      "description": "BasicNameValuePair relocated to org.apache.hc package namespace",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00300",
+      "description": "EntityTemplate replaced by HttpEntities.create()",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00310",
+      "description": "ContentType relocated to org.apache.hc package namespace",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00320",
+      "description": "getSSLSession() access moved to HttpCoreContext",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00330",
+      "description": "CloseableHttpClient alternatives for async",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00010",
+      "description": "HttpClient 4.x must be replaced with HttpClient 5.x",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00020",
+      "description": "Package namespace changed to org.apache.hc.* in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00030",
+      "description": "Replaced by HttpCoreContext or HttpClientContext in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00040",
+      "description": "Replaced by ConnPoolControl.closeExpired() in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00050",
+      "description": "Replaced by ConnPoolControl.closeIdle() in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00060",
+      "description": "Replaced by addExecInterceptorFirst in 5.x",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00070",
+      "description": "Socket config moved to ConnectionManager in 5.x",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00080",
+      "description": "Renamed to setRetryStrategy in 5.x",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00090",
+      "description": "Replaced by HttpEntityContainer in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00100",
+      "description": "Replaced by MessageHeaders.getHeaders() in 5.x",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00110",
+      "description": "Replaced by new RequestLine(request) in 5.x",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00120",
+      "description": "Replaced by HttpUriRequestBase in 5.x",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00130",
+      "description": "Replaced by ClassicHttpResponse.getEntity() in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00140",
+      "description": "HTTP response messages no longer have a status line in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00150",
+      "description": "Status line was removed; use HttpResponse.getCode() directly",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00160",
+      "description": "Connection timeouts moved to ConnectionConfig in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00170",
+      "description": "Socket timeouts moved to ConnectionConfig in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00180",
+      "description": "Removed and no longer public in 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3,
+      "missing": [
+        "links"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00190",
+      "description": "The normalizeUri property has been removed in 5.x",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00200",
+      "description": "Zero TTL behavior changed to mean no re-use in 5.x",
+      "quality_score": 3,
+      "quality_max": 6,
+      "has_guidance": false,
+      "guidance_depth": 1,
+      "missing": [
+        "links",
+        "before_after_guidance"
+      ]
+    },
+    {
+      "rule_id": "httpclient4-to-httpclient5-00210",
+      "description": "In 5.x, connection managers should be created using PoolingHttpClientConnectionManagerBuilder",
+      "quality_score": 4,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2,
+      "missing": [
+        "links"
+      ]
+    }
+  ]
+}

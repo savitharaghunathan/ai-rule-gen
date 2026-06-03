@@ -1,0 +1,7 @@
+## Eval Judge Report — goose / sonnet / spring-boot3-to-spring-boot4
+
+- **70 of 82 rules passed** (report.yaml lists 83 including 1 kantra-limitation)
+- **8 precision issues**: `alwaysApplyingWhenNonNull` unqualified METHOD_CALL, `PropertyMapper` import too broad, `@Nullable` fires on all non-actuator code, `MockMvc` import fires on users already using `@AutoConfigureMockMvc`, `launchScript` filecontent minor risk, **00820** and **00830** fire on NEW Elasticsearch API imports (`ElasticsearchClient`, `ReactiveElasticsearchClient`) instead of old ones
+- **4 coherence issues**: **00010** umbrella rule conflates Java 17, Kotlin 2.2, GraalVM 25, Jakarta EE 11, Servlet 6.1, Spring 7.x into one rule. **00500** tells all `spring-boot-starter-tomcat` users to switch to `tomcat-runtime` but only applies to WAR deployments. **00490** Jersey Jackson 3 incompatibility fires on non-JSON Jersey users. **00440** `PathRequest` import fires on non-`atCommonLocations()` uses
+- **3 cross-rule issues**: `00270`+`00790`+`00800` triple-fire on AOP starter rename (dependency + `@Timed` + `@Counted`), `00290`+`00300` overlap on Spring Authorization Server, `00820`+`00830`+`00510` Elasticsearch triple-fire with wrong trigger on 2 of 3
+- **8 gaps**: logback charset, JSpecify `@NonNull`/`@NonNullApi`, Jackson 2 compat module, `spring.jackson.generator.*` properties, `@MockBean` in `@Configuration` limitation, package reorganization beyond GraphQL, `spring-boot-starter-classic` transitional path, Jackson serialization/deserialization properties

@@ -1,0 +1,58 @@
+- ruleID: spring-boot3-to-spring-boot4-00540
+  description: '@EntityScan moved to org.springframework.boot.persistence.autoconfigure'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `@EntityScan` annotation has moved to the new `spring-boot-persistence` module. Update your imports from `org.springframework.boot.autoconfigure.domain.EntityScan` to `org.springframework.boot.persistence.autoconfigure.EntityScan`.
+
+    ## Before
+    ```java
+    import org.springframework.boot.autoconfigure.domain.EntityScan;
+    ```
+
+    ## After
+    ```java
+    import org.springframework.boot.persistence.autoconfigure.EntityScan;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#persistence-modules
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.domain.EntityScan
+        location: ANNOTATION
+- ruleID: spring-boot3-to-spring-boot4-00550
+  description: spring.dao.exceptiontranslation.enabled replaced by spring.persistence.exceptiontranslation.enabled
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring.dao.exceptiontranslation.enabled` property has been replaced by `spring.persistence.exceptiontranslation.enabled` as part of the new `spring-boot-persistence` module reorganization.
+
+    ## Before
+    ```properties
+    spring.dao.exceptiontranslation.enabled=true
+    ```
+
+    ## After
+    ```properties
+    spring.persistence.exceptiontranslation.enabled=true
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#persistence-modules
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.dao\.exceptiontranslation\.enabled
+        filePattern: application.*\.(properties|ya?ml)

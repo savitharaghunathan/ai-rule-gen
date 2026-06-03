@@ -1,0 +1,5 @@
+name: httpclient5/httpclient4
+description: Rules for migrating from httpclient4 to httpclient5
+labels:
+    - konveyor.io/source=httpclient4
+    - konveyor.io/target=httpclient5

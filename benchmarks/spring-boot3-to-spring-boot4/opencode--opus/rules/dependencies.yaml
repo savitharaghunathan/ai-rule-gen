@@ -1,0 +1,87 @@
+- ruleID: spring-boot3-to-spring-boot4-00260
+  description: spring-boot-starter-aop renamed to spring-boot-starter-aspectj
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-aop` starter has been renamed to `spring-boot-starter-aspectj` to clarify its scope. Before replacing, review whether your application actually needs AspectJ:
+
+    - Check if your application uses AspectJ annotations (e.g., `org.aspectj.lang.annotation.Aspect`)
+    - Search for usage of `org.aspectj.lang.annotation.Aspect` on the classpath
+
+    If you do need it, replace `spring-boot-starter-aop` with `spring-boot-starter-aspectj` in your build file.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-aop
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00270
+  description: Dependency management for Spring Retry has been removed
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Dependency management for Spring Retry has been removed from Spring Boot 4. If your application still relies on Spring Retry, you must now specify an explicit version in your build file.
+
+    Consider moving to the new retry features in Spring Framework 7.0 (`org.springframework.core.retry` package) as the portfolio moves away from Spring Retry.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#dependency-management-for-spring-retry
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.retry.spring-retry
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00890
+  description: '@Timed requires AspectJ; ensure spring-boot-starter-aspectj is in your dependencies'
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-aop` has been renamed to `spring-boot-starter-aspectj`. If your application uses Micrometer's `@Timed` annotation, it requires AspectJ on the classpath. After the AOP starter rename, ensure you have `spring-boot-starter-aspectj` in your dependencies.
+
+    Search for usage of `org.aspectj.lang.annotation.Aspect` on the classpath of your application to determine if you need the AspectJ starter.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: io.micrometer.core.annotation.Timed
+        location: ANNOTATION
+- ruleID: spring-boot3-to-spring-boot4-00900
+  description: '@Counted requires AspectJ; ensure spring-boot-starter-aspectj is in your dependencies'
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring-boot-starter-aop` has been renamed to `spring-boot-starter-aspectj`. If your application uses Micrometer's `@Counted` annotation, it requires AspectJ on the classpath. After the AOP starter rename, ensure you have `spring-boot-starter-aspectj` in your dependencies.
+
+    Search for usage of `org.aspectj.lang.annotation.Aspect` on the classpath of your application to determine if you need the AspectJ starter.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#aop-starter-pom
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: io.micrometer.core.annotation.Counted
+        location: ANNOTATION

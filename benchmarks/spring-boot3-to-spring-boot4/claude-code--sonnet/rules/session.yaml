@@ -1,0 +1,36 @@
+- ruleID: spring-boot3-to-spring-boot4-00470
+  description: spring.session.redis.* properties renamed to spring.session.data.redis in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The Spring Session Data Redis properties have been renamed in Spring Boot 4. Properties that previously began with `spring.session.redis` now begin with `spring.session.data.redis`. Update all `spring.session.redis.*` properties to `spring.session.data.redis.*` in your application configuration.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-session
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.session\.redis\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot3-to-spring-boot4-00480
+  description: spring.session.mongodb.* properties renamed to spring.session.data.mongodb in Spring Boot 4
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The Spring Session MongoDB properties have been renamed in Spring Boot 4. Properties that previously began with `spring.session.mongodb` now begin with `spring.session.data.mongodb`. Update all `spring.session.mongodb.*` properties to `spring.session.data.mongodb.*` in your application configuration.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-session
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.session\.mongodb\.
+        filePattern: application.*\.(properties|ya?ml)

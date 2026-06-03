@@ -1,0 +1,7 @@
+name: spring-boot-4/spring-boot-3
+description: Rules for migrating from spring-boot-3 to spring-boot-4
+labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot

@@ -1,0 +1,54 @@
+- ruleID: spring-boot3-to-spring-boot4-00220
+  description: BootstrapRegistry moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `BootstrapRegistry` class has moved from `org.springframework.boot` to `org.springframework.boot.bootstrap` in Spring Boot 4.0. Update your imports from `org.springframework.boot.BootstrapRegistry` to `org.springframework.boot.bootstrap.BootstrapRegistry`. If you have `spring.factories` files referencing bootstrap classes, update those references too.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.BootstrapRegistry
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00230
+  description: BootstrapContext moved from org.springframework.boot to org.springframework.boot.bootstrap
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `BootstrapContext` class has moved from `org.springframework.boot` to `org.springframework.boot.bootstrap` in Spring Boot 4.0. Update your imports accordingly. If you have `spring.factories` files referencing bootstrap classes, update those references too.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.BootstrapContext
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00240
+  description: EnvironmentPostProcessor moved from org.springframework.boot.env to org.springframework.boot
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'The `EnvironmentPostProcessor` interface has moved from `org.springframework.boot.env` to `org.springframework.boot` in Spring Boot 4.0. Update your imports from `org.springframework.boot.env.EnvironmentPostProcessor` to `org.springframework.boot.EnvironmentPostProcessor`. Note: the deprecated form is still available in Spring Boot 4.0 but will be removed in a future release.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#bootstrapregistry-and-environmentpostprocessor-package-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.env.EnvironmentPostProcessor
+        location: IMPORT

@@ -1,0 +1,50 @@
+- ruleID: httpclient-4-to-httpclient-5-00330
+  description: HttpClient 4.x async client classes (org.apache.http.impl.nio.client) moved to org.apache.hc.client5.http.impl.async in 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The Apache HttpClient 4.x async client package `org.apache.http.impl.nio.client` (including `CloseableHttpAsyncClient` and `HttpAsyncClients`) has moved to `org.apache.hc.client5.http.impl.async` in HttpClient 5.x. For HTTP/2-only scenarios, replace `HttpAsyncClients.custom()` with `HttpAsyncClients.customHttp2()`. Note that HTTP/2 clients do not have a connection manager — they manage connections internally per origin host.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-http2.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.nio.client
+        location: PACKAGE
+- ruleID: httpclient-4-to-httpclient-5-00340
+  description: HttpAsyncClients.custom() replaced by HttpAsyncClients.customHttp2() for HTTP/2-only async client in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    For HTTP/2-only async scenarios in HttpClient 5.x, replace `HttpAsyncClients.custom()` with `HttpAsyncClients.customHttp2()`. The HTTP/2 builder does not accept a connection manager — HTTP/2 clients maintain internal per-origin-host connections. TLS is configured directly on the client via `setTlsStrategy()`, not on a connection manager.
+
+    Before:
+    ```java
+    CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+        .setConnectionManager(connectionManager)
+        .build();
+    ```
+
+    After (HTTP/2 only):
+    ```java
+    CloseableHttpAsyncClient client = HttpAsyncClients.customHttp2()
+        .setTlsStrategy(ClientTlsStrategyBuilder.create()
+            .setSslContext(SSLContexts.createSystemDefault())
+            .buildAsync())
+        .build();
+    client.start();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-http2.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.nio.client.HttpAsyncClients.custom
+        location: METHOD_CALL

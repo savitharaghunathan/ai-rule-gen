@@ -1,0 +1,18 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00280
+  description: DevTools Live Reload disabled by default in Spring Boot 4
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: DevTools Live Reload support is now disabled by default in Spring Boot 4. If you rely on live reload, set `spring.devtools.livereload.enabled=true` in your application properties. Review whether you explicitly set this property and update your configuration accordingly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#devtools-live-reload-support
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.devtools\.livereload\.enabled
+        filePattern: application.*\.(properties|ya?ml)

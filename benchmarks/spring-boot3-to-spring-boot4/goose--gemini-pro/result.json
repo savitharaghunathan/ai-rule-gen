@@ -1,0 +1,21 @@
+{
+  "runtime": "goose",
+  "model": "gemini-pro",
+  "model_id": "gemini-2.5-pro",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-06-03",
+  "duration_minutes": 16.7,
+  "rule_count": 81,
+  "quality_avg": 5.20,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 25,
+  "specificity_gap_count": 0,
+  "pass_rate": "11/81",
+  "eval_judge": {
+    "precision_issues": 5,
+    "coherence_issues": 4,
+    "cross_rule_issues": 2,
+    "gaps": 5
+  },
+  "notes": "Goose runtime with Gemini 2.5 Pro (pipeline log incorrectly shows claude-3-7-sonnet). 81 rules, only 11/81 pass (86% failure rate — worst of any spring-boot run). Most failures from builtin.filecontent property rules and dependency rules that fail kantra test scaffolding. Quality 5.20 is reasonable. 25 overlaps. ~17 min total."
+}

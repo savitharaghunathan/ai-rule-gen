@@ -1,0 +1,48 @@
+- ruleID: httpclient-4-to-httpclient-5-00010
+  description: Apache HttpClient 4.x artifact replaced by httpclient5 in HttpClient 5.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `org.apache.httpcomponents:httpclient` dependency (HttpClient 4.x) has been replaced by `org.apache.httpcomponents.client5:httpclient5` in HttpClient 5.x. Remove the old dependency and add the new one:
+
+    ```xml
+    <!-- Remove -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+
+    <!-- Add -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <version>5.x</version>
+    </dependency>
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpclient
+        lowerbound: 0.0.0
+- ruleID: httpclient-4-to-httpclient-5-00020
+  description: Apache HttpCore 4.x artifact replaced by httpcore5 in HttpClient 5.x
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `org.apache.httpcomponents:httpcore` dependency (HttpCore 4.x) has been replaced by `org.apache.httpcomponents.core5:httpcore5` in HttpClient 5.x. Update your `pom.xml` to use the new coordinates.
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpcore
+        lowerbound: 0.0.0

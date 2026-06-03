@@ -1,0 +1,36 @@
+- ruleID: spring-boot-3-to-spring-boot-4-00810
+  description: Spring Boot 4 integrates GraphQL via spring-boot-graphql with root package org.springframework.boot.graphql; direct use of org.springframework.graphql should be reviewed
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: In Spring Boot 4, GraphQL support is provided by the `spring-boot-graphql` module with a root package of `org.springframework.boot.graphql`. The starter POM is `spring-boot-starter-graphql`. Review your code referencing `org.springframework.graphql` packages and update your dependencies to use `spring-boot-starter-graphql`. The modularity restructuring may require updating imports and class references.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#main-code
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.graphql*
+        location: PACKAGE
+- ruleID: spring-boot-3-to-spring-boot-4-00820
+  description: Direct spring-graphql-test dependency should be replaced by spring-boot-starter-graphql-test in Spring Boot 4
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot-3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot-4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4 provides `spring-boot-starter-graphql-test` as the test starter for GraphQL with a root package of `org.springframework.boot.graphql.test`. Replace the direct `org.springframework.graphql:spring-graphql-test` dependency with `org.springframework.boot:spring-boot-starter-graphql-test`. The new test starter transitively brings `spring-boot-starter-test`, so you no longer need to declare it separately.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#test-code
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.graphql.spring-graphql-test
+        lowerbound: 0.0.0

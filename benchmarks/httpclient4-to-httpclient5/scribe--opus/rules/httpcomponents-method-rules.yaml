@@ -1,0 +1,368 @@
+- ruleID: httpcomponents-00020
+  description: "Detects Java method call: org.apache.http.HttpResponse.getStatusLine(*)"
+  message: |
+    ## Migration Required: getStatusLine() Removed
+
+    ### Before
+    In HttpComponents Client 4.x, status information is accessed via `getStatusLine()`:
+    ```java
+    import org.apache.http.HttpResponse;
+
+    int statusCode = response.getStatusLine().getStatusCode();
+    String reason = response.getStatusLine().getReasonPhrase();
+    String statusStr = response.getStatusLine().toString();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, HTTP responses no longer have a status line. Use `getCode()` directly:
+    ```java
+    import org.apache.hc.core5.http.ClassicHttpResponse;
+    import org.apache.hc.core5.http.message.StatusLine;
+
+    int statusCode = response.getCode();
+    String reason = response.getReasonPhrase();
+    String statusStr = new StatusLine(response).toString();
+    ```
+
+    ### Additional Info
+    - `getStatusLine()` has been completely removed from HTTP response objects in 5.x
+    - Use `response.getCode()` for status code and `response.getReasonPhrase()` for reason
+    - If you need a `StatusLine` object (e.g., for logging), construct one: `new StatusLine(response)`
+    - The response handler pattern is preferred in 5.x for automatic connection release
+    - `ClassicHttpResponse` is the 5.x equivalent of the classic response type
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.HttpResponse.getStatusLine(*)"
+      location: METHOD_CALL
+
+- ruleID: httpcomponents-00021
+  description: "Detects Java method call: org.apache.http.HttpMessage.getAllHeaders(*)"
+  message: |
+    ## Migration Required: getAllHeaders() Renamed to getHeaders()
+
+    ### Before
+    In HttpComponents Client 4.x, all headers are retrieved using `getAllHeaders()`:
+    ```java
+    import org.apache.http.Header;
+
+    Header[] headers = response.getAllHeaders();
+    for (Header header : headers) {
+        System.out.println(header.getName() + ": " + header.getValue());
+    }
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `getHeaders()` instead:
+    ```java
+    import org.apache.hc.core5.http.Header;
+
+    Header[] headers = response.getHeaders();
+    for (Header header : headers) {
+        System.out.println(header.getName() + ": " + header.getValue());
+    }
+    ```
+
+    ### Additional Info
+    - `getAllHeaders()` has been renamed to `getHeaders()` in 5.x
+    - The `Header` interface has moved from `org.apache.http` to `org.apache.hc.core5.http`
+    - The method `getHeaders(String name)` for getting headers by name remains available
+    - `MessageHeaders` interface in 5.x provides `getHeaders()`, `getFirstHeader()`, `getLastHeader()`
+    - Header functionality is otherwise the same between versions
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.HttpMessage.getAllHeaders(*)"
+      location: METHOD_CALL
+
+- ruleID: httpcomponents-00022
+  description: "Detects Java method call: org.apache.http.HttpRequest.getRequestLine(*)"
+  message: |
+    ## Migration Required: getRequestLine() Removed
+
+    ### Before
+    In HttpComponents Client 4.x, request line information is accessed via `getRequestLine()`:
+    ```java
+    import org.apache.http.RequestLine;
+
+    RequestLine line = request.getRequestLine();
+    String method = line.getMethod();
+    String uri = line.getUri();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, construct a `RequestLine` from the request:
+    ```java
+    import org.apache.hc.core5.http.message.RequestLine;
+
+    RequestLine line = new RequestLine(request);
+    String method = request.getMethod();
+    String uri = request.getRequestUri();
+    ```
+
+    ### Additional Info
+    - `getRequestLine()` has been removed from HTTP request objects in 5.x
+    - Construct a `RequestLine` object explicitly: `new RequestLine(request)`
+    - Method and URI can also be accessed directly: `request.getMethod()` and `request.getRequestUri()`
+    - `RequestLine` has moved from `org.apache.http` to `org.apache.hc.core5.http.message`
+    - This is a companion change to the `getStatusLine()` removal on responses
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.HttpRequest.getRequestLine(*)"
+      location: METHOD_CALL
+
+- ruleID: httpcomponents-00023
+  description: "Detects Java method call: closeExpiredConnections()"
+  message: |
+    ## Migration Required: closeExpiredConnections() Renamed
+
+    ### Before
+    In HttpComponents Client 4.x, expired connections are closed with `closeExpiredConnections()`:
+    ```java
+    connectionManager.closeExpiredConnections();
+    connectionManager.closeIdleConnections(30, TimeUnit.SECONDS);
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, the methods have been simplified:
+    ```java
+    import org.apache.hc.core5.util.TimeValue;
+
+    connectionManager.closeExpired();
+    connectionManager.closeIdle(TimeValue.ofSeconds(30));
+    ```
+
+    ### Additional Info
+    - `closeExpiredConnections()` has been renamed to `closeExpired()` in 5.x
+    - `closeIdleConnections(long, TimeUnit)` has been renamed to `closeIdle(TimeValue)`
+    - `TimeValue` replaces raw `long + TimeUnit` parameters throughout the 5.x API
+    - These methods are on `ConnPoolControl` interface in 5.x
+    - Connection manager package changed from `org.apache.http.impl.conn` to `org.apache.hc.client5.http.impl.io`
+  category: mandatory
+  effort: 1
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.conn.HttpClientConnectionManager.closeExpiredConnections(*)"
+      location: METHOD_CALL
+
+- ruleID: httpcomponents-00024
+  description: "Detects Java method call: setRetryHandler()"
+  message: |
+    ## Migration Required: setRetryHandler() Replaced with setRetryStrategy()
+
+    ### Before
+    In HttpComponents Client 4.x, retry handling is configured with `setRetryHandler()`:
+    ```java
+    import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setRetryHandler(new DefaultHttpRequestRetryHandler(3, true))
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use `setRetryStrategy()` instead:
+    ```java
+    import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setRetryStrategy(new DefaultHttpRequestRetryStrategy())
+        .build();
+    ```
+
+    ### Additional Info
+    - `setRetryHandler()` has been removed from `HttpClientBuilder` in 5.x
+    - `DefaultHttpRequestRetryHandler` is replaced by `DefaultHttpRequestRetryStrategy`
+    - The `HttpRequestRetryStrategy` interface provides more flexibility with retry intervals
+    - Custom retry strategies can implement `HttpRequestRetryStrategy` for fine-grained control
+    - The strategy pattern allows configuring max retry count, retry interval, and retriable exception types
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.impl.client.HttpClientBuilder.setRetryHandler(*)"
+      location: METHOD_CALL
+
+- ruleID: httpcomponents-00025
+  description: "Detects Java method call: addInterceptorLast()"
+  message: |
+    ## Migration Required: addInterceptorLast() Replaced with addExecInterceptorFirst()
+
+    ### Before
+    In HttpComponents Client 4.x, interceptors are added with `addInterceptorLast()`:
+    ```java
+    CloseableHttpClient client = HttpClients.custom()
+        .addInterceptorLast(myLoggingInterceptor)
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, use execution interceptors instead:
+    ```java
+    CloseableHttpClient client = HttpClients.custom()
+        .addExecInterceptorFirst("logging", myLoggingExecInterceptor)
+        .build();
+    ```
+
+    ### Additional Info
+    - `addInterceptorLast()` for logging interceptors should be replaced with `addExecInterceptorFirst()`
+    - Using `addExecInterceptorFirst()` ensures logging happens before content compression, so raw payloads are logged
+    - Execution interceptors in 5.x have a named identifier (first parameter)
+    - If `addInterceptorLast()` is used for purposes other than logging, evaluate whether an execution interceptor or protocol interceptor is appropriate
+    - The interceptor interface has changed - custom interceptors need to implement `ExecChainHandler`
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.impl.client.HttpClientBuilder.addInterceptorLast(*)"
+      location: METHOD_CALL
+
+- ruleID: httpcomponents-00028
+  description: "Detects Java method call: RequestConfig.Builder.setConnectTimeout()"
+  message: |
+    ## Migration Required: Connect Timeout Moved to ConnectionConfig
+
+    ### Before
+    In HttpComponents Client 4.x, connect timeout is set on `RequestConfig` with integer milliseconds:
+    ```java
+    import org.apache.http.client.config.RequestConfig;
+
+    RequestConfig config = RequestConfig.custom()
+        .setConnectTimeout(60000)
+        .build();
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setDefaultRequestConfig(config)
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, connect timeout has moved to `ConnectionConfig` on the connection manager:
+    ```java
+    import org.apache.hc.client5.http.config.ConnectionConfig;
+    import org.apache.hc.core5.util.Timeout;
+
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setDefaultConnectionConfig(ConnectionConfig.custom()
+            .setConnectTimeout(Timeout.ofMinutes(1))
+            .build())
+        .build();
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(cm)
+        .build();
+    ```
+
+    ### Additional Info
+    - `setConnectTimeout()` has been removed from `RequestConfig` in 5.x
+    - Connect timeout is now configured via `ConnectionConfig` on the connection manager
+    - Integer millisecond values are replaced with `Timeout` objects: `Timeout.ofMinutes(1)`, `Timeout.ofSeconds(30)`
+    - `setSocketTimeout()` has similarly moved from `RequestConfig` to `ConnectionConfig`
+    - Connection TTL uses `TimeValue` instead: `TimeValue.ofMinutes(10)`
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.config.RequestConfig.Builder.setConnectTimeout(*)"
+      location: METHOD_CALL
+
+- ruleID: httpcomponents-00029
+  description: "Detects Java method call: RequestConfig.Builder.setSocketTimeout()"
+  message: |
+    ## Migration Required: Socket Timeout Moved to ConnectionConfig
+
+    ### Before
+    In HttpComponents Client 4.x, socket timeout is set on `RequestConfig` with integer milliseconds:
+    ```java
+    import org.apache.http.client.config.RequestConfig;
+
+    RequestConfig config = RequestConfig.custom()
+        .setSocketTimeout(60000)
+        .build();
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setDefaultRequestConfig(config)
+        .build();
+    ```
+
+    ### After
+    In HttpComponents Client 5.x, socket timeout has moved to `ConnectionConfig` on the connection manager:
+    ```java
+    import org.apache.hc.client5.http.config.ConnectionConfig;
+    import org.apache.hc.core5.util.Timeout;
+
+    PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+        .setDefaultConnectionConfig(ConnectionConfig.custom()
+            .setSocketTimeout(Timeout.ofMinutes(1))
+            .build())
+        .build();
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(cm)
+        .build();
+    ```
+
+    ### Additional Info
+    - `setSocketTimeout()` has been removed from `RequestConfig` in 5.x
+    - Socket timeout is now configured via `ConnectionConfig` on the connection manager
+    - Integer millisecond values are replaced with `Timeout` objects: `Timeout.ofMinutes(1)`, `Timeout.ofSeconds(30)`
+    - `setConnectTimeout()` has similarly moved from `RequestConfig` to `ConnectionConfig`
+    - For async clients, socket timeout can also be set via `IOReactorConfig.setSoTimeout()`
+  category: mandatory
+  effort: 3
+  labels:
+  - konveyor.io/source=httpcomponents4
+  - konveyor.io/target=httpcomponents5
+  links:
+  - title: "Apache HttpComponents Client 5.x Migration Guide - Classic API"
+    url: "https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-classic.html"
+  when:
+    java.referenced:
+      pattern: "org.apache.http.client.config.RequestConfig.Builder.setSocketTimeout(*)"
+      location: METHOD_CALL

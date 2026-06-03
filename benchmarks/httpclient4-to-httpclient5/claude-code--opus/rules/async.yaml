@@ -1,0 +1,122 @@
+- ruleID: httpclient-4-to-httpclient-5-00270
+  description: PoolingHttpClientConnectionManager replaced by PoolingAsyncClientConnectionManager for async APIs
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `PoolingHttpClientConnectionManager` with `PoolingAsyncClientConnectionManager`. The async connection manager uses different TLS/SSL configuration via `ClientTlsStrategyBuilder` and does not support `SocketConfig` due to differences in the I/O model. Use `PoolingAsyncClientConnectionManagerBuilder` to create the connection manager.
+
+    ## Before
+    ```java
+    import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+
+    PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+    ```
+
+    ## After
+    ```java
+    import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
+    import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+
+    PoolingAsyncClientConnectionManager cm = PoolingAsyncClientConnectionManagerBuilder.create()
+        .setTlsStrategy(ClientTlsStrategyBuilder.create()
+                .setSslContext(SSLContexts.createSystemDefault())
+                .setTlsVersions(TLS.V_1_3)
+                .buildAsync())
+        .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
+        .setConnPoolPolicy(PoolReusePolicy.LIFO)
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00280
+  description: CloseableHttpClient replaced by CloseableHttpAsyncClient for async APIs
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `CloseableHttpClient` with `CloseableHttpAsyncClient`. Unlike the classic client, the async client must be explicitly started before executing requests by calling `client.start()`. Request execution uses `Future` and `FutureCallback` for asynchronous result handling.
+
+    ## Before
+    ```java
+    import org.apache.http.impl.client.CloseableHttpClient;
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(connectionManager)
+        .build();
+    ```
+
+    ## After
+    ```java
+    import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+
+    CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+        .setConnectionManager(connectionManager)
+        .setIOReactorConfig(IOReactorConfig.custom()
+                .setSoTimeout(Timeout.ofMinutes(1))
+                .build())
+        .build();
+    client.start();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.CloseableHttpClient
+        location: IMPORT
+- ruleID: httpclient-4-to-httpclient-5-00290
+  description: HttpClients replaced by HttpAsyncClients for async client creation
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When migrating to HttpClient 5.x async APIs, replace `HttpClients` with `HttpAsyncClients`. Use `HttpAsyncClients.custom()` for async clients with connection managers, or `HttpAsyncClients.customHttp2()` for HTTP/2-only clients that do not need a connection manager. HTTP/2-only clients configure TLS directly on the client instance.
+
+    ## Before
+    ```java
+    import org.apache.http.impl.client.HttpClients;
+
+    CloseableHttpClient client = HttpClients.custom()
+        .setConnectionManager(connectionManager)
+        .build();
+    ```
+
+    ## After
+    ```java
+    import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+
+    // Standard async client
+    CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+        .setConnectionManager(connectionManager)
+        .build();
+
+    // HTTP/2-only client (no connection manager needed)
+    CloseableHttpAsyncClient client = HttpAsyncClients.customHttp2()
+        .setTlsStrategy(ClientTlsStrategyBuilder.create()
+                .setSslContext(SSLContexts.createSystemDefault())
+                .setTlsVersions(TLS.V_1_3)
+                .buildAsync())
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.impl.client.HttpClients
+        location: IMPORT

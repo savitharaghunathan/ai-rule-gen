@@ -1,0 +1,190 @@
+- ruleID: spring-boot3-to-spring-boot4-00160
+  description: Renamed to spring-boot-starter-webmvc
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring-boot-starter-web` starter has been deprecated and renamed. Replace it with `spring-boot-starter-webmvc` in your POM or Gradle build file. The old starter still works but will be removed in a future release.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00170
+  description: Renamed to spring-boot-starter-webservices
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `spring-boot-starter-web-services` starter has been deprecated and renamed. Replace it with `spring-boot-starter-webservices` in your POM or Gradle build file. The old starter still works but will be removed in a future release.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#deprecated-starters
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web-services
+        lowerbound: 0.0.0
+- ruleID: spring-boot3-to-spring-boot4-00440
+  description: Common static resource locations now include /fonts/**
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    If you use `PathRequest.toStaticResources()`, be advised that this release adds a `/fonts/**` location. This path will have the same security settings as what you had previously configured.
+
+    If you don't want that location included, you can exclude it:
+
+    ```java
+    pathRequest.toStaticResources().atCommonLocations().excluding(StaticResourceLocation.FONTS);
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#fonts-added-to-common-static-locations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.security.servlet.StaticResourceLocation
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00470
+  description: HttpMessageConverters is deprecated in favor of customizer beans
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot's `HttpMessageConverters` class is deprecated because Spring Framework improved converter configuration. Contributing `HttpMessageConverter` beans to the context is no longer supported.
+
+    Instead, declare one or more `ClientHttpMessageConvertersCustomizer` and `ServerHttpMessageConvertersCustomizer` beans that let you customize converters in a flexible way. Each customizer can contribute converters as "custom" converters considered before default ones, or replace a default converter. See the [reference documentation](https://docs.spring.io/spring-boot/4.0-SNAPSHOT/reference/web/servlet.html#web.servlet.spring-mvc.message-converters) for details.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#httpmessageconverters-deprecation
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.http.converter.autoconfigure.HttpMessageConverters
+        location: IMPORT
+- ruleID: spring-boot3-to-spring-boot4-00480
+  description: server.forward-headers-strategy no longer works in WAR deployments
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `server.forward-headers-strategy` property no longer has an effect when deploying a WAR file to an external container. If you were relying on `server.forward-headers-strategy=framework` in a WAR deployment, you must now define the `ForwardedHeaderFilter` bean yourself.
+
+    ```java
+    @Bean
+    FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
+        ForwardedHeaderFilter filter = new ForwardedHeaderFilter();
+        FilterRegistrationBean<ForwardedHeaderFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC, DispatcherType.ERROR);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
+    }
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#forwarded-headers-strategy
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: server\.forward-headers-strategy
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot3-to-spring-boot4-00490
+  description: Jersey 4.0 does not yet support Jackson 3; use spring-boot-jackson2
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4.0 supports Jersey 4.0 which does not yet support Jackson 3. To process JSON with Jersey, use `spring-boot-jackson2` either in place of or alongside `spring-boot-jackson`.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#jersey
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-jersey
+        upperbound: 4.0.0
+- ruleID: spring-boot3-to-spring-boot4-00500
+  description: WAR deployments must use spring-boot-starter-tomcat-runtime
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    If you are deploying a WAR file to Tomcat, you need to switch the dependency `spring-boot-starter-tomcat` to `spring-boot-starter-tomcat-runtime`.
+
+    ```xml
+    <!-- Before -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-tomcat</artifactId>
+        <scope>provided</scope>
+    </dependency>
+
+    <!-- After -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-tomcat-runtime</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#tomcat
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-tomcat
+        upperbound: 4.0.0
+- ruleID: spring-boot3-to-spring-boot4-00730
+  description: Common static resource locations now include /fonts/**
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 4 adds `/fonts/**` to the common static resource locations returned by `PathRequest.toStaticResources().atCommonLocations()`. This path will inherit the same security settings you have configured for other static resource locations.
+
+    If you do not want `/fonts/**` included, exclude it explicitly:
+
+    ```java
+    pathRequest.toStaticResources().atCommonLocations().excluding(StaticResourceLocation.FONTS);
+    ```
+  links:
+    - url: https://docs.spring.io/spring-boot/docs/current/reference/html/web.html#web.servlet.spring-mvc.static-content
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.security.servlet.PathRequest
+        location: IMPORT

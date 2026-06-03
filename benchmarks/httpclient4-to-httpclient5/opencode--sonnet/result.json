@@ -1,0 +1,21 @@
+{
+  "runtime": "opencode",
+  "model": "sonnet",
+  "model_id": "claude-sonnet-4-6",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-01",
+  "duration_minutes": 49.2,
+  "rule_count": 35,
+  "quality_avg": 5.914285714285715,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 20,
+  "specificity_gap_count": 0,
+  "pass_rate": "35/35",
+  "eval_judge": {
+    "precision_issues": 12,
+    "coherence_issues": 5,
+    "cross_rule_issues": 3,
+    "gaps": 9
+  },
+  "notes": "12 unqualified METHOD_CALL rules. Async/classic migration path confusion in 00280, 00290, 00300, 00310. Duplicate package rules 00010+00120."
+}

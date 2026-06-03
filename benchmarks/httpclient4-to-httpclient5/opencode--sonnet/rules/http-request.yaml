@@ -1,0 +1,109 @@
+- ruleID: httpclient-4-to-httpclient-5-00300
+  description: HttpPost replaced by SimpleRequestBuilder.post() when using HttpClient 5.x simple async handlers
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When using HttpClient 5.x simple async handlers, replace `new HttpPost(url)` with `SimpleRequestBuilder.post(url).setBody(...).build()` to create a `SimpleHttpRequest`. The response is handled via `FutureCallback<SimpleHttpResponse>` passed to `client.execute()`.
+
+    ```java
+    // Before (HttpClient 4.x)
+    HttpPost httpPost = new HttpPost("https://httpbin.org/post");
+    httpPost.setEntity(requestEntity);
+
+    // After (HttpClient 5.x async with simple handlers)
+    SimpleHttpRequest httpPost = SimpleRequestBuilder.post("https://httpbin.org/post")
+        .setBody(body, ContentType.APPLICATION_JSON)
+        .build();
+    Future<?> future = client.execute(httpPost, new FutureCallback<SimpleHttpResponse>() {
+        @Override
+        public void completed(SimpleHttpResponse response) { ... }
+        @Override
+        public void failed(Exception ex) { ... }
+        @Override
+        public void cancelled() { ... }
+    });
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.methods.HttpPost
+        location: CONSTRUCTOR_CALL
+- ruleID: httpclient-4-to-httpclient-5-00310
+  description: HttpGet replaced by SimpleRequestBuilder.get() when using HttpClient 5.x simple async handlers
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When using HttpClient 5.x simple async handlers, replace `new HttpGet(url)` with `SimpleRequestBuilder.get(url).build()` to create a `SimpleHttpRequest`. Execute via `client.execute(request, futureCallback)` and handle response in `FutureCallback<SimpleHttpResponse>.completed()`.
+
+    ```java
+    // Before (HttpClient 4.x)
+    HttpGet httpGet = new HttpGet("https://api.example.com/data");
+    HttpResponse response = client.execute(httpGet);
+
+    // After (HttpClient 5.x async with simple handlers)
+    SimpleHttpRequest httpGet = SimpleRequestBuilder.get("https://api.example.com/data").build();
+    Future<?> future = client.execute(httpGet, new FutureCallback<SimpleHttpResponse>() {
+        @Override
+        public void completed(SimpleHttpResponse response) {
+            String body = response.getBodyText();
+        }
+        @Override
+        public void failed(Exception ex) { ... }
+        @Override
+        public void cancelled() { ... }
+    });
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide/migration-to-async-simple.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.client.methods.HttpGet
+        location: CONSTRUCTOR_CALL
+- ruleID: httpclient-4-to-httpclient-5-00350
+  description: EntityTemplate removed in HttpClient 5.x; replaced by HttpEntities.create()
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=httpclient-4
+    - konveyor.io/target=httpclient-5
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `org.apache.http.entity.EntityTemplate` class has been removed in Apache HttpClient 5.x. Replace it with `HttpEntities.create(ContentProducer, ContentType)` from `org.apache.hc.core5.http.io.entity.HttpEntities`.
+
+    Before (4.x):
+    ```java
+    EntityTemplate requestEntity = new EntityTemplate(outstream -> {
+        objectMapper.writeValue(outstream, requestData);
+        outstream.flush();
+    });
+    requestEntity.setContentType(ContentType.APPLICATION_JSON.toString());
+    httpPost.setEntity(requestEntity);
+    ```
+
+    After (5.x):
+    ```java
+    ClassicHttpRequest httpPost = ClassicRequestBuilder.post("https://httpbin.org/post")
+        .setEntity(HttpEntities.create(outstream -> {
+            objectMapper.writeValue(outstream, requestData);
+            outstream.flush();
+        }, ContentType.APPLICATION_JSON))
+        .build();
+    ```
+  links:
+    - url: https://hc.apache.org/httpcomponents-client-5.4.x/migration-guide/migration-to-classic.html
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.http.entity.EntityTemplate
+        location: IMPORT

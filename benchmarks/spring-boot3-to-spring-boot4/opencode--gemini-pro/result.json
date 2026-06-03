@@ -1,0 +1,21 @@
+{
+  "runtime": "opencode",
+  "model": "gemini-pro",
+  "model_id": "google-vertex/gemini-3.1-pro-preview",
+  "migration": "spring-boot3-to-spring-boot4",
+  "date": "2026-06-01",
+  "duration_minutes": 31.7,
+  "rule_count": 33,
+  "quality_avg": 5.03030303030303,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 2,
+  "specificity_gap_count": 0,
+  "pass_rate": "32/33",
+  "eval_judge": {
+    "precision_issues": 4,
+    "coherence_issues": 5,
+    "cross_rule_issues": 2,
+    "gaps": 18
+  },
+  "notes": "1 failed kantra test. Rule 00330 is broken duplicate of 00080 (fail). Rule 00160 names hallucinated class JsonValueDeserializer. 18 gaps — missing all deprecated starter renames, config property renames, and build dependency changes."
+}

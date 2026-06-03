@@ -1,0 +1,18 @@
+- ruleID: spring-boot3-to-spring-boot4-00200
+  description: Spring Framework null-safety annotations replaced by JSpecify annotations in Spring Boot 4
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot 4.0 adds JSpecify nullability annotations, and the existing Spring Framework null-safety annotations from `org.springframework.lang` (such as `@Nullable`, `@NonNull`) should be migrated. If you are using a null checker in your build or Kotlin, this could lead to compilation failures due to now-nullable or non-nullable types. Review the [Spring Framework null-safety migration guide](https://docs.spring.io/spring-framework/reference/core/null-safety.html#null-safety-migrating) and update your annotations accordingly.
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#jspecify-nullability-annotations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.lang*
+        location: PACKAGE

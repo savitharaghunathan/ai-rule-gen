@@ -1,0 +1,21 @@
+{
+  "runtime": "opencode",
+  "model": "opus",
+  "model_id": "claude-opus-4-6",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-01",
+  "duration_minutes": 21.5,
+  "rule_count": 29,
+  "quality_avg": 5.896551724137931,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": 17,
+  "specificity_gap_count": 0,
+  "pass_rate": "29/29",
+  "eval_judge": {
+    "precision_issues": 8,
+    "coherence_issues": 3,
+    "cross_rule_issues": 2,
+    "gaps": 8
+  },
+  "notes": "8 unqualified METHOD_CALL rules. 3 rules (00250, 00260, 00270) assume async migration path for classic imports. Same rule count as Claude Code/Opus (29)."
+}

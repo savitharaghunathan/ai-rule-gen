@@ -1,0 +1,379 @@
+{
+  "rule_count": 43,
+  "quality": {
+    "total_rules": 43,
+    "has_message": 43,
+    "has_links": 43,
+    "has_effort": 43,
+    "has_before_after": 43,
+    "avg_score": 5.953488372093023,
+    "max_score": 6,
+    "guidance_depth_avg": 2.953488372093023
+  },
+  "rule_details": [
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00160",
+      "description": "HttpPost constructor replaced by ClassicRequestBuilder factory method in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00220",
+      "description": "RequestConfig.normalizeUri property removed in HttpClient 5.x; URIUtils.normalizeSyntax is no longer public",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00230",
+      "description": "URIUtils.normalizeSyntax() is no longer public in HttpClient 5.x; use URIBuilder.normalize()/optimize()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00240",
+      "description": "BasicHttpContext replaced by HttpCoreContext / HttpClientContext in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00270",
+      "description": "HttpClients.custom().addInterceptorLast() replaced by addExecInterceptorFirst() in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00280",
+      "description": "HttpClients.custom().setRetryHandler() renamed to setRetryStrategy() in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00290",
+      "description": "HttpEntityEnclosingRequest interface replaced by HttpEntityContainer in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00300",
+      "description": "HttpMessage.getAllHeaders() renamed to MessageHeaders.getHeaders() in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00310",
+      "description": "HttpRequest.getRequestLine() removed in HttpClient 5.x; wrap with new RequestLine(request)",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00320",
+      "description": "HttpRequestBase renamed to HttpUriRequestBase in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00420",
+      "description": "HttpResponse.getEntity() removed in HttpClient 5.x; cast response to ClassicHttpResponse",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00430",
+      "description": "StatusLine interface removed from org.apache.http in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00340",
+      "description": "PoolingHttpClientConnectionManager replaced by PoolingAsyncClientConnectionManager in HttpClient 5.x async APIs",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00350",
+      "description": "CloseableHttpClient replaced by CloseableHttpAsyncClient when migrating to HttpClient 5.x async APIs",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00360",
+      "description": "Apache HttpClient 4.x async client (httpasyncclient) is replaced by HttpClient 5.x (httpclient5)",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00370",
+      "description": "FutureCallback moved from org.apache.http.concurrent to org.apache.hc.core5.concurrent in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00380",
+      "description": "IOReactorConfig moved from org.apache.http.impl.nio.reactor to org.apache.hc.core5.reactor in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00390",
+      "description": "PoolingNHttpClientConnectionManager (HC4 async) replaced by PoolingAsyncClientConnectionManager in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00400",
+      "description": "CloseableHttpAsyncClient moved from org.apache.http.impl.nio.client to org.apache.hc.client5.http.impl.async in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00410",
+      "description": "HttpAsyncClients factory moved from org.apache.http.impl.nio.client to org.apache.hc.client5.http.impl.async in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00130",
+      "description": "BasicCredentialsProvider moved from org.apache.http.impl.client to org.apache.hc.client5.http.impl.auth in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00050",
+      "description": "setConnectTimeout(int) moved from RequestConfig to ConnectionConfig with Timeout parameter in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00060",
+      "description": "setSocketTimeout(int) removed from RequestConfig; moved to ConnectionConfig with Timeout parameter in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00070",
+      "description": "setSoTimeout(int) parameter type changed to Timeout in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00080",
+      "description": "setConnectionTimeToLive(long, TimeUnit) signature changed to setConnectionTimeToLive(TimeValue) in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00180",
+      "description": "HttpClients.custom().setConnectionTimeToLive() removed; time-to-live now configured via ConnectionConfig",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00190",
+      "description": "HttpClients.custom().setDefaultSocketConfig() removed; socket config now set on connection manager",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00200",
+      "description": "RequestConfig.setConnectTimeout(int) moved to ConnectionConfig.setConnectTimeout(Timeout) in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00210",
+      "description": "RequestConfig.setSocketTimeout(int) moved to ConnectionConfig.setSocketTimeout(Timeout) in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00250",
+      "description": "HttpClientConnectionManager.closeExpiredConnections() renamed to ConnPoolControl.closeExpired() in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00260",
+      "description": "HttpClientConnectionManager.closeIdleConnections() renamed to ConnPoolControl.closeIdle() in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00010",
+      "description": "Apache HttpClient 4.x artifact replaced by httpclient5 in HttpClient 5.x",
+      "quality_score": 5,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 2
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00020",
+      "description": "Apache HttpCore 4.x artifact replaced by httpcore5 in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00030",
+      "description": "Apache HttpClient 4.x (org.apache.http) package namespace replaced by org.apache.hc in 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00040",
+      "description": "HttpResponse.getStatusLine() removed in HttpClient 5.x; use getCode() and getReasonPhrase()",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00110",
+      "description": "CookieSpecs / StandardCookieSpec relocated from org.apache.http to org.apache.hc in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00120",
+      "description": "ClientProtocolException moved from org.apache.http.client to org.apache.hc.client5.http in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00140",
+      "description": "BasicCookieStore moved from org.apache.http.impl.client to org.apache.hc.client5.http.cookie in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00150",
+      "description": "EntityTemplate moved from org.apache.http.entity to org.apache.hc.core5.http.io.entity in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00090",
+      "description": "SSLConnectionSocketFactory (org.apache.http) replaced by new SSL builder API in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00100",
+      "description": "SSLContexts moved from org.apache.http.ssl to org.apache.hc.core5.ssl in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00170",
+      "description": "HttpClients.custom().setSSLSocketFactory() removed; SSL config now via PoolingHttpClientConnectionManagerBuilder",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    },
+    {
+      "rule_id": "httpclient-4-to-httpclient-5-00330",
+      "description": "ManagedHttpClientConnection cast to get SSL session simplified to HttpCoreContext.getSSLSession() in HttpClient 5.x",
+      "quality_score": 6,
+      "quality_max": 6,
+      "has_guidance": true,
+      "guidance_depth": 3
+    }
+  ],
+  "overlaps": [
+    {
+      "rule_a": "httpclient-4-to-httpclient-5-00050",
+      "rule_b": "httpclient-4-to-httpclient-5-00200",
+      "type": "pattern_overlap",
+      "reason": "httpclient-4-to-httpclient-5-00050 pattern is substring of httpclient-4-to-httpclient-5-00200"
+    },
+    {
+      "rule_a": "httpclient-4-to-httpclient-5-00060",
+      "rule_b": "httpclient-4-to-httpclient-5-00210",
+      "type": "pattern_overlap",
+      "reason": "httpclient-4-to-httpclient-5-00060 pattern is substring of httpclient-4-to-httpclient-5-00210"
+    },
+    {
+      "rule_a": "httpclient-4-to-httpclient-5-00080",
+      "rule_b": "httpclient-4-to-httpclient-5-00180",
+      "type": "pattern_overlap",
+      "reason": "httpclient-4-to-httpclient-5-00080 pattern is substring of httpclient-4-to-httpclient-5-00180"
+    }
+  ]
+}

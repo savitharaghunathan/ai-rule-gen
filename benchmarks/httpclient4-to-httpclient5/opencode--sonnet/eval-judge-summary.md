@@ -1,0 +1,7 @@
+## Eval Judge Report — opencode / sonnet / httpclient4-to-httpclient5
+
+- **22 of 35 rules passed**
+- **12 precision issues** (all `warn`): every unqualified METHOD_CALL rule (`00050`, `00060`, `00070`, `00090`, `00110`, `00140`, `00150`, `00160`, `00170`, `00180`, `00220`, `00230`) — common method names like `setConnectTimeout`, `setSoTimeout`, `getAllHeaders`, `getRequestLine` match across many Java frameworks
+- **5 coherence issues**: **00280** fires on `CloseableHttpClient` import but pushes to async `CloseableHttpAsyncClient` — wrong for classic migration path. **00290** same issue for `HttpClients.custom()`. **00300** and **00310** jump to async `SimpleRequestBuilder` for `HttpPost`/`HttpGet` instead of noting classic 5.x replacements. **00010**+**00120** duplicate package-level rules with slightly different messages (00120 uses wrong namespace `org.apache.hc.httpclient5`)
+- **3 cross-rule issues**: `00010`+`00120` duplicate detection, `00280`+`00290` contradictory async push (fail), `00270`+`00320` overlapping async connection manager guidance
+- **9 gaps**: `client.execute()` return type change (high), `SSLConnectionSocketFactory` removal (high), `StatusLine` removal (high), `PoolingHttpClientConnectionManager` classic migration (high), `HttpRequestRetryHandler` removal (high), `IOReactorConfig` package change, `FutureCallback` package change, `client.close(CloseMode.GRACEFUL)`, `client.start()` lifecycle

@@ -1,0 +1,21 @@
+{
+  "runtime": "opencode",
+  "model": "gemini-pro",
+  "model_id": "google-vertex/gemini-3.1-pro-preview",
+  "migration": "httpclient4-to-httpclient5",
+  "date": "2026-06-01",
+  "duration_minutes": 11.1,
+  "rule_count": 33,
+  "quality_avg": 4.454545454545454,
+  "effective_coverage_pct": null,
+  "overlap_conflict_count": null,
+  "specificity_gap_count": 0,
+  "pass_rate": "33/33",
+  "eval_judge": {
+    "precision_issues": 1,
+    "coherence_issues": 4,
+    "cross_rule_issues": 1,
+    "gaps": 5
+  },
+  "notes": "Very poor links coverage (2/33). HttpPost only HTTP method with dedicated rule. CloseableHttpClient async-only message misleading for classic-path migrations."
+}

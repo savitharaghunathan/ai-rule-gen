@@ -1,0 +1,18 @@
+- ruleID: spring-boot3-to-spring-boot4-00760
+  description: RabbitRetryTemplateCustomizer replaced by dedicated retry settings customizers
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot3
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=spring-boot4
+    - konveyor.io/target=spring-boot
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring AMQP has moved its retry capabilities from Spring Retry to Spring Framework. `RabbitRetryTemplateCustomizer` has been replaced by two dedicated customizers: `RabbitTemplateRetrySettingsCustomizer` (for template retry) and `RabbitListenerRetrySettingsCustomizer` (for listener retry). Migrate to the appropriate customizer based on whether you were targeting template or listener retry configuration.'
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#spring-amqp-retry-features
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.amqp.RabbitRetryTemplateCustomizer
+        location: IMPORT
