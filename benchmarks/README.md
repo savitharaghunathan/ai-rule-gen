@@ -12,7 +12,6 @@ Scoring definitions, runtime matrix, and reproduction steps: [methodology.md](me
 
 3. **Model capability has a hard cliff.** Four tiers emerge: (1) Haiku = non-functional (empty messages, wrong condition types, pipeline crashes), (2) DeepSeek V3.2 = follows structure but produces near-empty guidance, (3) Gemini Pro = functional but weak documentation and unique failure modes, (4) Sonnet/Opus = strong across all dimensions. There is no graceful degradation between tier 1 and tier 3 — agentic pipelines need a minimum model capability.
 
-4. **More rules does not mean more noise.** Higher-extracting runs (CC/Sonnet: 43 httpclient, OpenCode/Sonnet: 95 spring-boot) have proportionally *fewer* eval judge issues than lower-extracting runs. The additional rules cover simple class relocations and API renames that conservative runs skip.
 
 ## Does the Runtime / Harness Matter?
 
