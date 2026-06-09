@@ -128,6 +128,15 @@ The log flags are: `--log <migration_dir>/pipeline.log --agent orchestrator --mo
 
 If auto-detecting, write `output/guide-temp.md` to `<migration_dir>/guide.md` using the Write tool after the migration directory path is determined.
 
+**Stub detection — follow sub-pages.** After ingesting each URL, check the output size. If a URL produced fewer than 100 lines of meaningful content (excluding navigation chrome, footers, and link lists), it is likely a table-of-contents or landing page with sub-page links. In that case:
+
+1. Read the ingested markdown and extract all relative or absolute links that point to sibling pages (e.g., `removed-apis.html`, `security-updates.html`, `removed-tools-and-components.html`).
+2. For each sub-page link, resolve it to a full URL relative to the original URL's base path.
+3. Ingest each sub-page with `cmd/ingest` into a separate file (`guide-part-<N>.md`).
+4. Concatenate all parts (original + sub-pages) into the final `guide.md`, in the order they appear in the table of contents.
+
+This ensures that documentation sites which split content across multiple pages (e.g., Oracle JDK Migration Guide) are fully captured. Without this step, the pipeline will only see the stub and miss the bulk of the migration content.
+
 Count lines (`GUIDE_LINES`) and section headings. Print:
 
 ```

@@ -21,6 +21,7 @@ type Result struct {
 	OutputDir        string                  `json:"output_dir"`
 	Groups           []GroupCount            `json:"groups"`
 	Errors           []string                `json:"errors,omitempty"`
+	Warnings         []string                `json:"warnings,omitempty"`
 	PatternRuleMap   map[int]string          `json:"pattern_rule_map,omitempty"`
 	Grouped          map[string][]rules.Rule `json:"-"`
 	Ruleset          *rules.Ruleset          `json:"-"`
@@ -41,8 +42,23 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 	prefixGens := make(map[string]*rules.IDGenerator)
 	grouped := make(map[string][]rules.Rule)
 	patternRuleMap := make(map[int]string)
+	var warnings []string
 
 	for i, p := range extract.Patterns {
+		if strings.EqualFold(p.LocationType, "METHOD_CALL") && p.SourceFQN != "" && !strings.Contains(p.SourceFQN, ".") {
+			warnings = append(warnings, fmt.Sprintf(
+				"pattern %d: METHOD_CALL source_fqn %q is not fully qualified (must contain package.Class.method) — skipped",
+				i, p.SourceFQN))
+			continue
+		}
+
+		if p.SourceFQN != "" && p.TargetPattern != "" && strings.EqualFold(p.SourceFQN, p.TargetPattern) {
+			warnings = append(warnings, fmt.Sprintf(
+				"pattern %d: source_fqn %q equals target_pattern — likely wrong FQN direction — skipped",
+				i, p.SourceFQN))
+			continue
+		}
+
 		concern := p.Concern
 		if concern == "" {
 			concern = "general"
@@ -113,6 +129,7 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 		FilesWritten:   filesWritten,
 		OutputDir:      outputDir,
 		Groups:         groups,
+		Warnings:       warnings,
 		PatternRuleMap: patternRuleMap,
 		Grouped:        grouped,
 		Ruleset:        ruleset,

@@ -23,6 +23,16 @@ Matches regex patterns in file contents. Use this for config files, properties, 
 - `filePattern` (optional) — Regex restricting which files to search. Must be a valid Go regex — do NOT use glob syntax (`*.properties` is invalid regex; use `.*\\.properties`). For application config properties, always use `application.*\\.(properties|ya?ml)` to cover `.properties`, `.yml`, and `.yaml` formats. Never use `.*\\.properties` alone (too broad — matches any `.properties` file) or `application.*\\.properties` alone (misses YAML configs). Omit to search all files.
 - `filepaths` (optional) — Restrict to specific file paths.
 
+### Startup scripts, Dockerfiles, and CI configs
+
+Runtime flags, CLI tool options, and system properties appear in non-source files — shell scripts, Dockerfiles, CI configs, and build files. These are detectable with `builtin.filecontent` using a broad file pattern:
+
+```
+filePattern: .*\.(sh|bat|cmd|conf|properties|ya?ml|xml|env|args|Dockerfile)
+```
+
+Use this for deprecated/removed runtime flags, CLI options that changed, and system properties that are no longer supported. The `pattern` field is a regex matching the flag or property name.
+
 ## builtin.file
 
 Matches file existence by name pattern.

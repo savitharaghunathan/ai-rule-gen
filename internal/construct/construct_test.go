@@ -455,3 +455,225 @@ func TestRun_EmptySources(t *testing.T) {
 		t.Errorf("rule ID %q should start with security-import-", ruleID)
 	}
 }
+
+func TestRun_RejectsUnqualifiedMethodCall(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  []string{"hc4"},
+		Targets:  []string{"hc5"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern: "bare method name",
+				SourceFQN:     "setRetryHandler",
+				LocationType:  "METHOD_CALL",
+				ProviderType:  "java",
+				Rationale:     "Retry handler changed",
+				Complexity:    "low",
+				Category:      "mandatory",
+				Concern:       "core",
+			},
+			{
+				SourcePattern: "qualified import",
+				SourceFQN:     "org.apache.http.HttpEntity",
+				LocationType:  "IMPORT",
+				ProviderType:  "java",
+				Rationale:     "Package relocated",
+				Complexity:    "low",
+				Category:      "mandatory",
+				Concern:       "core",
+			},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if result.RulesWritten != 1 {
+		t.Errorf("rules written: got %d, want 1 (bare METHOD_CALL should be skipped)", result.RulesWritten)
+	}
+	if len(result.Warnings) != 1 {
+		t.Fatalf("warnings: got %d, want 1", len(result.Warnings))
+	}
+	if !strings.Contains(result.Warnings[0], "setRetryHandler") {
+		t.Errorf("warning should mention the bare method name, got: %s", result.Warnings[0])
+	}
+}
+
+func TestRun_AcceptsQualifiedMethodCall(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  []string{"hc4"},
+		Targets:  []string{"hc5"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern: "qualified method call",
+				SourceFQN:     "org.apache.http.impl.client.HttpClientBuilder.setRetryHandler",
+				LocationType:  "METHOD_CALL",
+				ProviderType:  "java",
+				Rationale:     "Retry handler changed",
+				Complexity:    "low",
+				Category:      "mandatory",
+				Concern:       "core",
+			},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if result.RulesWritten != 1 {
+		t.Errorf("rules written: got %d, want 1", result.RulesWritten)
+	}
+	if len(result.Warnings) != 0 {
+		t.Errorf("expected no warnings, got %v", result.Warnings)
+	}
+}
+
+func TestRun_IgnoresNonMethodCallBareNames(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  []string{"sb3"},
+		Targets:  []string{"sb4"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern: "bare import name",
+				SourceFQN:     "SecurityManager",
+				LocationType:  "IMPORT",
+				ProviderType:  "java",
+				Rationale:     "Removed in target",
+				Complexity:    "high",
+				Category:      "mandatory",
+				Concern:       "security",
+			},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if result.RulesWritten != 1 {
+		t.Errorf("rules written: got %d, want 1 (IMPORT with bare name should not be rejected)", result.RulesWritten)
+	}
+	if len(result.Warnings) != 0 {
+		t.Errorf("expected no warnings for IMPORT bare name, got %v", result.Warnings)
+	}
+}
+
+func TestRun_SkipsEmptySourceFQNMethodCall(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  []string{"hc4"},
+		Targets:  []string{"hc5"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern:  "dependency pattern",
+				DependencyName: "org.apache.httpcomponents.httpclient",
+				UpperBound:     "5.0.0",
+				LocationType:   "METHOD_CALL",
+				ProviderType:   "java",
+				Rationale:      "Dependency changed",
+				Complexity:     "low",
+				Category:       "mandatory",
+				Concern:        "core",
+			},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if result.RulesWritten != 1 {
+		t.Errorf("rules written: got %d, want 1 (empty SourceFQN should not trigger rejection)", result.RulesWritten)
+	}
+	if len(result.Warnings) != 0 {
+		t.Errorf("expected no warnings for empty SourceFQN, got %v", result.Warnings)
+	}
+}
+
+func TestRun_RejectsSourceEqualsTarget(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  []string{"sb3"},
+		Targets:  []string{"sb4"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern: "wrong direction",
+				SourceFQN:     "new.package.HttpMessageConverters",
+				TargetPattern: "new.package.HttpMessageConverters",
+				LocationType:  "IMPORT",
+				ProviderType:  "java",
+				Rationale:     "Class relocated",
+				Complexity:    "low",
+				Category:      "mandatory",
+				Concern:       "core",
+			},
+			{
+				SourcePattern: "valid pattern",
+				SourceFQN:     "old.package.SomeClass",
+				TargetPattern: "new.package.SomeClass",
+				LocationType:  "IMPORT",
+				ProviderType:  "java",
+				Rationale:     "Package relocated",
+				Complexity:    "low",
+				Category:      "mandatory",
+				Concern:       "core",
+			},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if result.RulesWritten != 1 {
+		t.Errorf("rules written: got %d, want 1 (source==target should be skipped)", result.RulesWritten)
+	}
+	if len(result.Warnings) != 1 {
+		t.Fatalf("warnings: got %d, want 1", len(result.Warnings))
+	}
+	if !strings.Contains(result.Warnings[0], "equals target_pattern") {
+		t.Errorf("warning should mention equals target_pattern, got: %s", result.Warnings[0])
+	}
+}
+
+func TestRun_AcceptsDifferentSourceAndTarget(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  []string{"sb3"},
+		Targets:  []string{"sb4"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern: "class relocated",
+				SourceFQN:     "old.package.HttpMessageConverters",
+				TargetPattern: "new.package.HttpMessageConverters",
+				LocationType:  "IMPORT",
+				ProviderType:  "java",
+				Rationale:     "Class relocated",
+				Complexity:    "low",
+				Category:      "mandatory",
+				Concern:       "core",
+			},
+		},
+	}
+
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if result.RulesWritten != 1 {
+		t.Errorf("rules written: got %d, want 1", result.RulesWritten)
+	}
+	if len(result.Warnings) != 0 {
+		t.Errorf("expected no warnings, got %v", result.Warnings)
+	}
+}

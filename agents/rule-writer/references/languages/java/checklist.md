@@ -45,6 +45,7 @@ Choose location type based on how the artifact appears in code:
 | Enum type or constant | `ENUM` |
 | Superclass | `INHERITANCE` |
 | Implemented interface | `IMPLEMENTS_TYPE` |
+| JVM flag, CLI option, system property | `builtin.filecontent` (in startup scripts, Dockerfiles, CI configs) |
 
 See `condition-types.md` for the full list of 14 location types and their matching behavior.
 
