@@ -45,7 +45,7 @@ func Run(extract *rules.ExtractOutput, outputDir string) (*Result, error) {
 	var warnings []string
 
 	for i, p := range extract.Patterns {
-		if strings.EqualFold(p.LocationType, "METHOD_CALL") && p.SourceFQN != "" && !strings.Contains(p.SourceFQN, ".") {
+		if strings.EqualFold(p.LocationType, "METHOD_CALL") && p.SourceFQN != "" && strings.Count(p.SourceFQN, ".") < 2 {
 			warnings = append(warnings, fmt.Sprintf(
 				"pattern %d: METHOD_CALL source_fqn %q is not fully qualified (must contain package.Class.method) — skipped",
 				i, p.SourceFQN))

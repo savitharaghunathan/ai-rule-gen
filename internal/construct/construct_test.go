@@ -645,6 +645,37 @@ func TestRun_RejectsSourceEqualsTarget(t *testing.T) {
 	}
 }
 
+func TestRun_RejectsPartiallyQualifiedMethodCall(t *testing.T) {
+	extract := &rules.ExtractOutput{
+		Sources:  []string{"hc4"},
+		Targets:  []string{"hc5"},
+		Language: "java",
+		Patterns: []rules.MigrationPattern{
+			{
+				SourcePattern: "class-qualified only",
+				SourceFQN:     "HttpClient.execute",
+				LocationType:  "METHOD_CALL",
+				ProviderType:  "java",
+				Rationale:     "Missing package",
+				Complexity:    "low",
+				Category:      "mandatory",
+				Concern:       "core",
+			},
+		},
+	}
+	dir := t.TempDir()
+	result, err := Run(extract, dir)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if result.RulesWritten != 0 {
+		t.Errorf("rules written: got %d, want 0 (partially qualified should be skipped)", result.RulesWritten)
+	}
+	if len(result.Warnings) != 1 {
+		t.Fatalf("warnings: got %d, want 1", len(result.Warnings))
+	}
+}
+
 func TestRun_AcceptsDifferentSourceAndTarget(t *testing.T) {
 	extract := &rules.ExtractOutput{
 		Sources:  []string{"sb3"},

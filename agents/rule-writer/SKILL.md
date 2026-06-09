@@ -80,7 +80,7 @@ If the orchestrator didn't provide sources, targets, or language, detect them fr
 {"sources": ["framework-v3", "framework"], "targets": ["framework-v4", "framework"], "language": "java"}
 ```
 
-Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`, `express4` not `Express 4`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
+Use lowercase, hyphenated names (e.g., `framework-v3` not `Framework V3`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
 
 ### 2. Index all sections
 
@@ -251,11 +251,11 @@ See `references/languages/<language>/checklist.md` for language-specific locatio
 
 #### Multi-class changes → use `alternative_fqns`
 
-When a single migration change removes or deprecates **multiple classes or methods together** (e.g., JDK-8318707 removes `MLet`, `PrivateMLet`, and related classes), create ONE pattern with the primary FQN in `source_fqn` and ALL other affected FQNs in `alternative_fqns`. The construct tool generates an `or` condition automatically — do NOT create separate rules for classes removed as part of the same change.
+When a single migration change removes or deprecates **multiple classes or methods together**, create ONE pattern with the primary FQN in `source_fqn` and ALL other affected FQNs in `alternative_fqns`. The construct tool generates an `or` condition automatically — do NOT create separate rules for classes removed as part of the same change.
 
 For each pattern, provide the fields defined in `references/patterns-json-schema.md`. At minimum: `source_pattern`, `rationale`, `complexity`, `category`.
 
-**Always populate `documentation_url`** with the most specific URL available. If the migration guide has section anchors or issue IDs (e.g., `#JDK-8318707`, `#spring-boot-4-changes`), append them to the URL. A link to a 500-line page is not actionable — a link to the exact section is. If no anchor exists, use the base guide URL. The construct CLI converts this into a `links:` entry in the rule YAML so users can find the original migration guidance.
+**Always populate `documentation_url`** with the most specific URL available. If the migration guide has section anchors or issue IDs, append them to the URL. A link to a 500-line page is not actionable — a link to the exact section is. If no anchor exists, use the base guide URL. The construct CLI converts this into a `links:` entry in the rule YAML so users can find the original migration guidance.
 
 ### Detection strategy: detect the affected artifact, not the missing fix
 
@@ -282,14 +282,15 @@ The `source_fqn` field is what the rule will match against in user code. It must
 The migration guide often shows both old and new paths. The old path goes in `source_fqn`; the new path goes in `target_pattern` and the migration message.
 
 **METHOD_CALL patterns require fully qualified source_fqn.** For METHOD_CALL
-location type, `source_fqn` must include the owning class:
-`package.ClassName.methodName`. A bare method name like `setRetryHandler`
-will match that method on every class in the codebase — Spring, OkHttp, JDBC,
-and the replacement API your rule tells users to adopt.
+location type, `source_fqn` must include the full package and owning class:
+`package.ClassName.methodName` (at least two dots). A bare or partially qualified
+method name will match that method on every class in the codebase — including
+unrelated libraries and the replacement API your rule tells users to adopt.
 
 Example:
-- Wrong: `"source_fqn": "setRetryHandler", "location_type": "METHOD_CALL"`
-- Right: `"source_fqn": "org.apache.http.impl.client.HttpClientBuilder.setRetryHandler", "location_type": "METHOD_CALL"`
+- Wrong: `"source_fqn": "execute", "location_type": "METHOD_CALL"` (bare name)
+- Wrong: `"source_fqn": "MyClient.execute", "location_type": "METHOD_CALL"` (class-qualified only, missing package)
+- Right: `"source_fqn": "com.example.legacy.MyClient.execute", "location_type": "METHOD_CALL"`
 
 The construct stage will reject METHOD_CALL patterns with unqualified names.
 
