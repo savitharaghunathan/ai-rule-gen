@@ -4,6 +4,8 @@ This directory contains migration rule evaluation examples. Each subdirectory is
 
 The eval skill (`agents/eval/SKILL.md`) uses these artifacts to validate rule quality through deterministic checks (quality scoring, app coverage, overlap detection) and LLM judge review (per-rule condition/message accuracy).
 
+For a step-by-step guide on running evals, see [docs/howto/eval.md](../docs/howto/eval.md).
+
 ## Directory Layout
 
 ```

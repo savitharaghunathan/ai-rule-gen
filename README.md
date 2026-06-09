@@ -7,7 +7,8 @@ Generate [Konveyor](https://www.konveyor.io/) analyzer migration rules from any 
 ### Prerequisites
 
 - [Go 1.25+](https://go.dev/dl/)
-- [kantra](https://github.com/konveyor-ecosystem/kantra) (for rule testing)
+- [Java 21+](https://openjdk.org/projects/jdk/21/) (required by kantra's bundled jdtls)
+- [kantra](https://github.com/konveyor/kantra) (for rule testing)
 - An AI coding agent ([Claude Code](https://claude.ai/code), [OpenCode](https://opencode.ai), [Goose](https://goose-docs.ai), [Codex](https://developers.openai.com/codex), or similar)
 
 ### Add the skill
@@ -85,7 +86,7 @@ output/
     └── report.yaml       # Summary report
 ```
 
-## Architecture
+## [Architecture](docs/design/architecture.md)
 
 All LLM orchestration lives in agent skills. The Go CLI is purely deterministic — no LLM calls, no API keys, no prompt templates.
 
@@ -113,105 +114,12 @@ Each skill follows the [Agent Skills](https://agentskills.io) format with a `SKI
 
 ## Eval
 
-Measure the quality of generated rules with deterministic checks and an optional LLM judge.
-
-### Quick start
-
-```bash
-# Quality-only (no app needed)
-go run ./cmd/eval --rules-dir output/<migration>/rules
-
-# With app coverage analysis
-go run ./cmd/eval \
-  --rules-dir output/<migration>/rules \
-  --app-dir /path/to/app
-
-# Full eval (deterministic + LLM judge, invoke via your agent)
-# Read and follow agents/eval/SKILL.md
-```
-
-### What it measures
-
-**Quality scoring (4-point scale per rule):**
-
-| Check | Points | What it looks for |
-|-------|--------|-------------------|
-| Message | 1 | Rule has a non-empty migration message |
-| Links | 1 | Rule includes documentation links |
-| Effort | 1 | Rule has an effort rating |
-| Before/after | 1 | Message contains migration guidance (e.g., "replace", "use", "instead of") |
-
-**App coverage (requires `--app-dir`):**
-
-Runs `kantra analyze` against a real application and cross-references results:
-
-| Metric | Meaning |
-|--------|---------|
-| **Rules fired** | Rules that matched code in the app (raw kantra output) |
-| **Effective match** | Fired rules / rules whose API is present in the app — excludes rules where the app simply doesn't use that API |
-| **In app but unmatched** | API is in the source but kantra didn't match — potential broken rule or engine limitation |
-| **Not in app** | App doesn't use the API — rule is correct, just not exercised by this app |
-| **Incidents** | Total code locations matched across all fired rules |
-
-**LLM judge (via eval skill):**
-
-Compares the source migration guide against the generated rules. Produces:
-- **Missed patterns** — guide actions with no corresponding rule (severity: high/medium/low)
-- **False positives** — rules that would fire incorrectly
-- **Quality notes** — rules that work but could be improved
-
-### Example report
-
-```text
-======================================================================
-EVAL REPORT
-======================================================================
-
-## Rules: 33
-
-## Quality (avg 3.9/4)
-   Messages:           33/33
-   Links:              33/33
-   Effort rating:      33/33
-   Before/after:       29/33
-   httpclient4-to-httpclient5-00010: missing [before_after_guidance]
-   httpclient4-to-httpclient5-00020: missing [before_after_guidance]
-
-## App Coverage
-   Rules fired:      26/33 (78%)
-   Effective match:  26/27 (96%)  — excludes rules where API is absent from app
-   Incidents:        121
-
-   In app but unmatched (1 rules):
-     - httpclient4-to-httpclient5-00060 (BasicHttpContext) → src/test/java/...
-
-   Not in app (6 rules):
-     - httpclient4-to-httpclient5-00070 (HttpRequestBase)
-     - httpclient4-to-httpclient5-00200 (URIUtils)
-     ...
-
-======================================================================
-```
-
-The report goes to stderr. Structured JSON goes to stdout for programmatic consumption.
-
-### Eval config
-
-Each eval case lives in `evals/<migration>/eval_config.yaml`:
-
-```yaml
-guide_url: https://hc.apache.org/httpcomponents-client-5.6.x/migration-guide
-app_repo: https://github.com/savitharaghunathan/httpclient-migration
-source: httpclient4
-target: httpclient5
-```
-
-See `evals/httpclient4-to-httpclient5/example-report.txt` for a full sample output.
+See [docs/howto/eval.md](docs/howto/eval.md) for how to measure rule quality, app coverage, and run regression comparisons.
 
 ## Related Projects
 
 - [analyzer-rule-generator (ARG)](https://github.com/konveyor-ecosystem/analyzer-rule-generator) — Python rule generation pipeline
-- [kantra](https://github.com/konveyor-ecosystem/kantra) — Rule testing CLI
+- [kantra](https://github.com/konveyor/kantra) — Rule testing and analysis CLI
 - [analyzer-lsp](https://github.com/konveyor/analyzer-lsp) — Rule engine and analyzer
 
 ## License
