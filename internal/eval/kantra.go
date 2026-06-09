@@ -62,6 +62,7 @@ func RunKantraAnalyze(rulesDir, appDir, outputDir string) (*AppCoverage, error) 
 		}
 		return nil, fmt.Errorf("kantra analyze: %w", err)
 	}
+	fmt.Fprintf(os.Stderr, "[eval] kantra completed successfully\n")
 
 	absApp, _ := filepath.Abs(appDir)
 	return parseAnalyzeOutput(filepath.Join(outputDir, "output.yaml"), absApp)
