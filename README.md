@@ -86,7 +86,7 @@ output/
     └── report.yaml       # Summary report
 ```
 
-## Architecture
+## [Architecture](docs/design/architecture.md)
 
 All LLM orchestration lives in agent skills. The Go CLI is purely deterministic — no LLM calls, no API keys, no prompt templates.
 
