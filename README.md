@@ -114,17 +114,7 @@ Each skill follows the [Agent Skills](https://agentskills.io) format with a `SKI
 
 ## Eval
 
-Measure the quality of generated rules with deterministic checks (quality scoring, app coverage, overlap detection) and an optional LLM judge.
-
-```bash
-# Quality-only (no app needed)
-go run ./cmd/eval --rules-dir output/<migration>/rules
-
-# With app coverage
-go run ./cmd/eval --rules-dir output/<migration>/rules --app-dir /path/to/app
-```
-
-See [docs/howto/eval.md](docs/howto/eval.md) for the full guide, including saving/comparing runs, ground truth generation, and adding new migration evals.
+See [docs/howto/eval.md](docs/howto/eval.md) for how to measure rule quality, app coverage, and run regression comparisons.
 
 ## Related Projects
 
