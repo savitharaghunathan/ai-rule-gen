@@ -128,6 +128,18 @@ The log flags are: `--log <migration_dir>/pipeline.log --agent orchestrator --mo
 
 If auto-detecting, write `output/guide-temp.md` to `<migration_dir>/guide.md` using the Write tool after the migration directory path is determined.
 
+**Stub detection — follow sub-pages.** After ingesting each URL, check the output for stub characteristics. A page is a stub if it has fewer than 100 non-blank lines of content after `cmd/ingest` processing (`cmd/ingest` already strips `<nav>`, `<footer>`, and `<aside>` elements during HTML-to-markdown conversion, so no additional filtering is needed).
+
+If a stub is detected:
+
+1. Read the ingested markdown and extract all links whose resolved URL shares the same base path as the original URL (same-origin sibling pages). Sibling links are those pointing to `*.html` files under the same directory path as the original URL. Exclude external links, anchor-only links (`#...`), and links to parent directories.
+2. For each sibling link, resolve it to a full URL relative to the original URL's base path.
+3. Ingest each sub-page with `cmd/ingest` into a separate file (`guide-part-<N>.md`).
+4. Concatenate all parts (original + sub-pages) into the final `guide.md`, in the order the links appear in the stub page (document order).
+5. If a sub-page fetch fails (404, timeout), log a warning (`[ingest] WARNING — failed to fetch <url>: <error>`) and skip that page. Do not abort the pipeline — partial content is better than none.
+
+This ensures that documentation sites which split content across multiple pages are fully captured. Without this step, the pipeline will only see the stub and miss the bulk of the migration content.
+
 Count lines (`GUIDE_LINES`) and section headings. Print:
 
 ```

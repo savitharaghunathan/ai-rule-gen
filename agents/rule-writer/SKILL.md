@@ -80,7 +80,7 @@ If the orchestrator didn't provide sources, targets, or language, detect them fr
 {"sources": ["framework-v3", "framework"], "targets": ["framework-v4", "framework"], "language": "java"}
 ```
 
-Use lowercase, hyphenated names (e.g., `spring-boot3` not `Spring Boot 3`, `express4` not `Express 4`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
+Use lowercase, hyphenated names (e.g., `framework-v3` not `Framework V3`). Include both a version-specific label and a generic label when appropriate (following Konveyor rulesets conventions).
 
 ### 2. Index all sections
 
@@ -119,9 +119,9 @@ Process **each section from the index individually**. For each section:
 | 4 | Does the section contain a **reference table** with old→new mappings? | Process every row as a separate pattern — **unless** the section describes a package/module/namespace-level rename, in which case consolidate (see "Package/module/namespace-level consolidation" below). See `references/languages/<language>/checklist.md` for language-specific location types. |
 | 5 | Does a **behavioral default change** affect users of a specific class, property, or dependency? | Detect the affected artifact, warn about new behavior (category: `potential`) |
 | 6 | Does the section mention **deprecated** starters, modules, or artifacts? | Each old→new mapping is a pattern |
-| 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin)? | If it names it, detect it |
+| 7 | Does the section **name any specific artifact** (class, dependency, property, annotation, config element, build plugin, **runtime/CLI flag, system property, environment variable**)? | If it names it, detect it. Runtime flags and CLI options are detectable via `builtin.filecontent` in startup scripts, Dockerfiles, and CI configs. |
 | 8 | Does the section mention a **version requirement** for a plugin, tool, or library? | `builtin.filecontent` or `builtin.xml` depending on build file format |
-| 9 | Does the section contain **before/after code examples** showing source-version and target-version API usage? | Diff the code examples line by line. Each API call, class, type, constant, or import that differs between old and new code is a separate pattern. See "Code example comparison" below. |
+| 9 | Does the section contain **before/after code examples** showing source-version and target-version API usage? | Diff the code examples line by line. Each API call, class, type, constant, or import that differs between old and new code is a separate pattern. Only extract APIs that DIFFER — standard library types appearing identically in both are not migration patterns. See "Code example comparison" below. |
 | 10 | Does the guide describe **multiple migration paths or API variants** (e.g., sync → async, classic → reactive, blocking → non-blocking)? | Extract source-side patterns from ALL paths. Each variant of a source-version class that maps to a different target-version class is a separate rule. |
 
 **Output format — verbose for ALL sections.**
@@ -198,8 +198,26 @@ If your skip reason contains any of these phrases, you answered a checklist item
 - "no code artifacts" — check item 7 (if the section names ANY artifact, it has code artifacts)
 - "describes a compatibility helper" — check items 3, 7 (detect the OLD artifact it bridges)
 - "just a code example" / "code illustration" / "example usage" — check item 9 (code examples ARE extraction sources, not illustrations)
+- "rare usage" / "very specific internal API" / "uncommon API" — check item 7 (if the section names it, extract it regardless of perceived usage frequency)
+- "runtime behavior" / "runtime behavior change" / "runtime default changed" — check item 5 (detect the affected artifact, warn about new behavior)
 
-**Valid skips:** (1) a section that contains genuinely zero named artifacts — no classes, no dependencies, no properties, no annotations, no config elements, no build plugin names (pure headers, prerequisite checklists, link collections); (2) a section that ONLY describes **target-only artifacts** — new classes/APIs that exist only in the target version with no source-side predecessor (these belong in migration messages of related source-side rules, not as standalone rules). **If a section names even one concrete source-side artifact, it is not skippable.** When in doubt, extract — false positives are cheaper than missed migrations.
+**Valid skips:** (1) a section that contains genuinely zero named artifacts — no classes, no dependencies, no properties, no annotations, no config elements, no build plugin names, no runtime flags (pure headers, prerequisite checklists, link collections); (2) a section that ONLY describes **target-only artifacts** — new classes/APIs that exist only in the target version with no source-side predecessor (these belong in migration messages of related source-side rules, not as standalone rules). **If a section names even one concrete source-side artifact, it is not skippable.** When in doubt, extract — false positives are cheaper than missed migrations.
+
+#### Bulk enumeration — follow linked specifications
+
+When a section describes a **bulk deprecation or removal** (e.g., "various X classes deprecated," "memory-access methods removed," "multiple Y APIs affected") without listing individual items, and the section **links to a specification, proposal, changelog, or issue** that contains the full list — follow the link (via WebFetch) to enumerate specific items. Extract one pattern per item.
+
+**How to recognize bulk changes:**
+- The guide uses collective nouns: "various," "multiple," "all," "several," "the following category of"
+- Individual items are not listed — only the category is named
+- The guide links to an external specification or issue with the full list
+
+**What to do:**
+1. Follow the linked specification/proposal/issue via WebFetch
+2. Extract the list of specific items (methods, classes, types, flags)
+3. Create one pattern per item, with the appropriate condition type and specific migration guidance per item
+
+**Do not skip a section just because the guide is vague.** If the guide names a category and links to a spec, that spec IS your source of truth for enumeration.
 
 ### Package/module/namespace-level consolidation (applies to checklist items 2 and 4)
 
@@ -231,9 +249,13 @@ When a migration guide says an entire package, module, or namespace is renamed o
 
 See `references/languages/<language>/checklist.md` for language-specific location types and TABLE row annotation format. See `references/examples/<language>.md` for worked examples.
 
+#### Multi-class changes → use `alternative_fqns`
+
+When a single migration change removes or deprecates **multiple classes or methods together**, create ONE pattern with the primary FQN in `source_fqn` and ALL other affected FQNs in `alternative_fqns`. The construct tool generates an `or` condition automatically — do NOT create separate rules for classes removed as part of the same change.
+
 For each pattern, provide the fields defined in `references/patterns-json-schema.md`. At minimum: `source_pattern`, `rationale`, `complexity`, `category`.
 
-**Always populate `documentation_url`** with the URL to the migration guide or the relevant documentation section. If the guide was fetched from a URL, use that URL (with an anchor if available). The construct CLI converts this into a `links:` entry in the rule YAML so users can find the original migration guidance.
+**Always populate `documentation_url`** with the most specific URL available. If the migration guide has section anchors or issue IDs, append them to the URL. A link to a 500-line page is not actionable — a link to the exact section is. If no anchor exists, use the base guide URL. The construct CLI converts this into a `links:` entry in the rule YAML so users can find the original migration guidance.
 
 ### Detection strategy: detect the affected artifact, not the missing fix
 
@@ -259,6 +281,54 @@ The `source_fqn` field is what the rule will match against in user code. It must
 
 The migration guide often shows both old and new paths. The old path goes in `source_fqn`; the new path goes in `target_pattern` and the migration message.
 
+**METHOD_CALL patterns require fully qualified source_fqn.** For METHOD_CALL
+location type, `source_fqn` must include the full package and owning class:
+`package.ClassName.methodName` (at least two dots). A bare or partially qualified
+method name will match that method on every class in the codebase — including
+unrelated libraries and the replacement API your rule tells users to adopt.
+
+Example:
+- Wrong: `"source_fqn": "execute", "location_type": "METHOD_CALL"` (bare name)
+- Wrong: `"source_fqn": "MyClient.execute", "location_type": "METHOD_CALL"` (class-qualified only, missing package)
+- Right: `"source_fqn": "com.example.legacy.MyClient.execute", "location_type": "METHOD_CALL"`
+
+The construct stage will reject METHOD_CALL patterns with unqualified names.
+
+**Common mistake 3 — class/module relocation with wrong direction:**
+When an artifact is relocated from `old.namespace.MyClass` to `new.namespace.MyClass`,
+the rule must detect the OLD path that exists in unmigrated code:
+- Wrong: `"source_fqn": "new.namespace.MyClass"` (target path — unmigrated code doesn't have this)
+- Right: `"source_fqn": "old.namespace.MyClass"` (source path — this is what unmigrated code contains)
+
+Self-test: would `source_fqn` resolve in a project using the SOURCE version
+of the framework/library? If it only resolves in the TARGET version, you have
+the wrong direction.
+
+### Config property patterns: detect the SOURCE-side property
+
+The source_fqn gate applies to `builtin.filecontent` config property rules too.
+The regex must match something in unmigrated config files.
+
+**Behavioral default changes** are the most common inversion trap. When a guide
+says "Feature X is now enabled/disabled by default," ask:
+
+1. Is there an OLD property (source version) that controlled this behavior?
+   → Detect the OLD property key
+2. Is the guide introducing a NEW property for opting back to old behavior?
+   → Do NOT detect the new property — it only exists in already-migrated projects
+3. Is there no config property — just a code-level API affected?
+   → Detect the affected class/dependency instead (category: `potential`)
+
+| Guide says | Wrong (inverted) | Right |
+|---|---|---|
+| "Feature X disabled by default. Set `feature.x.enabled=true` to re-enable" | Detect `feature.x.enabled` (only finds opt-in projects) | Detect the feature's dependency (all users affected) |
+| "Property `db.host` renamed to `db.connection.host`" | Detect `db.connection.host` (new name) | Detect `db\.host` (old name) |
+| "New property `compat.use-v1-defaults` added for backwards compat" | Detect `compat.use-v1-defaults` (target-only, zero matches) | No standalone rule — mention in related migration message |
+
+Self-test: would this property key appear in a config file of a project that
+has NOT been migrated yet? If it would only appear AFTER migration, you are
+detecting the wrong thing.
+
 ### Code example comparison (checklist item 9)
 
 Migration guides often communicate API changes implicitly through before/after code examples rather than stating them in prose. These are **first-class extraction sources** — not illustrations.
@@ -281,7 +351,23 @@ Each difference is a separate pattern. If the guide shows source-version code in
 
 **Code diffs produce rules independently of package/module-level rules.** When you diff source-version and target-version code examples, extract a separate rule for EVERY class/type rename or API replacement you find — even if a package/module-level rule already covers the old import. The package/module-level rule fires on the import line; the type-specific rule fires on the usage site and tells the user the exact replacement. For example, if source code uses `old_module.RequestBuilder(url)` and target code uses `new_module.create_request(url)`, extract a type-level rule for `RequestBuilder` even though the module-level rule also fires. The user needs to know that `RequestBuilder` is replaced by `create_request`, not just that the import path changed.
 
+**Standard library types in code examples are NOT migration patterns.** Code examples contain both framework-under-migration APIs and standard library APIs (collections, I/O, concurrency). Only extract patterns for APIs that CHANGED between source and target code. If a standard library type like a concurrency utility or I/O class appears identically in both before and after examples, it is context — not a migration target. If it appears only in the "after" example with no "before" equivalent, it is a target-only type (see gate above).
+
 **Multi-path migration guides.** When a guide describes progressive migration paths (e.g., v2 → v3-compat → v3-native), extract source-side patterns from ALL paths. If the native section shows `ConnectionPool` being replaced by `AsyncConnectionPool`, and `ConnectionPool` exists in the source version under a different qualified name, extract a rule for that source-version name. Users migrating directly from v2 to v3-native need these rules.
+
+**Stepwise migration coherence.** When a guide describes progressive steps
+(A → B → C), the `source_fqn` determines which step your rule belongs to.
+B can be an intermediate version (e.g., v2-compat) or an intermediate package
+(e.g., a compatibility shim namespace).
+
+- If `source_fqn` detects an A-version artifact, your message MUST describe
+  the A → B step, NOT the A → C step.
+- If both steps need separate rules, create two patterns with different
+  `source_fqn` values — one detecting A (message: migrate to B),
+  one detecting B (message: migrate to C).
+
+**Common mistake:** detecting a source-version artifact but recommending the
+final/advanced target instead of the immediate next step.
 
 ### Read section lead paragraphs carefully
 
@@ -298,6 +384,8 @@ Collect flagged patterns in a `suspected_kantra_limitations` list and return it 
 ### Choosing the right condition type
 
 See `references/languages/<language>/condition-types.md` for the language-specific condition-type reference and `references/patterns-json-schema.md` for which fields map to which condition type.
+
+**Do NOT use `builtin.filecontent` for code patterns.** If the pattern involves a class, method, import, or type reference, use the language-specific condition (e.g., `java.referenced`, `go.referenced`). Only use `builtin.filecontent` for config files, build scripts, and plain text that no language-specific provider can match.
 
 **One critical rule for config properties:** Always use `application.*\\.(properties|ya?ml)` as the `file_pattern` — this covers `.properties`, `.yml`, and `.yaml` formats. Never use `.*\\.properties` alone (too broad) or `application.*\\.properties` alone (misses YAML configs).
 
@@ -330,13 +418,25 @@ Same `source_fqn` or `dependency_name` should only appear once. If the guide men
 
 ### 6. Generate messages
 
-For each pattern, generate a clear, actionable migration message (2-4 sentences) explaining:
-1. What needs to change and why
-2. What to replace it with (if applicable)
+For each pattern, generate a structured migration message with these sections:
 
-If before/after examples are available, include them formatted as markdown code blocks with language syntax highlighting.
+**Opening paragraph** (1-2 sentences): what changed and why.
 
-The message should be just the text — no headers, no labels wrapping it.
+**### Before** — source-version code block showing the API being detected.
+The code MUST use the `source_fqn` from this pattern. Include imports.
+
+**### After** — target-version code block showing the replacement.
+The code MUST match the migration path: if `source_fqn` detects a classic API,
+show the classic replacement, not an advanced/async alternative.
+
+**### Additional Info** — 3-5 bullet points covering:
+- Behavioral differences between old and new API
+- Edge cases or gotchas
+- Related changes the developer should check
+- Link to the relevant migration guide section
+
+If no code examples are available (e.g., config property renames), replace
+Before/After with a **### Migration Steps** section listing the concrete steps.
 
 ### 7. Write patterns.json
 

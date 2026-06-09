@@ -79,8 +79,8 @@ When you need to disambiguate overloaded methods, use a method signature pattern
    - **Yes →** Use FQN with `alternative_fqns` covering the interface + known concrete types.
    - **No →** Continue to step 2.
 
-2. Do you need to disambiguate overloaded methods?
-   - **Yes →** Use method signature pattern (e.g., `getForObject(URI,Class<Source>)`).
+2. Do you need to disambiguate overloaded methods, or does the method have argument types that changed in the migration?
+   - **Yes →** Use method signature pattern (e.g., `getForObject(URI,Class<Source>)`). Include argument types when the method name is common or overloaded — this prevents false positives on unrelated classes with the same method name.
    - **No →** Use FQN pattern (`org.example.ClassName.methodName`).
 
 ## Condition combinators
@@ -179,6 +179,18 @@ Use `ignore: true` on intermediate conditions that serve only as scoping — the
 **Optional fields:**
 - `annotated` — Filter: only match if the matched element also has a specific annotation. Sub-fields: `pattern` (FQN of the annotation), `elements` (list of `{name, value}` pairs for annotation element values).
 - `filepaths` — Restrict matching to specific file paths.
+
+## JDK modules are NOT Maven dependencies
+
+JDK modules (e.g., `jdk.random`, `jdk.jsobject`, `jdk.httpserver`) are part of the JDK platform, not Maven artifacts. They do NOT appear as `<dependency>` entries in `pom.xml`. Using `java.dependency` for a JDK module produces a rule that will never fire.
+
+**For removed/deprecated JDK modules**, use `java.referenced` with `location: PACKAGE` or `IMPORT` matching the module's exported packages:
+- Example: module `jdk.jsobject` exports package `netscape.javascript` → detect `netscape.javascript` with `location: IMPORT`
+- Example: module `jdk.random` exports package `jdk.random` → detect `jdk.random` with `location: PACKAGE`
+
+**How to tell the difference:**
+- Maven dependency → has a `groupId:artifactId` coordinate, appears in `pom.xml`/`build.gradle` → use `java.dependency`
+- JDK module → starts with `java.` or `jdk.`, is part of the JDK platform distribution → use `java.referenced` with the module's exported package
 
 ## java.dependency
 

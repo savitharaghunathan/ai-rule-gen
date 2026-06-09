@@ -19,20 +19,30 @@ These work for any language — they match file contents, file existence, or fil
 Matches regex patterns in file contents. Use this for config files, properties, XML config, or when no language-specific provider can detect the pattern.
 
 **Fields:**
-- `pattern` (required) — Regex pattern to match in file contents (e.g., `javax\.servlet`, `spring\.jpa\.hibernate\.ddl-auto`). Must be a valid Go regex.
+- `pattern` (required) — Regex pattern to match in file contents. Must be a valid Go regex.
 - `filePattern` (optional) — Regex restricting which files to search. Must be a valid Go regex — do NOT use glob syntax (`*.properties` is invalid regex; use `.*\\.properties`). For application config properties, always use `application.*\\.(properties|ya?ml)` to cover `.properties`, `.yml`, and `.yaml` formats. Never use `.*\\.properties` alone (too broad — matches any `.properties` file) or `application.*\\.properties` alone (misses YAML configs). Omit to search all files.
 - `filepaths` (optional) — Restrict to specific file paths.
+
+### Startup scripts, Dockerfiles, and CI configs
+
+Runtime flags, CLI tool options, and system properties appear in non-source files — shell scripts, Dockerfiles, CI configs, and build files. These are detectable with `builtin.filecontent` using a broad file pattern:
+
+```regex
+filePattern: .*\.(sh|bat|cmd|conf|properties|ya?ml|xml|env|args|Dockerfile)
+```
+
+Use this for deprecated/removed runtime flags, CLI options that changed, and system properties that are no longer supported. The `pattern` field is a regex matching the flag or property name.
 
 ## builtin.file
 
 Matches file existence by name pattern.
 
 **Fields:**
-- `pattern` (required) — File name glob (e.g., `persistence.xml`, `web.xml`, `struts-config.xml`).
+- `pattern` (required) — File name glob.
 
 ## builtin.xml
 
-Matches XPath expressions in XML files. Use for structured XML content like POM sections, Spring XML config, web.xml entries.
+Matches XPath expressions in XML files. Use for structured XML content like build configs, framework XML configs, and deployment descriptors.
 
 **Fields:**
 - `xpath` (required) — XPath expression (e.g., `//*[local-name()='persistence-unit']`).

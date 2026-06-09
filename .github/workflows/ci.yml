@@ -39,12 +39,18 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Install kantra
         run: |
           curl -sL https://github.com/konveyor/kantra/releases/latest/download/kantra.linux.amd64.zip -o /tmp/kantra.zip
-          mkdir -p "$HOME/.config/.kantra"
-          unzip -o /tmp/kantra.zip -d "$HOME/.config/.kantra"
-          install "$HOME/.config/.kantra/kantra" /usr/local/bin/kantra
+          mkdir -p "$HOME/.kantra"
+          unzip -o /tmp/kantra.zip -d "$HOME/.kantra"
+          echo "$HOME/.kantra" >> "$GITHUB_PATH"
+          echo "KANTRA_DIR=$HOME/.kantra" >> "$GITHUB_ENV"
 
       - name: Read eval config
         id: config
