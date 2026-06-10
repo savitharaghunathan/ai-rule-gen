@@ -1,0 +1,363 @@
+- ruleID: webservices-xml-00010
+  description: JAX-RPC is no longer supported in JBoss EAP 7/8; migrate to Jakarta XML Web Services
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JAX-RPC (Java API for XML-based RPC) is no longer supported. Migrate to Jakarta XML Web Services (JAX-WS). Remove the webservices.xml descriptor's <jaxrpc-mapping-file> reference and migrate the endpoint to a Jakarta XML Web Services implementation.
+
+    ### Migration Steps
+    - Remove the <jaxrpc-mapping-file> element from webservices.xml.
+    - Rewrite JAX-RPC service endpoint interfaces using Jakarta XML Web Services annotations (e.g. @WebService).
+    - Replace JAX-RPC mapping files (XML with root <java-wsdl-mapping>) with WSDL-based JAX-WS endpoints.
+    - Refer to the JBoss EAP 8 Migration Guide JAX-RPC support changes section.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jax_rpc_support_changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='jaxrpc-mapping-file']
+        filepaths:
+            - webservices.xml
+- ruleID: webservices-xml-00020
+  description: JAX-RPC mapping descriptors are no longer supported; migrate to Jakarta XML Web Services
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JAX-RPC mapping files (XML with root element <java-wsdl-mapping>) are no longer supported in JBoss EAP 7/8.
+
+    ### Migration Steps
+    - Remove any JAX-RPC mapping file from your deployment.
+    - Migrate the endpoint to Jakarta XML Web Services using annotation-based or WSDL-first JAX-WS.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jax_rpc_support_changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='java-wsdl-mapping']
+- ruleID: webservices-pattern-00010
+  description: EJB service-ref entries referencing a jaxrpc-mapping-file are unsupported; migrate to Jakarta XML Web Services
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: An ejb-jar.xml <service-ref> entry referencing a JAX-RPC mapping file is no longer supported in JBoss EAP 7/8. Migrate the Jakarta Enterprise Beans web service endpoint to Jakarta XML Web Services.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jax_rpc_support_changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: service-ref.*jaxrpc-mapping-file
+        filePattern: .*ejb-jar\.xml
+- ruleID: webservices-pattern-00020
+  description: Spring integration removed in JBoss EAP 8; jbossws-cxf.xml Spring configuration must be replaced with JBossWS descriptor or CDI
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring integration is no longer supported in JBoss EAP 8. Applications that use a jbossws-cxf.xml descriptor to customize JBossWS/Apache CXF integration must replace those Spring custom configurations with the new JBossWS jaxws-endpoint-config.xml / jaxws-client-config.xml descriptor configuration, or with CDI.
+
+    ### Migration Steps
+    - Remove jbossws-cxf.xml from the deployment archive.
+    - Move CXF interceptor declarations to a JBossWS jaxws-endpoint-config.xml using cxf.interceptors.in / cxf.interceptors.out properties.
+    - Move CXF feature declarations to the cxf.features property in jaxws-endpoint-config.xml.
+    - Replace remaining Spring DI with CDI where possible.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#apache_cxf_spring_web_services_changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: jbossws-cxf\.xml
+        filePattern: .*jbossws-cxf\.xml
+- ruleID: webservices-import-00010
+  description: Apache CXF HTTPConduit programmatic transport tuning should be reviewed for JBoss EAP 8 / JBossWS 7 compatibility
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Code that obtains and configures org.apache.cxf.transport.http.HTTPConduit programmatically (e.g. via ClientProxy.getClient(port).getConduit()) directly depends on Apache CXF. While this still works, the recommended JBoss EAP 8 approach is to set HTTP transport defaults via system properties (cxf.client.allowChunking, cxf.client.chunkingThreshold, cxf.client.connectionTimeout, cxf.client.receiveTimeout, cxf.client.connection, cxf.tls-client.disableCNCheck) or via JBossWS descriptor configuration so the application stays portable.
+
+    ### Before
+    ```java
+    import org.apache.cxf.frontend.ClientProxy;
+    import org.apache.cxf.transport.http.HTTPConduit;
+    import org.apache.cxf.transports.http.configuration.HTTPClientPolicy;
+
+    HTTPConduit conduit = (HTTPConduit) ClientProxy.getClient(port).getConduit();
+    HTTPClientPolicy client = conduit.getClient();
+    client.setChunkingThreshold(8192);
+    ```
+
+    ### After
+    Prefer JBossWS jaxws-client-config.xml properties or system properties (e.g. cxf.client.chunkingThreshold=8192) over direct CXF API usage.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#apache_cxf_http_transport
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.cxf.transport.http.HTTPConduit
+        location: IMPORT
+- ruleID: webservices-pattern-00030
+  description: System property org.jboss.security.ignoreHttpsHost renamed to cxf.tls-client.disableCNCheck
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The system property org.jboss.security.ignoreHttpsHost, which disables the HTTPS hostname CN check, has been renamed to cxf.tls-client.disableCNCheck. Update startup scripts, Dockerfiles, CI configs and JBoss EAP launch arguments accordingly.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#ignorehttpshost_cn_check_change
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.jboss\.security\.ignoreHttpsHost
+        filePattern: .*\.(sh|bat|cmd|conf|properties|ya?ml|xml|env|args|Dockerfile)
+- ruleID: webservices-import-00020
+  description: WSPasswordCallback moved from org.apache.ws.security to org.apache.wss4j.common.ext
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The WS-Security callback class org.apache.ws.security.WSPasswordCallback has moved to org.apache.wss4j.common.ext.WSPasswordCallback.
+
+    ### Before
+    ```java
+    import org.apache.ws.security.WSPasswordCallback;
+    ```
+
+    ### After
+    ```java
+    import org.apache.wss4j.common.ext.WSPasswordCallback;
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#ws_security_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.ws.security.WSPasswordCallback
+        location: IMPORT
+- ruleID: webservices-import-00030
+  description: SAML bean classes moved from org.apache.ws.security.saml.ext to org.apache.wss4j.common.saml
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Most SAML bean objects from the org.apache.ws.security.saml.ext package have been moved to org.apache.wss4j.common.saml. Update imports accordingly.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#ws_security_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.ws.security.saml.ext
+        location: PACKAGE
+- ruleID: webservices-import-00040
+  description: SAML Bearer tokens are now required to have an internal signature; SamlAssertionValidator has a new setRequireBearerSignature() method
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: SAML Bearer tokens are now required to have an internal signature. The org.apache.wss4j.dom.validate.SamlAssertionValidator class exposes setRequireBearerSignature(boolean) to control signature verification. Review existing usages of SamlAssertionValidator and decide whether bearer-signature verification should remain enabled (recommended) or be explicitly disabled.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#ws_security_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.wss4j.dom.validate.SamlAssertionValidator
+        location: IMPORT
+- ruleID: webservices-pattern-00040
+  description: Security Token Service now validates ActAs tokens; a valid UsernameToken username/password is required
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The Security Token Service (STS) now validates ActAs tokens in addition to onBehalfOf tokens. Any client that issues an ActAs token must include a valid UsernameToken with a real username and password. Review WS-Security policy configuration and client code paths that supply ActAs tokens.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#ws_security_changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: ActAs
+        filePattern: .*\.(xml|properties|java)
+- ruleID: webservices-pattern-00050
+  description: RSA v1.5 key transport and related algorithms are disallowed by default in WS-Security
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Usage of RSA v1.5 key transport (xmlenc#rsa-1_5) and all related algorithms is now disallowed by default. Update WS-Security configuration to use a stronger algorithm such as RSA-OAEP-MGF1P.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#ws_security_changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: http://www.w3.org/2001/04/xmlenc#rsa-1_5
+        filePattern: .*\.(xml|properties)
+- ruleID: webservices-pattern-00060
+  description: JBoss EAP 8 merged cxf-api and cxf-rt-core JARs into a single cxf-core JAR exposed by the org.apache.cxf module
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The cxf-api and cxf-rt-core JARs have been merged into a single cxf-core JAR. The org.apache.cxf JBoss module now contains cxf-core and exposes more classes than the previous release. Review any explicit module references or jboss-deployment-structure.xml dependencies that mention cxf-api or cxf-rt-core.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss_modules_structure_change
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: cxf-api|cxf-rt-core
+        filePattern: .*\.(xml|gradle|sbt|properties)
+- ruleID: webservices-pattern-00070
+  description: BouncyCastle module behavior changed; org.jboss.ws.cxf.noLocalBC controls fallback to a statically installed provider
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Starting with JBoss EAP 7, the org.bouncycastle module ships the BouncyCastle Security Provider for JBossWS. To disable use of the module-provided provider and rely on a statically installed BouncyCastle (1.72+), set the org.jboss.ws.cxf.noLocalBC=true property in jaxws-endpoint-config.xml (server) or jaxws-client-config.xml (client).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#bouncy_castle_requirements_and_changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.jboss\.ws\.cxf\.noLocalBC
+        filePattern: .*\.(sh|bat|cmd|conf|properties|ya?ml|xml|env|args|Dockerfile)
+- ruleID: webservices-pattern-00080
+  description: Default Apache CXF bus selection strategy for in-container clients changed from THREAD_BUS to TCCL_BUS
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The default Apache CXF bus selection strategy for clients running in-container has changed from THREAD_BUS to TCCL_BUS (out-of-container clients still default to THREAD_BUS). To restore the previous behavior, set org.jboss.ws.cxf.jaxws-client.bus.strategy=THREAD_BUS on the JBoss EAP launch arguments or set the bus selection strategy explicitly in client code.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#apache_cxf_bus_selection_strategy
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.jboss\.ws\.cxf\.jaxws-client\.bus\.strategy
+        filePattern: .*\.(sh|bat|cmd|conf|properties|ya?ml|xml|env|args|Dockerfile)
+- ruleID: webservices-method-00010
+  description: Jakarta XML Web Services 2.2 requires Service subclasses to use a constructor that accepts WebServiceFeature arguments
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    User-provided Service subclasses injected via @WebServiceRef must implement Jakarta XML Web Services 2.2 or later. Update the constructor to use the form that accepts WebServiceFeature varargs.
+
+    ### After
+    ```java
+    protected Service(URL wsdlDocumentLocation,
+                      QName serviceName,
+                      WebServiceFeature... features) { ... }
+    ```
+
+    ### Additional Info
+    - JBoss EAP 6.4 (JBossWS 4) hid this requirement; JBoss EAP 7+/JBossWS 5+ does not.
+    - Applies to any class that extends jakarta.xml.ws.Service and is referenced via @WebServiceRef.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jakarta_xml_web_services_2_2_requirements_for_webserviceref
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: jakarta.xml.ws.Service
+        location: CONSTRUCTOR_CALL
+- ruleID: webservices-pattern-00090
+  description: Handler classes are no longer auto-loaded from org.jboss.as.webservices.server.integration; explicit module dependencies are required
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Because injections are now enabled in service endpoint and service client handlers, handler classes are no longer automatically loaded from the org.jboss.as.webservices.server.integration JBoss module. If your application depended on the predefined configuration, declare new module dependencies in jboss-deployment-structure.xml or MANIFEST.MF.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#server_side_configuration_and_class_loading
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.jboss\.as\.webservices\.server\.integration
+        filePattern: .*\.(xml|properties|conf)
+- ruleID: webservices-pattern-00100
+  description: Java-endorsed standards override mechanism was deprecated in JDK 1.8_40 and removed in JDK 9
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The Java-endorsed standards override mechanism (java.endorsed.dirs) was deprecated in JDK 1.8_40 and removed in JDK 9. If your application accesses Apache CXF directly, you must provide the Apache CXF dependencies after the JBossWS dependencies as part of your deployment. Remove references to java.endorsed.dirs from JVM arguments and configuration.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#deprecation_of_java_endorsed_standards_override_mechanism
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: java\.endorsed\.dirs
+        filePattern: .*\.(sh|bat|cmd|conf|properties|ya?ml|xml|env|args|Dockerfile)

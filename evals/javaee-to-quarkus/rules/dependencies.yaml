@@ -1,0 +1,146 @@
+- ruleID: dependencies-dependency-00010
+  description: javax:javaee-api umbrella dependency is removed; replace with targeted Quarkus extensions
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `javax:javaee-api` umbrella dependency aggregates the entire Java EE 7/8 API. Quarkus does not consume the javax umbrella — instead each capability is provided by a focused Quarkus extension. Remove the dependency from `pom.xml` and add the Quarkus extensions that cover the APIs your code uses (CDI -> `quarkus-arc`, JPA -> `quarkus-hibernate-orm`, JAX-RS -> `quarkus-resteasy`, Servlet -> `quarkus-undertow`, etc.). Also add the `io.quarkus.platform:quarkus-bom` to `dependencyManagement` so the extension versions are aligned.
+
+    ### Before
+    ```xml
+    <dependency>
+      <groupId>javax</groupId>
+      <artifactId>javaee-api</artifactId>
+      <version>7.0</version>
+      <scope>provided</scope>
+    </dependency>
+    ```
+
+    ### After
+    ```xml
+    <dependencyManagement>
+      <dependencies>
+        <dependency>
+          <groupId>io.quarkus.platform</groupId>
+          <artifactId>quarkus-bom</artifactId>
+          <version>2.16.12.Final</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
+      </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-arc</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-orm</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy</artifactId>
+      </dependency>
+    </dependencies>
+    ```
+
+    ### Additional Info
+    - Inventory the Java EE specs your code uses (EJB, CDI, JPA, JAX-RS, JSF, JMS, etc.) and pick the matching Quarkus extension. Quarkus does NOT support EJB/JSF/Java Batch directly.
+    - The Quarkus BOM aligns versions of all `io.quarkus:*` extensions — pick a single Quarkus version line in `<dependencyManagement>` and omit `<version>` on the extension declarations.
+    - Drop `<scope>provided</scope>` — Quarkus is not a container that provides the API at runtime; the extension JARs ship with your application.
+    - Automated by the OpenRewrite recipe `org.openrewrite.quarkus.migrate.javaee.RemoveJavaEEDependencies` (groupId `javax*`, artifactId `javaee-api`).
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/removejavaeedependencies
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.javaee-api
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00020
+  description: javax.annotation:javax.annotation-api removed; the annotation API is provided transitively by Quarkus extensions
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `javax.annotation:javax.annotation-api` standalone dependency is removed. Quarkus brings in the common annotation API transitively via its extensions (e.g., `quarkus-arc`), so no explicit declaration is needed in the migrated project.
+
+    ### Before
+    ```xml
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
+      <scope>provided</scope>
+    </dependency>
+    ```
+
+    ### After
+    ```xml
+    <!-- Removed; transitively provided by Quarkus extensions. -->
+    ```
+
+    ### Additional Info
+    - Annotations like `@PostConstruct`, `@PreDestroy`, `@Resource`, and `@Generated` continue to work in Quarkus through the Quarkus-managed common annotation API.
+    - Removing this dependency is automated by the OpenRewrite recipe `org.openrewrite.quarkus.migrate.javaee.RemoveJavaEEDependencies`.
+    - Verify no `<scope>provided</scope>` declarations remain — Quarkus is not a container, so `provided` is incorrect for runtime dependencies.
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/removejavaeedependencies
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.annotation.javax.annotation-api
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00030
+  description: javax.enterprise:cdi-api is removed; CDI is provided by quarkus-arc
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The standalone `javax.enterprise:cdi-api` dependency is removed during migration. Quarkus provides CDI (ArC implementation) through the `io.quarkus:quarkus-arc` extension, which transitively supplies the CDI API. Replace the standalone CDI API dependency with the Quarkus ArC extension.
+
+    ### Before
+    ```xml
+    <dependency>
+      <groupId>javax.enterprise</groupId>
+      <artifactId>cdi-api</artifactId>
+      <version>2.0</version>
+      <scope>provided</scope>
+    </dependency>
+    ```
+
+    ### After
+    ```xml
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc</artifactId>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - ArC is a build-time-oriented CDI implementation — bean discovery happens at build time, so reflection-heavy CDI extensions may need code adjustments.
+    - The CDI API itself (`javax.enterprise.context.*`, `javax.inject.*`) continues to work — only the dependency declaration changes.
+    - Automated by the OpenRewrite recipe `org.openrewrite.quarkus.migrate.javaee.RemoveJavaEEDependencies` (groupId `javax*`, artifactId `cdi-api`).
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/removejavaeedependencies
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.enterprise.cdi-api
+        lowerbound: 0.0.0

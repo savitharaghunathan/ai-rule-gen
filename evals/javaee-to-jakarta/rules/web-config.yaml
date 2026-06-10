@@ -1,0 +1,126 @@
+- ruleID: web-config-xml-00010
+  description: EAP 7.1+ no longer disables the root context in mod_cluster by default; welcome-content may be inadvertently exposed
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting in JBoss EAP 7.1, the root context of a web application is no longer disabled by default in mod_cluster, and Undertow locations are automatically registered with the mod_cluster load balancer unless explicitly excluded. This can lead to unintended exposure of the welcome content or private applications through a public proxy.
+
+    ### Migration Steps
+
+    1. Either explicitly exclude the ROOT context from the modcluster subsystem:
+
+       ```
+       /subsystem=modcluster/mod-cluster-config=configuration:write-attribute(name=excluded-contexts,value=ROOT)
+       ```
+
+    2. Or remove the default welcome web application:
+
+       ```
+       /subsystem=undertow/server=default-server/host=default-host/location=\/:remove
+       /subsystem=undertow/configuration=handler/file=welcome-content:remove
+       reload
+       ```
+
+    ### Additional Info
+
+    - Review every host that registers a location named `/`.
+    - Verify which contexts are reachable through your mod_cluster proxy after migration.
+    - Audit any private applications deployed to the root context.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#default_web_module_behavior_changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:undertow:')]//*[local-name()='host']/*[local-name()='location' and @name='/' and @handler='welcome-content']
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+- ruleID: web-config-xml-00020
+  description: Default server-header response filter was removed from the Undertow subsystem in EAP 7.2
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `server-header` response header filter was removed from the default Undertow subsystem in JBoss EAP 7.2 to prevent inadvertent disclosure of information about the server. Custom configurations that still set this filter should be reviewed.
+
+    ### Migration Steps
+
+    1. Remove the `server-header` filter and the matching `filter-ref` from each host:
+
+       ```
+       /subsystem=undertow/configuration=filter/response-header=server-header:remove
+       /subsystem=undertow/server=default-server/host=default-host/filter-ref=server-header:remove
+       ```
+
+    2. If you have a legitimate need to expose a Server header, re-add it explicitly with a non-default value.
+
+    ### Additional Info
+
+    - The default value in EAP 7.1 was `JBoss-EAP/7`, which leaks server identification.
+    - This change is part of the broader hardening of the default Undertow configuration in EAP 7.2+.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#undertow_subsystem_default_configuration_changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:undertow:')]//*[local-name()='response-header' and (@name='server-header' or @header-name='Server')]
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+- ruleID: web-config-xml-00030
+  description: Default x-powered-by-header response filter was removed from the Undertow subsystem in EAP 7.2
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `x-powered-by-header` response header filter was removed from the default Undertow subsystem in JBoss EAP 7.2 to prevent inadvertent disclosure of information about the server in use.
+
+    ### Migration Steps
+
+    1. Remove the `x-powered-by-header` filter and the matching `filter-ref` from each host:
+
+       ```
+       /subsystem=undertow/configuration=filter/response-header=x-powered-by-header:remove
+       /subsystem=undertow/server=default-server/host=default-host/filter-ref=x-powered-by-header:remove
+       ```
+
+    2. If you have a legitimate need to expose this header, re-add it explicitly.
+
+    ### Additional Info
+
+    - The default value in EAP 7.1 was `Undertow/1`, which leaks server identification.
+    - This change applies to JBoss EAP 7.2 and later, including EAP 8.0.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#undertow_subsystem_default_configuration_changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:undertow:')]//*[local-name()='response-header' and (@name='x-powered-by-header' or @header-name='X-Powered-By')]
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml

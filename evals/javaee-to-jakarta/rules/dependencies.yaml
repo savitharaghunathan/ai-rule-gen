@@ -1,0 +1,622 @@
+- ruleID: dependencies-dependency-00010
+  description: com.sun.activation:jakarta.activation replaced by jakarta.activation:jakarta.activation-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In JBoss EAP 8, the Maven coordinates for the Jakarta Activation API have changed from `com.sun.activation:jakarta.activation` to `jakarta.activation:jakarta.activation-api`.
+
+    ### Migration Steps
+    - Remove the `com.sun.activation:jakarta.activation` dependency from your `pom.xml`.
+    - Add `jakarta.activation:jakarta.activation-api` (version managed by the `jboss-eap-ee` BOM).
+    - No code changes are required if you already use `jakarta.activation.*` packages.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.sun.activation.jakarta.activation
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00020
+  description: org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec replaced by jakarta.annotation:jakarta.annotation-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace the `org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec` dependency with `jakarta.annotation:jakarta.annotation-api` in JBoss EAP 8.
+
+    ### Migration Steps
+    - Remove the old dependency from `pom.xml`.
+    - Add `jakarta.annotation:jakarta.annotation-api` (version managed by the `jboss-eap-ee` BOM).
+    - Update code from `javax.annotation.*` to `jakarta.annotation.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00030
+  description: JASPIC API artifact replaced; use jakarta.authentication:jakarta.authentication-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.security.auth.message:jboss-jaspi-api_1.0_spec` with `jakarta.authentication:jakarta.authentication-api`.
+
+    ### Migration Steps
+    - Remove the old dependency from `pom.xml`.
+    - Add `jakarta.authentication:jakarta.authentication-api`.
+    - Update code from `javax.security.auth.message.*` to `jakarta.security.auth.message.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.security.auth.message.jboss-jaspi-api_1.0_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00040
+  description: JACC API artifact replaced; use jakarta.authorization:jakarta.authorization-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.security.jacc:jboss-jacc-api_1.5_spec` with `jakarta.authorization:jakarta.authorization-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.authorization:jakarta.authorization-api`.
+    - Update code from `javax.security.jacc.*` to `jakarta.security.jacc.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.security.jacc.jboss-jacc-api_1.5_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00050
+  description: Batch API artifact replaced; use jakarta.batch:jakarta.batch-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.batch:jboss-batch-api_1.0_spec` with `jakarta.batch:jakarta.batch-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.batch:jakarta.batch-api`.
+    - Update code from `javax.batch.*` to `jakarta.batch.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.batch.jboss-batch-api_1.0_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00060
+  description: EJB API artifact replaced; use jakarta.ejb:jakarta.ejb-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec` with `jakarta.ejb:jakarta.ejb-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.ejb:jakarta.ejb-api`.
+    - Update code from `javax.ejb.*` to `jakarta.ejb.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.ejb.jboss-ejb-api_3.2_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00070
+  description: EL API artifact replaced; use org.jboss.spec.jakarta.el:jboss-el-api_5.0_spec in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.el:jboss-el-api_3.0_spec` with `org.jboss.spec.jakarta.el:jboss-el-api_5.0_spec`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `org.jboss.spec.jakarta.el:jboss-el-api_5.0_spec`.
+    - Update code from `javax.el.*` to `jakarta.el.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.el.jboss-el-api_3.0_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00080
+  description: Concurrency API artifact replaced; use jakarta.enterprise.concurrent:jakarta.enterprise.concurrent-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.enterprise.concurrent:jboss-concurrency-api_1.0_spec` with `jakarta.enterprise.concurrent:jakarta.enterprise.concurrent-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.enterprise.concurrent:jakarta.enterprise.concurrent-api`.
+    - Update code from `javax.enterprise.concurrent.*` to `jakarta.enterprise.concurrent.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.enterprise.concurrent.jboss-concurrency-api_1.0_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00090
+  description: Faces API artifact replaced; use jakarta.faces:jakarta.faces-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.faces:jboss-jsf-api_2.3_spec` with `jakarta.faces:jakarta.faces-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.faces:jakarta.faces-api`.
+    - Update code from `javax.faces.*` to `jakarta.faces.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.faces.jboss-jsf-api_2.3_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00100
+  description: Interceptor API artifact replaced; use jakarta.interceptor:jakarta.interceptor-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec` with `jakarta.interceptor:jakarta.interceptor-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.interceptor:jakarta.interceptor-api`.
+    - Update code from `javax.interceptor.*` to `jakarta.interceptor.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.interceptor.jboss-interceptors-api_1.2_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00110
+  description: JMS API artifact replaced; use jakarta.jms:jakarta.jms-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.jms:jboss-jms-api_2.0_spec` with `jakarta.jms:jakarta.jms-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.jms:jakarta.jms-api`.
+    - Update code from `javax.jms.*` to `jakarta.jms.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.jms.jboss-jms-api_2.0_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00120
+  description: Mail API artifact replaced; use jakarta.mail:jakarta.mail-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `com.sun.mail:jakarta.mail` with `jakarta.mail:jakarta.mail-api`.
+
+    ### Migration Steps
+    - Remove the old dependency from `pom.xml`.
+    - Add `jakarta.mail:jakarta.mail-api` (version managed by the `jboss-eap-ee` BOM).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.sun.mail.jakarta.mail
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00130
+  description: Connector API artifact replaced; use jakarta.resource:jakarta.resource-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.resource:jboss-connector-api_1.7_spec` with `jakarta.resource:jakarta.resource-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.resource:jakarta.resource-api`.
+    - Update code from `javax.resource.*` to `jakarta.resource.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.resource.jboss-connector-api_1.7_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00140
+  description: Servlet API artifact replaced; use jakarta.servlet:jakarta.servlet-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.servlet:jboss-servlet-api_4.0_spec` with `jakarta.servlet:jakarta.servlet-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.servlet:jakarta.servlet-api`.
+    - Update code from `javax.servlet.*` to `jakarta.servlet.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.servlet.jboss-servlet-api_4.0_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00150
+  description: JSP API artifact replaced; use jakarta.servlet.jsp:jakarta.servlet.jsp-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.3_spec` with `jakarta.servlet.jsp:jakarta.servlet.jsp-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.servlet.jsp:jakarta.servlet.jsp-api`.
+    - Update code from `javax.servlet.jsp.*` to `jakarta.servlet.jsp.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.servlet.jsp.jboss-jsp-api_2.3_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00160
+  description: JSTL spec artifact replaced; use jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.apache.taglibs:taglibs-standard-spec` with `jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api`.
+    - Update code from `javax.servlet.jsp.jstl.*` to `jakarta.servlet.jsp.jstl.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.taglibs.taglibs-standard-spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00170
+  description: Transaction API artifact replaced; use jakarta.transaction:jakarta.transaction-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.transaction:jboss-transaction-api_1.3_spec` with `jakarta.transaction:jakarta.transaction-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.transaction:jakarta.transaction-api`.
+    - Update code from `javax.transaction.*` to `jakarta.transaction.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.transaction.jboss-transaction-api_1.3_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00180
+  description: JAXB API artifact replaced; use jakarta.xml.bind:jakarta.xml.bind-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec` with `jakarta.xml.bind:jakarta.xml.bind-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.xml.bind:jakarta.xml.bind-api`.
+    - Update code from `javax.xml.bind.*` to `jakarta.xml.bind.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.xml.bind.jboss-jaxb-api_2.3_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00190
+  description: JAX-WS API artifact replaced; use org.jboss.spec.jakarta.xml.ws:jboss-jakarta-xml-ws-api_4.0_spec in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.xml.ws:jboss-jaxws-api_2.3_spec` with `org.jboss.spec.jakarta.xml.ws:jboss-jakarta-xml-ws-api_4.0_spec`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add the new artifact (also replaces `javax.jws:jsr181-api`).
+    - Update code from `javax.xml.ws.*` and `javax.jws.*` to `jakarta.xml.ws.*` and `jakarta.jws.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.xml.ws.jboss-jaxws-api_2.3_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00200
+  description: JSR-181 (javax.jws:jsr181-api) replaced by org.jboss.spec.jakarta.xml.ws:jboss-jakarta-xml-ws-api_4.0_spec in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The legacy `javax.jws:jsr181-api` dependency is replaced by `org.jboss.spec.jakarta.xml.ws:jboss-jakarta-xml-ws-api_4.0_spec` in JBoss EAP 8.
+
+    ### Migration Steps
+    - Remove `javax.jws:jsr181-api`.
+    - Add `org.jboss.spec.jakarta.xml.ws:jboss-jakarta-xml-ws-api_4.0_spec`.
+    - Update `javax.jws.*` imports to `jakarta.jws.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.jws.jsr181-api
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00210
+  description: WebSocket API artifact replaced; use jakarta.websocket:jakarta.websocket-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec` with `jakarta.websocket:jakarta.websocket-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.websocket:jakarta.websocket-api`.
+    - Update code from `javax.websocket.*` to `jakarta.websocket.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.websocket.jboss-websocket-api_1.1_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00220
+  description: JAX-RS API artifact replaced; use jakarta.ws.rs:jakarta.ws.rs-api in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec` with `jakarta.ws.rs:jakarta.ws.rs-api`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `jakarta.ws.rs:jakarta.ws.rs-api`.
+    - Update code from `javax.ws.rs.*` to `jakarta.ws.rs.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.ws.rs.jboss-jaxrs-api_2.1_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00230
+  description: SAAJ API artifact replaced; use org.jboss.spec.jakarta.xml.soap:jboss-saaj-api_3.0_spec in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.jboss.spec.javax.xml.soap:jboss-saaj-api_1.4_spec` with `org.jboss.spec.jakarta.xml.soap:jboss-saaj-api_3.0_spec`.
+
+    ### Migration Steps
+    - Remove the old dependency.
+    - Add `org.jboss.spec.jakarta.xml.soap:jboss-saaj-api_3.0_spec`.
+    - Update code from `javax.xml.soap.*` to `jakarta.xml.soap.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.spec.javax.xml.soap.jboss-saaj-api_1.4_spec
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00240
+  description: Hibernate ORM groupId changed from org.hibernate to org.hibernate.orm in Hibernate ORM 6/JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with Hibernate ORM 6 (used by JBoss EAP 8), the groupId changed from `org.hibernate` to `org.hibernate.orm`.
+
+    ### Migration Steps
+    - Update the groupId of `hibernate-core` from `org.hibernate` to `org.hibernate.orm` in your `pom.xml`.
+    - Remove any pinned version — the `jboss-eap-ee` BOM manages versions.
+    - Review your code for Hibernate ORM 6.x API changes (covered by the dedicated Hibernate migration rules).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-core
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00250
+  description: Hibernate JPA model generator groupId changed from org.hibernate to org.hibernate.orm in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with Hibernate ORM 6 (used by JBoss EAP 8), the groupId for `hibernate-jpamodelgen` changed from `org.hibernate` to `org.hibernate.orm`.
+
+    ### Migration Steps
+    - Update the groupId in your `pom.xml`.
+    - The new artifact generates metamodel classes under `jakarta.persistence.metamodel.*` rather than `javax.persistence.metamodel.*`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-jpamodelgen
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00260
+  description: Narayana XTS artifact (jbossxts) renamed to jbossxts-jakarta with api classifier in JBoss EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `org.jboss.narayana.xts:jbossxts` artifact has been renamed to `org.jboss.narayana.xts:jbossxts-jakarta` (with `<classifier>api</classifier>`) in JBoss EAP 8.
+
+    ### Migration Steps
+    - Remove the `jbossxts` dependency.
+    - Add `org.jboss.narayana.xts:jbossxts-jakarta` with `<classifier>api</classifier>`.
+    - Update any `com.arjuna.*` code that uses XTS APIs migrated to the Jakarta namespace.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#jakarta-ee-and-jboss-apis-maven-coordinates-changes_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.narayana.xts.jbossxts
+        lowerbound: 0.0.0

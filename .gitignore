@@ -43,3 +43,7 @@ Thumbs.db
 
 # Local agent settings (personal machine paths, session-accumulated permissions)
 .claude/settings.local.json
+
+# handcrafted rule baselines (populate from konveyor/rulesets, see evals/comparisons/README.md)
+/evals/javaee-to-jakarta-handcrafted/rules/
+/evals/javaee-to-quarkus-handcrafted/rules/

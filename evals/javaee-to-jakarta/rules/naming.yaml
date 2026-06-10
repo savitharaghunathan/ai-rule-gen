@@ -1,0 +1,76 @@
+- ruleID: naming-pattern-00010
+  description: java.naming.factory.initial property pointing at the removed JBoss factory must be migrated
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Configuration files setting `java.naming.factory.initial=org.jboss.naming.remote.client.InitialContextFactory` must be updated to use `org.wildfly.naming.client.WildFlyInitialContextFactory`, because the JBoss factory class is removed in EAP 8.
+
+    ### Migration Steps
+    - Update properties files, environment files, startup scripts, and any WSDL `<soapjms:jndiInitialContextFactory>` to reference `org.wildfly.naming.client.WildFlyInitialContextFactory`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-changes#removal-of-deprecated-initialcontext-class
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: java\.naming\.factory\.initial\s*[=:]\s*org\.jboss\.naming\.remote\.client\.InitialContextFactory
+        filePattern: .*\.(properties|ya?ml|xml|conf|sh|bat|cmd|env|args|Dockerfile)
+- ruleID: naming-method-00010
+  description: 'Inclusive-language rename: getBlackList() removed; use getBlockList()'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`org.wildfly.naming.client.ProviderEnvironment.getBlackList()` was removed in EAP 8 as part of inclusive-language changes. Use `getBlockList()` instead.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-changes#removal-of-deprecated-initialcontext-class
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.wildfly.naming.client.ProviderEnvironment.getBlackList
+        location: METHOD_CALL
+- ruleID: naming-method-00020
+  description: 'Inclusive-language rename: updateBlacklist(URI) removed; use updateBlockList(URI)'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`org.wildfly.naming.client.ProviderEnvironment.updateBlacklist(URI)` was removed in EAP 8. Use `updateBlockList(URI)`.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-changes#removal-of-deprecated-initialcontext-class
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.wildfly.naming.client.ProviderEnvironment.updateBlacklist
+        location: METHOD_CALL
+- ruleID: naming-method-00030
+  description: 'Inclusive-language rename: dropFromBlacklist(URI) removed; use dropFromBlocklist(URI)'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`org.wildfly.naming.client.ProviderEnvironment.dropFromBlacklist(URI)` was removed in EAP 8. Use `dropFromBlocklist(URI)`.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-changes#removal-of-deprecated-initialcontext-class
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.wildfly.naming.client.ProviderEnvironment.dropFromBlacklist
+        location: METHOD_CALL

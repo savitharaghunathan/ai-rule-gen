@@ -1,0 +1,382 @@
+- ruleID: clustering-xml-00010
+  description: <passivation-config/> and its sub-elements are obsolete in jboss-web.xml since JBoss EAP 7
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with JBoss EAP 7, the `<passivation-config/>` element (and all its sub-elements such as `<use-session-passivation/>`, `<passivation-min-idle-time/>`, `<passivation-max-idle-time/>`) in `jboss-web.xml` is no longer used.
+
+    ### Migration Steps
+    - Remove `<passivation-config/>` from `jboss-web.xml`.
+    - To enable passivation, specify a non-negative value on `<max-active-sessions/>`. When the threshold is exceeded, the oldest session is passivated lazily.
+    - Eager passivation based on idle time is no longer supported.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='jboss-web']//*[local-name()='passivation-config']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00020
+  description: <use-session-passivation/> is replaced by setting <max-active-sessions/> in JBoss EAP 7+
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<use-session-passivation/>` in `jboss-web.xml` is no longer honoured. In the new web session clustering implementation, passivation is enabled simply by specifying a non-negative `<max-active-sessions/>` value.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='use-session-passivation']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00030
+  description: <passivation-min-idle-time/> is no longer supported in JBoss EAP 7+ (DoS risk)
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<passivation-min-idle-time/>` in `jboss-web.xml` is no longer supported. The new web session clustering implementation does not enforce a minimum-idle-time requirement before passivation, avoiding the previous Denial-of-Service vulnerability when passivation was throttled.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='passivation-min-idle-time']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00040
+  description: <passivation-max-idle-time/> is no longer supported in JBoss EAP 7+ (only lazy passivation)
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<passivation-max-idle-time/>` in `jboss-web.xml` is no longer supported. The new web session clustering implementation only supports lazy passivation triggered when `<max-active-sessions/>` is exceeded.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='passivation-max-idle-time']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00050
+  description: <replication-config/> in jboss-web.xml is deprecated by the distributable-web subsystem in JBoss EAP 7+
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `distributable-web` subsystem deprecates `<replication-config/>` in `jboss-web.xml`. The element still works (the server generates an ad-hoc distributable web session profile), but new deployments should override the default distributable session management behaviour through a `distributable-web.xml` descriptor or through `jboss-all.xml`.
+
+    ### Migration Steps
+    - Move replication configuration to a `WEB-INF/distributable-web.xml` (or `META-INF/jboss-all.xml`) descriptor.
+    - Remove `<replication-config/>` from `jboss-web.xml` once the deployment-level descriptor is in place.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='jboss-web']//*[local-name()='replication-config']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00060
+  description: <replication-trigger/> is obsolete in JBoss EAP 7+ (replaced by the immutable-session-attributes strategy)
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<replication-trigger/>` in `jboss-web.xml` is obsolete in JBoss EAP 7+. The new clustering implementation replaces it with a single, robust strategy based on immutable session attributes. See *Immutable Session Attributes* in the JBoss EAP Development Guide.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='replication-trigger']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00070
+  description: <use-jk/> is obsolete in JBoss EAP 7+; instance-id is always appended to jsessionid
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<use-jk/>` in `jboss-web.xml` is obsolete. JBoss EAP 7+ always appends the `instance-id` to the `jsessionid` when one is defined, so the element no longer has any effect and should be removed.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='use-jk']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00080
+  description: <max-unreplicated-interval/> is obsolete in JBoss EAP 7+; session timestamps are replicated on every request
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<max-unreplicated-interval/>` in `jboss-web.xml` is obsolete. The new clustering implementation replicates the session timestamp on every request to prevent stale metadata after failover.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='max-unreplicated-interval']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00090
+  description: <snapshot-mode/> (INSTANT/INTERVAL) is obsolete in JBoss EAP 7+
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<snapshot-mode/>` (with values `INSTANT` or `INTERVAL`) in `jboss-web.xml` is obsolete. Infinispan''s asynchronous replication makes this configuration option unnecessary; remove the element.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='snapshot-mode']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00100
+  description: <snapshot-interval/> is obsolete in JBoss EAP 7+ (snapshot-mode no longer exists)
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<snapshot-interval/>` only made sense in combination with `<snapshot-mode>INTERVAL</snapshot-mode>`, which is now obsolete. Remove this element from `jboss-web.xml`.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='snapshot-interval']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-xml-00110
+  description: <session-notification-policy/> is obsolete in JBoss EAP 7+ (specification-driven, non-configurable)
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`<session-notification-policy/>` in `jboss-web.xml` is obsolete. Session event triggering is now specification-driven and cannot be configured.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#web-session-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='session-notification-policy']
+        filepaths:
+            - jboss-web.xml
+- ruleID: clustering-annotation-00010
+  description: '@Clustered is ignored in JBoss EAP 7+; SFSB state is replicated automatically under HA profiles'
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with JBoss EAP 7, you no longer need `@org.jboss.ejb3.annotation.Clustered` on stateful session beans. When the server runs under an HA profile, SFSB state is replicated automatically.
+
+    ### Before
+    ```java
+    @Stateful
+    @Clustered
+    public class MyBean implements MySessionInt { ... }
+    ```
+
+    ### After
+    ```java
+    @Stateful
+    public class MyBean implements MySessionInt { ... }
+    ```
+
+    ### Additional Info
+    - The annotation is silently ignored if left in place but should be removed to avoid confusion.
+    - To opt out of automatic replication, use `@Stateful(passivationCapable=false)` or disable it globally in the `ejb3` subsystem.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#stateful-session-ejb-clustering-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.ejb3.annotation.Clustered
+        location: ANNOTATION
+- ruleID: clustering-xml-00120
+  description: <clustered> element in jboss-ejb3.xml is no longer required in JBoss EAP 7+
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `<c:clustered>true</c:clustered>` element inside `<c:clustering>` of `jboss-ejb3.xml` is no longer required in JBoss EAP 7+. SFSB state is replicated automatically when the server runs an HA profile. Remove the element to avoid confusion.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#stateful-session-ejb-clustering-changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='clustering']/*[local-name()='clustered']
+        filepaths:
+            - jboss-ejb3.xml
+- ruleID: clustering-import-00010
+  description: Legacy HAPartition API is replaced by the public org.wildfly.clustering.* services in JBoss EAP 7+
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.jboss.ha.framework.interfaces.HAPartition` (a JBoss EAP 5 clustering API) is replaced by the public clustering services API in JBoss EAP 7+.
+
+    ### Migration Steps
+    - Remove references to `HAPartition`.
+    - Use `org.wildfly.clustering.group.Group` to access cluster status and listen for membership changes.
+    - Use `org.wildfly.clustering.dispatcher.CommandDispatcher` to dispatch commands across cluster nodes.
+
+    ### Additional Info
+    - See *Public API for Clustering Services* in the JBoss EAP Development Guide.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#clustering-services-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.ha.framework.interfaces.HAPartition
+        location: IMPORT
+- ruleID: clustering-import-00020
+  description: Legacy GroupCommunicationService API is replaced by org.wildfly.clustering.group.Group in JBoss EAP 7+
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`GroupCommunicationService` was a JBoss EAP 6 private clustering API. Replace it with the public `org.wildfly.clustering.group.Group` service, which exposes current cluster status and supports listening for membership changes.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#clustering-services-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.ha.framework.interfaces.GroupCommunicationService
+        location: IMPORT
+- ruleID: clustering-import-00030
+  description: Legacy GroupMembershipNotifier API is replaced by org.wildfly.clustering.group.Group in JBoss EAP 7+
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`GroupMembershipNotifier` was a private JBoss EAP 6 clustering API. Replace it with `org.wildfly.clustering.group.Group`, which provides listener registration for cluster membership changes.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#clustering-services-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.ha.framework.interfaces.GroupMembershipNotifier
+        location: IMPORT
+- ruleID: clustering-import-00040
+  description: Legacy GroupRpcDispatcher API is replaced by org.wildfly.clustering.dispatcher.CommandDispatcher in JBoss EAP 7+
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`GroupRpcDispatcher` was a private JBoss EAP 6 clustering API for dispatching cluster RPCs. Replace it with the public `org.wildfly.clustering.dispatcher.CommandDispatcher`, which allows running commands across all or selected subsets of cluster nodes.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#clustering-services-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.ha.framework.interfaces.GroupRpcDispatcher
+        location: IMPORT
+- ruleID: clustering-import-00050
+  description: Private org.jboss.as.clustering.singleton.* API is replaced by public org.wildfly.clustering.singleton.* in JBoss EAP 7+
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In JBoss EAP 6, there was no public API for the cluster-wide HA singleton service; applications used the private `org.jboss.as.clustering.singleton.*` classes. JBoss EAP 7 introduces a public API under `org.wildfly.clustering.singleton.*`.
+
+    ### Migration Steps
+    - Replace `org.jboss.as.clustering.singleton.*` imports and references with the corresponding `org.wildfly.clustering.singleton.*` types.
+    - Refactor singleton service registration and lifecycle code to use the public API.
+
+    ### Additional Info
+    - See *HA Singleton Service* and *HA Singleton Deployments* in the JBoss EAP Development Guide.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#migrate-clustering-ha-singleton
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.as.clustering.singleton*
+        location: PACKAGE

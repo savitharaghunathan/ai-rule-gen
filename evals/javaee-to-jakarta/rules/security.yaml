@@ -1,0 +1,426 @@
+- ruleID: security-type-00010
+  description: JBoss Web AuthenticatorBase is removed; replace with a custom HTTP authentication mechanism registered in the Elytron/Undertow subsystems
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Custom authenticator valves that extend `org.apache.catalina.authenticator.AuthenticatorBase` were a JBoss EAP 6 JBoss Web extension point. JBoss EAP 7 replaced JBoss Web with Undertow, and JBoss EAP 8 enforces Elytron-only security, so these valves no longer work.
+
+    ### Migration Steps
+    - Identify classes that extend `org.apache.catalina.authenticator.AuthenticatorBase`.
+    - Rewrite the authenticator as a custom HTTP authentication mechanism created in the `elytron` subsystem.
+    - Register the mechanism with the `undertow` subsystem so deployments can reference it.
+    - Remove the corresponding `<valve>` entry from `jboss-web.xml`.
+
+    ### Additional Info
+    - See *Developing a Custom HTTP Mechanism* in the JBoss EAP Development Guide.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#migrate-authenticator-valves
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.catalina.authenticator.AuthenticatorBase
+        location: INHERITANCE
+- ruleID: security-import-00010
+  description: PicketLink has been removed from JBoss EAP 8.0; migrate to Keycloak SAML adapter or Red Hat build of Keycloak
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    PicketLink (SP, IDP, and STS) has been removed from JBoss EAP 8.0. Any application code or configuration that references `org.picketlink.*` classes will fail at runtime.
+
+    ### Migration Steps
+    - Replace PicketLink Service Provider usage with the Keycloak SAML adapter feature pack.
+    - Replace PicketLink Identity Provider deployments with the Red Hat build of Keycloak.
+    - Replace PicketLink STS with the Apache CXF Security Token Service implementation.
+    - Remove `org.picketlink.*` imports and the corresponding Maven dependencies (e.g., `org.picketlink:picketlink-api`, `org.picketlink:picketlink-impl`).
+
+    ### Additional Info
+    - See *Securing web applications using SAML* and *Configuring Red Hat build of Keycloak*.
+    - See *Security Token Service (STS)* for CXF STS configuration.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#picketlink-removal_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.picketlink*
+        location: PACKAGE
+- ruleID: security-dependency-00010
+  description: PicketLink API dependency is no longer available in JBoss EAP 8.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: PicketLink is removed in JBoss EAP 8.0. Remove `org.picketlink:picketlink-api` (and related PicketLink artifacts such as `picketlink-impl`, `picketlink-federation`) from `pom.xml` and migrate to the Keycloak SAML adapter or the Red Hat build of Keycloak.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#picketlink-removal_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.picketlink.picketlink-api
+        lowerbound: 0.0.0
+- ruleID: security-dependency-00020
+  description: PicketLink federation dependency is no longer available in JBoss EAP 8.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: PicketLink federation is removed in JBoss EAP 8.0. Remove `org.picketlink:picketlink-federation` from `pom.xml` and migrate to the Keycloak SAML adapter feature pack.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#picketlink-removal_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.picketlink.picketlink-federation
+        lowerbound: 0.0.0
+- ruleID: security-pattern-00010
+  description: Legacy vault expressions are removed in JBoss EAP 8.0; replace with Elytron encrypted expressions
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Legacy vaults are removed from JBoss EAP 8.0. Any `${VAULT::...}` expression in deployment descriptors, annotations, or other configuration files must be migrated to an Elytron encrypted expression.
+
+    ### Migration Steps
+    - Search the application for `${VAULT::` occurrences.
+    - For each match, create a corresponding Elytron credential store entry.
+    - Replace `${VAULT::block::attribute::value}` with the equivalent Elytron encrypted expression (`${ENC::...}`) referencing the credential store.
+
+    ### Additional Info
+    - See *Encrypted expressions in Elytron* in the JBoss EAP Security guide.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#vault-removal_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: '\$\{VAULT::'
+        filePattern: .*\.(xml|properties|yaml|yml|json|java)
+- ruleID: security-xml-00010
+  description: Keycloak OIDC client adapter is not supported in JBoss EAP 8.0; use the native Elytron OIDC client (auth-method=OIDC)
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The Keycloak OIDC client adapter is no longer supported in JBoss EAP 8.0 and is replaced by the native Elytron OIDC client.
+
+    ### Before
+    ```xml
+    <login-config>
+        <auth-method>KEYCLOAK</auth-method>
+        <realm-name>example</realm-name>
+    </login-config>
+    ```
+
+    ### After
+    ```xml
+    <login-config>
+        <auth-method>OIDC</auth-method>
+        <realm-name>example</realm-name>
+    </login-config>
+    ```
+
+    ### Additional Info
+    - Also rename `WEB-INF/keycloak.json` to `WEB-INF/oidc.json`.
+    - See *OpenID Connect configuration in JBoss EAP* and *Migrate keycloak subsystem*.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#oidc-client-migration_default
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='login-config']/*[local-name()='auth-method' and contains(text(),'KEYCLOAK')]
+        filepaths:
+            - web.xml
+- ruleID: security-pattern-00020
+  description: Keycloak OIDC adapter keycloak.json is replaced by Elytron OIDC oidc.json
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The Keycloak OIDC adapter looked up its configuration in `WEB-INF/keycloak.json`. The native Elytron OIDC client reads `WEB-INF/oidc.json` instead.
+
+    ### Migration Steps
+    - Rename `WEB-INF/keycloak.json` to `WEB-INF/oidc.json`.
+    - The configuration schema is compatible; no JSON content changes are required for the basic case.
+    - Update `web.xml` so that `<auth-method>` is `OIDC` (see the `<auth-method>KEYCLOAK</auth-method>` rule).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#oidc-client-migration_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: '"realm"\s*:|"auth-server-url"\s*:|"resource"\s*:'
+        filePattern: .*WEB-INF/keycloak\.json
+- ruleID: security-dependency-00030
+  description: Keycloak OIDC adapter is not supported in JBoss EAP 8.0; use the built-in Elytron OIDC client
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The Red Hat build of Keycloak OIDC client adapter (`org.keycloak:keycloak-adapter-core` and related `keycloak-*` adapter artifacts) is not supported in JBoss EAP 8.0. Remove the dependency from `pom.xml` and rely on the native Elytron OIDC client provided by the application server.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#oidc-client-migration_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.keycloak.keycloak-adapter-core
+        lowerbound: 0.0.0
+- ruleID: security-xml-00020
+  description: NegotiationAuthenticator valve in jboss-web.xml is no longer required in JBoss EAP 7.2+
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with JBoss EAP 7.2, the `NegotiationAuthenticator` valve is no longer required in `jboss-web.xml`. The SPNEGO authentication mechanism is configured through Elytron/Undertow, and only the standard `<security-constraint>` and `<login-config>` elements in `web.xml` are still needed.
+
+    ### Migration Steps
+    - Remove the `NegotiationAuthenticator` `<valve>` entry from `jboss-web.xml`.
+    - Ensure `web.xml` declares `<auth-method>SPNEGO</auth-method>` (or `SPNEGO,FORM` for FORM fallback) inside `<login-config>`.
+    - Remove the now-redundant `jboss-deployment-structure.xml` if it only existed to expose Negotiation modules.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#other-security-application-changes_default
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='valve'][contains(*[local-name()='class-name'],'NegotiationAuthenticator')]
+        filepaths:
+            - jboss-web.xml
+- ruleID: security-pattern-00030
+  description: Legacy security subsystem (PicketBox) removed in EAP 8; migrate to Elytron
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with JBoss EAP 8.0, the legacy security subsystem (PicketBox) is no longer available — you must use Elytron. Any `<subsystem xmlns="urn:jboss:domain:security:...">` block in server configuration must be migrated.
+
+    ### Migration Steps
+    - Remove the legacy `security` subsystem block.
+    - Define equivalent realms, domains, and authentication factories under the `elytron` subsystem.
+    - See chapter 9 of the EAP migration guide for per-scenario walkthroughs (properties-based, LDAP, database, Kerberos, composite stores, caching, vaults, JACC).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/migrating-to-elytron#overview-of-elytron
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: 'urn:jboss:domain:security:'
+        filePattern: .*\.xml
+- ruleID: security-pattern-00040
+  description: Legacy PicketBox login-modules must be migrated to Elytron realms and authentication factories
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    PicketBox `<login-module>` elements (e.g., `UsersRoles`, `LdapExtended`, `Database`, `Kerberos`, `SPNEGO`) are no longer supported in EAP 8. Replace each login-module with the corresponding Elytron construct.
+
+    ### Migration Steps
+    - `UsersRoles` / properties-based → `properties-realm` (or `filesystem-realm` — preferred in EAP 8).
+    - `LdapExtended` → `dir-context` + `ldap-realm`.
+    - `Database` → `jdbc-realm` with `principal-query` / `simple-digest-mapper`.
+    - `Kerberos` / `SPNEGO` → `kerberos-security-factory` + properties realm + `http-authentication-factory` (with `mechanism-name=SPNEGO`) or `sasl-authentication-factory` (with `mechanism-name=GSSAPI`).
+    - Composite stores (auth from one source + authorization from another) → `aggregate-realm`.
+    - Wrap a realm with `caching-realm` for in-memory caching (PicketBox `cache-type=default`).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/migrating-to-elytron#migrate-picketbox-properties-based-configuration-to-elytron
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: <login-module\s
+        filePattern: .*\.xml
+- ruleID: security-pattern-00050
+  description: Legacy management security-realms removed; migrate to Elytron
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Legacy management `security-realm` configurations under `/core-service=management/security-realm=...` are not available in EAP 8.
+
+    ### Migration Steps
+    - For properties-based realms, define an Elytron `properties-realm` (or preferably `filesystem-realm`) and a security domain.
+    - For LDAP, define a `dir-context` and `ldap-realm` in the elytron subsystem.
+    - For Kerberos remoting (GSSAPI), define a `kerberos-security-factory`, a properties realm, and a `sasl-authentication-factory` with `mechanism-name=GSSAPI`.
+    - Update remoting connectors and management interfaces to reference the new Elytron `http-authentication-factory` / `sasl-authentication-factory`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/migrating-to-elytron#migrating-legacy-security-realm-properties-based-configuration-to-elytron
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: /core-service=management/security-realm=
+        filePattern: .*\.(cli|sh|bat|properties|conf)
+- ruleID: security-pattern-00060
+  description: Legacy security-realm XML configuration is removed; migrate to Elytron realms
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Legacy `<security-realm>` entries under `<management>` in `standalone.xml`/`domain.xml`/`host.xml` are removed in EAP 8 — Elytron is required.
+
+    ### Migration Steps
+    - Replace with Elytron `<security-realm>` entries (e.g., `<properties-realm>`, `<filesystem-realm>`, `<ldap-realm>`, `<jdbc-realm>`, `<aggregate-realm>`, `<caching-realm>`).
+    - Define a security domain and HTTP/SASL authentication factories.
+    - Update the HTTP management interface and remoting connectors to reference the new factories.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/migrating-to-elytron#overview-of-elytron
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: <security-realm\s+name=
+        filePattern: .*(standalone|domain|host).*\.xml
+- ruleID: security-pattern-00070
+  description: PicketLink subsystem removed in EAP 8
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The PicketLink subsystem is removed in EAP 8. Any `<subsystem xmlns="urn:jboss:domain:picketlink:..."/>` configuration must be removed.
+
+    ### Migration Steps
+    - Migrate identity federation/SAML use cases to the Red Hat build of Keycloak (configured via Elytron OIDC for clients).
+    - Remove `picketlink-federation` and related extensions/subsystems from configuration.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/migrating-to-elytron#overview-of-elytron
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: urn:jboss:domain:picketlink
+        filePattern: .*\.xml
+- ruleID: security-pattern-00080
+  description: Legacy security vault must be migrated to Elytron credential-store
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The legacy security vault used in EAP 7.0 is not compatible with Elytron. Migrate vault data to an Elytron `credential-store`.
+
+    ### Migration Steps
+    - Use `EAP_HOME/bin/elytron-tool.sh vault --enc-dir ... --keystore ... --alias ... --location <output>.store --summary` to convert a single vault.
+    - Use `elytron-tool.sh vault --bulk-convert <descriptor-file>` for bulk migration.
+    - Replace `<vault>...</vault>` blocks with `<credential-stores><credential-store name="..." ...>` entries.
+    - For non-sensitive data previously stored via vault expressions, use Elytron security-properties instead — credential stores are only for passwords.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/migrating-to-elytron#migrate-secure-vaults-to-secure-credential-storage
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: <vault\s
+        filePattern: .*(standalone|domain|host).*\.xml
+- ruleID: security-pattern-00090
+  description: Legacy security-properties must be migrated to elytron subsystem
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `<security-properties>` defined under the legacy `security` subsystem must be moved to the `elytron` subsystem.
+
+    ### Migration Steps
+    - Use `/subsystem=elytron:write-attribute(name=security-properties, value={ ... })` to set initial values, or
+    - Use `/subsystem=elytron:map-put(name=security-properties, key=..., value=...)` to add/update without overwriting other properties.
+    - Map-remove operations are available to drop a property.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/migrating-to-elytron#migrating-security-properties-to-elytron
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: /subsystem=security/.*security-properties|<subsystem xmlns="urn:jboss:domain:security:[^"]*">[\s\S]*?<security-properties>
+        filePattern: .*\.xml
+- ruleID: security-type-00020
+  description: Custom PicketBox login modules removed; migrate to Elytron custom security realms
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Custom login modules (classes extending `org.jboss.security.auth.spi.AbstractServerLoginModule` or implementing `javax.security.auth.spi.LoginModule` for use in the legacy security subsystem) are no longer used by EAP 8 — PicketBox is removed.
+
+    ### Migration Steps
+    - Rewrite custom authentication/authorization logic as an Elytron `SecurityRealm` implementation, packaged as a JBoss module and referenced from the `elytron` subsystem.
+    - For custom SASL or HTTP authentication, register an Elytron `SaslServerFactory` / `HttpServerAuthenticationMechanismFactory`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/migrating-to-elytron#overview-of-elytron
+      title: Migration Documentation
+  when:
+    or:
+        - java.referenced:
+            pattern: org.jboss.security.auth.spi.AbstractServerLoginModule
+            location: INHERITANCE
+        - java.referenced:
+            pattern: javax.security.auth.spi.LoginModule
+            location: INHERITANCE

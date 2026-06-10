@@ -1,0 +1,46 @@
+- ruleID: persistence-annotation-00010
+  description: '@PersistenceContext is replaced by CDI @Inject for EntityManager in Quarkus'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus Hibernate ORM produces a CDI-managed `EntityManager`. The Java EE `@javax.persistence.PersistenceContext` injection annotation is replaced by CDI `@javax.inject.Inject` for `EntityManager` (and `EntityManagerFactory`) fields and parameters.
+
+    ### Before
+    ```java
+    import javax.persistence.EntityManager;
+    import javax.persistence.PersistenceContext;
+
+    public class PingEJBSLS {
+        @PersistenceContext
+        private EntityManager entityManager;
+    }
+    ```
+
+    ### After
+    ```java
+    import javax.inject.Inject;
+    import javax.persistence.EntityManager;
+
+    public class PingEJBSLS {
+        @Inject
+        private EntityManager entityManager;
+    }
+    ```
+
+    ### Additional Info
+    - Drop the `unitName`, `name`, `type`, and `properties` attributes — Quarkus configures the persistence unit through `application.properties`/`application.yaml` rather than annotation attributes. For multiple persistence units, use `@io.quarkus.hibernate.orm.PersistenceUnit("name")` as a CDI qualifier.
+    - The Quarkus `EntityManager` is request-scoped by default and participates in the active JTA transaction; mark methods that mutate state with `@javax.transaction.Transactional`.
+    - Add the `io.quarkus:quarkus-hibernate-orm` dependency (and a JDBC driver extension such as `quarkus-jdbc-h2`) so the `EntityManager` bean is produced.
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/javaeetoquarkus2codemigration
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.persistence.PersistenceContext
+        location: ANNOTATION

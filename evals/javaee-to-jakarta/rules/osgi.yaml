@@ -1,0 +1,46 @@
+- ruleID: osgi-pattern-00010
+  description: OSGi support removed from JBoss EAP; standalone-osgi.xml is obsolete
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss OSGi was demoted from Technology Preview to Unsupported and is no longer supported. The `standalone-osgi.xml` configuration file is obsolete and should not be migrated.
+
+    ### Migration Steps
+    - Delete `standalone-osgi.xml` from the configuration directory.
+    - Remove any `osgi` or `configadmin` extension/subsystem entries from other standalone or domain configuration files.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/miscellaneous-changes#removal-of-osgi-support
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: standalone-osgi\.xml
+        filePattern: .*standalone-osgi\.xml
+- ruleID: osgi-pattern-00020
+  description: OSGi and configadmin extensions/subsystems removed
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `osgi` and `configadmin` extensions and subsystems were removed from JBoss EAP. Any references in `standalone.xml`, `domain.xml`, or other configuration files must be deleted.
+
+    ### Migration Steps
+    - Remove `<extension module="org.jboss.as.osgi"/>` and `<extension module="org.jboss.as.configadmin"/>` declarations.
+    - Remove corresponding `<subsystem xmlns="urn:jboss:domain:osgi:..."/>` and `<subsystem xmlns="urn:jboss:domain:configadmin:..."/>` blocks.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/miscellaneous-changes#removal-of-osgi-support
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: (extension module="org\.jboss\.as\.osgi"|subsystem xmlns="urn:jboss:domain:osgi:|extension module="org\.jboss\.as\.configadmin"|subsystem xmlns="urn:jboss:domain:configadmin:)
+        filePattern: .*\.(xml)

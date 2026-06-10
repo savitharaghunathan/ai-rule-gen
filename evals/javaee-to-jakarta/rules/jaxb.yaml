@@ -1,0 +1,123 @@
+- ruleID: jaxb-pattern-00010
+  description: JAXB XML namespace URI changed in Jakarta XML Binding 4.0
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The XML namespace used in XML binding files changed from `http://java.sun.com/xml/ns/jaxb` to `https://jakarta.ee/xml/ns/jaxb`.
+
+    ### Migration Steps
+    - Update XML binding files (typically `.xjb` external binding files, `bindings.xml`, or XSDs that embed `jaxb:` annotations) to reference the new namespace URI.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#jakarta-xml-binding
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: http://java\.sun\.com/xml/ns/jaxb
+        filePattern: .*\.(xml|xjb|xsd)
+- ruleID: jaxb-import-00010
+  description: Validator interface removed in Jakarta XML Binding 4.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`javax.xml.bind.Validator` was removed in Jakarta XML Binding 4.0. Validate marshalling and unmarshalling operations by supplying a `javax.xml.validation.Schema` to `Marshaller.setSchema(Schema)` instead.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#jakarta-xml-binding
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.xml.bind.Validator
+        location: IMPORT
+- ruleID: jaxb-method-00010
+  description: JAXBContext.createValidator() removed in Jakarta XML Binding 4.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`JAXBContext.createValidator()` was removed alongside the `Validator` interface in Jakarta XML Binding 4.0. Use `Marshaller.setSchema(Schema)` to validate marshalling/unmarshalling.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#jakarta-xml-binding
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.xml.bind.JAXBContext.createValidator
+        location: METHOD_CALL
+- ruleID: jaxb-import-00020
+  description: com.sun.xml.bind impl package replaced by org.glassfish.jaxb.runtime in EAP 8
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Applications using the JAXB implementation library directly must move from `com.sun.xml.bind.*` to `org.glassfish.jaxb.runtime.*` in EAP 8.
+
+    ### Before
+    ```java
+    import com.sun.xml.bind.marshaller.NamespacePrefixMapper;
+    ```
+
+    ### After
+    ```java
+    import org.glassfish.jaxb.runtime.marshaller.NamespacePrefixMapper;
+    ```
+
+    ### Additional Info
+    - Replace classes in subpackages of `com.sun.xml.bind` with classes in the corresponding `org.glassfish.jaxb.runtime` subpackages.
+    - Also update Marshaller property constant names: `marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", mapper)` becomes `marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", mapper)`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#jakarta-xml-binding
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: com.sun.xml.bind*
+        location: PACKAGE
+- ruleID: jaxb-pattern-00020
+  description: JAXB Marshaller property name prefix changed from com.sun.xml.bind to org.glassfish.jaxb
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Marshaller property constant names changed prefix from `com.sun.xml.bind.*` to `org.glassfish.jaxb.*`.
+
+    ### Before
+    ```java
+    marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", mapper);
+    ```
+
+    ### After
+    ```java
+    marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", mapper);
+    ```
+
+    ### Additional Info
+    - This rule flags any string literal beginning with `com.sun.xml.bind.` so Marshaller property keys can be updated alongside import changes.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#jakarta-xml-binding
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: com\.sun\.xml\.bind\.
+        filePattern: .*\.java

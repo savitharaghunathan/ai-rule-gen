@@ -1,0 +1,296 @@
+- ruleID: logging-import-00010
+  description: '@Cause moved from org.jboss.logging to org.jboss.logging.annotations and to artifact jboss-logging-annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The JBoss Logging annotation `org.jboss.logging.Cause` was deprecated and moved to the `org.jboss.logging.annotations` package in JBoss EAP 7. The annotations also moved to a separate Maven artifact `org.jboss.logging:jboss-logging-annotations`.
+
+    ### Before
+    ```java
+    import org.jboss.logging.Cause;
+    ```
+
+    ### After
+    ```java
+    import org.jboss.logging.annotations.Cause;
+    ```
+
+    ### Additional Info
+    - Add `<dependency><groupId>org.jboss.logging</groupId><artifactId>jboss-logging-annotations</artifactId></dependency>` to `pom.xml`.
+    - `org.jboss.logging.BasicLogger` and `org.jboss.logging.Logger` are unchanged.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.Cause
+        location: IMPORT
+- ruleID: logging-import-00020
+  description: '@Field moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.Field;` with `import org.jboss.logging.annotations.Field;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.Field
+        location: IMPORT
+- ruleID: logging-import-00030
+  description: '@FormatWith moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.FormatWith;` with `import org.jboss.logging.annotations.FormatWith;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.FormatWith
+        location: IMPORT
+- ruleID: logging-import-00040
+  description: '@LoggingClass moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.LoggingClass;` with `import org.jboss.logging.annotations.LoggingClass;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.LoggingClass
+        location: IMPORT
+- ruleID: logging-import-00050
+  description: '@LogMessage moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.LogMessage;` with `import org.jboss.logging.annotations.LogMessage;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.LogMessage
+        location: IMPORT
+- ruleID: logging-import-00060
+  description: '@Message moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.Message;` with `import org.jboss.logging.annotations.Message;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.Message
+        location: IMPORT
+- ruleID: logging-import-00070
+  description: '@MessageBundle moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.MessageBundle;` with `import org.jboss.logging.annotations.MessageBundle;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.MessageBundle
+        location: IMPORT
+- ruleID: logging-import-00080
+  description: '@MessageLogger moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.MessageLogger;` with `import org.jboss.logging.annotations.MessageLogger;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.MessageLogger
+        location: IMPORT
+- ruleID: logging-import-00090
+  description: '@Param moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.Param;` with `import org.jboss.logging.annotations.Param;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.Param
+        location: IMPORT
+- ruleID: logging-import-00100
+  description: '@Property moved from org.jboss.logging to org.jboss.logging.annotations'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import org.jboss.logging.Property;` with `import org.jboss.logging.annotations.Property;` and add the `org.jboss.logging:jboss-logging-annotations` Maven dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jboss-logging-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.Property
+        location: IMPORT
+- ruleID: logging-import-00110
+  description: Apache Log4j v1 APIs removed from JBoss EAP 8
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Support for Apache Log4j version 1 APIs is removed in JBoss EAP 8. Applications that import `org.apache.log4j.Logger` (or other Log4j v1 classes) without packaging their own Log4j v1 JAR must migrate.
+
+    ### Before
+    ```java
+    import org.apache.log4j.Logger;
+    Logger log = Logger.getLogger(MyClass.class);
+    ```
+
+    ### After
+    ```java
+    import org.apache.logging.log4j.Logger;
+    import org.apache.logging.log4j.LogManager;
+    Logger log = LogManager.getLogger(MyClass.class);
+    ```
+
+    ### Additional Info
+    - Alternatively, package Log4j v1 in the application and exclude the JBoss logging subsystem via `jboss-deployment-structure.xml` `<exclude-subsystems><subsystem name="logging"/></exclude-subsystems>`.
+    - If you use `log4j.xml`, `log4j.properties`, or `jboss-log4j.xml` files, configure logging in the JBoss EAP configuration or via `logging.properties` (log4j v2 configuration files are not supported as in-app config).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-changes#removal-of-apache-log4j-version-1-apis
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.log4j.Logger
+        location: IMPORT
+- ruleID: logging-dependency-00010
+  description: log4j v1 (groupId log4j) is unsupported by EAP 8
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Projects depending on Log4j v1 (Maven coordinates `log4j:log4j`) will not get logging routed through the JBoss EAP 8 logging subsystem. Migrate to Log4j 2 (`org.apache.logging.log4j:log4j-api` plus an implementation such as `log4j-core`), or bundle log4j v1 and exclude the JBoss logging subsystem.
+
+    ### Migration Steps
+    - Replace `log4j:log4j` with `org.apache.logging.log4j:log4j-api` and `org.apache.logging.log4j:log4j-core` (or another supported facade).
+    - If you must keep log4j v1, package the JAR with the deployment and exclude the logging subsystem in `jboss-deployment-structure.xml`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-changes#removal-of-apache-log4j-version-1-apis
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: log4j.log4j
+        upperbound: 2.0.0
+        lowerbound: 0.0.0
+- ruleID: logging-pattern-00010
+  description: jboss-log4j.xml not supported in EAP 8; rename to log4j.xml or migrate to log4j v2 config
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: If a deployment includes `jboss-log4j.xml`, you must rename it to `log4j.xml` and ensure logging is configured either via the JBoss EAP logging subsystem or via `logging.properties` packaged in the application. Log4j v2 configuration files are not supported when packaged inside an application using EAP-provided logging APIs.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-changes#removal-of-apache-log4j-version-1-apis
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: jboss-log4j\.xml
+        filePattern: .*jboss-log4j\.xml
+- ruleID: logging-pattern-00020
+  description: Module dependency on org.jboss.log4j.logmanager must be removed in EAP 8
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Deployments that declare a module dependency on `org.jboss.log4j.logmanager` (in `jboss-deployment-structure.xml` or `MANIFEST.MF`) must remove that dependency in EAP 8 because Log4j v1 APIs are no longer provided.
+
+    ### Migration Steps
+    - Remove any `<module name="org.jboss.log4j.logmanager"/>` entries from `jboss-deployment-structure.xml`.
+    - Remove `Dependencies: org.jboss.log4j.logmanager` lines from `MANIFEST.MF`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-changes#removal-of-apache-log4j-version-1-apis
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.jboss\.log4j\.logmanager
+        filePattern: .*jboss-deployment-structure\.xml

@@ -1,0 +1,179 @@
+- ruleID: cdi-xml-00010
+  description: CDI 4.0 changed empty beans.xml default discovery mode from 'all' to 'annotated'
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Per the CDI 4.0 specification, the default discovery mode for a deployment with an empty `beans.xml` file changed from `all` to `annotated`. Deployments relying on implicit discovery of classes without a bean-defining annotation may fail.
+
+    ### Migration Steps
+    - Add a bean-defining annotation (e.g., `@ApplicationScoped`, `@Dependent`, `@Named`) to each class that needs to be a CDI bean, and keep `beans.xml` empty.
+    - Or, change `beans.xml` to set bean-discovery-mode explicitly: `<beans bean-discovery-mode="all"></beans>`.
+    - Or, restore EAP 7 behavior server-wide via the CLI: `/subsystem=weld:write-attribute(name=legacy-empty-beans-xml-treatment,value=true)` (affects all deployments).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#cdi-bean-discovery
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: /*[local-name()='beans' and not(@bean-discovery-mode)]
+        filepaths:
+            - beans.xml
+- ruleID: cdi-method-00010
+  description: Bean.isNullable() removed in CDI 4.0 — method always returned false
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `javax.enterprise.inject.spi.Bean.isNullable()` was removed in CDI 4.0 (Jakarta EE 10). The method had always returned `false`.
+
+    ### Before
+    ```java
+    import javax.enterprise.inject.spi.Bean;
+    if (bean.isNullable()) { ... }
+    ```
+
+    ### After
+    ```java
+    // Replace bean.isNullable() with false, or remove the branch entirely.
+    ```
+
+    ### Additional Info
+    - Applications can replace the call with the literal `false`, or remove any branching logic and just retain the contents of the false branch.
+    - After namespace migration the type is also referenced as `jakarta.enterprise.inject.spi.Bean`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#cdi-api-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.enterprise.inject.spi.Bean.isNullable
+        location: METHOD_CALL
+- ruleID: cdi-method-00020
+  description: BeanManager.createInjectionTarget(AnnotatedType) removed in CDI 4.0
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `javax.enterprise.inject.spi.BeanManager.createInjectionTarget(AnnotatedType)` was removed in CDI 4.0. Use `BeanManager.getInjectionTargetFactory(AnnotatedType)` and the returned factory to create injection targets.
+
+    ### Before
+    ```java
+    InjectionTarget<X> it = beanManager.createInjectionTarget(annotatedType);
+    ```
+
+    ### After
+    ```java
+    InjectionTargetFactory<X> factory = beanManager.getInjectionTargetFactory(annotatedType);
+    InjectionTarget<X> it = factory.createInjectionTarget(bean);
+    ```
+
+    ### Additional Info
+    - See the Jakarta CDI specification: "Obtaining an InjectionTarget for a class".
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#cdi-api-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.enterprise.inject.spi.BeanManager.createInjectionTarget
+        location: METHOD_CALL
+- ruleID: cdi-method-00030
+  description: BeanManager.fireEvent(Object, Annotation) removed in CDI 4.0
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `javax.enterprise.inject.spi.BeanManager.fireEvent(Object, Annotation)` was removed in CDI 4.0. Use `BeanManager.getEvent()` as the entry point for firing events.
+
+    ### Before
+    ```java
+    beanManager.fireEvent(payload, qualifier);
+    ```
+
+    ### After
+    ```java
+    beanManager.getEvent().select(qualifier).fire(payload);
+    ```
+
+    ### Additional Info
+    - See the Jakarta CDI specification: "Firing an event".
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#cdi-api-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.enterprise.inject.spi.BeanManager.fireEvent
+        location: METHOD_CALL
+- ruleID: cdi-method-00040
+  description: BeforeBeanDiscovery.addAnnotatedType(AnnotatedType) removed; pass explicit String id
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `javax.enterprise.inject.spi.BeforeBeanDiscovery.addAnnotatedType(AnnotatedType)` was removed in CDI 4.0. The single-argument overload no longer exists.
+
+    ### Before
+    ```java
+    beforeBeanDiscovery.addAnnotatedType(annotatedType);
+    ```
+
+    ### After
+    ```java
+    beforeBeanDiscovery.addAnnotatedType(annotatedType, (String) null);
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#cdi-api-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.enterprise.inject.spi.BeforeBeanDiscovery.addAnnotatedType
+        location: METHOD_CALL
+- ruleID: cdi-xml-00020
+  description: CDI 4.0 changes default bean discovery mode for empty beans.xml from all to annotated; review explicit bean-discovery-mode settings
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In CDI 4.0 (JBoss EAP 8), the default bean discovery mode for an empty `beans.xml` file changed from `all` to `annotated`. Archives without a `beans.xml` file are now also treated as implicit bean archives. Review your `beans.xml` files: if your application relied on the previous `all` default to discover non-annotated beans, you must either annotate those classes with a bean defining annotation (`@ApplicationScoped`, `@SessionScoped`, etc.) or set `bean-discovery-mode="all"` explicitly.
+
+    ### Migration Steps
+    - Audit each `beans.xml` file in your application.
+    - If you want all classes scanned as beans, add `bean-discovery-mode="all"` explicitly to the `<beans>` element.
+    - Otherwise, ensure every bean class carries a bean defining annotation (a scope annotation such as `@ApplicationScoped`, `@SessionScoped`, `@RequestScoped`, `@ConversationScoped`, `@Dependent`, a stereotype annotation, `@Interceptor`, or `@Decorator`).
+    - For more details, see Jakarta Contexts and Dependency Injection 4.0.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#bean-archives_default
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='beans' and (not(@bean-discovery-mode) or @bean-discovery-mode='all') and (@version)]
+        filepaths:
+            - beans.xml

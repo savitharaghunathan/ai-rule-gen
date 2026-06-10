@@ -1,0 +1,66 @@
+- ruleID: modules-pattern-00010
+  description: MANIFEST.MF module dependency declarations must be reviewed against the modules available in JBoss EAP 8
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Applications using `Dependencies:` in `MANIFEST.MF` to declare explicit JBoss Modules dependencies must review their entries: the modules shipped with JBoss EAP 8 have changed, and entries referring to removed or deprecated modules must be updated.
+
+    ### Migration Steps
+    - Inspect every `Dependencies:` entry in your `META-INF/MANIFEST.MF`.
+    - Verify each module name exists in JBoss EAP 8 (`$JBOSS_HOME/modules/`).
+    - Annotation indexes are now generated at runtime for static modules, so the manual Jandex JAR is no longer required, but the `annotations` flag is still needed.
+
+    ### Example
+    ```
+    Dependencies: com.company.my-ejb annotations, com.company.other
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrate-explicit-module-dependencies_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: ^Dependencies:.*
+        filePattern: .*MANIFEST\.MF
+- ruleID: modules-xml-00010
+  description: jboss-deployment-structure.xml module dependencies must be reviewed against the modules available in JBoss EAP 8
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Review every `<module>` entry in your `jboss-deployment-structure.xml`: the modules shipped with JBoss EAP 8 have changed and some modules from JBoss EAP 7 have been removed or renamed.
+
+    ### Before
+    ```xml
+    <jboss-deployment-structure>
+      <deployment>
+        <dependencies>
+          <module name="com.company.my-ejb" annotations="true"/>
+          <module name="com.company.other"/>
+        </dependencies>
+      </deployment>
+    </jboss-deployment-structure>
+    ```
+
+    ### Migration Steps
+    - Verify each `<module name="...">` exists in `$JBOSS_HOME/modules/` for JBoss EAP 8.
+    - Remove references to modules removed in EAP 8 (e.g., legacy OSGi, PicketLink, hornetq-based messaging modules).
+    - Annotation indexes are now generated at runtime, but the `annotations="true"` flag is still required for modules whose annotations must be scanned.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrate-explicit-module-dependencies_default
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='jboss-deployment-structure']//*[local-name()='dependencies']/*[local-name()='module']
+        filepaths:
+            - jboss-deployment-structure.xml

@@ -1,0 +1,302 @@
+- ruleID: faces-dependency-00010
+  description: JBoss EAP 8.0 no longer supports any JSF version prior to 4.0; jsf-api dependency must be removed
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 8.0 only supports Jakarta Server Faces 4.0 and later. The old Mojarra `com.sun.faces:jsf-api` artifact (used by JSF 1.2 and 2.x) is no longer compatible.
+
+    ### Migration Steps
+    - Remove `com.sun.faces:jsf-api` (and `jsf-impl`) from `pom.xml`.
+    - Add `jakarta.faces:jakarta.faces-api` (4.0 or later) as a `provided` dependency.
+    - Rewrite `javax.faces.*` imports to `jakarta.faces.*` (covered by the Jakarta namespace rules).
+    - See *Jakarta Faces Code Changes* in the migration guide for behavioural differences between JSF 1.2/2.x and 4.0.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jakarta-faces-code-changes
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.sun.faces.jsf-api
+        lowerbound: 0.0.0
+- ruleID: faces-dependency-00020
+  description: JBoss EAP 8.0 no longer supports JSF impl prior to 4.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `com.sun.faces:jsf-impl` from `pom.xml`. JBoss EAP 8.0 provides Mojarra 4.x out of the box, and applications should rely on the server-provided implementation (or the optional `eap-myfaces-feature-pack`) rather than bundling a 1.x/2.x implementation.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jakarta-faces-code-changes
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.sun.faces.jsf-impl
+        lowerbound: 0.0.0
+- ruleID: faces-xml-00010
+  description: Jakarta Faces 4.0 removed JSP support; FacesServlet must not be mapped to *.jsp
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta Server Pages (JSP) support was deprecated in Faces 2.0 and is removed in Jakarta Faces 4.0. Facelets is the only supported View Definition Language. A `web.xml` that maps `FacesServlet` to the `*.jsp` suffix indicates Faces-on-JSP usage that must be rewritten as Facelets.
+
+    ### Migration Steps
+    - Convert each JSP-based Faces view to a Facelets (`*.xhtml`) view.
+    - Update the `<servlet-mapping>` in `web.xml` for `FacesServlet` from `*.jsp` to `*.xhtml`.
+    - Remove or re-target any JSP tag libraries (taglib) that were specific to Faces.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#jakarta-faces-and-java-server-pages
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='servlet-mapping' and (*[local-name()='servlet-name'] = preceding::*[local-name()='servlet'][*[local-name()='servlet-class' and (text()='javax.faces.webapp.FacesServlet' or text()='jakarta.faces.webapp.FacesServlet')]]/*[local-name()='servlet-name']) and *[local-name()='url-pattern' and contains(text(), '.jsp')]]
+        filepaths:
+            - web.xml
+- ruleID: faces-annotation-00010
+  description: javax.faces.bean.ManagedBean removed in Faces 4.0; use CDI @Named
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The Faces-specific managed-bean concept (`@javax.faces.bean.ManagedBean`) was removed in Jakarta Faces 4.0. Replace it with CDI `@jakarta.inject.Named` and any `managed-bean` element in `faces-config.xml` should be removed.
+
+    ### Before
+    ```java
+    import javax.faces.bean.ManagedBean;
+    import javax.faces.bean.ApplicationScoped;
+
+    @ManagedBean(name = "foo", eager = true)
+    @ApplicationScoped
+    public class FooBean { }
+    ```
+
+    ### After
+    ```java
+    import jakarta.inject.Named;
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.enterprise.event.Observes;
+    import jakarta.enterprise.event.Startup;
+
+    @Named("foo")
+    @ApplicationScoped
+    public class FooBean {
+        public void onStartup(@Observes Startup event) { /* eager init */ }
+    }
+    ```
+
+    ### Additional Info
+    - For `eager=true` startup semantics, observe `jakarta.enterprise.event.Startup` (new in CDI 4.0) or `@Initialized(ApplicationScoped.class)`.
+    - Remove any `<managed-bean>` elements from `faces-config.xml`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#faces-managed-beans
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.faces.bean.ManagedBean
+        location: ANNOTATION
+- ruleID: faces-annotation-00020
+  description: javax.faces.bean.ManagedProperty removed in Faces 4.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `@javax.faces.bean.ManagedProperty` was removed in Jakarta Faces 4.0. Replace with `@jakarta.faces.annotation.ManagedProperty` combined with `@jakarta.inject.Inject`.
+
+    ### Before
+    ```java
+    import javax.faces.bean.ManagedProperty;
+    @ManagedProperty("#{userService}")
+    private UserService userService;
+    ```
+
+    ### After
+    ```java
+    import jakarta.faces.annotation.ManagedProperty;
+    import jakarta.inject.Inject;
+    @Inject
+    @ManagedProperty("#{userService}")
+    private UserService userService;
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#faces-managed-beans
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.faces.bean.ManagedProperty
+        location: ANNOTATION
+- ruleID: faces-annotation-00030
+  description: Faces-specific @ApplicationScoped removed; use CDI @ApplicationScoped
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `@javax.faces.bean.ApplicationScoped` was removed in Jakarta Faces 4.0. Replace with the CDI scope `@jakarta.enterprise.context.ApplicationScoped`.
+
+    ### Before
+    ```java
+    import javax.faces.bean.ApplicationScoped;
+    ```
+
+    ### After
+    ```java
+    import jakarta.enterprise.context.ApplicationScoped;
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#faces-managed-beans
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.faces.bean.ApplicationScoped
+        location: ANNOTATION
+- ruleID: faces-annotation-00040
+  description: '@CustomScoped removed; use a CDI custom scope implementation'
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `@javax.faces.bean.CustomScoped` was removed in Jakarta Faces 4.0. Replace with a CDI custom scope using `jakarta.enterprise.context.spi.Context`.
+
+    ### Migration Steps
+    - Define a new CDI scope annotation and implement `jakarta.enterprise.context.spi.Context`.
+    - Register the scope with CDI via a portable extension or build-compatible extension.
+    - See the CDI 4.0 specification chapters "Defining new scope types" and "The Context interface".
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#faces-managed-beans
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.faces.bean.CustomScoped
+        location: ANNOTATION
+- ruleID: faces-annotation-00050
+  description: '@NoneScoped removed; use CDI @Dependent'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`@javax.faces.bean.NoneScoped` was removed in Jakarta Faces 4.0. Replace with the CDI built-in `@jakarta.enterprise.context.Dependent`, which has approximately the same semantics.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#faces-managed-beans
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.faces.bean.NoneScoped
+        location: ANNOTATION
+- ruleID: faces-annotation-00060
+  description: Faces-specific @RequestScoped removed; use CDI @RequestScoped
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`@javax.faces.bean.RequestScoped` was removed in Jakarta Faces 4.0. Replace with `@jakarta.enterprise.context.RequestScoped`.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#faces-managed-beans
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.faces.bean.RequestScoped
+        location: ANNOTATION
+- ruleID: faces-annotation-00070
+  description: Faces-specific @SessionScoped removed; use CDI @SessionScoped
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`@javax.faces.bean.SessionScoped` was removed in Jakarta Faces 4.0. Replace with `@jakarta.enterprise.context.SessionScoped`.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#faces-managed-beans
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.faces.bean.SessionScoped
+        location: ANNOTATION
+- ruleID: faces-annotation-00080
+  description: Faces-specific @ViewScoped removed; use jakarta.faces.view.ViewScoped
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`@javax.faces.bean.ViewScoped` was removed in Jakarta Faces 4.0. Replace with `@jakarta.faces.view.ViewScoped`.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#other-faces-api-changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.faces.bean.ViewScoped
+        location: ANNOTATION
+- ruleID: faces-annotation-00090
+  description: ResourceResolver / FaceletsResourceResolver removed; implement ResourceHandler
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Both `javax.faces.view.facelets.ResourceResolver` and `javax.faces.view.facelets.FaceletsResourceResolver` were removed in Jakarta Faces 4.0.
+
+    ### Migration Steps
+    - Implement the `jakarta.faces.application.ResourceHandler` interface instead.
+    - Register the fully qualified class name of your implementation in the `<application>/<resource-handler>` element in `faces-config.xml`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#other-faces-api-changes
+      title: Migration Documentation
+  when:
+    or:
+        - java.referenced:
+            pattern: javax.faces.view.facelets.ResourceResolver
+            location: ANNOTATION
+        - java.referenced:
+            pattern: javax.faces.view.facelets.FaceletsResourceResolver
+            location: ANNOTATION

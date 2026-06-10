@@ -1,0 +1,225 @@
+- ruleID: build-xml-00010
+  description: maven-war-plugin must be removed when migrating to Quarkus 2; Quarkus produces JAR artifacts
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus 2 applications are packaged as JARs (or native images), not WARs. The `maven-war-plugin` must be removed from your `pom.xml`.
+
+    ### Migration Steps
+    1. Remove the `<plugin>` entry for `org.apache.maven.plugins:maven-war-plugin` from your `<build>/<plugins>` section.
+    2. Change the project `<packaging>` from `war` to `jar` (see related rule).
+    3. Add the `quarkus-maven-plugin` (`io.quarkus.platform:quarkus-maven-plugin`) and import the `quarkus-bom` for managed Quarkus dependencies.
+
+    ### Additional Info
+    - Quarkus generates a runner JAR via the `quarkus-maven-plugin` `build` goal.
+    - WAR-based deployment to a Servlet container is not the Quarkus model; HTTP endpoints are served by the embedded Vert.x/Undertow runtime.
+    - For native image builds, configure a `native` Maven profile with `quarkus.package.type=native`.
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='plugin'][*[local-name()='groupId' and text()='org.apache.maven.plugins'] and *[local-name()='artifactId' and text()='maven-war-plugin']]
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: build-xml-00020
+  description: Quarkus 2 projects must use jar packaging (not war)
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus 2 produces a runnable JAR (or native image). The Maven `<packaging>` element must be changed from `war` to `jar`.
+
+    ### Before
+    ```xml
+    <packaging>war</packaging>
+    ```
+
+    ### After
+    ```xml
+    <packaging>jar</packaging>
+    ```
+
+    ### Additional Info
+    - Combined with this change, remove the `maven-war-plugin` from `<build>/<plugins>`.
+    - Quarkus serves HTTP endpoints through its embedded runtime; no Servlet container is required.
+    - For native image builds, add a `native` Maven profile with `quarkus.package.type=native`.
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: /m:project/m:packaging[text()='war']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: build-xml-00030
+  description: Quarkus 2 requires Java 11 or higher; maven.compiler.source must be at least 11
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus 2 requires Java 11 or later. The `maven.compiler.source` (and `maven.compiler.target`) property in `pom.xml` must be set to `11` or higher.
+
+    ### Before
+    ```xml
+    <properties>
+      <maven.compiler.source>1.8</maven.compiler.source>
+      <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+    ```
+
+    ### After
+    ```xml
+    <properties>
+      <maven.compiler.source>11</maven.compiler.source>
+      <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+    ```
+
+    ### Additional Info
+    - Update both `maven.compiler.source` and `maven.compiler.target`.
+    - Ensure the build/CI JDK is also Java 11+.
+    - The OpenRewrite `AddQuarkus2MavenPlugins` recipe sets these properties to `11` automatically.
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: /m:project/m:properties/m:maven.compiler.source[number(text()) &lt; 11]
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: build-xml-00040
+  description: Quarkus 2 requires Java 11 or higher; maven.compiler.target must be at least 11
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus 2 requires Java 11 or later. The `maven.compiler.target` property in `pom.xml` must be set to `11` or higher.
+
+    ### Before
+    ```xml
+    <properties>
+      <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+    ```
+
+    ### After
+    ```xml
+    <properties>
+      <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+    ```
+
+    ### Additional Info
+    - Update `maven.compiler.source` as well — both must agree.
+    - Quarkus 2.x is supported on Java 11 and Java 17.
+    - The OpenRewrite `AddQuarkus2MavenPlugins` recipe sets this to `11` automatically.
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: /m:project/m:properties/m:maven.compiler.target[number(text()) &lt; 11]
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: build-xml-00050
+  description: WAR packaging is not used by Quarkus; switch to JAR (or omit, default is jar)
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus applications build into runnable JARs (or native images), not WAR archives deployed into a servlet container. Change `<packaging>war</packaging>` to `<packaging>jar</packaging>` or remove the element entirely (jar is the Maven default).
+
+    ### Migration Steps
+    1. Remove or change `<packaging>war</packaging>` in `pom.xml`.
+    2. Remove the `maven-war-plugin` from the build plugins (see related rule).
+    3. Add the `quarkus-maven-plugin` so `mvn package` produces a Quarkus runnable JAR.
+    4. If you previously relied on servlet container deployment (Wildfly, Tomcat), migrate any container-managed configuration to Quarkus application properties.
+
+    ### Additional Info
+    - Automated by the OpenRewrite recipe `org.openrewrite.maven.ChangePackaging` (groupId `*`, artifactId `*`, packaging `jar`) inside `AddQuarkus2MavenPlugins`.
+    - Quarkus can still serve servlets via the `quarkus-undertow` extension — packaging as JAR does not preclude HTTP/servlet support.
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: /m:project/m:packaging[text()='war']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: build-pattern-00010
+  description: Quarkus 2 requires Java 11+; raise maven.compiler.source/target from 1.8 to 11
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus 2 requires Java 11 or later. Update the Maven compiler source/target version properties from `1.8` (Java 8) to `11` (or higher).
+
+    ### Before
+    ```xml
+    <properties>
+      <maven.compiler.source>1.8</maven.compiler.source>
+      <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+    ```
+
+    ### After
+    ```xml
+    <properties>
+      <maven.compiler.source>11</maven.compiler.source>
+      <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+    ```
+
+    ### Additional Info
+    - Automated by the OpenRewrite recipes `org.openrewrite.maven.AddProperty` with key `maven.compiler.source`/`maven.compiler.target` and value `11` inside `AddQuarkus2MavenPlugins`.
+    - Quarkus 2 actively tests against Java 11 and Java 17 — pick the highest LTS you can run.
+    - Verify the build JDK installed on CI matches the new target version, otherwise compilation will fail.
+  links:
+    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: <maven\.compiler\.(source|target)>1\.8</maven\.compiler\.(source|target)>
+        filePattern: .*pom\.xml

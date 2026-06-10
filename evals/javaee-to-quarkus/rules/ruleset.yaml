@@ -1,0 +1,7 @@
+name: quarkus/java-ee
+description: Rules for migrating from java-ee to quarkus
+labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/target=quarkus

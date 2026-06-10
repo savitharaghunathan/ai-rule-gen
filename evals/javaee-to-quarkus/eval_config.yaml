@@ -1,0 +1,6 @@
+guide_url: https://quarkus.io/guides/
+app_repo: https://github.com/konveyor-ecosystem/coolstore
+app_commit: b5752b9
+source: java-ee
+target: quarkus
+rules_dir: evals/javaee-to-quarkus/rules

@@ -1,0 +1,72 @@
+- ruleID: persistence-pattern-00010
+  description: jboss.as.jpa.deferdetach is a JBoss EAP 5 compatibility property; review and remove on EAP 7/8 migration
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `jboss.as.jpa.deferdetach` persistence-unit property was introduced as a JBoss EAP 5 backward-compatibility switch. When set to `true`, transaction-scoped persistence contexts used outside Jakarta Transactions threads keep loaded entities attached until the persistence context closes. The Jakarta Persistence default (and the JBoss EAP 6/7/8 default) is `false` — entities are detached after each EntityManager invocation.
+
+    ### Migration Steps
+    - Audit `META-INF/persistence.xml` for `<property name="jboss.as.jpa.deferdetach" value="true" />`.
+    - If the application no longer requires JBoss EAP 5 detach semantics, remove the property to use the spec-compliant default.
+    - If the legacy behavior is still needed, keep the property but document the dependency.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jakarta-persistence-property-changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: jboss\.as\.jpa\.deferdetach
+        filePattern: .*persistence\.xml
+- ruleID: persistence-pattern-00020
+  description: wildfly.jpa.skipmixedsynctypechecking disables stricter EAP 7.1+ persistence-context error checking and may be removed in a future release
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `wildfly.jpa.skipmixedsynctypechecking` was added in JBoss EAP 7.1 as a temporary backward-compatibility switch for applications that relied on the looser EAP 7.0 unsynchronized persistence-context checks. The property disables the new error checking and may be deprecated/removed in a future release.
+
+    ### Migration Steps
+    - Locate the `<property name="wildfly.jpa.skipmixedsynctypechecking" .../>` entry in `META-INF/persistence.xml`.
+    - Fix the underlying code so that synchronized container-managed persistence contexts no longer share an unsynchronized extended persistence context associated with Jakarta Transactions.
+    - Remove the property once the code conforms to the Jakarta Persistence specification.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jakarta-persistence-property-changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: wildfly\.jpa\.skipmixedsynctypechecking
+        filePattern: .*persistence\.xml
+- ruleID: persistence-pattern-00030
+  description: wildfly.jpa.allowjoinedunsync is an EAP 7.1 backward-compatibility property that treats unsynchronized contexts joined to Jakarta Transactions as synchronized
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `wildfly.jpa.allowjoinedunsync` was introduced in JBoss EAP 7.1 as an alternative to `wildfly.jpa.skipmixedsynctypechecking`. It tells the container to treat an unsynchronized persistence context joined to a Jakarta Transactions transaction as if it were synchronized.
+
+    ### Migration Steps
+    - Locate the `<property name="wildfly.jpa.allowjoinedunsync" .../>` entry in `META-INF/persistence.xml`.
+    - Audit the affected `@PersistenceContext(synchronization=SynchronizationType.UNSYNCHRONIZED)` injection points and decide whether the unsynchronized semantics are still desired.
+    - Remove the property once the application's persistence-context synchronization types are correct.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jakarta-persistence-property-changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: wildfly\.jpa\.allowjoinedunsync
+        filePattern: .*persistence\.xml
