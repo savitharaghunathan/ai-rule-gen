@@ -38,7 +38,6 @@ Thumbs.db
 # Tool/IDE workspace artifacts
 .metadata/
 .agents/
-.opencode/
 .kaiden/
 
 # Local agent settings (personal machine paths, session-accumulated permissions)

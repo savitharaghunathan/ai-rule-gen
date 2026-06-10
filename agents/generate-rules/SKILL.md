@@ -23,6 +23,15 @@ If no argument is provided, ask the user for the migration guide source.
 - `resume_from` — (optional) `ingest`, `extract`, `coverage`, `scaffold`, `test`, `report`
 - `migration_dir` — (optional) explicit output directory override. If omitted, auto-generated as `output/<primary_source>-to-<primary_target>-<YYYYMMDD-HHMMSS>`. Required when using `resume_from`.
 
+### Command Presets
+
+| Command | checkpoint_behavior | What it does |
+|---------|-------------------|--------------|
+| `/generate-rules` | `stop_after_extract` | Ingest, extract, coverage, report, summary (no testing) |
+| `/generate-rules-with-test` | `continue` | Full pipeline including test generation and validation |
+
+Both commands invoke this skill. The user can override `checkpoint_behavior` explicitly.
+
 ## Returns
 
 - `rules_dir` — Path to generated rule YAML files
@@ -267,13 +276,15 @@ After extraction/coverage:
 
 - If `mode=non_interactive`, do **not** prompt:
   - `checkpoint_behavior=continue` or `ask`: continue automatically
-  - `checkpoint_behavior=stop_after_extract`: skip testing and go to Step 6
+  - `checkpoint_behavior=stop_after_extract`: skip testing and go to Step 5 (Report)
 - If `mode=interactive`:
   - `checkpoint_behavior=continue`: continue automatically
-  - `checkpoint_behavior=stop_after_extract`: skip testing and go to Step 6
+  - `checkpoint_behavior=stop_after_extract`: skip testing and go to Step 5 (Report)
   - `checkpoint_behavior=ask`: ask:
     - `Continue with test generation and validation? (y/n)`
-    - if no, skip to Step 6 with untested rules
+    - if no, skip to Step 5 (Report) with untested rules
+
+**Rules-only report:** When skipping to Step 5, invoke `cmd/report` with `--passed 0 --failed 0 --kantra-limitation 0` and empty `--passed-rules`, `--failed-rules`, `--kantra-limitation-rules` flags. Pass `--rules-total`, `--verified-rules`, and `--not-found-rules` from extraction. All rules get `test_status: untested`.
 
 ### 3. Test Generation
 
@@ -446,3 +457,26 @@ If coverage was low (< 30% of sections produced patterns), add a row:
 ```
 | **Warning** | Low extraction coverage (<M>/<K> sections) |
 ```
+
+**Rules-only summary (when `checkpoint_behavior=stop_after_extract`):**
+
+When testing was skipped, use this simplified table instead:
+
+```markdown
+## Summary
+
+| | |
+|---|---|
+| **Input** | <guide title or URL as a markdown link> |
+| **Migration** | <primary_source> → <primary_target> (<language>) |
+| **Guide** | <GUIDE_LINES> lines, <N> sections → <M> produced patterns, <K> skipped |
+| **Rules** | <rules_count> generated (untested) |
+| **Verification** | <verified>/<total> source-verified, <not_found> not found, <skipped> skipped (omit row if all skipped) |
+| **Timing** | total: <total elapsed> — ingest: <elapsed>, extract: <elapsed>, coverage: <elapsed>, report: <elapsed> |
+| **Output** | `<migration_dir>/patterns.json` (patterns), `<migration_dir>/rules/` (rules), `<migration_dir>/report.yaml` (report) |
+| **Next step** | Run `/generate-rules-with-test resume_from=scaffold migration_dir=<migration_dir>` to add tests |
+```
+
+Omit these rows: **Kantra limitations**, **Fix iterations**, **Failed** (no testing ran).
+Omit `tests/` from the **Output** row and test-gen/validate timing from the **Timing** row.
+Include the **Rule Categories** table as normal.
