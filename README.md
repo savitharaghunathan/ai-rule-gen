@@ -21,28 +21,39 @@ Skills follow the [Agent Skills](https://agentskills.io) format and are bundled 
 
 ## Usage
 
+Two commands are available:
+
+| Command | What it does |
+|---------|--------------|
+| `/generate-rules` | Generate rules only (no testing) |
+| `/generate-rules-with-test` | Full pipeline with test generation and validation |
+
 ### Claude Code
 
 ```
 /generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+/generate-rules-with-test https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
 ```
 
 ### OpenCode
 
 ```
 /generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+/generate-rules-with-test https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
 ```
 
 ### Goose
 
 ```
 /skills generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+/skills generate-rules-with-test https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
 ```
 
 ### Codex
 
 ```
-$generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+$generate-rules checkpoint_behavior=stop_after_extract https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
+$generate-rules checkpoint_behavior=continue https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
 ```
 
 ### Any other agent
@@ -51,7 +62,15 @@ $generate-rules https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-
 Read and follow agents/generate-rules/SKILL.md. Input: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
 ```
 
+By default, the agent prompts at checkpoint whether to continue with testing. Pass `checkpoint_behavior=stop_after_extract` (rules only) or `checkpoint_behavior=continue` (full pipeline) to skip the prompt.
+
 The input can be a URL, a file path, or pasted migration guide text.
+
+To add tests to rules generated with `/generate-rules`, use the resume mechanism:
+
+```
+/generate-rules-with-test resume_from=scaffold migration_dir=output/<source>-to-<target>-<timestamp>
+```
 
 You can optionally pass explicit source and target labels (multiple of each are supported):
 
