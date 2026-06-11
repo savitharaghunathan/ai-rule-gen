@@ -1,0 +1,606 @@
+# Ruleset comparison: ai vs handcrafted
+
+- **A**: ai (275 rules) — `evals/javaee-to-quarkus/rules`
+- **B**: handcrafted (82 rules) — `evals/javaee-to-quarkus-handcrafted/rules`
+
+## Coverage matrix
+
+How many rules on one side are matched by a rule keyed on the same API on the other side.
+
+| Direction | Covered | Partial | Missing |
+|---|---|---|---|
+| A → B (ai rules covered by handcrafted) | 24 | 16 | 235 |
+| B → A (handcrafted rules covered by ai) | 20 | 11 | 51 |
+
+### Rules in ai with no equivalent in handcrafted (235)
+
+- `build-annotation-00020` — Spring Boot auto-configuration is not used in Quarkus
+  - keys: java:org.springframework.boot.autoconfigure.enableautoconfiguration
+- `build-dependency-00010` — The umbrella javaee-api artifact pulls in javax.* APIs that Quarkus does not provide; depend on specific Quarkus extens…
+  - keys: dep:javax.javaee-api
+- `build-dependency-00020` — Quarkus provides Jakarta EE APIs through targeted extensions; the umbrella jakartaee-api artifact is not needed
+  - keys: dep:jakarta.platform.jakarta.jakartaee-api
+- `build-dependency-00030` — Spring Boot starters are not used in Quarkus; depend on Quarkus extensions instead
+  - keys: dep:org.springframework.boot.spring-boot-starter
+- `build-method-00010` — Quarkus applications are bootstrapped by the Quarkus runtime; SpringApplication.run() must be removed
+  - keys: java:org.springframework.boot.springapplication
+- `build-pattern-00010` — Replace Spring Boot Gradle plugin with the io.quarkus Gradle plugin
+  - keys: fc:org\.springframework\.boot
+- `build-pattern-00020` — Tests and integration suites must set java.util.logging.manager to org.jboss.logmanager.LogManager
+  - keys: fc:java\.util\.logging\.manager
+- `build-xml-00010` — The Spring Boot parent POM is replaced by the Quarkus BOM imported in dependencyManagement
+  - keys: xml:/m:project/m:parent[m:groupId/text() = 'org.springframework.boot' and (m:artifactId/text() = 'spring-boot-starter-parent' or m:artifactId/text() = 'spring-boot-parent')]
+- `build-xml-00020` — spring-boot-maven-plugin is replaced by quarkus-maven-plugin in Quarkus builds
+  - keys: xml://m:plugin[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-maven-plugin']
+- `build-xml-00040` — Quarkus applications should use 'quarkus' packaging in pom.xml instead of 'war' or 'jar'
+  - keys: xml:/*[local-name()='project']/*[local-name()='packaging'][text()='war' or text()='jar']
+- `build-xml-00050` — Spring Boot fat-jar/embedded server is replaced by Quarkus fast-jar or uber-jar packaging
+  - keys: xml:/*[local-name()='project']//*[local-name()='dependency'][./*[local-name()='artifactId']/text()='spring-boot-loader']
+- `build-xml-00070` — spring-boot-maven-plugin must be replaced with quarkus-maven-plugin
+  - keys: xml:/m:project//m:plugin[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-maven-plugin']
+- `cache-annotation-00010` — @Cacheable requires the quarkus-spring-cache extension; native equivalent is @CacheResult
+  - keys: java:org.springframework.cache.annotation.cacheable
+- `cache-annotation-00020` — @CacheEvict requires the quarkus-spring-cache extension; native equivalent is @CacheInvalidate(All)
+  - keys: java:org.springframework.cache.annotation.cacheevict
+- `cache-annotation-00030` — @CachePut requires the quarkus-spring-cache extension
+  - keys: java:org.springframework.cache.annotation.cacheput
+- `cache-annotation-00040` — @EnableCaching is implicit when a cache extension is present
+  - keys: java:org.springframework.cache.annotation.enablecaching
+- `cache-annotation-00050` — JCache @CacheResult is not directly supported; use io.quarkus.cache.CacheResult
+  - keys: java:javax.cache.annotation.cacheresult
+- `camel-dependency-00010` — Bare camel-core dependency is replaced by org.apache.camel.quarkus:camel-quarkus-core in Quarkus
+  - keys: dep:org.apache.camel.camel-core
+- `camel-import-00010` — Apache Camel on Quarkus is provided by Camel Quarkus extensions; CamelContext is auto-managed
+  - keys: java:org.apache.camel.camelcontext
+- `cdi-annotation-00010` — Spring stereotype annotations (@Component, @Service, @Repository) map to @Singleton (or @ApplicationScoped) in CDI
+  - keys: java:org.springframework.stereotype.component, java:org.springframework.stereotype.repository, java:org.springframework.stereotype.service
+- `cdi-annotation-00020` — Spring @Configuration maps to @ApplicationScoped on a producer class in CDI
+  - keys: java:org.springframework.context.annotation.configuration
+- `cdi-annotation-00030` — Spring @Bean producer methods map to CDI @Produces methods
+  - keys: java:org.springframework.context.annotation.bean
+- `cdi-annotation-00040` — Spring @Autowired maps to @Inject (jakarta.inject) in Quarkus
+  - keys: java:org.springframework.beans.factory.annotation.autowired
+- `cdi-annotation-00050` — Spring @Qualifier maps to @Named (or @Identifier) in CDI
+  - keys: java:org.springframework.beans.factory.annotation.qualifier
+- `cdi-annotation-00060` — Quarkus does annotated-mode bean discovery at build time; @ComponentScan is unnecessary
+  - keys: java:org.springframework.context.annotation.componentscan
+- `cdi-annotation-00070` — Spring @Import is not supported in Quarkus; bean discovery is global at build time
+  - keys: java:org.springframework.context.annotation.import
+- `cdi-annotation-00080` — Spring @Conditional is ignored because Quarkus DI resolves at build time
+  - keys: java:org.springframework.context.annotation.conditional
+- `cdi-annotation-00090` — Spring @Scope must be replaced with the matching CDI scope annotation
+  - keys: java:org.springframework.context.annotation.scope
+- `cdi-annotation-00100` — Spring's @EventListener is not used in Quarkus; CDI events use @Observes
+  - keys: java:org.springframework.context.event.eventlistener
+- `cdi-annotation-00110` — Spring Boot ApplicationReadyEvent is replaced by Quarkus StartupEvent
+  - keys: java:org.springframework.boot.context.event.applicationreadyevent
+- `cdi-annotation-00120` — @Named qualifier behaves differently in CDI; prefer @Identifier in Quarkus
+  - keys: java:javax.inject.named
+- `cdi-annotation-00130` — javax.inject.Named must be migrated to jakarta.inject.Named or @Identifier in Quarkus
+  - keys: java:javax.inject.named
+- `cdi-change-00010` — Quarkus does not start a Spring ApplicationContext; injecting it produces no instance
+  - keys: java:org.springframework.context.applicationcontext
+- `cdi-dependency-00010` — spring-context (Spring ApplicationContext) is not used in Quarkus; quarkus-spring-di provides annotation compatibility
+  - keys: dep:org.springframework.spring-context
+- `cdi-import-00020` — Quarkus uses Jakarta Inject (jakarta.inject); javax.inject is renamed
+  - keys: java:javax.inject*
+- `cdi-import-00030` — Quarkus uses Jakarta Annotations (jakarta.annotation); javax.annotation is renamed
+  - keys: java:javax.annotation*
+- `cdi-import-00050` — javax.inject was renamed to jakarta.inject in Jakarta EE 9+
+  - keys: java:javax.inject
+- `cdi-import-00060` — Quarkus uses Jakarta CDI; migrate javax.enterprise.context imports
+  - keys: java:javax.enterprise.context
+- `config-annotation-00010` — Spring @Value maps to MicroProfile @ConfigProperty in Quarkus
+  - keys: java:org.springframework.beans.factory.annotation.value
+- `config-annotation-00020` — Spring @ConfigurationProperties is supported by quarkus-spring-boot-properties; new code should use @ConfigMapping
+  - keys: java:org.springframework.boot.context.properties.configurationproperties
+- `config-annotation-00030` — @EnableConfigurationProperties is unused; ConfigMapping classes are auto-discovered
+  - keys: java:org.springframework.boot.context.properties.enableconfigurationproperties
+- `config-dependency-00010` — Spring Cloud Config Client is replaced by the quarkus-spring-cloud-config-client extension
+  - keys: dep:org.springframework.cloud.spring-cloud-starter-config
+- `config-method-00010` — Quarkus configuration is layered (sys props, env, files); avoid direct System.getProperty/getenv
+  - keys: java:java.lang.system.getproperty
+- `config-method-00020` — Avoid System.getenv for app configuration in Quarkus; use @ConfigProperty
+  - keys: java:java.lang.system.getenv
+- `config-pattern-00010` — Spring's server.port is replaced by quarkus.http.port
+  - keys: fc:server\.port
+- `config-pattern-00020` — spring.application.name is replaced by quarkus.application.name
+  - keys: fc:spring\.application\.name
+- `config-pattern-00030` — Spring's spring.profiles.active is replaced by quarkus.profile (or the QUARKUS_PROFILE env var)
+  - keys: fc:spring\.profiles\.active
+- `config-pattern-00040` — Quarkus does not use bootstrap.properties; move settings to application.properties
+  - keys: fc:bootstrap\.properties
+- `config-pattern-00050` — Quarkus does not read spring.* config keys; migrate to quarkus.* or spring-cloud-config-client extension
+  - keys: fc:^\s*spring\.
+- `config-pattern-00060` — Quarkus reads quarkus.datasource.jdbc.url instead of spring.datasource.url
+  - keys: fc:spring\.datasource\.url
+- `config-pattern-00070` — Quarkus uses quarkus.hibernate-orm.schema-management.strategy instead of spring.jpa.hibernate.ddl-auto
+  - keys: fc:spring\.jpa\.hibernate\.ddl-auto
+- `core-import-00010` — javax.annotation was renamed to jakarta.annotation in Jakarta EE 9+
+  - keys: java:javax.annotation
+- `core-method-00010` — SpringApplication.run() does not apply; Quarkus generates its own main
+  - keys: java:org.springframework.boot.springapplication.run
+- `core-type-00010` — CommandLineRunner has no Quarkus equivalent; use StartupEvent or @QuarkusMain
+  - keys: java:org.springframework.boot.commandlinerunner
+- `core-type-00020` — ApplicationRunner has no Quarkus equivalent
+  - keys: java:org.springframework.boot.applicationrunner
+- `datasource-change-00010` — Quarkus exposes JDBC datasources as CDI beans of type AgroalDataSource (a javax.sql.DataSource subtype); JNDI lookup is…
+  - keys: java:javax.sql.datasource
+- `datasource-import-00010` — Quarkus configures DataSource via application.properties; remove DataSourceBuilder usage
+  - keys: java:org.springframework.boot.jdbc.datasourcebuilder
+- `datasource-method-00020` — JNDI Context.lookup calls are not supported in Quarkus; use CDI @Inject
+  - keys: java:javax.naming.context.lookup
+- `datasource-pattern-00010` — Spring Boot datasource properties (spring.datasource.*) must be renamed to quarkus.datasource.*
+  - keys: fc:spring\.datasource\.(url|username|password|driver-class-name)
+- `dependencies-dependency-00020` — Spring Boot test starter has no direct equivalent
+  - keys: dep:org.springframework.boot.spring-boot-starter-test
+- `dependencies-dependency-00030` — Spring Boot Data REST starter must be replaced
+  - keys: dep:org.springframework.boot.spring-boot-starter-data-rest
+- `dependencies-dependency-00060` — spring-boot-autoconfigure has no Quarkus replacement
+  - keys: dep:org.springframework.boot.spring-boot-autoconfigure
+- `dependencies-dependency-00070` — spring-tx should be removed; use quarkus-narayana-jta instead
+  - keys: dep:org.springframework.spring-tx
+- `dependencies-dependency-00080` — springdoc-openapi-ui must be replaced by quarkus-smallrye-openapi
+  - keys: dep:org.springdoc.springdoc-openapi-ui
+- `dependencies-dependency-00090` — Use quarkus-micrometer-registry-prometheus instead of the bare Micrometer registry
+  - keys: dep:io.micrometer.micrometer-registry-prometheus
+- `dependencies-dependency-00100` — Spring Boot parent POM must be replaced with Quarkus BOM
+  - keys: dep:org.springframework.boot.spring-boot-starter-parent
+- `ejb-dependency-00010` — EJB API is not supported in Quarkus; migrate to CDI beans and @Transactional
+  - keys: dep:javax.ejb.javax.ejb-api
+- `ejb-pattern-00010` — Quarkus does not support EJB; ejb-jar.xml has no effect
+  - keys: fc:META-INF/ejb-jar\.xml
+- `health-annotation-00010` — io.quarkus.runtime.Startup conflicts with MicroProfile health Startup; review intent
+  - keys: java:io.quarkus.runtime.startup
+- `health-type-00010` — Spring Boot HealthIndicator is replaced by MicroProfile HealthCheck in Quarkus
+  - keys: java:org.springframework.boot.actuate.health.healthindicator
+- `hibernate-annotation-00010` — JNDI lookup is disabled in Quarkus Hibernate ORM extension; use CDI injection
+  - keys: java:javax.persistence.persistenceunit
+- `hibernate-annotation-00020` — javax.persistence is replaced by jakarta.persistence; Quarkus also provides a Quarkus-specific PersistenceUnit qualifier
+  - keys: java:javax.persistence.persistenceunit
+- `hibernate-annotation-00050` — Use Quarkus' @io.quarkus.hibernate.orm.JsonFormat qualifier for FormatMapper beans, not Jackson's @JsonFormat
+  - keys: java:com.fasterxml.jackson.annotation.jsonformat
+- `hibernate-dependency-00010` — Use Quarkus-managed hibernate-spatial without specifying version; Quarkus manages the version
+  - keys: dep:org.hibernate.orm.hibernate-spatial
+- `hibernate-dependency-00020` — Use Quarkus extension io.quarkus:quarkus-hibernate-envers instead of bare Hibernate Envers in Quarkus
+  - keys: dep:org.hibernate.orm.hibernate-envers
+- `hibernate-method-00010` — Quarkus' build-time Hibernate enhancement clones entity-specific fields; clone() is currently not supported
+  - keys: java:java.lang.object.clone
+- `hibernate-pattern-00010` — hibernate.cache.use_second_level_cache must be set in persistence.xml; not via application.properties
+  - keys: fc:hibernate\.cache\.use_second_level_cache
+- `hibernate-xml-00010` — Quarkus disables JNDI; jta-data-source in persistence.xml is not honored - configure via quarkus.datasource.*
+  - keys: xml://*[local-name()='jta-data-source']
+- `hibernate-xml-00020` — Quarkus disables JNDI; non-jta-data-source in persistence.xml is not honored
+  - keys: xml://*[local-name()='non-jta-data-source']
+- `hibernate-xml-00030` — Quarkus prefers application.properties for Hibernate ORM config; persistence.xml is also supported with limitations
+  - keys: xml://*[local-name()='persistence-unit']
+- `jpa-annotation-00010` — Spring Data @Query is supported with JPQL only; native and named queries are NOT supported by quarkus-spring-data-jpa
+  - keys: java:org.springframework.data.jpa.repository.query
+- `jpa-annotation-00020` — Quarkus discovers @Entity classes automatically; remove @EntityScan
+  - keys: java:org.springframework.boot.autoconfigure.domain.entityscan
+- `jpa-config-xml-00010` — META-INF/persistence.xml is supported but not recommended in Quarkus; prefer application.properties
+  - keys: xml://*[local-name()='persistence-unit']
+- `jpa-dependency-00010` — Java EE JPA API is provided by the quarkus-hibernate-orm extension (which brings jakarta.persistence)
+  - keys: dep:javax.persistence.javax.persistence-api
+- `jpa-import-00020` — Hibernate ThreadLocalSessionContext is not supported in Quarkus; use CDI injection
+  - keys: java:org.hibernate.context.internal.threadlocalsessioncontext
+- `jpa-import-00030` — Hibernate ORM JACC integration is disabled in Quarkus native images; use Quarkus security extensions
+  - keys: java:org.hibernate.secure
+- `jpa-import-00040` — Hibernate ORM JMX integration is disabled in Quarkus native images; expose stats via Micrometer
+  - keys: java:org.hibernate.jmx
+- `jpa-pattern-00010` — spring.jpa.* properties must be renamed to quarkus.hibernate-orm.* in Quarkus
+  - keys: fc:spring\.jpa\.
+- `jpa-pattern-00020` — Quarkus configures Hibernate ORM via application.properties; persistence.xml is optional and discouraged
+  - keys: fc:META-INF/persistence.xml
+- `jpa-pattern-00030` — Quarkus auto-includes META-INF/orm.xml; verify mapping settings and that duplicate files do not exist in multiple JARs
+  - keys: fc:META-INF/orm\.xml
+- `jpa-pattern-00040` — Hibernate hbm.xml mapping format is deprecated; migrate to orm.xml or annotations
+  - keys: fc:\.hbm\.xml
+- `jpa-pattern-00050` — Quarkus configures Hibernate ORM via application.properties; hibernate.cfg.xml is unused
+  - keys: fc:hibernate\.cfg\.xml
+- `jpa-pattern-00060` — Quarkus reconfigures Hibernate to require a semicolon terminator per statement; review import.sql for multi-line statem…
+  - keys: fc:(?s)\bimport\.sql\b
+- `jpa-pattern-00070` — Hibernate JNDI configuration properties are ignored in Quarkus; remove them
+  - keys: fc:hibernate\.jndi\.
+- `jpa-type-00010` — Spring Data repository interfaces require quarkus-spring-data-jpa; PanacheRepository is the native Quarkus equivalent
+  - keys: java:org.springframework.data.jpa.repository.jparepository, java:org.springframework.data.repository.crudrepository, java:org.springframework.data.repository.listcrudrepository, …+3
+- `jpa-type-00020` — JpaSpecificationExecutor and Specifications are NOT supported by quarkus-spring-data-jpa
+  - keys: java:org.springframework.data.jpa.repository.jpaspecificationexecutor
+- `jpa-type-00030` — Query By Example is not supported by quarkus-spring-data-jpa
+  - keys: java:org.springframework.data.repository.query.querybyexampleexecutor
+- `jpa-xml-00010` — Quarkus configures Hibernate ORM via application.properties instead of persistence.xml
+  - keys: xml://*[local-name()='persistence-unit']
+- `logging-change-00010` — JBoss Logging continues to work but io.quarkus.logging.Log offers static-method ergonomics
+  - keys: java:org.jboss.logging.logger
+- `logging-change-00020` — SLF4J works but routes through JBoss Logging; ensure SLF4J adapter is on classpath
+  - keys: java:org.slf4j.logger
+- `logging-change-00030` — Log4j 2 messages are routed via adapter; backend is JBoss Log Manager
+  - keys: java:org.apache.logging.log4j.logger
+- `logging-change-00040` — Log4j 1 is end-of-life; use adapter and migrate to JBoss Logging or io.quarkus.logging.Log
+  - keys: java:org.apache.log4j.logger
+- `logging-change-00050` — JUL works out-of-the-box but io.quarkus.logging.Log is recommended
+  - keys: java:java.util.logging.logger
+- `logging-dependency-00010` — log4j:log4j (Log4j 1.x) is unsupported in Quarkus; remove or migrate
+  - keys: dep:log4j.log4j
+- `logging-dependency-00020` — Replace log4j-core with org.jboss.logmanager:log4j2-jboss-logmanager in Quarkus
+  - keys: dep:org.apache.logging.log4j.log4j-core
+- `logging-dependency-00030` — Ensure Log4j 2 API calls go through the JBoss Log Manager adapter in Quarkus
+  - keys: dep:org.apache.logging.log4j.log4j-api
+- `logging-dependency-00040` — Replace commons-logging with org.jboss.logging:commons-logging-jboss-logging in Quarkus
+  - keys: dep:commons-logging.commons-logging
+- `logging-dependency-00050` — Replace slf4j-log4j12 binding with slf4j-jboss-logmanager in Quarkus
+  - keys: dep:org.slf4j.slf4j-log4j12
+- `logging-dependency-00060` — Replace logback-classic with org.jboss.slf4j:slf4j-jboss-logmanager in Quarkus
+  - keys: dep:ch.qos.logback.logback-classic
+- `logging-dependency-00070` — Remove spring-boot-starter-logging in Quarkus; logging is provided by JBoss Log Manager
+  - keys: dep:org.springframework.boot.spring-boot-starter-logging
+- `logging-import-00010` — Apache Commons Logging needs a JBoss Logging adapter in Quarkus, especially for native executables
+  - keys: java:org.apache.commons.logging
+- `logging-import-00020` — Log4j 2 calls must be routed via the log4j2-jboss-logmanager adapter in Quarkus
+  - keys: java:org.apache.logging.log4j
+- `logging-import-00030` — Log4j 1.x is removed in Quarkus; migrate to JBoss Logging or a supported API
+  - keys: java:org.apache.log4j
+- `logging-import-00040` — Use org.jboss.logmanager.MDC instead of Log4j 2 ThreadContext in Quarkus
+  - keys: java:org.apache.logging.log4j.threadcontext
+- `logging-import-00050` — Use org.jboss.logmanager.MDC for reactive context propagation in Quarkus
+  - keys: java:org.slf4j.mdc
+- `logging-method-00010` — SLF4J calls require the slf4j-jboss-logmanager adapter to integrate with Quarkus logging
+  - keys: java:org.slf4j.loggerfactory
+- `logging-pattern-00010` — Spring's logging.level.* property is replaced by quarkus.log.category."<pkg>".level
+  - keys: fc:logging\.level\.
+- `logging-pattern-00020` — Quarkus uses JBoss LogManager; Logback configuration files are ignored
+  - keys: fc:logback-spring
+- `logging-pattern-00030` — Quarkus uses JBoss Log Manager; logback.xml has no effect
+  - keys: fc:logback\.xml
+- `logging-pattern-00040` — Quarkus uses JBoss Log Manager; log4j.xml has no effect
+  - keys: fc:log4j\.xml
+- `logging-pattern-00050` — Quarkus configures logging via application.properties; log4j2.xml has no effect unless the log4j2-jboss-logmanager adap…
+  - keys: fc:log4j2\.xml
+- `logging-pattern-00060` — Quarkus uses JBoss Log Manager; log4j.properties has no effect
+  - keys: fc:log4j\.properties
+- `logging-pattern-00070` — Log4j/Logback config files are ignored by Quarkus; use quarkus.log.* properties
+  - keys: fc:log4j2\.xml|log4j\.xml|logback\.xml|logback-spring\.xml
+- `logging-pattern-00080` — Spring Boot logging.pattern.* / logging.file.* properties must be migrated to quarkus.log.*
+  - keys: fc:logging\.(pattern|file)\.
+- `observability-pattern-00010` — Spring Boot Actuator endpoints (management.endpoint.*) must be replaced by Quarkus equivalents
+  - keys: fc:management\.endpoints?\.
+- `openapi-import-00010` — MicroProfile OpenAPI annotations are first-class in Quarkus via quarkus-smallrye-openapi
+  - keys: java:org.eclipse.microprofile.openapi.annotations
+- `openapi-import-00020` — Swagger / springdoc annotations should be replaced by MicroProfile OpenAPI annotations
+  - keys: java:io.swagger.v3.oas.annotations
+- `persistence-pattern-00010` — persistence.xml is supported but discouraged; prefer Quarkus application.properties configuration
+  - keys: fc:META-INF/persistence\.xml
+- `reactive-change-00010` — Quarkus prefers Mutiny over Project Reactor
+  - keys: java:reactor.core.publisher.mono
+- `reactive-change-00020` — Quarkus prefers Mutiny Multi over Reactor Flux
+  - keys: java:reactor.core.publisher.flux
+- `rest-change-00010` — Spring WebClient should be replaced by Quarkus REST Client (reactive) or Vert.x WebClient
+  - keys: java:org.springframework.web.reactive.function.client.webclient
+- `rest-client-annotation-00010` — Spring Cloud OpenFeign clients are not supported; use MicroProfile Rest Client
+  - keys: java:org.springframework.cloud.openfeign.feignclient
+- `rest-client-dependency-00010` — quarkus-resteasy-client must not be used with quarkus-rest; replace with quarkus-rest-client
+  - keys: dep:io.quarkus.quarkus-resteasy-client
+- `rest-client-method-00010` — Spring RestTemplate is not provided in Quarkus; use MicroProfile Rest Client or the Jakarta REST Client API
+  - keys: java:org.springframework.web.client.resttemplate
+- `rest-dependency-00010` — Classic quarkus-resteasy is being replaced by quarkus-rest (reactive) as the recommended stack
+  - keys: dep:io.quarkus.quarkus-resteasy
+- `rest-dependency-00020` — quarkus-resteasy-jackson is replaced by quarkus-rest-jackson on the Quarkus REST stack
+  - keys: dep:io.quarkus.quarkus-resteasy-jackson
+- `rest-import-00020` — Spring WebFlux is not supported; migrate to Quarkus REST + Mutiny
+  - keys: java:org.springframework.web.reactive
+- `scheduler-type-00010` — SchedulingConfigurer is not supported in Quarkus; use @Scheduled or Vert.x timers
+  - keys: java:org.springframework.scheduling.annotation.schedulingconfigurer
+- `scheduling-annotation-00030` — @EnableScheduling is unused in Quarkus
+  - keys: java:org.springframework.scheduling.annotation.enablescheduling
+- `security-annotation-00010` — @Secured requires quarkus-spring-security; native equivalent is @RolesAllowed
+  - keys: java:org.springframework.security.access.annotation.secured
+- `security-annotation-00020` — @PreAuthorize supports only a subset of Spring SpEL expressions in quarkus-spring-security
+  - keys: java:org.springframework.security.access.prepost.preauthorize
+- `security-import-00010` — Quarkus uses Jakarta annotations; migrate javax.annotation.security imports
+  - keys: java:javax.annotation.security
+- `spring-boot-config-pattern-00010` — Spring Boot server.servlet.context-path is renamed to quarkus.http.root-path in Quarkus
+  - keys: fc:server\.servlet\.context-path
+- `spring-boot-config-pattern-00020` — Spring Boot spring.datasource.* properties must be migrated to quarkus.datasource.* in Quarkus
+  - keys: fc:spring\.datasource\.
+- `spring-cloud-config-annotation-00010` — Spring Cloud @RefreshScope has no equivalent in Quarkus
+  - keys: java:org.springframework.cloud.context.config.annotation.refreshscope
+- `spring-cloud-pattern-00010` — Spring Cloud Config bootstrap.properties is replaced by quarkus.spring-cloud-config.* in application.properties
+  - keys: fc:spring\.cloud\.config
+- `spring-cloud-pattern-00020` — spring.cloud.config.uri property is renamed to quarkus.spring-cloud-config.url in Quarkus
+  - keys: fc:spring\.cloud\.config\.uri
+- `spring-data-annotation-00010` — @Modifying is supported via quarkus-spring-data-jpa
+  - keys: java:org.springframework.data.jpa.repository.modifying
+- `spring-data-annotation-00020` — Spring Data JPA @Lock is not supported by quarkus-spring-data-jpa
+  - keys: java:org.springframework.data.jpa.repository.lock
+- `spring-data-annotation-00030` — @Param is optional in Quarkus when parameter names are compiled
+  - keys: java:org.springframework.data.repository.query.param
+- `spring-data-annotation-00040` — Quarkus auto-detects Spring Data repositories at build time; remove @EnableJpaRepositories
+  - keys: java:org.springframework.data.jpa.repository.config.enablejparepositories
+- `spring-data-change-00010` — Use quarkus.hibernate-orm.physical-naming-strategy to keep Spring Boot naming behaviour
+  - keys: java:org.springframework.boot.orm.jpa.hibernate.springphysicalnamingstrategy
+- `spring-data-change-00020` — Use quarkus.hibernate-orm.implicit-naming-strategy to keep Spring Boot implicit naming behaviour
+  - keys: java:org.springframework.boot.orm.jpa.hibernate.springimplicitnamingstrategy
+- `spring-data-type-00010` — Spring Data Repository requires quarkus-spring-data-jpa extension
+  - keys: java:org.springframework.data.repository.repository
+- `spring-data-type-00020` — PagingAndSortingRepository needs quarkus-spring-data-jpa extension
+  - keys: java:org.springframework.data.repository.pagingandsortingrepository
+- `spring-data-type-00030` — ListCrudRepository needs quarkus-spring-data-jpa extension
+  - keys: java:org.springframework.data.repository.listcrudrepository
+- `spring-data-type-00040` — ListPagingAndSortingRepository needs quarkus-spring-data-jpa extension
+  - keys: java:org.springframework.data.repository.listpagingandsortingrepository
+- `spring-data-type-00050` — Spring Data JpaRepository needs quarkus-spring-data-jpa extension
+  - keys: java:org.springframework.data.jpa.repository.jparepository
+- `spring-data-type-00060` — Customising the base repository via SimpleJpaRepository is not supported in Quarkus
+  - keys: java:org.springframework.data.jpa.repository.support.simplejparepository
+- `spring-data-type-00070` — QuerydslPredicateExecutor is not implemented in Quarkus spring-data-jpa
+  - keys: java:org.springframework.data.querydsl.querydslpredicateexecutor
+- `spring-di-annotation-00010` — Spring @Service has no Quarkus-native equivalent; use @ApplicationScoped or quarkus-spring-di
+  - keys: java:org.springframework.stereotype.service
+- `spring-di-annotation-00020` — Spring @Repository has no Quarkus-native equivalent; use @ApplicationScoped or Panache
+  - keys: java:org.springframework.stereotype.repository
+- `spring-di-annotation-00030` — Spring @Profile should be replaced by Quarkus @IfBuildProfile
+  - keys: java:org.springframework.context.annotation.profile
+- `spring-di-annotation-00040` — Spring @ConditionalOnProperty should be replaced by Quarkus IfBuildProperty or LookupIfProperty
+  - keys: java:org.springframework.boot.autoconfigure.condition.conditionalonproperty
+- `spring-di-annotation-00050` — @ConditionalOnClass has no native Quarkus equivalent
+  - keys: java:org.springframework.boot.autoconfigure.condition.conditionalonclass
+- `spring-di-annotation-00060` — Spring @ConditionalOnMissingBean should be replaced by @DefaultBean
+  - keys: java:org.springframework.boot.autoconfigure.condition.conditionalonmissingbean
+- `spring-di-annotation-00070` — Replace Spring @RequestScope with CDI @RequestScoped
+  - keys: java:org.springframework.web.context.annotation.requestscope
+- `spring-di-annotation-00080` — @SessionScope has limited support in Quarkus
+  - keys: java:org.springframework.web.context.annotation.sessionscope
+- `spring-di-annotation-00090` — Spring @Async has no Quarkus equivalent
+  - keys: java:org.springframework.scheduling.annotation.async
+- `spring-di-annotation-00100` — @EnableAsync is unused in Quarkus
+  - keys: java:org.springframework.scheduling.annotation.enableasync
+- `spring-di-annotation-00110` — Spring AOP / AspectJ aspects are not supported in Quarkus; use CDI interceptors
+  - keys: java:org.aspectj.lang.annotation.aspect
+- `spring-di-pattern-00010` — Quarkus does not read Spring XML configuration files
+  - keys: fc:applicationContext\.xml
+- `spring-di-type-00020` — ApplicationContextAware is not invoked in Quarkus
+  - keys: java:org.springframework.context.applicationcontextaware
+- `spring-di-type-00030` — InitializingBean lifecycle is not invoked in Quarkus
+  - keys: java:org.springframework.beans.factory.initializingbean
+- `spring-di-type-00040` — DisposableBean destroy hook is not invoked in Quarkus
+  - keys: java:org.springframework.beans.factory.disposablebean
+- `spring-di-type-00050` — FactoryBean is a Spring infrastructure class and is not executed in Quarkus
+  - keys: java:org.springframework.beans.factory.factorybean
+- `spring-scheduled-dependency-00010` — Replace spring scheduling dependency with quarkus-spring-scheduled or quarkus-scheduler
+  - keys: dep:org.springframework.spring-context-support
+- `spring-security-annotation-00010` — @PostAuthorize is not supported in Quarkus
+  - keys: java:org.springframework.security.access.prepost.postauthorize
+- `spring-web-annotation-00010` — @ResponseBody has no Jakarta REST equivalent; method return value IS the body
+  - keys: java:org.springframework.web.bind.annotation.responsebody
+- `spring-web-annotation-00020` — @ControllerAdvice has no equivalent; declare global exception mappers in a stand-alone class
+  - keys: java:org.springframework.web.bind.annotation.controlleradvice
+- `spring-web-annotation-00030` — Spring @MatrixVariable maps to Jakarta REST @MatrixParam
+  - keys: java:org.springframework.web.bind.annotation.matrixvariable
+- `spring-web-import-00010` — Quarkus serves HTTP via Vert.x; DispatcherServlet is not used
+  - keys: java:org.springframework.web.servlet.dispatcherservlet
+- `spring-web-type-00010` — Spring WebMvcConfigurer is not honored; use Quarkus REST configuration mechanisms
+  - keys: java:org.springframework.web.servlet.config.annotation.webmvcconfigurer
+- `spring-web-type-00020` — Spring MVC HandlerInterceptor is not supported in Quarkus; use Jakarta REST filters
+  - keys: java:org.springframework.web.servlet.handlerinterceptor
+- `testing-annotation-00010` — @QuarkusTestResource is being replaced by @WithTestResource for finer scoping
+  - keys: java:io.quarkus.test.common.quarkustestresource
+- `testing-annotation-00020` — @SpringBootTest must be replaced by @QuarkusTest
+  - keys: java:org.springframework.boot.test.context.springboottest
+- `testing-annotation-00030` — @WebMvcTest has no equivalent slice in Quarkus
+  - keys: java:org.springframework.boot.test.autoconfigure.web.servlet.webmvctest
+- `testing-annotation-00040` — @DataJpaTest has no equivalent slice in Quarkus
+  - keys: java:org.springframework.boot.test.autoconfigure.orm.jpa.datajpatest
+- `testing-annotation-00050` — Replace Spring @MockBean with @InjectMock in Quarkus tests
+  - keys: java:org.springframework.boot.test.mock.mockito.mockbean
+- `testing-annotation-00060` — Replace Spring @SpyBean with @InjectSpy in Quarkus tests
+  - keys: java:org.springframework.boot.test.mock.mockito.spybean
+- `testing-annotation-00070` — Spring @TestConfiguration is not supported; use QuarkusTestProfile or test-scope CDI alternatives
+  - keys: java:org.springframework.boot.test.context.testconfiguration
+- `testing-annotation-00080` — Spring @TestPropertySource is not supported; use a QuarkusTestProfile
+  - keys: java:org.springframework.test.context.testpropertysource
+- `testing-annotation-00090` — Quarkus testing uses JUnit 5; JUnit 4 @Test must be migrated
+  - keys: java:org.junit.test
+- `testing-annotation-00100` — Spring's @RunWith / SpringRunner is not supported by Quarkus testing
+  - keys: java:org.junit.runner.runwith
+- `testing-change-00010` — TestRestTemplate should be replaced by REST-assured for Quarkus tests
+  - keys: java:org.springframework.boot.test.web.client.testresttemplate
+- `testing-change-00020` — MockMvc is Spring-specific; use REST-assured
+  - keys: java:org.springframework.test.web.servlet.mockmvc
+- `transaction-annotation-00010` — Spring's @Transactional is not used in Quarkus; the Jakarta Transactions annotation must be used instead
+  - keys: java:org.springframework.transaction.annotation.transactional
+- `transaction-annotation-00030` — javax.transaction.Transactional must be migrated to jakarta.transaction.Transactional
+  - keys: java:javax.transaction.transactional
+- `transaction-annotation-00040` — @TransactionalEventListener has no direct replacement; use CDI transaction-scoped events
+  - keys: java:org.springframework.transaction.event.transactionaleventlistener
+- `transaction-annotation-00050` — javax.transaction.TransactionScoped must move to jakarta.transaction.TransactionScoped
+  - keys: java:javax.transaction.transactionscoped
+- `transaction-change-00010` — UserTransaction is the legacy API; prefer @Transactional or io.quarkus.narayana.jta.QuarkusTransaction in Quarkus
+  - keys: java:javax.transaction.usertransaction
+- `transaction-change-00020` — TransactionManager is provided by quarkus-narayana-jta in jakarta.transaction namespace
+  - keys: java:javax.transaction.transactionmanager
+- `transaction-change-00030` — Programmatic UserTransaction is the legacy approach; prefer @Transactional or QuarkusTransaction
+  - keys: java:javax.transaction.usertransaction
+- `transaction-import-00010` — Quarkus uses Jakarta Transactions (jakarta.transaction); javax.transaction is renamed
+  - keys: java:javax.transaction*
+- `transaction-import-00020` — Quarkus uses Jakarta Transactions; migrate javax.transaction imports
+  - keys: java:javax.transaction
+- `transaction-import-00030` — Quarkus does not provide PlatformTransactionManager; use Jakarta @Transactional or UserTransaction
+  - keys: java:org.springframework.transaction.platformtransactionmanager
+- `transaction-import-00040` — Quarkus does not provide TransactionTemplate; use QuarkusTransaction utility or @Transactional
+  - keys: java:org.springframework.transaction.support.transactiontemplate
+- `validation-import-00010` — javax.validation was renamed to jakarta.validation in Jakarta EE 9+
+  - keys: java:javax.validation
+- `web-annotation-00010` — @RestController has no Jakarta REST equivalent; annotating a class with @Path is sufficient
+  - keys: java:org.springframework.web.bind.annotation.restcontroller
+- `web-annotation-00020` — Spring MVC view controllers (@Controller with model+view) are not supported; use REST resources or Qute
+  - keys: java:org.springframework.stereotype.controller
+- `web-annotation-00030` — Spring @RequestMapping maps to @Path; consumes/produces become @Consumes/@Produces
+  - keys: java:org.springframework.web.bind.annotation.requestmapping
+- `web-annotation-00040` — Spring @GetMapping splits into @GET + @Path in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.getmapping
+- `web-annotation-00050` — Spring @PostMapping splits into @POST + @Path in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.postmapping
+- `web-annotation-00060` — Spring @PutMapping splits into @PUT + @Path in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.putmapping
+- `web-annotation-00070` — Spring @DeleteMapping splits into @DELETE + @Path in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.deletemapping
+- `web-annotation-00080` — Spring @PatchMapping splits into @PATCH + @Path in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.patchmapping
+- `web-annotation-00090` — Spring @RequestParam maps to @QueryParam in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.requestparam
+- `web-annotation-00100` — Spring @PathVariable maps to @PathParam in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.pathvariable
+- `web-annotation-00110` — Spring @RequestHeader maps to @HeaderParam in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.requestheader
+- `web-annotation-00120` — Spring @CookieValue maps to @CookieParam in Jakarta REST
+  - keys: java:org.springframework.web.bind.annotation.cookievalue
+- `web-annotation-00130` — Jakarta REST treats unannotated parameters as the request body; @RequestBody is unnecessary
+  - keys: java:org.springframework.web.bind.annotation.requestbody
+- `web-annotation-00140` — Jakarta REST has no @ResponseStatus equivalent; return jakarta.ws.rs.core.Response with the desired status
+  - keys: java:org.springframework.web.bind.annotation.responsestatus
+- `web-annotation-00150` — @ExceptionHandler is only supported inside @RestControllerAdvice in quarkus-spring-web; Jakarta REST uses ExceptionMapp…
+  - keys: java:org.springframework.web.bind.annotation.exceptionhandler
+- `web-annotation-00160` — Only @ExceptionHandler functionality of @RestControllerAdvice is supported by quarkus-spring-web
+  - keys: java:org.springframework.web.bind.annotation.restcontrolleradvice
+- `web-change-00010` — ResponseEntity is supported by quarkus-spring-web but new code should return jakarta.ws.rs.core.Response
+  - keys: java:org.springframework.http.responseentity
+- `web-change-00020` — HttpServletRequest/Response are only available when quarkus-undertow is used; on the reactive stack inject HttpServerRe…
+  - keys: java:javax.servlet.http.httpservletrequest, java:javax.servlet.http.httpservletresponse
+- `web-change-00030` — Quarkus REST does not use servlet objects by default; access request data via Jakarta REST or Vert.x APIs
+  - keys: java:javax.servlet.http.httpservletrequest
+- `web-dependency-00010` — javax.servlet-api is replaced by Jakarta REST; only quarkus-undertow re-introduces Servlet support
+  - keys: dep:javax.servlet.javax.servlet-api
+- `web-import-00010` — javax.servlet is replaced by jakarta.servlet; Quarkus reactive REST stack does not support Servlet API
+  - keys: java:javax.servlet*
+- `web-import-00030` — javax.servlet was renamed to jakarta.servlet in Jakarta EE 9+
+  - keys: java:javax.servlet
+- `web-import-00040` — Servlet response types require classic RESTEasy stack; reactive stack uses Vert.x HttpServerResponse
+  - keys: java:javax.servlet.http.httpservletresponse
+- `web-import-00050` — Servlet response types require classic RESTEasy stack; reactive stack uses Vert.x HttpServerResponse
+  - keys: java:javax.servlet.http.httpservletresponse
+- `web-pattern-00010` — Quarkus does not use web.xml; servlet/filter/listener mappings must be migrated to Jakarta REST or quarkus-undertow
+  - keys: fc:WEB-INF/web\.xml
+- `web-type-00010` — Quarkus does not run servlet filters by default; use RouteFilter or REST request filters
+  - keys: java:javax.servlet.filter
+- `web-xml-00010` — web.xml is not honoured by Quarkus REST; servlet/filter declarations must be removed
+  - keys: xml://*[local-name()='web-app']
+
+### Rules in handcrafted with no equivalent in ai (51)
+
+- `cdi-to-quarkus-00000` — Replace javax.enterprise:cdi-api dependency
+  - keys: xml:/m:project/m:dependencies/m:dependency[m:artifactId/text() = 'cdi-api' and m:groupId/text() = 'javax.enterprise' and (count(../m:dependency/m:groupId[contains(., 'io.quarkus')]) = 0)]
+- `cdi-to-quarkus-00020` — Replace javax.inject:javax.inject dependency
+  - keys: xml:/m:project/m:dependencies/m:dependency[m:artifactId/text() = 'javax.inject' and m:groupId/text() = 'javax.inject' and (count(../m:dependency/m:groupId[contains(., 'io.quarkus')]) = 0)]
+- `cdi-to-quarkus-00030` — `beans.xml` descriptor content is ignored
+  - keys: xml:/b:beans
+- `dependency-removal-for-quarkus-00000` — Remove non-quarkus dependencies
+  - keys: dep:org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec, dep:org.jboss.spec.javax.ejb.jboss-ejb-api_3.2_spec, dep:org.jboss.spec.javax.xml.bind.jboss-jaxb-api_2.3_spec
+- `jakarta-cdi-to-quarkus-00000` — Replace jakarta.enterprise:jakarta.enterprise.cdi-api dependency
+  - keys: xml:/m:project/m:dependencies/m:dependency[m:artifactId/text() = 'jakarta.enterprise.cdi-api' and m:groupId/text() = 'jakarta.enterprise' and (count(../m:dependency/m:groupId[contains(., 'io.quarkus')]) = 0)]
+- `jakarta-cdi-to-quarkus-00020` — Replace jakarta.inject:jakarta.inject-api dependency
+  - keys: xml:/m:project/m:dependencies/m:dependency[m:artifactId/text() = 'jakarta.inject-api' and m:groupId/text() = 'jakarta.inject' and (count(../m:dependency/m:groupId[contains(., 'io.quarkus')]) = 0)]
+- `jakarta-cdi-to-quarkus-00030` — `beans.xml` descriptor content is ignored
+  - keys: xml:/b:beans
+- `jakarta-faces-to-quarkus-00000` — Replace Jakarta Faces Dependency with MyFaces
+  - keys: xml:/m:project/m:dependencies/m:dependency[m:groupId/text() = 'jakarta.faces']
+- `jakarta-faces-to-quarkus-00010` — Replace Jakarta Faces Dependency with MyFaces
+  - keys: fc:artifactId>jakarta.faces<
+- `jakarta-jaxrs-to-quarkus-00010` — Replace jakarta JAX-RS dependency
+  - keys: dep:jakarta.ws.rs.jakarta.ws.rs-api
+- `javaee-faces-to-quarkus-00000` — Replace JSF Dependency with MyFaces
+  - keys: xml:/m:project/m:dependencies/m:dependency[m:groupId/text() = 'org.jboss.spec.javax.faces']
+- `javaee-pom-to-quarkus-00000` — The expected project artifact's extension is `jar`
+  - keys: xml:/m:project/m:packaging/text()[matches(self::node(), '^(pom|maven-plugin|ejb|war|ear|rar)$')]
+- `javaee-pom-to-quarkus-00010` — Adopt Quarkus BOM
+  - keys: xml:/m:project[not(m:dependencyManagement/m:dependencies/m:dependency/m:artifactId/text() = 'quarkus-bom') and not(m:dependencyManagement/m:dependencies/m:dependency/m:artifactId/text() = '${quarkus.platform.artifact-id}')]
+- `javaee-pom-to-quarkus-00020` — Adopt Quarkus Maven plugin
+  - keys: xml:/m:project[not(m:build/m:plugins/m:plugin/m:artifactId/text() = 'quarkus-maven-plugin')]
+- `javaee-pom-to-quarkus-00030` — Adopt Maven Compiler plugin
+  - keys: xml:/m:project[not(m:build/m:plugins/m:plugin/m:artifactId/text() = 'maven-compiler-plugin') or m:build/m:plugins/m:plugin/m:artifactId[text() = 'maven-compiler-plugin' and not(../m:configuration/m:compilerArgs/m:arg/text() = '-parameters')]]
+- `javaee-pom-to-quarkus-00040` — Adopt Maven Surefire plugin
+  - keys: xml:/m:project[not(m:build/m:plugins/m:plugin/m:artifactId/text() = 'maven-surefire-plugin') or m:build/m:plugins/m:plugin/m:artifactId[text() = 'maven-surefire-plugin' and not(../m:configuration/m:systemPropertyVariables/m:java.util.logging.manager/text() = 'org.jboss.logmanager.LogManager')]]
+- `javaee-pom-to-quarkus-00050` — Adopt Maven Failsafe plugin
+  - keys: xml:/m:project[ not(m:build/m:plugins/m:plugin/m:artifactId/text() = 'maven-failsafe-plugin') or m:build/m:plugins/m:plugin[m:artifactId[text() = 'maven-failsafe-plugin'] and not(m:executions/m:execution/m:configuration/m:systemPropertyVariables/m:native.image.path) and not(m:configuration/m:systemPropertyVariables/m:native.image.path) ] ]
+- `javaee-pom-to-quarkus-00060` — Add Maven profile to run the Quarkus native build
+  - keys: xml:/m:project[not(m:profiles/m:profile/m:properties/m:quarkus.package.type/text() = 'native')]
+- `javaee-pom-to-quarkus-00070` — Configure Quarkus hibernate-orm
+  - keys: xml:/m:project/m:dependencies/m:dependency/m:groupId[contains(text(),'org.hibernate')], xml:/m:project/m:dependencies/m:dependency[m:artifactId/text() = 'jakarta.persistence-api']
+- `javaee-pom-to-quarkus-00080` — Use Quarkus junit artifact
+  - keys: dep:junit.junit
+- `jaxrs-to-quarkus-00000` — Replace JAX-RS dependency
+  - keys: dep:org.jboss.spec.javax.ws.rs.jboss-jaxrs-api_2.1_spec
+- `jaxrs-to-quarkus-00010` — Replace JAX-RS dependency
+  - keys: dep:javax.ws.rs.javax.ws.rs-api
+- `jdbc-jpa-mixed-to-quarkus-00001` — Mixed JDBC and JPA usage detected
+  - keys: java:*entitymanager, java:java.sql.preparedstatement
+- `jdbc-jpa-mixed-to-quarkus-00002` — Direct JDBC Connection usage detected
+  - keys: java:java.sql.connection
+- `jdbc-jpa-mixed-to-quarkus-00003` — Statement usage should be reviewed
+  - keys: java:java.sql.statement
+- `jms-to-reactive-quarkus-00000` — JMS is not supported in Quarkus
+  - keys: dep:jakarta.jms.jakarta.jms-api, dep:javax.jms.javax.jms-api
+- `jndi-to-quarkus-00002` — JNDI lookup() method is not supported in Quarkus
+  - keys: java:javax.naming.context.lookup*
+- `persistence-to-quarkus-00000` — Move persistence config to a properties file
+  - keys: file:.*-ds\.xml, file:persistence\.xml
+- `springboot-actuator-to-quarkus-0200` — Replace Spring Health endpoint mapping
+  - keys: fc:management.endpoints.web.exposure.include.*health
+- `springboot-devtools-to-quarkus-0000` — Remove spring-boot-devtools dependency
+  - keys: xml:/m:project/m:dependencies/m:dependency[m:artifactId = 'spring-boot-devtools']
+- `springboot-di-to-quarkus-00000` — Replace the SpringBoot Dependency Injection artifact with Quarkus 'spring-di' extension
+  - keys: dep:org.springframework.spring-beans
+- `springboot-di-to-quarkus-00001` — For Spring DI the XML-based bean configuration metadata is not supported by Quarkus 
+  - keys: xml://*/b:bean/@class, xml://*/c:annotation-config
+- `springboot-generic-catchall-00100` — Spring component requires investigation for compatibility with Quarkus extensions or possibility of code rewrite.
+  - keys: dep:{group}.{artifact}
+- `springboot-integration-to-quarkus-00010` — SpringBoot Integration flows are not supported.
+  - keys: xml://*/int:channel
+- `springboot-integration-to-quarkus-00020` — SpringBoot IntegrationFlow class usage is not supported.
+  - keys: java:org.springframework.integration.dsl.integrationflow
+- `springboot-jmx-to-quarkus-00000` — Spring JMX is not supported by Quarkus with GraalVM on a Native Image
+  - keys: xml://*/c:bean/@class[matches(self::node(), 'org.springframework.jmx.export.MBeanExporter')]
+- `springboot-jmx-to-quarkus-00001` — Spring JMX is not supported by Quarkus with GraalVM on a Native Image
+  - keys: java:org.springframework.jmx.*
+- `springboot-metrics-to-quarkus-0100` — Replace the Micrometer dependency with Quarkus Microprofile 'metrics' extension
+  - keys: dep:io.micrometer.micrometer-core
+- `springboot-metrics-to-quarkus-0200` — Replace the Micrometer code with Microprofile Metrics code
+  - keys: dep:io.micrometer.micrometer-core
+- `springboot-metrics-to-quarkus-0300` — Replace Spring Prometheus Metrics endpoint mapping
+  - keys: fc:management.endpoints.web.exposure.include.*prometheus
+- `springboot-plugins-to-quarkus-0000` — Replace the spring-boot-maven-plugin dependency
+  - keys: xml:/m:project/m:build/m:plugins/m:plugin[m:artifactId = 'spring-boot-maven-plugin']
+- `springboot-properties-to-quarkus-00001` — Spring property profiles in separate files must be refactored into Quarkus properties file
+  - keys: file:application-.+\.(properties|yml|yaml)
+- `springboot-properties-to-quarkus-00002` — Replace Spring datasource property key/value pairs with Quarkus properties
+  - keys: fc:spring.datasource
+- `springboot-properties-to-quarkus-00003` — Replace Spring log level property with Quarkus property
+  - keys: fc:logging.level.org.springframework
+- `springboot-properties-to-quarkus-00004` — Replace Spring JPA Hiberate property with Quarkus property
+  - keys: fc:spring.jpa.hibernate.ddl-auto=create-drop
+- `springboot-properties-to-quarkus-00005` — Replace Spring Swagger endpoint mapping
+  - keys: fc:springdoc.swagger-ui.path
+- `springboot-properties-to-quarkus-00006` — Replace Spring OpenAPI endpoint mapping
+  - keys: fc:springdoc.api-docs.path
+- `springboot-shell-to-quarkus-00000` — Replace the SpringBoot Shell artifact with Quarkus 'picocli' extension
+  - keys: dep:org.springframework.shell.spring-shell-core
+- `springboot-web-to-quarkus-00010` — Add the Quarkus 'quarkus-resteasy-reactive-jackson' dependency
+  - keys: dep:io.quarkus.quarkus-resteasy-reactive-jackson, dep:io.quarkus.quarkus-spring-web
+- `springboot-webmvc-to-quarkus-00000` — Spring MVC is not supported by Quarkus
+  - keys: java:org.springframework.web.servlet.mvc*
+- `springboot-webmvc-to-quarkus-01000` — Spring WebFlux is not supported by Quarkus
+  - keys: dep:org.springframework.boot.spring-boot-starter-webflux, dep:org.springframework.spring-webflux
+
+## Kantra diff (app: /Users/fabian/scratch/eval-apps/eap-quickstarts/helloworld-jms)
+
+| | ai | handcrafted |
+|---|---|---|
+| Rules fired | 6 | 9 |
+| Incidents | 14 | 13 |
+| Files flagged only here | 0 | 0 |
+| Files flagged by both | 2 | 2 |
+
+### Files flagged by both (2)
+
+- `pom.xml` — A: [build-xml-00040] · B: [javaee-pom-to-quarkus-00010 javaee-pom-to-quarkus-00020 javaee-pom-to-quarkus-00030 …+3]
+- `src/main/java/org/jboss/as/quickstarts/jms/HelloWorldJMSClient.java` — A: [datasource-method-00010 datasource-method-00020 logging-change-00050 …+2] · B: [jms-to-reactive-quarkus-00050 jndi-to-quarkus-00001 jndi-to-quarkus-00002]
+

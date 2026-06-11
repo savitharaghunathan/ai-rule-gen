@@ -40,19 +40,29 @@ Coverage matrix totals (per the `.md` reports):
 
 ## Other sample apps (kantra diff only)
 
-|                                | jakarta AI | jakarta hc | quarkus AI | quarkus hc |
-| ------------------------------ | ---------- | ---------- | ---------- | ---------- |
-| ejb-remote — rules fired       | 1          | 0          | 1          | 7          |
-| ejb-remote — incidents         | 1          | 0          | 1          | 20         |
-| ejb-remote — files in both     | 0          | 0          | 1          | 1          |
-| ejb-security — rules fired     | 1          | 0          | 1          | 6          |
-| ejb-security — incidents       | 1          | 0          | 1          | 6          |
-| ejb-security — files in both   | 0          | 0          | 1          | 1          |
-| tasks-qute — rules fired       | 0          | 7          | 5          | 12         |
-| tasks-qute — incidents         | 0          | 18         | 5          | 15         |
-| tasks-qute — files in both     | 0          | 0          | 2          | 2          |
+Eleven additional apps: three konveyor-ecosystem migration samples and eight `jboss-developer/jboss-eap-quickstarts` (7.4.x). Each cell is `rules-fired / incidents`.
 
-Across the small apps the handcrafted ruleset consistently wins on quarkus. jakarta numbers are tiny on all three (kantra's default scan skips `src/test/java/`, where most of tasks-qute's `javax.faces` imports live).
+|                | jakarta AI | jakarta hc | quarkus AI | quarkus hc |
+| -------------- | ---------- | ---------- | ---------- | ---------- |
+| ejb-remote     | 1 / 1      | 0 / 0      | 1 / 1      | 7 / 20     |
+| ejb-security   | 1 / 1      | 0 / 0      | 1 / 1      | 6 / 6      |
+| tasks-qute     | 0 / 0      | 7 / 18     | 5 / 5      | 12 / 15    |
+| kitchensink    | 9 / 69     | 19 / 86    | 23 / 104   | 21 / 32    |
+| helloworld-jms | 3 / 9      | 2 / 5      | 6 / 14     | 9 / 13     |
+| helloworld-mdb | 6 / 30     | 8 / 34     | 16 / 59    | 16 / 43    |
+| helloworld-rs  | 3 / 8      | 5 / 12     | 5 / 12     | 12 / 13    |
+| helloworld-ws  | 5 / 7      | 8 / 12     | **1 / 1**  | **11 / 11**|
+| cmt            | 7 / 75     | 15 / 86    | 23 / 147   | 21 / 47    |
+| hibernate      | 9 / 50     | 17 / 65    | 20 / 71    | 17 / 26    |
+| bmt            | 5 / 29     | 10 / 38    | 21 / 59    | 16 / 20    |
+| **totals (12 apps incl. coolstore)** | **51 / 388** | **104 / 474** | **154 / 688** | **173 / 301** |
+
+Patterns across apps:
+
+- **Jakarta**: AI fires roughly half as many distinct rules as handcrafted but catches ~82% of the incidents — its broad sweep rules carry coverage with few rules.
+- **Quarkus**: AI fires 2.3× more incidents in aggregate. Per the quarkus judge, ~50% of that is overlapping rules (broad package + specific class + bare-name firing on the same import line), not new findings.
+- **Real coverage gaps**: AI has essentially zero JAX-WS → Quarkus coverage (`helloworld-ws`: 1/1 vs 11/11). None of the 25 quarkus.io guides we ingested cover JAX-WS migration directly. JAX-RS coverage is thin too (`helloworld-rs`: 5/12 on quarkus).
+- **AI wins on**: hibernate quarkus, cmt/bmt quarkus, helloworld-jms jakarta, helloworld-mdb jakarta. Mostly cases where its sweep rules apply cleanly to focused codebases.
 
 ## Notes
 
