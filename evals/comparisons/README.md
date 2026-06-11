@@ -2,9 +2,9 @@
 
 Side-by-side numbers for ai-rule-gen vs the hand-authored rulesets at konveyor/rulesets. Generated artifacts in this dir:
 
-- `javaee-to-jakarta.md` / `javaee-to-quarkus.md` — `cmd/compare` output on coolstore (coverage matrix + kantra-analyze diff)
-- `javaee-to-{jakarta,quarkus}.{ejb-remote,ejb-security,tasks-qute}.md` — same diff against three other sample apps
-- `javaee-to-jakarta-judge.md` / `javaee-to-quarkus-judge.md` — LLM judge writeups (head-to-head, sampled rules)
+- `javaee-to-jakarta.md` / `javaee-to-quarkus.md` / `spring-boot2-to-spring-boot3.md` — `cmd/compare` output (coverage matrix + kantra-analyze diff)
+- `javaee-to-{jakarta,quarkus}.{ejb-remote,ejb-security,tasks-qute,kitchensink,helloworld-*,cmt,hibernate,bmt}.md` — javaee diffs against more sample apps
+- `*-judge.md` — LLM judge writeups (head-to-head, sampled rules)
 
 ## Setup
 
@@ -12,13 +12,14 @@ Side-by-side numbers for ai-rule-gen vs the hand-authored rulesets at konveyor/r
 | --- | --- | --- |
 | javaee → jakarta | Red Hat EAP 8 Migration Guide PDF | `stable/java/eap8` |
 | javaee → quarkus | 25 quarkus.io guides cited by the handcrafted ruleset, concatenated | `stable/java/quarkus` |
+| spring-boot2 → spring-boot3 | Official Spring Boot 3.0 Migration Guide wiki page | `stable/java/spring-boot` |
 
 Sample apps cloned at `~/scratch/eval-apps/`:
 
-- `konveyor-ecosystem/coolstore` @ b5752b9 — large javaee 7 monolith (primary)
-- `konveyor-ecosystem/ejb-remote` — small EAP quickstart
-- `konveyor-ecosystem/ejb-security` — small EAP quickstart
-- `konveyor-ecosystem/tasks-qute` — eap tasks-jsf, in-progress quarkus migration
+- `konveyor-ecosystem/coolstore` @ b5752b9 — large javaee 7 monolith (primary, javaee)
+- `konveyor-ecosystem/ejb-remote`, `ejb-security`, `tasks-qute` — small EAP quickstarts (javaee)
+- `jboss-developer/jboss-eap-quickstarts` 7.4.x — kitchensink, helloworld-{jms,mdb,rs,ws}, cmt, hibernate, bmt (javaee)
+- `spring-projects/spring-petclinic` @ 276880ed — Spring Boot 2.7.3 (spring-boot)
 
 ## Coolstore numbers
 
@@ -33,10 +34,27 @@ Sample apps cloned at `~/scratch/eval-apps/`:
 
 Coverage matrix totals (per the `.md` reports):
 
-|                                                 | jakarta | quarkus |
-| ----------------------------------------------- | ------- | ------- |
-| AI rules with handcrafted equivalent            | 63 / 292 | 24 / 275 |
-| handcrafted rules with AI equivalent            | 74 / 340 | 20 / 82  |
+|                                                 | jakarta | quarkus | spring-boot 2→3 |
+| ----------------------------------------------- | ------- | ------- | --------------- |
+| AI rules with handcrafted equivalent            | 63 / 292 | 24 / 275 | 13 / 70        |
+| handcrafted rules with AI equivalent            | 74 / 340 | 20 / 82  | 11 / 170       |
+
+## Spring Boot 2→3 (petclinic 2.7.3)
+
+|                                | AI       | handcrafted |
+| ------------------------------ | -------- | ----------- |
+| rules                          | 70       | 170         |
+| quality (cmd/eval)             | 5.7 / 6  | 5.6 / 6     |
+| rules fired                    | 8        | 5           |
+| effective match (in-app APIs)  | 8/14 (57%) | 5/17 (29%) |
+| incidents                      | 47       | 10          |
+| files flagged                  | 13       | 5           |
+| files flagged only here        | 12       | 4           |
+| files in both                  | 1        | 1           |
+
+**Judge verdict: AI wins on this app.** Spring Boot 3 is fundamentally the javax → jakarta namespace move. AI emits 10 `PACKAGE`-scoped rules covering servlet/persistence/annotation/validation/transaction/ejb/jms/mail/ws.rs/xml.bind. Handcrafted has exactly **one** Jakarta rule (`spring-boot-2.x-to-3.0-core-changes-00060`), keyed on `javax.servlet*` `IMPORT`. Petclinic doesn't import `javax.servlet` anywhere — it uses `javax.persistence` and `javax.validation` across 11 entity/controller files. Handcrafted catches zero of those sites; AI catches all of them. Unlike quarkus, the 47-vs-10 incident gap here is real (each AI Jakarta rule fires once per file, not redundant overlap).
+
+Handcrafted still has clear wins on the long-tail removed-API catalog — 80+ rules in `removals.yaml` covering `MustacheProperties`/`FlywayProperties`/`DynatraceProperties` setters, 16 Spring Cloud version floors, `spring-boot-starter-parent` floor, `SpringPhysicalNamingStrategy`, `LocalServerPort`, banner-image files, `spring.factories` — none of which AI emits. Across a broader corpus of apps handcrafted would catch many things AI misses; on this app's profile AI wins outright.
 
 ## Other sample apps (kantra diff only)
 

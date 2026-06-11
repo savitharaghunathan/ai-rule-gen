@@ -48,3 +48,5 @@ Thumbs.db
 /evals/javaee-to-jakarta-handcrafted/rules/
 /evals/javaee-to-quarkus-handcrafted/rules/
 /scratch/
+
+/evals/spring-boot2-to-spring-boot3-handcrafted/rules/

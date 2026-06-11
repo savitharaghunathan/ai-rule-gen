@@ -1,0 +1,6 @@
+guide_url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide
+app_repo: https://github.com/spring-projects/spring-petclinic
+app_commit: ""
+source: spring-boot2
+target: spring-boot3
+rules_dir: evals/spring-boot2-to-spring-boot3/rules

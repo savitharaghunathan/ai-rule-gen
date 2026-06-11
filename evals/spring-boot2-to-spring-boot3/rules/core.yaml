@@ -1,0 +1,193 @@
+- ruleID: core-dependency-00010
+  description: Spring Boot 3.0 requires Java 17 and Spring Framework 6.0; Java 8 is no longer supported
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3.0 raises the minimum Java baseline to **Java 17** (Java 8 and Java 11 are no longer supported) and the minimum Spring Framework version to **6.0**. This rule fires on any project still on Spring Boot 2.x (`org.springframework.boot:spring-boot` < 3.0.0). Before bumping the Spring Boot version, verify the build and runtime environments satisfy the new baseline.
+
+    ### Migration Steps
+    - Set your build's source/target compatibility to Java 17 (`maven.compiler.release=17`, or Gradle `java.toolchain.languageVersion = JavaLanguageVersion.of(17)`)
+    - Update the CI/CD JDK to a 17+ distribution; update Docker base images (e.g., `eclipse-temurin:17-jre`)
+    - Verify all third-party libraries used by your project publish Java 17-compatible artifacts; libraries that have not been updated for the Jakarta EE 9+ namespace move may need replacement
+    - Review the Spring Framework 6.0 upgrade guide: https://github.com/spring-projects/spring-framework/wiki/Upgrading-to-Spring-Framework-6.x
+    - Verify that any JVM flags / system properties in your launch scripts are valid on Java 17 (some Java 8 flags have been removed)
+
+    ### Additional Info
+    - Spring Framework 6.0 itself requires Java 17 and Jakarta EE 9+ (the `javax.*` → `jakarta.*` namespace migration)
+    - The Spring Boot Properties Migrator (`org.springframework.boot:spring-boot-properties-migrator`) can help surface renamed configuration properties at runtime during the upgrade
+    - Java 17 enables features like records, sealed classes, and pattern matching — but no Spring Boot code changes are required to adopt them
+    - If you are on Java 8 or 11, plan the JVM upgrade BEFORE starting the Spring Boot version bump — debugging Spring Boot 3 issues on the wrong JVM is much harder
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#review-system-requirements
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot
+        upperbound: 3.0.0
+- ruleID: core-dependency-00020
+  description: Spring Boot 3.0 requires Spring Framework 6.0; spring-core below 6.0.0 must be upgraded
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3.0 builds on and requires Spring Framework 6.0. Upgrading to Spring Boot 3 requires a parallel upgrade of Spring Framework. Review the Spring Framework 6.x upgrade guide for breaking API changes, baseline updates (Java 17), and Jakarta EE 9+ namespace changes.
+
+    ### Migration Steps
+    - Upgrade the `org.springframework:spring-core` dependency (and all `spring-*` artifacts) to 6.0.0+
+    - Review the Spring Framework 6.x upgrade guide for breaking changes
+    - Ensure your code is on Java 17 or later
+    - Update any `javax.*` imports to `jakarta.*` (Jakarta EE 9+)
+
+    ### Additional Info
+    - Spring Framework 6 has Java 17 as its baseline
+    - Jakarta EE namespace migration is required (`javax` -> `jakarta`)
+    - Many deprecated APIs from Spring Framework 5 have been removed
+  links:
+    - url: https://github.com/spring-projects/spring-framework/wiki/Upgrading-to-Spring-Framework-6.x
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.spring-core
+        upperbound: 6.0.0
+- ruleID: core-annotation-00010
+  description: '@ConstructorBinding is no longer needed at the type level on @ConfigurationProperties classes'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `@ConstructorBinding` is no longer needed at the type level on `@ConfigurationProperties` classes and should be removed. When a class or record has multiple constructors, it may still be used on a specific constructor to indicate which one is used for property binding.
+
+    ### Before
+    ```java
+    import org.springframework.boot.context.properties.ConfigurationProperties;
+    import org.springframework.boot.context.properties.ConstructorBinding;
+
+    @ConstructorBinding
+    @ConfigurationProperties("app")
+    public class AppProperties {
+        private final String name;
+        public AppProperties(String name) { this.name = name; }
+    }
+    ```
+
+    ### After
+    ```java
+    import org.springframework.boot.context.properties.ConfigurationProperties;
+
+    @ConfigurationProperties("app")
+    public class AppProperties {
+        private final String name;
+        public AppProperties(String name) { this.name = name; }
+    }
+    ```
+
+    ### Additional Info
+    - If you have multiple constructors, annotate the desired one with `@ConstructorBinding`
+    - If you were relying on autowiring of dependencies into the constructor of a `@ConfigurationProperties` class, you must now annotate it with `@Autowired` to prevent it being identified as the binding target
+    - `@ConstructorBinding` was moved to `org.springframework.boot.context.properties.bind.ConstructorBinding` (already in 2.7), so a separate import-relocation rule is not needed if you are coming from 2.7+
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#constructingbinding-no-longer-needed-at-the-type-level
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.context.properties.ConstructorBinding
+        location: ANNOTATION
+- ruleID: core-import-00010
+  description: YamlJsonParser has been removed in Spring Boot 3.0
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.springframework.boot.json.YamlJsonParser` has been removed in Spring Boot 3.0 because SnakeYAML's JSON parsing was inconsistent with the other parser implementations.
+
+    ### Before
+    ```java
+    import org.springframework.boot.json.YamlJsonParser;
+
+    JsonParser parser = new YamlJsonParser();
+    ```
+
+    ### After
+    ```java
+    import org.springframework.boot.json.JacksonJsonParser;
+
+    JsonParser parser = new JacksonJsonParser();
+    ```
+
+    ### Additional Info
+    - Available alternatives: `JacksonJsonParser`, `GsonJsonParser`, `BasicJsonParser`
+    - All implement `org.springframework.boot.json.JsonParser`
+    - Behavior should be equivalent for standard JSON input
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#yamljsonparser-has-been-removed
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.json.YamlJsonParser
+        location: IMPORT
+- ruleID: core-pattern-00010
+  description: Registering auto-configurations under EnableAutoConfiguration in spring.factories is removed; use AutoConfiguration.imports
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3.0 removes support for registering auto-configurations in `META-INF/spring.factories` under the `org.springframework.boot.autoconfigure.EnableAutoConfiguration` key. Move auto-configuration registrations to `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
+
+    ### Before (`META-INF/spring.factories`)
+    ```
+    org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+    com.example.MyAutoConfiguration
+    ```
+
+    ### After (`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`)
+    ```
+    com.example.MyAutoConfiguration
+    ```
+
+    ### Additional Info
+    - Other keys in `spring.factories` (e.g., `EnvironmentPostProcessor`) are unaffected
+    - The new `AutoConfiguration.imports` file lists one fully qualified class name per line
+    - Libraries targeting both 2.x and 3.x can list classes in both files (2.7 de-duplicates)
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#auto-configuration-files
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.springframework\.boot\.autoconfigure\.EnableAutoConfiguration\s*=
+        filePattern: .*spring\.factories
