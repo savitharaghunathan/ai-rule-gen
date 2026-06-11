@@ -1,0 +1,78 @@
+- ruleID: scheduling-annotation-00010
+  description: Spring @Scheduled requires quarkus-spring-scheduled; native equivalent is @io.quarkus.scheduler.Scheduled
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Add `io.quarkus:quarkus-spring-scheduled` to keep `@org.springframework.scheduling.annotation.Scheduled` working, or migrate to `@io.quarkus.scheduler.Scheduled` (richer expressions, identity, skip predicates).
+
+    ### Before
+    ```java
+    import org.springframework.scheduling.annotation.Scheduled;
+
+    @Scheduled(cron = "*/5 * * * * ?")
+    void cronJob() { ... }
+    ```
+
+    ### After
+    ```java
+    import io.quarkus.scheduler.Scheduled;
+
+    @Scheduled(cron = "*/5 * * * * ?")
+    void cronJob() { ... }
+    ```
+
+    ### Additional Info
+    - `quarkus-spring-scheduled` does NOT support `@Async`, `@EnableScheduling`, or task executors.
+    - `fixedRate`, `fixedDelay`, and `initialDelay` are supported on both.
+  links:
+    - url: https://quarkus.io/guides/spring-scheduled
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.scheduling.annotation.Scheduled
+        location: ANNOTATION
+- ruleID: scheduling-annotation-00020
+  description: EJB timer service @Schedule is not supported; use @io.quarkus.scheduler.Scheduled
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@javax.ejb.Schedule(...)` with `@io.quarkus.scheduler.Scheduled(cron = "...")` from the `quarkus-scheduler` extension.
+  links:
+    - url: https://quarkus.io/guides/scheduler
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ejb.Schedule
+        location: ANNOTATION
+- ruleID: scheduling-annotation-00030
+  description: '@EnableScheduling is unused in Quarkus'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `@EnableScheduling`. Scheduling is automatically enabled by adding the `quarkus-scheduler` or `quarkus-spring-scheduled` extension.
+  links:
+    - url: https://quarkus.io/guides/scheduler-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.scheduling.annotation.EnableScheduling
+        location: ANNOTATION

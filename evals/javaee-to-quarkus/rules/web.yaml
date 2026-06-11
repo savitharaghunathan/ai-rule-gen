@@ -1,0 +1,717 @@
+- ruleID: web-import-00010
+  description: javax.servlet is replaced by jakarta.servlet; Quarkus reactive REST stack does not support Servlet API
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses Jakarta EE 9+ namespace; `javax.servlet` is renamed to `jakarta.servlet`. Additionally, the Servlet API is only available with the classic RESTEasy stack (`quarkus-undertow`); the reactive `quarkus-rest` stack does NOT support Servlets.
+
+    ### Before
+    ```java
+    import javax.servlet.http.HttpServlet;
+    import javax.servlet.http.HttpServletRequest;
+    import javax.servlet.http.HttpServletResponse;
+
+    public class GreetingServlet extends HttpServlet {
+        protected void doGet(HttpServletRequest req, HttpServletResponse res) { ... }
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.ws.rs.GET;
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.Produces;
+    import jakarta.ws.rs.core.MediaType;
+
+    @Path("/greeting")
+    public class GreetingResource {
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        public String hello() { return "hello"; }
+    }
+    ```
+
+    ### Additional Info
+    - Prefer Jakarta REST (`jakarta.ws.rs`) endpoints over Servlets.
+    - If you must keep Servlet code, add the `quarkus-undertow` extension and re-import everything from `jakarta.servlet`.
+    - For low-level HTTP access on the reactive stack, inject `io.vertx.core.http.HttpServerRequest` / `HttpServerResponse`.
+    - `HttpSession` and `web.xml` deployment descriptors are not honoured.
+  links:
+    - url: https://quarkus.io/guides/rest
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.servlet*
+        location: PACKAGE
+- ruleID: web-import-00020
+  description: Quarkus uses Jakarta REST (jakarta.ws.rs); javax.ws.rs namespace is renamed
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses Jakarta REST. Re-import every JAX-RS type (`@Path`, `@GET`, `@Produces`, `Response`, `MediaType`, etc.) from the `jakarta.ws.rs` namespace.
+
+    ### Before
+    ```java
+    import javax.ws.rs.GET;
+    import javax.ws.rs.Path;
+    import javax.ws.rs.Produces;
+    import javax.ws.rs.core.MediaType;
+
+    @Path("/api")
+    public class MyResource {
+        @GET
+        @Produces(MediaType.APPLICATION_JSON)
+        public String list() { return "[]"; }
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.ws.rs.GET;
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.Produces;
+    import jakarta.ws.rs.core.MediaType;
+
+    @Path("/api")
+    public class MyResource {
+        @GET
+        @Produces(MediaType.APPLICATION_JSON)
+        public String list() { return "[]"; }
+    }
+    ```
+
+    ### Additional Info
+    - Add the `quarkus-rest` extension (or `quarkus-rest-jackson` for JSON) instead of an external JAX-RS implementation.
+    - Quarkus REST is reactive by default; blocking endpoints should be marked with `@io.smallrye.common.annotation.Blocking`.
+    - `Application` subclasses are tolerated but configuration belongs in `application.properties`.
+  links:
+    - url: https://quarkus.io/guides/rest
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ws.rs*
+        location: PACKAGE
+- ruleID: web-dependency-00010
+  description: javax.servlet-api is replaced by Jakarta REST; only quarkus-undertow re-introduces Servlet support
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `javax.servlet:javax.servlet-api`. Migrate Servlets to Jakarta REST (`quarkus-rest`). Only add `quarkus-undertow` if you cannot avoid keeping Servlets — and re-import them from `jakarta.servlet`.
+  links:
+    - url: https://quarkus.io/guides/rest
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.servlet.javax.servlet-api
+        lowerbound: 0.0.0
+- ruleID: web-dependency-00020
+  description: spring-boot-starter-web is replaced by quarkus-rest-jackson; quarkus-spring-web provides annotation compatibility
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Remove `spring-boot-starter-web` and add `io.quarkus:quarkus-rest-jackson`. For temporary compatibility with `@RestController` / `@RequestMapping`, also add `io.quarkus:quarkus-spring-web` (note: Spring Web does not start an ApplicationContext in Quarkus).'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-web
+        lowerbound: 0.0.0
+- ruleID: web-dependency-00030
+  description: spring-web is replaced by quarkus-rest-jackson; quarkus-spring-web bridges Spring Web annotations
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring Web dependency replaced by Quarkus REST: spring-web is replaced by quarkus-rest-jackson; quarkus-spring-web bridges Spring Web annotations'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.spring-web
+        lowerbound: 0.0.0
+- ruleID: web-annotation-00010
+  description: '@RestController has no Jakarta REST equivalent; annotating a class with @Path is sufficient'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta REST has no `@RestController` equivalent — annotating a class with `@jakarta.ws.rs.Path` makes it a REST resource. The `quarkus-spring-web` extension keeps `@RestController` working during migration.
+
+    ### Before
+    ```java
+    @RestController
+    @RequestMapping("/greeting")
+    public class GreetingController {
+        @GetMapping
+        public String hello() { return "hello"; }
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.ws.rs.GET;
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.Produces;
+    import jakarta.ws.rs.core.MediaType;
+
+    @Path("/greeting")
+    public class GreetingResource {
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        public String hello() { return "hello"; }
+    }
+    ```
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.RestController
+        location: ANNOTATION
+- ruleID: web-annotation-00020
+  description: Spring MVC view controllers (@Controller with model+view) are not supported; use REST resources or Qute
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Only `@RestController`-style controllers are supported by `quarkus-spring-web`. Spring MVC view rendering (`ModelAndView`, view resolvers) is not supported. For HTML rendering use the Quarkus Qute templating engine.
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.stereotype.Controller
+        location: ANNOTATION
+- ruleID: web-annotation-00030
+  description: Spring @RequestMapping maps to @Path; consumes/produces become @Consumes/@Produces
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`@RequestMapping(path=...)` -> `@Path(...)`; `consumes=` -> `@Consumes(...)`; `produces=` -> `@Produces(...)`; `method=RequestMethod.GET` -> `@GET` (and `@POST`, `@PUT`, `@DELETE`, `@PATCH`).'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.RequestMapping
+        location: ANNOTATION
+- ruleID: web-annotation-00040
+  description: Spring @GetMapping splits into @GET + @Path in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.GetMapping replaced by @GET + @Path: Spring @GetMapping splits into @GET + @Path in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.GetMapping
+        location: ANNOTATION
+- ruleID: web-annotation-00050
+  description: Spring @PostMapping splits into @POST + @Path in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.PostMapping replaced by @POST + @Path: Spring @PostMapping splits into @POST + @Path in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.PostMapping
+        location: ANNOTATION
+- ruleID: web-annotation-00060
+  description: Spring @PutMapping splits into @PUT + @Path in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.PutMapping replaced by @PUT + @Path: Spring @PutMapping splits into @PUT + @Path in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.PutMapping
+        location: ANNOTATION
+- ruleID: web-annotation-00070
+  description: Spring @DeleteMapping splits into @DELETE + @Path in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.DeleteMapping replaced by @DELETE + @Path: Spring @DeleteMapping splits into @DELETE + @Path in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.DeleteMapping
+        location: ANNOTATION
+- ruleID: web-annotation-00080
+  description: Spring @PatchMapping splits into @PATCH + @Path in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.PatchMapping replaced by @PATCH + @Path: Spring @PatchMapping splits into @PATCH + @Path in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.PatchMapping
+        location: ANNOTATION
+- ruleID: web-annotation-00090
+  description: Spring @RequestParam maps to @QueryParam in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.RequestParam replaced by @QueryParam: Spring @RequestParam maps to @QueryParam in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.RequestParam
+        location: ANNOTATION
+- ruleID: web-annotation-00100
+  description: Spring @PathVariable maps to @PathParam in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.PathVariable replaced by @PathParam: Spring @PathVariable maps to @PathParam in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.PathVariable
+        location: ANNOTATION
+- ruleID: web-annotation-00110
+  description: Spring @RequestHeader maps to @HeaderParam in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.RequestHeader replaced by @HeaderParam: Spring @RequestHeader maps to @HeaderParam in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.RequestHeader
+        location: ANNOTATION
+- ruleID: web-annotation-00120
+  description: Spring @CookieValue maps to @CookieParam in Jakarta REST
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.springframework.web.bind.annotation.CookieValue replaced by @CookieParam: Spring @CookieValue maps to @CookieParam in Jakarta REST'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.CookieValue
+        location: ANNOTATION
+- ruleID: web-annotation-00130
+  description: Jakarta REST treats unannotated parameters as the request body; @RequestBody is unnecessary
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `@RequestBody`. In Jakarta REST, any method parameter that is not annotated with `@PathParam` / `@QueryParam` / `@HeaderParam` / etc. is automatically treated as the request body.
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.RequestBody
+        location: ANNOTATION
+- ruleID: web-annotation-00140
+  description: Jakarta REST has no @ResponseStatus equivalent; return jakarta.ws.rs.core.Response with the desired status
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Jakarta REST has no `@ResponseStatus` annotation. Return `jakarta.ws.rs.core.Response.status(HttpStatus.CREATED).entity(body).build()` or throw a `jakarta.ws.rs.WebApplicationException` that carries the status code.
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.ResponseStatus
+        location: ANNOTATION
+- ruleID: web-annotation-00150
+  description: '@ExceptionHandler is only supported inside @RestControllerAdvice in quarkus-spring-web; Jakarta REST uses ExceptionMapper'
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Per-controller `@ExceptionHandler` methods are NOT supported in `quarkus-spring-web`; only `@ExceptionHandler` inside a `@RestControllerAdvice` class is. For new code prefer Jakarta REST `ExceptionMapper<T>` providers.
+
+    ### Before
+    ```java
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handle(IllegalArgumentException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+    ```
+
+    ### After
+    ```java
+    @Provider
+    public class IllegalArgumentMapper implements ExceptionMapper<IllegalArgumentException> {
+        public Response toResponse(IllegalArgumentException ex) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
+        }
+    }
+    ```
+
+    ### Additional Info
+    - On the reactive stack, inject `io.vertx.core.http.HttpServerRequest/Response` instead of `HttpServletRequest/Response`.
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.ExceptionHandler
+        location: ANNOTATION
+- ruleID: web-annotation-00160
+  description: Only @ExceptionHandler functionality of @RestControllerAdvice is supported by quarkus-spring-web
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`quarkus-spring-web` only honours `@ExceptionHandler` methods inside `@RestControllerAdvice`. `@ModelAttribute`, `@InitBinder`, and `@ControllerAdvice` model-binding hooks are not supported. Migrate exception handling to Jakarta REST `ExceptionMapper` providers.'
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.bind.annotation.RestControllerAdvice
+        location: ANNOTATION
+- ruleID: web-change-00010
+  description: ResponseEntity is supported by quarkus-spring-web but new code should return jakarta.ws.rs.core.Response
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus supports `ResponseEntity` only via `quarkus-spring-web`. For Jakarta REST endpoints, return `jakarta.ws.rs.core.Response` (`Response.ok(body).header(...).build()`).
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.http.ResponseEntity
+        location: RETURN_TYPE
+- ruleID: web-change-00020
+  description: HttpServletRequest/Response are only available when quarkus-undertow is used; on the reactive stack inject HttpServerRequest/Response
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: On the Quarkus REST (reactive) stack, `HttpServletRequest`/`HttpServletResponse` are NOT injectable — adding `quarkus-undertow` would re-enable them but disables reactive features. Inject `io.vertx.core.http.HttpServerRequest` / `HttpServerResponse` instead, or migrate to Jakarta REST `@Context UriInfo` / `@Context HttpHeaders`.
+  links:
+    - url: https://quarkus.io/guides/spring-web
+      title: Migration Documentation
+  when:
+    or:
+        - java.referenced:
+            pattern: jakarta.servlet.http.HttpServletRequest
+            location: FIELD
+        - java.referenced:
+            pattern: jakarta.servlet.http.HttpServletResponse
+            location: FIELD
+        - java.referenced:
+            pattern: javax.servlet.http.HttpServletRequest
+            location: FIELD
+        - java.referenced:
+            pattern: javax.servlet.http.HttpServletResponse
+            location: FIELD
+- ruleID: web-xml-00010
+  description: web.xml is not honoured by Quarkus REST; servlet/filter declarations must be removed
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus reactive REST (`quarkus-rest`) does NOT process `web.xml`. Delete the file and migrate filters/servlets to Jakarta REST resources or Vert.x request filters. If you must keep a Servlet model add `quarkus-undertow` — `web.xml` is honoured ONLY when Undertow is on the classpath.
+  links:
+    - url: https://quarkus.io/guides/rest
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='web-app']
+        filepaths:
+            - src/main/webapp/WEB-INF/web.xml
+            - WEB-INF/web.xml
+- ruleID: web-import-00030
+  description: javax.servlet was renamed to jakarta.servlet in Jakarta EE 9+
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus uses Jakarta Servlet via the optional Undertow extension. Replace `javax.servlet.*` imports with `jakarta.servlet.*`. Where possible, migrate servlets to Jakarta REST resources or Vert.x reactive routes for better Quarkus integration.
+  links:
+    - url: https://quarkus.io/guides/undertow
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.servlet
+        location: PACKAGE
+- ruleID: web-pattern-00010
+  description: Quarkus does not use web.xml; servlet/filter/listener mappings must be migrated to Jakarta REST or quarkus-undertow
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does not process `web.xml`. Servlet/filter/listener mappings must be migrated:
+
+    - Servlets: register via `@WebServlet` (with `quarkus-undertow`) or rewrite as Jakarta REST resources.
+    - Filters: register via `@WebFilter` or use Vert.x `@RouteFilter` from `quarkus-vertx-http`.
+    - Listeners: register via `@WebListener` or use Quarkus `StartupEvent`/`ShutdownEvent` observers.
+    - Welcome files / static content: place under `src/main/resources/META-INF/resources/`.
+    - Security constraints: use Quarkus Security HTTP policies (`quarkus.http.auth.*`).
+  links:
+    - url: https://quarkus.io/guides/servlet
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: WEB-INF/web\.xml
+        filePattern: (.*/)?WEB-INF/web\.xml
+- ruleID: web-change-00030
+  description: Quarkus REST does not use servlet objects by default; access request data via Jakarta REST or Vert.x APIs
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus REST does not run on the servlet stack. Replace `HttpServletRequest`/`HttpServletResponse` usage with:
+
+    - Jakarta REST context types: `@Context HttpHeaders`, `@Context UriInfo`, `@Context SecurityContext`.
+    - Vert.x: `@Context io.vertx.core.http.HttpServerRequest` / `HttpServerResponse`.
+    - Reactive routes' `io.vertx.ext.web.RoutingContext` when using `@Route`.
+
+    If servlet APIs are mandatory, add the `quarkus-undertow` extension.
+  links:
+    - url: https://quarkus.io/guides/rest#accessing-context-objects
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.servlet.http.HttpServletRequest
+        location: TYPE
+- ruleID: web-type-00010
+  description: Quarkus does not run servlet filters by default; use RouteFilter or REST request filters
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does not run servlet `Filter` chains unless `quarkus-undertow` is added. Use:
+
+    - `@io.quarkus.vertx.http.RouteFilter(priority)` for HTTP-level filters that see every request.
+    - `jakarta.ws.rs.container.ContainerRequestFilter`/`ContainerResponseFilter` (annotated with `@Provider`) for Jakarta REST-scoped filters.
+  links:
+    - url: https://quarkus.io/guides/reactive-routes#intercepting-http-requests
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.servlet.Filter
+        location: IMPLEMENTS_TYPE
+- ruleID: web-import-00040
+  description: Servlet response types require classic RESTEasy stack; reactive stack uses Vert.x HttpServerResponse
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`javax.servlet.http.HttpServletResponse` requires the Servlet API (`quarkus-undertow`) with the classic RESTEasy stack. On the Quarkus reactive stack, use `io.vertx.core.http.HttpServerResponse` instead.'
+  links:
+    - url: https://quarkus.io/guides/spring-web#using-httpserverrequest-and-httpserverresponse-in-spring-web-style-exception-handlers
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.servlet.http.HttpServletResponse
+        location: IMPORT
+- ruleID: web-import-00050
+  description: Servlet response types require classic RESTEasy stack; reactive stack uses Vert.x HttpServerResponse
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`jakarta.servlet.http.HttpServletResponse` requires `quarkus-undertow` (classic RESTEasy stack). On the reactive stack (`quarkus-rest`/`quarkus-rest-jackson`), use `io.vertx.core.http.HttpServerResponse` to manipulate the response.'
+  links:
+    - url: https://quarkus.io/guides/spring-web#using-httpserverrequest-and-httpserverresponse-in-spring-web-style-exception-handlers
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: jakarta.servlet.http.HttpServletResponse
+        location: IMPORT

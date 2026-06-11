@@ -1,0 +1,71 @@
+- ruleID: spring-boot-config-pattern-00010
+  description: Spring Boot server.servlet.context-path is renamed to quarkus.http.root-path in Quarkus
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot's `server.servlet.context-path` has no effect in Quarkus. Use `quarkus.http.root-path` instead.
+
+    ### Before
+    ```properties
+    server.servlet.context-path=/api
+    ```
+
+    ### After
+    ```properties
+    quarkus.http.root-path=/api
+    ```
+  links:
+    - url: https://quarkus.io/guides/all-config
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: server\.servlet\.context-path
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: spring-boot-config-pattern-00020
+  description: Spring Boot spring.datasource.* properties must be migrated to quarkus.datasource.* in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot's `spring.datasource.*` properties are not recognized by Quarkus. Migrate to the `quarkus.datasource.*` namespace.
+
+    ### Before
+    ```properties
+    spring.datasource.url=jdbc:postgresql://localhost:5432/db
+    spring.datasource.username=user
+    spring.datasource.password=secret
+    spring.datasource.driver-class-name=org.postgresql.Driver
+    ```
+
+    ### After
+    ```properties
+    quarkus.datasource.db-kind=postgresql
+    quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/db
+    quarkus.datasource.username=user
+    quarkus.datasource.password=secret
+    ```
+
+    ### Additional Info
+    - Use `db-kind` instead of explicit driver class — Quarkus picks the right driver
+    - For multiple datasources use `quarkus.datasource."name".jdbc.url`
+    - See https://quarkus.io/guides/datasource
+  links:
+    - url: https://quarkus.io/guides/datasource
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.datasource\.
+        filePattern: application.*\.(properties|ya?ml)

@@ -1,122 +1,74 @@
-# Judge verdict: javaee-to-quarkus (ai-generated vs handcrafted)
+# Judge: javaee → quarkus, curated-guides AI run vs handcrafted
 
-Materials reviewed:
-- `evals/comparisons/javaee-to-quarkus.md` (coverage matrix + kantra diff against coolstore)
-- `output/javaee-to-quarkus-benchmark/guide.md` (the OpenRewrite recipe pages used as AI input; 2,939 lines, four nested recipes)
-- All 5 AI ruleset files in `evals/javaee-to-quarkus/rules/`
-- Handcrafted spot-checks: `200-ee-to-quarkus`, `201-persistence-to-quarkus`, `202-remote-ejb-to-quarkus`, `210-cdi-to-quarkus`, `216-javaee-pom-to-quarkus`, `218-jms-to-reactive-quarkus`, `238-jndi-to-quarkus`
+Materials reviewed: `evals/comparisons/javaee-to-quarkus.md`; AI rule files `cdi.yaml`, `ejb.yaml`, `messaging.yaml`, `persistence.yaml`, `web.yaml`, `transaction.yaml`; handcrafted `200-ee-to-quarkus.windup.yaml`, `218-jms-to-reactive-quarkus.windup.yaml`; coolstore `pom.xml`, `StartupListener.java`, `CartEndpoint.java`, `Order.java`.
 
 ## Verdict
 
-**Handcrafted wins decisively for real-world migration use.** It fires 25 rules / 55 incidents on coolstore vs. the AI ruleset's 8 rules / 12 incidents, and exclusively flags 6 files that the AI ruleset misses entirely (`RestApplication.java`, two MDB files, `Producers.java`, `persistence.xml`, `beans.xml`). The AI ruleset is technically accurate within its scope and writes noticeably more actionable messages per rule, but its scope is far too narrow to be a usable javaee→quarkus ruleset on its own. The bottleneck was primarily the source guide — OpenRewrite's javaee→Quarkus recipes simply do not describe JMS, JNDI, transactions, persistence.xml, beans.xml, JAX-RS activation, or Spring-Boot at all — but the AI generator also missed easy wins that were in the guide (e.g. `@EJB`/JNDI references mentioned in the EJB removal narrative, `@Resource` mentioned for JMS examples).
+**Neither side is clearly better; on coolstore the AI ruleset is now closer to merge-ready than handcrafted on *coverage breadth*, but its 4x incident inflation is mostly redundant package-level firings rather than new findings.** The AI catches 12 files handcrafted misses (mostly via legitimate `javax.persistence` / `javax.ws.rs` / `javax.inject` package-level rules on entities and JAX-RS endpoints) and has materially better Spring coverage (cache, security, scheduling, observability, config) which handcrafted only sketches. But the AI is *missing* the load-bearing pom/build remediation rules (`javaee-pom-to-quarkus-000{00..80}`), the `beans.xml` ignored-descriptor rule, the JDBC/JPA-mixed code smell rules, and the Weblogic/JNDI-specific catches that show up on coolstore. Net: the AI ruleset has more knowledge but emits multiple overlapping rules per concern (an `*-import-00010` package rule, an `*-import-00040` second package rule, plus a per-annotation rule) which is what produces 214 incidents on a 12-source-file app. Handcrafted is leaner and more action-oriented (especially the pom/Maven plugin scaffolding rules), but is now noticeably behind on Spring/Quarkus configuration migration.
 
-## Accuracy
+## Sweep coverage
 
-Every AI rule I read is technically correct and well-targeted. No false claims, no obviously over-broad selectors.
+- `javax.ejb` — covered. `ejb-import-00010` (PACKAGE `javax.ejb*`), `ejb-import-00020` (PACKAGE `javax.ejb`), `ejb-import-00030` (PACKAGE `jakarta.ejb`), plus per-annotation `ejb-annotation-0001{0..50}` (`Stateless`, `Stateful`, `Singleton`, `EJB`, `Asynchronous`). Handcrafted hits `javax.ejb.*` via `ee-to-quarkus-00020` (ANNOTATION glob).
+- `javax.persistence` — covered. `persistence-import-00010` (PACKAGE), `hibernate-annotation-00010/00020` for `PersistenceUnit`. Handcrafted has no equivalent broad package rule and relies on PR-side dependency rule `javaee-pom-to-quarkus-00070`.
+- `javax.inject` / `javax.enterprise` / `javax.annotation` / `javax.transaction` / `javax.servlet` / `javax.ws.rs` / `javax.validation` / `javax.jms` — all have AI package-level rules: `cdi-import-00020/00050`, `cdi-import-00010/00040/00060/00070`, `cdi-import-00030`, `core-import-00010`, `transaction-import-00010/00020`, `web-import-00010/00030`, `web-import-00020`, `validation-import-00010`, `messaging-import-00010/00020`. Handcrafted does not duplicate these — it counts on `ee-to-quarkus-*` annotation rules plus dependency-removal rules.
+- `org.springframework.*` — covered, broadly. AI has individual rules for `stereotype.{Component,Service,Repository}` (`cdi-annotation-00010`, `spring-di-annotation-00010/00020`), `beans.factory.annotation.{Autowired,Qualifier,Value}` (`cdi-annotation-00040/00050`, `config-annotation-00010`), `context.annotation.{Configuration,Bean,ComponentScan,Import,Conditional,Scope,Profile}`, `boot.autoconfigure.condition.*`, `cloud.openfeign.FeignClient`, `data.jpa.repository.*`, `security.access.*`, `web.bind.annotation.*Mapping`/`@RestController`/`@RequestMapping`, etc. Handcrafted covers Spring DI artifacts and some webmvc but is largely a catch-all (`springboot-generic-catchall-00100`).
+- `weblogic.*` — neither ruleset has a rule. coolstore's `StartupListener` extends `weblogic.application.ApplicationLifecycleListener`; neither side catches it. Real gap.
 
-- `ejb-annotation-00010` / `-00020` / `-00030` (`@Stateless`, `@Stateful`, `@Singleton`) — accurate replacement targets. The recommendation to use `@Dependent` for `@Stateless` is conservative/safe; handcrafted `ee-to-quarkus-00000` suggests `@ApplicationScoped`, which is what most coolstore-style EJBs actually want. Both are defensible; the AI's note about `@Dependent` lifecycle is correct.
-- `ejb-annotation-00040` (`@Local` must be removed) — correct and well-explained, including the consequence on `@Remote`.
-- `ejb-annotation-00050` (`@EJB` → `@Inject`) — correct; the call-out about dropping `lookup=`/`mappedName=` is more rigorous than the handcrafted set's catch-all `ee-to-quarkus-00020` (`javax.ejb.*`).
-- `persistence-annotation-00010` (`@PersistenceContext` → `@Inject`) — accurate, with a useful note about `@io.quarkus.hibernate.orm.PersistenceUnit` qualifiers for multi-PU setups that the handcrafted `persistence-to-quarkus-00010` lacks.
-- `build-xml-00010` … `build-xml-00050`, `build-pattern-00010` — all correct on their narrow XPath assertions. Two issues:
-  - `build-xml-00020` and `build-xml-00050` are duplicates (same XPath, same condition). Both fire on `<packaging>war</packaging>`; in the coolstore run both fired on the same line, inflating incident counts cosmetically.
-  - `build-pattern-00010` overlaps `build-xml-00030`/`-00040` (the filecontent regex covers what the two XPaths already cover). Not wrong, but redundant — 3 rules where 1 would do.
-- `dependencies-dependency-00010/20/30` — accurate selectors for `dep:javax.javaee-api`, `dep:javax.annotation.javax.annotation-api`, `dep:javax.enterprise.cdi-api`. These are roughly equivalent to handcrafted `cdi-to-quarkus-00000` and parts of `211-dependency-removal-for-quarkus`. Comparable.
+## AI-only files: real or noise?
 
-No accuracy problems worth flagging beyond the duplication.
+Spot-checks against the 12 files flagged only by AI:
 
-## Completeness
+- **`model/CatalogItemEntity.java`, `Order.java`, `OrderItem.java`, `ShoppingCart.java`, `InventoryEntity.java`** — these are JPA entities importing `javax.persistence.*` (verified for `Order.java`). AI fires `persistence-import-00010` (PACKAGE `javax.persistence`). **Legitimate catch.** Handcrafted has no broad `javax.persistence` package rule; it only triggers when `@Stateless`/`@Stateful`/EJB annotations are seen. These entities will absolutely not work on Quarkus without re-importing to `jakarta.persistence`, so handcrafted is missing real migration debt here.
+- **`rest/CartEndpoint.java`, `OrderEndpoint.java`, `ProductEndpoint.java`** — JAX-RS resources with `javax.ws.rs.*` (verified for `CartEndpoint`). AI fires `web-import-00020` (PACKAGE `javax.ws.rs*`) and likely `cdi-import-00020` (`javax.inject`). **Legitimate catch.** Handcrafted only fires `jaxrs-to-quarkus-00010` on the *dependency* and on `Application` subclasses; it has no package-level rule for JAX-RS source code, so per-file flags are missing.
+- **`service/PromoService.java`** — almost certainly `javax.inject`/`javax.enterprise` package hit; **legitimate** for the same reason (handcrafted only catches EJB-annotated services).
+- **`utils/StartupListener.java`** — has `@Inject` from `javax.inject`. AI fires `cdi-import-00020` (PACKAGE `javax.inject*`). **Legitimate catch on the import**, though neither ruleset catches the real interesting thing (`weblogic.application.ApplicationLifecycleListener`).
+- **`utils/Transformers.java`** — likely `javax.json` / `javax.enterprise` / logging package hits; legitimate package-rename catch.
+- **`webapp/WEB-INF/web.xml`** — AI fires `web-xml-00010` (xpath `//*[local-name()='web-app']`) and/or `web-pattern-00010` (filecontent). **Legitimate**; handcrafted has no web.xml rule at all, which is a real gap given Quarkus REST does not honor `web.xml`.
 
-The AI covered ~4 of ~22 "themes" the handcrafted ruleset addresses. The gaps fall into two buckets:
+**Bottom line on the 12 files: all 12 are real catches, not false positives.** Handcrafted misses them because it leans heavily on annotation-pattern rules (`@Stateless`, `@MessageDriven`, `@Resource(lookup=…)`) and never wrote broad `javax.* PACKAGE` rules. The AI's package-rename rules are exactly the bread-and-butter of a Jakarta-9+ namespace migration.
 
-**Missing because the guide doesn't mention them at all** (guide bottleneck, not AI fault):
-- JMS → SmallRye Reactive Messaging (handcrafted `jms-to-reactive-quarkus-00000`..`-00050`, 6 rules; hit `ShoppingCartOrderProcessor`, the MDB classes, on coolstore).
-- JNDI `InitialContext` / `Context.lookup()` (handcrafted `jndi-to-quarkus-00001`/`-00002`; hit `ShoppingCartService` on coolstore).
-- `@Transactional` on `EntityManager.persist/merge/remove` (handcrafted `transaction-to-quarkus-00001`..`-00003`; hit `CatalogService`, `OrderService` on coolstore). The AI guide does mention `@Transactional` prose-wise in the `@Stateless` rule, but not as a callable pattern.
-- `persistence.xml` / `*-ds.xml` migration (handcrafted `persistence-to-quarkus-00000`; hit on coolstore).
-- `beans.xml` ignored (handcrafted `cdi-to-quarkus-00030`; hit on coolstore).
-- JAX-RS `@ApplicationPath`/`Application` activation cleanup (handcrafted `jaxrs-to-quarkus-00020`, `jakarta-jaxrs-to-quarkus-00020`; hit `RestApplication.java` on coolstore).
-- JDBC/JPA mixed usage warnings (`jdbc-jpa-mixed-to-quarkus`).
-- All of Spring-Boot → Quarkus (handcrafted has 30+ rules; irrelevant for coolstore but huge real-world surface).
-- Quarkus BOM adoption / Quarkus Maven plugin / Surefire LogManager / Failsafe native profile (handcrafted `javaee-pom-to-quarkus-00010`..`-00060`). The AI guide actually shows the BOM and quarkus-maven-plugin in the "After" pom example; the AI generator chose only to flag what to remove, not what to add.
-- Jakarta-namespace variants of every rule (handcrafted has parallel `jakarta-*` rules for CDI, faces, JAX-RS).
+## Handcrafted still wins on
 
-**Missing despite being present or implied in the guide** (AI extraction gaps):
-- `@Resource(lookup=...) Queue` / `Topic` field patterns — the guide doesn't dwell on JMS, fair enough.
-- `@MessageDriven` — also not in the guide; fair.
-- `@Remote` — the AI ruleset mentions remote EJB in prose inside `ejb-annotation-00040` but produced no detection rule for `javax.ejb.Remote` despite it being trivially within scope of the JavaEE code-migration recipe. Handcrafted `remote-ejb-to-quarkus-00000` fired on `ShippingService` on coolstore.
-- Quarkus BOM / `quarkus-maven-plugin` / `maven-compiler-plugin -parameters` / `maven-surefire-plugin` + `org.jboss.logmanager.LogManager` — all shown verbatim in the AI's input guide ("After" pom.xml on lines 106-200). The generator chose to emit only "remove this" rules and not "you must add this" rules, which is a real coverage miss.
-- Drop `<scope>provided</scope>` — mentioned in prose by `dependencies-dependency-00010` but no dedicated rule.
+From the 51-rule B→A miss list:
 
-The AI ruleset is 15 rules and the handcrafted is 82 (the comparison header says 82; the on-disk file count is 35 because some files contain many rules). Even discounting Spring-Boot (~32 handcrafted rules that have no source-of-truth equivalent in the guide), the AI is short by ~25–30 javaee-relevant rules.
+1. **POM/Maven scaffolding (`javaee-pom-to-quarkus-000{00..80}`)** — adopt Quarkus BOM (`-00010`), add quarkus-maven-plugin (`-00020`), maven-compiler-plugin with `-parameters` (`-00030`), maven-surefire with `java.util.logging.manager` (`-00040`), maven-failsafe with `native.image.path` (`-00050`), native profile (`-00060`), configure hibernate-orm (`-00070`), swap junit (`-00080`), and the packaging check `javaee-pom-to-quarkus-00000` (must be `jar` not `war`/`ear`). AI has *some* overlap (`build-xml-00040` says don't use `war`/`jar`, but with a confused message; `build-xml-00010/00020/00070` cover Spring Boot parent and spring-boot-maven-plugin) but **no rule to add the Quarkus BOM, add the Quarkus Maven plugin, configure surefire's logmanager, or add the native build profile** — the actually-required Quarkus pom changes.
+2. **`beans.xml` descriptor ignored (`cdi-to-quarkus-00030`, `jakarta-cdi-to-quarkus-00030`)** — handcrafted catches `/b:beans`; AI has zero rules for `beans.xml`. This is the only file handcrafted catches uniquely on coolstore.
+3. **JDBC/JPA mixed usage (`jdbc-jpa-mixed-to-quarkus-0000{1..3}`)** — `java.sql.Connection`, `Statement`, `PreparedStatement` + `*entitymanager` heuristics; AI has nothing for `java.sql.*`.
+4. **`persistence-to-quarkus-00000`** (move `*-ds.xml` and `persistence.xml` to properties) — AI's `persistence-pattern-00010` and `jpa-pattern-00020` are similar but only `persistence.xml`; handcrafted also catches `-ds.xml`. AI misses `-ds.xml` entirely.
+5. **`jndi-to-quarkus-00002`** (`Context.lookup`) — AI has `datasource-method-00020` for the same; this one is actually *covered* but with poor placement under datasource. Mostly a labeling issue.
+6. **JSF / Jakarta Faces (`jakarta-faces-to-quarkus-0000{0,10}`, `javaee-faces-to-quarkus-00000`)** — AI has zero JSF coverage. Real gap.
+7. **`springboot-integration-to-quarkus-000{10,20}`** (Spring Integration `IntegrationFlow`, `int:channel`) — AI has zero coverage.
+8. **`springboot-properties-to-quarkus-00001`** (`application-{profile}.properties` rename) — AI has no equivalent file-pattern rule.
+9. **`springboot-generic-catchall-00100`** — handcrafted's "any Spring component requires investigation" backstop; AI has no catch-all but does cover more Spring sub-areas individually.
+10. **`springboot-shell-to-quarkus-00000`** (`spring-shell-core` → picocli) — AI didn't write it despite picocli being one of the 25 guides.
+11. **`jaxrs-to-quarkus-00000/00010`** (dependency-level `org.jboss.spec.javax.ws.rs:*` and `javax.ws.rs:javax.ws.rs-api`) — AI catches the source-level package but missed the dependency artifact removal rules.
 
-## Actionability
+## Quality vs noise (the 214 vs 55 incident gap)
 
-This is the one dimension where the AI ruleset is **noticeably better than the handcrafted one**, rule-for-rule.
+Looking at the file-by-file rule firings in the kantra diff (e.g., `service/ShoppingCartOrderProcessor.java`: AI fires 11+ rules, handcrafted fires 4), the AI inflation is driven by **redundant package-level rules layered on top of per-annotation rules**, not by hallucinated findings. Examples on a single import block:
 
-AI messages follow a consistent structure: 1-2 sentence summary → "Before"/"After" code block → "Migration Steps" or "Additional Info" with caveats and gotchas. Examples worth calling out:
-- `ejb-annotation-00050` warns to drop `lookup`, `mappedName`, `beanInterface`, `name` attributes and to use CDI qualifiers instead — a class of error the handcrafted `ee-to-quarkus-00020` catch-all does not address.
-- `ejb-annotation-00030` warns about the `javax.ejb.Singleton` vs `javax.inject.Singleton` package collision — a genuine footgun.
-- `persistence-annotation-00010` explains `@PersistenceUnit` qualifier for multiple PUs, which the handcrafted equivalent doesn't.
+- `import javax.enterprise.context.ApplicationScoped` triggers `cdi-import-00010` (pattern `javax.enterprise*`), `cdi-import-00040` (pattern `javax.enterprise`), AND `cdi-import-00060` (pattern `javax.enterprise.context`). Three rules, one fix.
+- `import javax.inject.Inject` triggers `cdi-import-00020` (`javax.inject*`) AND `cdi-import-00050` (`javax.inject`). Two rules, one fix.
+- `import javax.transaction.Transactional` triggers `transaction-import-00010` (`javax.transaction*`), `transaction-import-00020` (`javax.transaction`), AND `transaction-annotation-00030` (`javax.transaction.Transactional`). Three rules, one fix.
+- `import javax.ejb.Stateless` triggers `ejb-import-00010`, `ejb-import-00020`, `ejb-annotation-00010` plus `ee-to-quarkus-00000`/`-00020` equivalents — but only AI fires three on the import line.
 
-The handcrafted messages are terser, often a single sentence ("Stateless EJBs can be converted to a CDI bean by replacing the `@Stateless` annotation with a scope eg `@ApplicationScoped`") and occasionally have formatting issues (literal `{{` `}}` in `jms-to-reactive-quarkus-00020`, awkward inline `\n` escapes in `216-javaee-pom-to-quarkus`). For a developer doing the rewrite, the AI rules give better remediation guidance per incident.
+Multiply across ~12 affected coolstore source files with 3–6 javax imports each and the 4x inflation is fully explained by overlapping wildcard-vs-bare-package-vs-class rules in the SAME concern area. The findings are not false; they are duplicates of each other.
 
-That said, actionable text doesn't matter when the rule never fires. The handcrafted ruleset's terser messages still describe correct fixes.
+**This is noise that hurts UX**, because reviewers see 11 issues per file when there are really 3–4 distinct concerns. Handcrafted's lean approach (one rule per concern, action-oriented) produces tighter signal.
 
-## Coverage on coolstore
-
-The kantra diff is unambiguous: 8 rules / 12 incidents (AI) vs 25 rules / 55 incidents (handcrafted). Drilling into the 6 files only handcrafted flags:
-
-| File | What the AI missed | Rule needed |
-|---|---|---|
-| `RestApplication.java` | JAX-RS Application class is obsolete in Quarkus | `jakarta-jaxrs-to-quarkus-00020` |
-| `InventoryNotificationMDB.java`, `OrderServiceMDB.java` | `@MessageDriven` MDBs | `jms-to-reactive-quarkus-00010`/`-00020` |
-| `Producers.java` | `@Produces EntityManager` is illegal in Quarkus | `persistence-to-quarkus-00011` |
-| `META-INF/persistence.xml` | Move to `application.properties` | `persistence-to-quarkus-00000` |
-| `WEB-INF/beans.xml` | Descriptor ignored | `cdi-to-quarkus-00030` |
-
-Even on the 9 shared files, the AI typically fires 1 rule where handcrafted fires 3-4 (e.g. on `pom.xml`: AI fires `build-xml-00010/20/50` + `build-pattern-00010` which are largely the same finding restated; handcrafted fires 7 distinct `javaee-pom-to-quarkus` rules covering BOM, plugins, surefire, failsafe, native profile). Real coolstore migration would need most of those.
-
-Practical interpretation: a developer pointed at the AI ruleset's output would think "I just need to change `@Stateless` annotations, bump Java, and remove some deps." They would then face a non-functional Quarkus app because nothing told them to handle MDBs, persistence.xml, JNDI lookups, or to add the Quarkus BOM/plugin.
-
-## Was the guide the problem?
-
-**Mostly yes, but not entirely.**
-
-What the guide does cover (and the AI extracted competently):
-- Remove `javax:javaee-api`, `javax.annotation`, `javax.enterprise:cdi-api`
-- Bump `maven.compiler.source/target` to 11
-- Drop `maven-war-plugin` / `war` packaging
-- `@Stateless` → `@Dependent`, `@Stateful` → `@SessionScoped`, `@Singleton` → `@ApplicationScoped`, `@Local` removed, `@EJB` → `@Inject`
-- `@PersistenceContext` → `@Inject EntityManager`
-
-What the guide doesn't cover at all:
-- JMS, JNDI, transactions, JAX-RS Application/`@ApplicationPath`, `@Remote` EJB, `@MessageDriven`, JSF/Faces, persistence.xml/`beans.xml`, JDBC/JPA mixing, Spring-Boot.
-
-That covers nearly every gap. The guide is genuinely narrow because OpenRewrite's `JavaEEtoQuarkus2Migration` is itself a narrow automation focused on what they can mechanically rewrite, not a comprehensive migration assessment guide. The disclaimer at the top of the guide even says: *"Additional transformations like JSF, JMS, Quarkus Tests may be necessary"* — i.e., the source admits up front that JMS/JSF are out of scope.
-
-What is *not* the guide's fault:
-- The AI emitted 5 separate pom-removal rules but 0 pom-addition rules (BOM, quarkus-maven-plugin, surefire LogManager, native profile), even though the guide's "After" example shows all of those literally. This was a generator extraction choice, not a guide deficiency.
-- The AI did not emit a `javax.ejb.Remote` rule even though the EJB code-migration recipe is the natural home for it and the AI even mentions it in prose elsewhere.
-- The AI did not produce Jakarta-namespace parallels of any rule. The guide is javax-focused, but if the generator understands "javax→jakarta" as a separate concern it could have doubled coverage cheaply.
-- Three rules cover the Java-version bump and two rules cover war-packaging removal — the generator emitted redundant detectors for the same finding from different XPath/regex angles.
-
-**Bottom line:** a different guide (the official Quarkus migration guide on quarkus.io, or the Red Hat "Migrating to Quarkus" docs, both of which the handcrafted ruleset clearly draws from) would have closed ~70% of the gap. The remaining ~30% is generator behavior — bias toward "remove" rules over "add" rules, missed redundancy consolidation, and no Jakarta-namespace expansion.
+A secondary noise source: AI fires generally-applicable rules (`cdi-import-00010` says "Quarkus uses Jakarta CDI") on every file that touches the package, even when handcrafted would only fire on the EJB-bearing service that actually triggers a migration decision. The Jakarta namespace rename is real migration work — but reporting it 30 times across one app is more book-keeping than insight.
 
 ## Recommendations
 
-For the AI rule generator:
-1. **Use a broader source.** Concatenate the OpenRewrite recipe pages *plus* quarkus.io/guides (cdi-reference, hibernate-orm, maven-tooling, transaction, getting-started) *plus* the Red Hat "Migration Toolkit for Runtimes" Quarkus guide. The OpenRewrite recipe alone is structurally insufficient because its scope is mechanical-rewrite-only.
-2. **Generate "add" rules, not just "remove" rules.** When the guide shows a target-state pom.xml, emit rules detecting the *absence* of required elements (BOM, quarkus-maven-plugin, native profile, `-parameters`, jboss LogManager). The handcrafted `javaee-pom-to-quarkus-000{10,20,30,40,50,60}` rules are entirely "absence" detectors and they fire on coolstore.
-3. **Auto-emit Jakarta-namespace parallels.** Every `javax.*` Java rule should have a `jakarta.*` `or:` branch, and every `javax.*` Maven coord rule should have a `jakarta.*` sibling. Cheap doubling of coverage.
-4. **Deduplicate overlapping detectors.** `build-xml-00020` and `build-xml-00050` have identical XPath. `build-pattern-00010` is subsumed by `build-xml-00030`+`-00040`. Detect this during generation.
-5. **Extract entity names from prose, not just code blocks.** The EJB rule prose explicitly mentions `@Remote` and JNDI lookup strings; the generator missed both as detection targets.
+1. **De-duplicate the AI package-level rules.** Pick one of `javax.foo`, `javax.foo*`, `javax.foo.bar` per package and delete the others. Suggested keep: the broadest wildcard (`javax.enterprise*`). Drop `cdi-import-00040/00060/00070`, `cdi-import-00050`, `transaction-import-00020`, `web-import-00030`. Estimated incident reduction: ~40-50%.
+2. **Suppress the package-rename rule when a more-specific class/annotation rule fires on the same line.** Either by lowering its severity to `optional`/`potential` or by adding an `and-not` clause keyed on the per-annotation rule. The Jakarta-9 rename is a build-once activity, not per-import migration work.
+3. **Add the missing pom/Maven plugin scaffolding rules** (`adopt quarkus-bom`, `add quarkus-maven-plugin`, `surefire java.util.logging.manager`, `native profile`, `replace war/ear packaging with jar`, `add quarkus-hibernate-orm`). This is the most impactful gap — every Quarkus migration needs these and the AI ruleset currently doesn't tell you to make them. Source: `216-javaee-pom-to-quarkus.windup.yaml`.
+4. **Add `beans.xml` (`/b:beans`) and `*-ds.xml` rules.** Both are coolstore-relevant.
+5. **Add JSF, Spring Integration, JDBC-mixed-with-JPA, and `application-{profile}.properties` rules** so the AI matches handcrafted's frontier on legacy concerns.
+6. **Investigate the `jaxrs-to-quarkus-00000`-style dependency rules.** The AI covered the source-level `javax.ws.rs` package rename but missed the dependency removal advice for `org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_*` — a common JBoss/Wildfly artifact in coolstore-like apps.
+7. **Add a Weblogic catch-all** (`weblogic.*` package) since neither side has it and coolstore demonstrates the gap.
+8. **Decide the canonical scope of the AI-generated `web-annotation-0010X` family.** Most have effort=1 and just say "X replaced by Y" — they are correct but verbose; consider folding `web-annotation-0004{0..80}` (six `*Mapping` rules) into a single rule with an `or:` clause to halve the surface area.
 
-For the eval harness:
-1. The 8 / 25 rule-fired and 12 / 55 incident counts are the headline metrics. Surface them in the comparison file's TL;DR.
-2. Flag duplicate-XPath rules in the comparison output so we can see when a high incident count is real coverage vs. the same finding restated.
-3. Consider scoring "actionability" of messages — the AI ruleset wins clearly on this axis and it's invisible in the current rubric.
+Net: with steps 1, 2, 3, 4, this ruleset would likely beat handcrafted on coverage *and* match it on signal-to-noise.
 
-For users wanting to migrate javaee→quarkus today: use the handcrafted ruleset. The AI ruleset's messages are richer where it overlaps, but it leaves too many critical findings on the table.
-
-{"report_path": "evals/comparisons/javaee-to-quarkus-judge.md", "overall_winner": "handcrafted", "key_finding": "AI ruleset is accurate and writes better remediation messages but covers only ~4 of ~22 migration themes — primarily because the OpenRewrite recipe guide omits JMS/JNDI/persistence.xml/transactions/JAX-RS-Application/Spring entirely, and secondarily because the generator emitted only removal rules and skipped the BOM/plugin addition rules its own source guide showed."}
+{"report_path": "evals/comparisons/javaee-to-quarkus-judge.md", "overall_winner": "neither", "key_finding": "AI's 12 extra coolstore files are legitimate javax.* package-rename catches handcrafted misses, but the 214-vs-55 incident gap is driven almost entirely by 2-3 overlapping package-level rules firing on the same import line, not by new findings; AI also lacks the load-bearing Quarkus pom/Maven plugin scaffolding rules and beans.xml/JSF coverage that handcrafted provides."}

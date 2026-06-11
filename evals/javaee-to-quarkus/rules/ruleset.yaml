@@ -4,4 +4,5 @@ labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus

@@ -47,3 +47,4 @@ Thumbs.db
 # handcrafted rule baselines (populate from konveyor/rulesets, see evals/comparisons/README.md)
 /evals/javaee-to-jakarta-handcrafted/rules/
 /evals/javaee-to-quarkus-handcrafted/rules/
+/scratch/

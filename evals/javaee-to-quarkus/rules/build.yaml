@@ -1,47 +1,241 @@
-- ruleID: build-xml-00010
-  description: maven-war-plugin must be removed when migrating to Quarkus 2; Quarkus produces JAR artifacts
+- ruleID: build-dependency-00010
+  description: The umbrella javaee-api artifact pulls in javax.* APIs that Quarkus does not provide; depend on specific Quarkus extensions instead
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove the `javax:javaee-api` umbrella dependency. Replace it with the focused Quarkus extensions you actually need (e.g. `quarkus-rest-jackson`, `quarkus-hibernate-orm-panache`, `quarkus-narayana-jta`, `quarkus-arc`).
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.javaee-api
+        lowerbound: 0.0.0
+- ruleID: build-dependency-00020
+  description: Quarkus provides Jakarta EE APIs through targeted extensions; the umbrella jakartaee-api artifact is not needed
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Drop `jakarta.platform:jakarta.jakartaee-api` and depend on the specific Quarkus extensions (`quarkus-rest`, `quarkus-hibernate-orm`, `quarkus-narayana-jta`, `quarkus-arc`, `quarkus-smallrye-jwt`, etc.) you need.
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: jakarta.platform.jakarta.jakartaee-api
+        lowerbound: 0.0.0
+- ruleID: build-dependency-00030
+  description: Spring Boot starters are not used in Quarkus; depend on Quarkus extensions instead
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Quarkus does not boot a Spring Application Context. Remove the `spring-boot-starter` (and parent POM) and replace with the equivalent Quarkus extensions: `quarkus-arc` (DI), `quarkus-rest-jackson` (web/JSON), `quarkus-hibernate-orm-panache` (JPA), `quarkus-spring-di` for compatibility with Spring DI annotations during migration.'
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter
+        lowerbound: 0.0.0
+- ruleID: build-method-00010
+  description: Quarkus applications are bootstrapped by the Quarkus runtime; SpringApplication.run() must be removed
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `SpringApplication.run(MyApp.class, args)`. Quarkus applications are launched by the Quarkus runtime; no `main` method is required for typical web/CLI apps. For CLI apps implement `io.quarkus.runtime.QuarkusApplication` / `@QuarkusMain`.
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.SpringApplication
+        location: METHOD_CALL
+- ruleID: build-annotation-00010
+  description: Spring Boot auto-configuration is not used in Quarkus; remove @SpringBootApplication
   category: mandatory
   effort: 1
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Delete the `@SpringBootApplication`-annotated class (or strip the annotation and leave it as a CDI bean). Quarkus performs extension wiring at build time without auto-configuration scanning.
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.SpringBootApplication
+        location: ANNOTATION
+- ruleID: build-annotation-00020
+  description: Spring Boot auto-configuration is not used in Quarkus
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `@EnableAutoConfiguration`. Replace runtime auto-config behaviour by adding the appropriate Quarkus extensions.
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.EnableAutoConfiguration
+        location: ANNOTATION
+- ruleID: build-xml-00010
+  description: The Spring Boot parent POM is replaced by the Quarkus BOM imported in dependencyManagement
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
   message: |-
-    Quarkus 2 applications are packaged as JARs (or native images), not WARs. The `maven-war-plugin` must be removed from your `pom.xml`.
+    Remove the `<parent>` reference to `spring-boot-starter-parent` (or `spring-boot-parent`). Replace with an import of the Quarkus BOM in `<dependencyManagement>` and add the `quarkus-maven-plugin` to the build.
 
     ### Migration Steps
-    1. Remove the `<plugin>` entry for `org.apache.maven.plugins:maven-war-plugin` from your `<build>/<plugins>` section.
-    2. Change the project `<packaging>` from `war` to `jar` (see related rule).
-    3. Add the `quarkus-maven-plugin` (`io.quarkus.platform:quarkus-maven-plugin`) and import the `quarkus-bom` for managed Quarkus dependencies.
-
-    ### Additional Info
-    - Quarkus generates a runner JAR via the `quarkus-maven-plugin` `build` goal.
-    - WAR-based deployment to a Servlet container is not the Quarkus model; HTTP endpoints are served by the embedded Vert.x/Undertow runtime.
-    - For native image builds, configure a `native` Maven profile with `quarkus.package.type=native`.
+    1. Delete the `<parent>` block referencing Spring Boot.
+    2. Add `io.quarkus.platform:quarkus-bom` (or `quarkus-universe-bom`) to `<dependencyManagement>` with `type=pom, scope=import`.
+    3. Add the `quarkus-maven-plugin` to `<build><plugins>` with `<extensions>true</extensions>`.
+    4. Switch packaging-only `spring-boot-maven-plugin` invocations (`repackage`) to `quarkus:build`.
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+    - url: https://quarkus.io/guides/maven-tooling
       title: Migration Documentation
   when:
     builtin.xml:
-        xpath: //*[local-name()='plugin'][*[local-name()='groupId' and text()='org.apache.maven.plugins'] and *[local-name()='artifactId' and text()='maven-war-plugin']]
+        xpath: /m:project/m:parent[m:groupId/text() = 'org.springframework.boot' and (m:artifactId/text() = 'spring-boot-starter-parent' or m:artifactId/text() = 'spring-boot-parent')]
         namespaces:
             m: http://maven.apache.org/POM/4.0.0
         filepaths:
             - pom.xml
 - ruleID: build-xml-00020
-  description: Quarkus 2 projects must use jar packaging (not war)
+  description: spring-boot-maven-plugin is replaced by quarkus-maven-plugin in Quarkus builds
   category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove the `spring-boot-maven-plugin` and add `io.quarkus.platform:quarkus-maven-plugin` with the `build` and `generate-code` goals. For native image add `<native.enabled>true</native.enabled>` or pass `-Dnative` to the `package` phase.
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //m:plugin[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-maven-plugin']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: build-xml-00030
+  description: Replace Spring Boot parent POM with Quarkus BOM
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `<parent>spring-boot-parent</parent>` with an import of the Quarkus platform BOM in `<dependencyManagement>`.
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: /m:project/m:parent[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-parent']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: build-pattern-00010
+  description: Replace Spring Boot Gradle plugin with the io.quarkus Gradle plugin
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `id 'org.springframework.boot'` (or `id("org.springframework.boot")`) with `id 'io.quarkus'` / `id("io.quarkus")` and apply the Quarkus platform BOM via `implementation(enforcedPlatform("..."))`.
+  links:
+    - url: https://quarkus.io/guides/gradle-tooling
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.springframework\.boot
+        filePattern: build\.gradle(\.kts)?
+- ruleID: build-pattern-00020
+  description: Tests and integration suites must set java.util.logging.manager to org.jboss.logmanager.LogManager
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: When using `@QuarkusIntegrationTest` or running maven-failsafe-plugin against a packaged application, set `java.util.logging.manager=org.jboss.logmanager.LogManager` as a system property. Otherwise JUL logging in tests will not be routed through JBoss Log Manager.
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing#mixing-quarkustest-with-other-type-of-tests
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: java\.util\.logging\.manager
+        filePattern: .*\.(sh|bat|cmd|conf|properties|ya?ml|xml|Dockerfile)
+- ruleID: build-xml-00040
+  description: Quarkus applications should use 'quarkus' packaging in pom.xml instead of 'war' or 'jar'
+  category: optional
   effort: 1
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
   message: |-
-    Quarkus 2 produces a runnable JAR (or native image). The Maven `<packaging>` element must be changed from `war` to `jar`.
+    Quarkus introduces a dedicated `quarkus` packaging type that hooks the Quarkus build into the Maven lifecycle. Replace `<packaging>war</packaging>` or `<packaging>jar</packaging>` with `<packaging>quarkus</packaging>` for the main application module (not library modules).
 
     ### Before
     ```xml
@@ -50,176 +244,123 @@
 
     ### After
     ```xml
-    <packaging>jar</packaging>
+    <packaging>quarkus</packaging>
     ```
 
     ### Additional Info
-    - Combined with this change, remove the `maven-war-plugin` from `<build>/<plugins>`.
-    - Quarkus serves HTTP endpoints through its embedded runtime; no Servlet container is required.
-    - For native image builds, add a `native` Maven profile with `quarkus.package.type=native`.
+    - This packaging type wires up the Quarkus Maven plugin lifecycle (generate-code, build, integration-test, etc.).
+    - Quarkus does NOT produce WAR files - it produces a `fast-jar` directory (`target/quarkus-app/`), `uber-jar`, or native executable.
+    - Do not use `quarkus` packaging in library modules.
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+    - url: https://quarkus.io/guides/maven-tooling#build-tool-maven
       title: Migration Documentation
   when:
     builtin.xml:
-        xpath: /m:project/m:packaging[text()='war']
-        namespaces:
-            m: http://maven.apache.org/POM/4.0.0
-        filepaths:
-            - pom.xml
-- ruleID: build-xml-00030
-  description: Quarkus 2 requires Java 11 or higher; maven.compiler.source must be at least 11
-  category: mandatory
-  effort: 3
-  labels:
-    - konveyor.io/source=java-ee
-    - konveyor.io/source=javaee
-    - konveyor.io/source=jakarta-ee
-    - konveyor.io/target=quarkus
-    - konveyor.io/generated-by=ai-rule-gen
-  message: |-
-    Quarkus 2 requires Java 11 or later. The `maven.compiler.source` (and `maven.compiler.target`) property in `pom.xml` must be set to `11` or higher.
-
-    ### Before
-    ```xml
-    <properties>
-      <maven.compiler.source>1.8</maven.compiler.source>
-      <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
-    ```
-
-    ### After
-    ```xml
-    <properties>
-      <maven.compiler.source>11</maven.compiler.source>
-      <maven.compiler.target>11</maven.compiler.target>
-    </properties>
-    ```
-
-    ### Additional Info
-    - Update both `maven.compiler.source` and `maven.compiler.target`.
-    - Ensure the build/CI JDK is also Java 11+.
-    - The OpenRewrite `AddQuarkus2MavenPlugins` recipe sets these properties to `11` automatically.
-  links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
-      title: Migration Documentation
-  when:
-    builtin.xml:
-        xpath: /m:project/m:properties/m:maven.compiler.source[number(text()) &lt; 11]
-        namespaces:
-            m: http://maven.apache.org/POM/4.0.0
-        filepaths:
-            - pom.xml
-- ruleID: build-xml-00040
-  description: Quarkus 2 requires Java 11 or higher; maven.compiler.target must be at least 11
-  category: mandatory
-  effort: 3
-  labels:
-    - konveyor.io/source=java-ee
-    - konveyor.io/source=javaee
-    - konveyor.io/source=jakarta-ee
-    - konveyor.io/target=quarkus
-    - konveyor.io/generated-by=ai-rule-gen
-  message: |-
-    Quarkus 2 requires Java 11 or later. The `maven.compiler.target` property in `pom.xml` must be set to `11` or higher.
-
-    ### Before
-    ```xml
-    <properties>
-      <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
-    ```
-
-    ### After
-    ```xml
-    <properties>
-      <maven.compiler.target>11</maven.compiler.target>
-    </properties>
-    ```
-
-    ### Additional Info
-    - Update `maven.compiler.source` as well — both must agree.
-    - Quarkus 2.x is supported on Java 11 and Java 17.
-    - The OpenRewrite `AddQuarkus2MavenPlugins` recipe sets this to `11` automatically.
-  links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
-      title: Migration Documentation
-  when:
-    builtin.xml:
-        xpath: /m:project/m:properties/m:maven.compiler.target[number(text()) &lt; 11]
-        namespaces:
-            m: http://maven.apache.org/POM/4.0.0
+        xpath: /*[local-name()='project']/*[local-name()='packaging'][text()='war' or text()='jar']
         filepaths:
             - pom.xml
 - ruleID: build-xml-00050
-  description: WAR packaging is not used by Quarkus; switch to JAR (or omit, default is jar)
-  category: mandatory
-  effort: 1
+  description: Spring Boot fat-jar/embedded server is replaced by Quarkus fast-jar or uber-jar packaging
+  category: optional
+  effort: 3
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
   message: |-
-    Quarkus applications build into runnable JARs (or native images), not WAR archives deployed into a servlet container. Change `<packaging>war</packaging>` to `<packaging>jar</packaging>` or remove the element entirely (jar is the Maven default).
+    Spring Boot's fat-jar (with `spring-boot-loader` and embedded Tomcat) is replaced in Quarkus by either:
+    - `fast-jar` (default): produces `target/quarkus-app/` directory with `quarkus-run.jar` and required libraries. Run via `java -jar target/quarkus-app/quarkus-run.jar`.
+    - `uber-jar`: produces a single self-contained JAR. Enable with `quarkus.package.jar.type=uber-jar`.
+    - `native`: produces a GraalVM native executable.
 
     ### Migration Steps
-    1. Remove or change `<packaging>war</packaging>` in `pom.xml`.
-    2. Remove the `maven-war-plugin` from the build plugins (see related rule).
-    3. Add the `quarkus-maven-plugin` so `mvn package` produces a Quarkus runnable JAR.
-    4. If you previously relied on servlet container deployment (Wildfly, Tomcat), migrate any container-managed configuration to Quarkus application properties.
+    1. Remove `spring-boot-loader`/`spring-boot-maven-plugin` `repackage` goal.
+    2. For deployment, copy the entire `target/quarkus-app/` directory or use `uber-jar`.
+    3. Quarkus uses Vert.x as the HTTP layer - no embedded Tomcat/Jetty.
 
     ### Additional Info
-    - Automated by the OpenRewrite recipe `org.openrewrite.maven.ChangePackaging` (groupId `*`, artifactId `*`, packaging `jar`) inside `AddQuarkus2MavenPlugins`.
-    - Quarkus can still serve servlets via the `quarkus-undertow` extension — packaging as JAR does not preclude HTTP/servlet support.
+    - `fast-jar` is the recommended default - it starts faster and uses less memory than uber-jar.
+    - Native executables produce a much smaller and faster-starting binary at the cost of build time.
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+    - url: https://quarkus.io/guides/maven-tooling#fast-jar
       title: Migration Documentation
   when:
     builtin.xml:
-        xpath: /m:project/m:packaging[text()='war']
+        xpath: /*[local-name()='project']//*[local-name()='dependency'][./*[local-name()='artifactId']/text()='spring-boot-loader']
+        filepaths:
+            - pom.xml
+- ruleID: build-xml-00060
+  description: Spring Boot parent POM must be replaced with Quarkus BOM in dependencyManagement
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The pom.xml uses spring-boot-starter-parent as its parent. Quarkus does not use parent POMs for dependency management — replace with the Quarkus BOM via <dependencyManagement> and add the quarkus-maven-plugin. See https://quarkus.io/guides/maven-tooling for the full pom.xml structure.
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: /m:project/m:parent[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-starter-parent']
         namespaces:
             m: http://maven.apache.org/POM/4.0.0
         filepaths:
             - pom.xml
-- ruleID: build-pattern-00010
-  description: Quarkus 2 requires Java 11+; raise maven.compiler.source/target from 1.8 to 11
+- ruleID: build-xml-00070
+  description: spring-boot-maven-plugin must be replaced with quarkus-maven-plugin
   category: mandatory
   effort: 3
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
   message: |-
-    Quarkus 2 requires Java 11 or later. Update the Maven compiler source/target version properties from `1.8` (Java 8) to `11` (or higher).
+    Replace the spring-boot-maven-plugin with the quarkus-maven-plugin. Quarkus builds use the quarkus-maven-plugin for packaging fast-jar / uber-jar / native executable.
 
     ### Before
     ```xml
-    <properties>
-      <maven.compiler.source>1.8</maven.compiler.source>
-      <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
+    <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+    </plugin>
     ```
 
     ### After
     ```xml
-    <properties>
-      <maven.compiler.source>11</maven.compiler.source>
-      <maven.compiler.target>11</maven.compiler.target>
-    </properties>
+    <plugin>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <extensions>true</extensions>
+        <executions>
+            <execution>
+                <goals>
+                    <goal>build</goal>
+                    <goal>generate-code</goal>
+                    <goal>generate-code-tests</goal>
+                </goals>
+            </execution>
+        </executions>
+    </plugin>
     ```
-
-    ### Additional Info
-    - Automated by the OpenRewrite recipes `org.openrewrite.maven.AddProperty` with key `maven.compiler.source`/`maven.compiler.target` and value `11` inside `AddQuarkus2MavenPlugins`.
-    - Quarkus 2 actively tests against Java 11 and Java 17 — pick the highest LTS you can run.
-    - Verify the build JDK installed on CI matches the new target version, otherwise compilation will fail.
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/addquarkus2mavenplugins
+    - url: https://quarkus.io/guides/maven-tooling
       title: Migration Documentation
   when:
-    builtin.filecontent:
-        pattern: <maven\.compiler\.(source|target)>1\.8</maven\.compiler\.(source|target)>
-        filePattern: .*pom\.xml
+    builtin.xml:
+        xpath: /m:project//m:plugin[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-maven-plugin']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml

@@ -1,0 +1,659 @@
+- ruleID: cdi-import-00010
+  description: Quarkus CDI (ArC) uses Jakarta CDI 4.1; javax.enterprise is renamed to jakarta.enterprise
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus DI (ArC) implements Jakarta CDI 4.1 Lite. Re-import CDI scopes, events and qualifiers from `jakarta.enterprise.*`.
+
+    ### Before
+    ```java
+    import javax.enterprise.context.ApplicationScoped;
+    import javax.enterprise.event.Observes;
+    import javax.enterprise.inject.Produces;
+
+    @ApplicationScoped
+    public class MyBean {
+        void onStart(@Observes StartupEvent ev) { ... }
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.enterprise.event.Observes;
+    import jakarta.enterprise.inject.Produces;
+
+    @ApplicationScoped
+    public class MyBean {
+        void onStart(@Observes StartupEvent ev) { ... }
+    }
+    ```
+
+    ### Additional Info
+    - Quarkus implements CDI Lite plus selected CDI Full features (Decorators, `BeanManager`, `@SessionScoped` via Undertow).
+    - Bean discovery is `annotated`-mode only; beans without a bean-defining annotation are not discovered.
+    - Portable Extensions (`javax.enterprise.inject.spi.Extension`) are NOT supported — use Quarkus build-time extensions instead.
+    - Avoid `private` members on beans to keep the native image small.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.enterprise*
+        location: PACKAGE
+- ruleID: cdi-import-00020
+  description: Quarkus uses Jakarta Inject (jakarta.inject); javax.inject is renamed
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses the Jakarta Inject API. Re-import `@Inject`, `@Named`, `@Qualifier`, `@Singleton`, and `Provider` from `jakarta.inject.*`.
+
+    ### Before
+    ```java
+    import javax.inject.Inject;
+    import javax.inject.Named;
+
+    public class GreetingService {
+        @Inject
+        @Named("capitalizer")
+        StringFunction fn;
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.inject.Inject;
+    import jakarta.inject.Named;
+
+    public class GreetingService {
+        @Inject
+        @Named("capitalizer")
+        StringFunction fn;
+    }
+    ```
+
+    ### Additional Info
+    - Prefer `@io.smallrye.common.annotation.Identifier` over `@Named` for string-based qualifiers — `@Named` has the `@Default` foot-gun in CDI.
+    - Constructor injection works without `@Inject` when a bean has a single constructor.
+    - Use package-private (not `private`) fields/constructors to avoid reflection in native mode.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.inject*
+        location: PACKAGE
+- ruleID: cdi-import-00030
+  description: Quarkus uses Jakarta Annotations (jakarta.annotation); javax.annotation is renamed
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses Jakarta Annotations. Re-import `@PostConstruct`, `@PreDestroy`, `@Resource`, `@Priority`, `@Generated`, etc. from `jakarta.annotation.*`.
+
+    ### Before
+    ```java
+    import javax.annotation.PostConstruct;
+    import javax.annotation.PreDestroy;
+    import javax.annotation.Resource;
+    ```
+
+    ### After
+    ```java
+    import jakarta.annotation.PostConstruct;
+    import jakarta.annotation.PreDestroy;
+    import jakarta.annotation.Resource;
+    ```
+
+    ### Additional Info
+    - `@Resource(lookup = ...)` JNDI references are not honoured; use CDI `@Inject` for datasources / queues.
+    - `@RolesAllowed` (`jakarta.annotation.security`) is supported for endpoint security.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.annotation*
+        location: PACKAGE
+- ruleID: cdi-dependency-00010
+  description: spring-context (Spring ApplicationContext) is not used in Quarkus; quarkus-spring-di provides annotation compatibility
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not start a Spring `ApplicationContext` and does not run Spring infrastructure classes. Remove `org.springframework:spring-context` and add `io.quarkus:quarkus-spring-di` if you want to keep `@Component`, `@Service`, `@Autowired`, etc. annotations. Otherwise migrate to CDI (`@ApplicationScoped`, `@Inject`).
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.spring-context
+        lowerbound: 0.0.0
+- ruleID: cdi-annotation-00010
+  description: Spring stereotype annotations (@Component, @Service, @Repository) map to @Singleton (or @ApplicationScoped) in CDI
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring's `@Component`, `@Service`, and `@Repository` are singleton stereotypes. Replace with `@jakarta.inject.Singleton` (or `@jakarta.enterprise.context.ApplicationScoped`). The Quarkus `spring-di` extension keeps the Spring annotations working during incremental migration but does not start a Spring `ApplicationContext`.
+
+    ### Before
+    ```java
+    import org.springframework.stereotype.Service;
+
+    @Service
+    public class GreetingService { ... }
+    ```
+
+    ### After
+    ```java
+    import jakarta.inject.Singleton;
+
+    @Singleton
+    public class GreetingService { ... }
+    ```
+
+    ### Additional Info
+    - Add `io.quarkus:quarkus-spring-di` if you need to keep the Spring annotations short-term.
+    - Bean discovery in Quarkus is `annotated` only — beans without a bean-defining annotation are not picked up.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    or:
+        - java.referenced:
+            pattern: org.springframework.stereotype.Component
+            location: ANNOTATION
+        - java.referenced:
+            pattern: org.springframework.stereotype.Service
+            location: ANNOTATION
+        - java.referenced:
+            pattern: org.springframework.stereotype.Repository
+            location: ANNOTATION
+- ruleID: cdi-annotation-00020
+  description: Spring @Configuration maps to @ApplicationScoped on a producer class in CDI
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `@Configuration` with `@ApplicationScoped` (or any other CDI scope) and `@Bean` methods with `@Produces` methods.
+
+    ### Before
+    ```java
+    @Configuration
+    public class AppConfig {
+        @Bean(name = "capitalizer")
+        StringFunction capitalizer() { return String::toUpperCase; }
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.enterprise.inject.Produces;
+    import jakarta.inject.Named;
+
+    @ApplicationScoped
+    public class AppConfig {
+        @Produces @Named("capitalizer")
+        StringFunction capitalizer() { return String::toUpperCase; }
+    }
+    ```
+
+    ### Additional Info
+    - `quarkus-spring-di` keeps `@Configuration` / `@Bean` working during migration.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.annotation.Configuration
+        location: ANNOTATION
+- ruleID: cdi-annotation-00030
+  description: Spring @Bean producer methods map to CDI @Produces methods
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@Bean` with `@jakarta.enterprise.inject.Produces`. Bean name (`@Bean(name=...)`) becomes `@Named("...")` or `@io.smallrye.common.annotation.Identifier("...")`.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.annotation.Bean
+        location: ANNOTATION
+- ruleID: cdi-annotation-00040
+  description: Spring @Autowired maps to @Inject (jakarta.inject) in Quarkus
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `@Autowired` with `@jakarta.inject.Inject`. Note: `@Autowired(required = false)` has no direct equivalent — use `Instance<T>` with `isResolvable()` instead.
+
+    ### Before
+    ```java
+    @Autowired
+    @Qualifier("capitalizer")
+    StringFunction fn;
+    ```
+
+    ### After
+    ```java
+    @Inject
+    @Named("capitalizer")
+    StringFunction fn;
+    ```
+
+    ### Additional Info
+    - For `List<Bean>` injection of all implementations, use the `@io.quarkus.arc.All` qualifier.
+    - Constructor injection works without `@Inject` when there is a single constructor.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.beans.factory.annotation.Autowired
+        location: ANNOTATION
+- ruleID: cdi-annotation-00050
+  description: Spring @Qualifier maps to @Named (or @Identifier) in CDI
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@Qualifier("name")` with `@jakarta.inject.Named("name")`. Prefer `@io.smallrye.common.annotation.Identifier` for new code — `@Named` has CDI-specific `@Default` semantics that can cause ambiguity errors.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.beans.factory.annotation.Qualifier
+        location: ANNOTATION
+- ruleID: cdi-annotation-00060
+  description: Quarkus does annotated-mode bean discovery at build time; @ComponentScan is unnecessary
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `@ComponentScan` — Quarkus performs annotated-mode bean discovery on the entire application archive at build time. To index third-party dependencies, add a `quarkus.index-dependency.<name>.group-id=...` entry in `application.properties`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.annotation.ComponentScan
+        location: ANNOTATION
+- ruleID: cdi-annotation-00070
+  description: Spring @Import is not supported in Quarkus; bean discovery is global at build time
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `@Import` annotations — Quarkus does not honour them. All beans on the classpath are discovered automatically through bean-defining annotations.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.annotation.Import
+        location: ANNOTATION
+- ruleID: cdi-annotation-00080
+  description: Spring @Conditional is ignored because Quarkus DI resolves at build time
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`@Conditional` (and `@ConditionalOnProperty`, `@ConditionalOnClass`, etc.) is silently ignored in Quarkus. Replace with `@io.quarkus.arc.profile.IfBuildProfile`, `@UnlessBuildProfile`, `@IfBuildProperty`, `@LookupIfProperty`, or `@io.quarkus.arc.DefaultBean` as appropriate.'
+  links:
+    - url: https://quarkus.io/guides/cdi-reference#enable_build_profile
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.annotation.Conditional
+        location: ANNOTATION
+- ruleID: cdi-annotation-00090
+  description: Spring @Scope must be replaced with the matching CDI scope annotation
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring's string-based `@Scope` does not map one-to-one. Replace with:
+    - `singleton` -> `@jakarta.inject.Singleton`
+    - `prototype` -> `@jakarta.enterprise.context.Dependent`
+    - `request` -> `@jakarta.enterprise.context.RequestScoped`
+    - `session` -> `@jakarta.enterprise.context.SessionScoped` (requires `quarkus-undertow`)
+    - application -> `@jakarta.enterprise.context.ApplicationScoped`
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.annotation.Scope
+        location: ANNOTATION
+- ruleID: cdi-type-00010
+  description: Spring BeanPostProcessor implementations are not executed by Quarkus
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring infrastructure classes — including `BeanPostProcessor`, `BeanFactoryPostProcessor` and friends — do NOT run in Quarkus because no Spring `ApplicationContext` is started. Replace them with a CDI portable extension (limited) or a Quarkus build-step extension.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.beans.factory.config.BeanPostProcessor
+        location: IMPLEMENTS_TYPE
+- ruleID: cdi-change-00010
+  description: Quarkus does not start a Spring ApplicationContext; injecting it produces no instance
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`ApplicationContext`, `ApplicationContextAware`, `BeanFactory`, etc. are NOT provided by Quarkus. Use CDI `BeanManager` (`@Inject BeanManager bm`) or `io.quarkus.arc.Arc.container()` for programmatic bean lookup.'
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.ApplicationContext
+        location: FIELD
+- ruleID: cdi-annotation-00100
+  description: Spring's @EventListener is not used in Quarkus; CDI events use @Observes
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@EventListener void on(MyEvent e)` with `void on(@Observes MyEvent e)`. For startup events use `@Observes StartupEvent` (from `io.quarkus.runtime.StartupEvent`). For async observers use `@ObservesAsync`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.event.EventListener
+        location: ANNOTATION
+- ruleID: cdi-annotation-00110
+  description: Spring Boot ApplicationReadyEvent is replaced by Quarkus StartupEvent
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace listeners on `ApplicationReadyEvent`/`ContextRefreshedEvent`/`ContextClosedEvent` with CDI observers on `io.quarkus.runtime.StartupEvent` (startup) and `io.quarkus.runtime.ShutdownEvent` (shutdown).
+
+    ### Before
+    ```java
+    @EventListener(ApplicationReadyEvent.class)
+    void onReady() { ... }
+    ```
+
+    ### After
+    ```java
+    void onStart(@Observes StartupEvent ev) { ... }
+    ```
+  links:
+    - url: https://quarkus.io/guides/lifecycle
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.context.event.ApplicationReadyEvent
+        location: ANNOTATION
+- ruleID: cdi-annotation-00120
+  description: '@Named qualifier behaves differently in CDI; prefer @Identifier in Quarkus'
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In Quarkus / CDI, `@Named` is a string-based qualifier that also implicitly grants `@Default`, which can cause AmbiguousResolutionException between a bean producer without qualifiers and one with `@Named`. Replace `@Named` with the regular qualifier `io.smallrye.common.annotation.Identifier` unless you specifically need the bean name for external language references (e.g. Qute / JSF templates).
+
+    ### Before
+    ```java
+    import jakarta.inject.Named;
+
+    @ApplicationScoped
+    public class Producers {
+        @Produces
+        @Named("foo")
+        MyBean produceFoo() { ... }
+    }
+    ```
+
+    ### After
+    ```java
+    import io.smallrye.common.annotation.Identifier;
+
+    @ApplicationScoped
+    public class Producers {
+        @Produces
+        @Identifier("foo")
+        MyBean produceFoo() { ... }
+    }
+    ```
+
+    ### Additional Info
+    - `@Named` is still valid if the only consumer is an external language (Qute templates).
+    - `@Identifier` is a regular qualifier and does not imply `@Default`.
+    - See https://quarkus.io/guides/cdi-reference#string-based-qualifiers
+  links:
+    - url: https://quarkus.io/guides/cdi-reference#string-based-qualifiers
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: jakarta.inject.Named
+        location: ANNOTATION
+- ruleID: cdi-annotation-00130
+  description: javax.inject.Named must be migrated to jakarta.inject.Named or @Identifier in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses Jakarta EE 10/11 namespaces. The legacy `javax.inject.Named` qualifier must be replaced with `jakarta.inject.Named`, or preferably `io.smallrye.common.annotation.Identifier` to avoid the `@Default` ambiguity issue.
+
+    ### Before
+    ```java
+    import javax.inject.Named;
+
+    @Named("foo")
+    public class MyBean { ... }
+    ```
+
+    ### After
+    ```java
+    import io.smallrye.common.annotation.Identifier;
+
+    @Identifier("foo")
+    public class MyBean { ... }
+    ```
+
+    ### Additional Info
+    - All `javax.*` Jakarta EE namespaces are renamed to `jakarta.*` in Quarkus 3.x.
+    - `@Identifier` is recommended over `@Named` to avoid ambiguous resolution problems.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference#string-based-qualifiers
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.inject.Named
+        location: ANNOTATION
+- ruleID: cdi-import-00040
+  description: javax.enterprise.* was renamed to jakarta.enterprise.* in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus uses Jakarta CDI 4.1. Replace `import javax.enterprise.*` with `import jakarta.enterprise.*` for `@ApplicationScoped`, `@RequestScoped`, `@SessionScoped`, `@Produces`, `Instance`, `Event`, `BeanManager`, etc.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.enterprise
+        location: PACKAGE
+- ruleID: cdi-import-00050
+  description: javax.inject was renamed to jakarta.inject in Jakarta EE 9+
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import javax.inject.*` with `import jakarta.inject.*` for `@Inject`, `@Singleton`, `@Named`, `@Qualifier`, `Provider`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.inject
+        location: PACKAGE
+- ruleID: cdi-import-00060
+  description: Quarkus uses Jakarta CDI; migrate javax.enterprise.context imports
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus CDI uses Jakarta packages. Replace `javax.enterprise.context.*` imports (e.g., `@ApplicationScoped`, `@RequestScoped`) with `jakarta.enterprise.context.*`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.enterprise.context
+        location: PACKAGE
+- ruleID: cdi-import-00070
+  description: Quarkus uses Jakarta CDI; migrate javax.enterprise.inject imports
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `javax.enterprise.inject.*` (e.g., `@Produces`, `Instance`, `@Alternative`) with `jakarta.enterprise.inject.*`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.enterprise.inject
+        location: PACKAGE

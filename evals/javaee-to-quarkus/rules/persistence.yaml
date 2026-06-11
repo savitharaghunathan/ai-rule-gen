@@ -1,46 +1,45 @@
-- ruleID: persistence-annotation-00010
-  description: '@PersistenceContext is replaced by CDI @Inject for EntityManager in Quarkus'
+- ruleID: persistence-import-00010
+  description: javax.persistence was renamed to jakarta.persistence in Jakarta EE 9+
   category: mandatory
   effort: 3
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
-  message: |-
-    Quarkus Hibernate ORM produces a CDI-managed `EntityManager`. The Java EE `@javax.persistence.PersistenceContext` injection annotation is replaced by CDI `@javax.inject.Inject` for `EntityManager` (and `EntityManagerFactory`) fields and parameters.
-
-    ### Before
-    ```java
-    import javax.persistence.EntityManager;
-    import javax.persistence.PersistenceContext;
-
-    public class PingEJBSLS {
-        @PersistenceContext
-        private EntityManager entityManager;
-    }
-    ```
-
-    ### After
-    ```java
-    import javax.inject.Inject;
-    import javax.persistence.EntityManager;
-
-    public class PingEJBSLS {
-        @Inject
-        private EntityManager entityManager;
-    }
-    ```
-
-    ### Additional Info
-    - Drop the `unitName`, `name`, `type`, and `properties` attributes — Quarkus configures the persistence unit through `application.properties`/`application.yaml` rather than annotation attributes. For multiple persistence units, use `@io.quarkus.hibernate.orm.PersistenceUnit("name")` as a CDI qualifier.
-    - The Quarkus `EntityManager` is request-scoped by default and participates in the active JTA transaction; mark methods that mutate state with `@javax.transaction.Transactional`.
-    - Add the `io.quarkus:quarkus-hibernate-orm` dependency (and a JDBC driver extension such as `quarkus-jdbc-h2`) so the `EntityManager` bean is produced.
+  message: Quarkus uses Jakarta EE 10/11. Replace every `import javax.persistence.*` with the equivalent `import jakarta.persistence.*`. This includes `@Entity`, `@Id`, `@GeneratedValue`, `EntityManager`, `Query`, etc.
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/javaeetoquarkus2codemigration
+    - url: https://quarkus.io/guides/hibernate-orm
       title: Migration Documentation
   when:
     java.referenced:
-        pattern: javax.persistence.PersistenceContext
-        location: ANNOTATION
+        pattern: javax.persistence
+        location: PACKAGE
+- ruleID: persistence-pattern-00010
+  description: persistence.xml is supported but discouraged; prefer Quarkus application.properties configuration
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus accepts `META-INF/persistence.xml` for migration convenience, but it forces several constraints:
+    - Persistence units defined there always use the default datasource.
+    - Dialect/version are NOT auto-detected and must be configured explicitly.
+    - You CANNOT mix `persistence.xml` with `quarkus.hibernate-orm.*` properties - doing so raises an exception.
+    - Several Dev UI features are disabled.
+
+    The recommended approach is to move all configuration to `application.properties` using `quarkus.hibernate-orm.*` keys. To force Quarkus to ignore an existing `persistence.xml`, set `quarkus.hibernate-orm.persistence-xml.ignore=true`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#persistence-xml
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: META-INF/persistence\.xml
+        filePattern: .*persistence\.xml

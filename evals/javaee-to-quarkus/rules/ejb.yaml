@@ -1,213 +1,222 @@
+- ruleID: ejb-import-00010
+  description: EJB (javax.ejb) is not supported in Quarkus; migrate to CDI beans and JTA @Transactional
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    EJBs (`javax.ejb`) are not supported in Quarkus. Replace EJB session beans with CDI beans using `@ApplicationScoped` / `@RequestScoped`, replace EJB transaction semantics with `@jakarta.transaction.Transactional`, and replace MDBs with SmallRye Reactive Messaging (`@Incoming`).
+
+    ### Before
+    ```java
+    import javax.ejb.Stateless;
+    import javax.ejb.TransactionAttribute;
+    import javax.ejb.TransactionAttributeType;
+
+    @Stateless
+    public class OrderService {
+        @TransactionAttribute(TransactionAttributeType.REQUIRED)
+        public void placeOrder(Order o) { ... }
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.transaction.Transactional;
+
+    @ApplicationScoped
+    public class OrderService {
+        @Transactional
+        public void placeOrder(Order o) { ... }
+    }
+    ```
+
+    ### Additional Info
+    - `@Stateless` / `@Stateful` / `@Singleton(javax.ejb)` -> `@ApplicationScoped` (CDI).
+    - `@TransactionAttribute` -> `@Transactional` (jakarta.transaction) with matching `TxType` value.
+    - `@MessageDriven` -> SmallRye Reactive Messaging `@Incoming`.
+    - Local/remote EJB views, `@EJB` lookups, and `@Asynchronous` execution are not supported.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ejb*
+        location: PACKAGE
+- ruleID: ejb-dependency-00010
+  description: EJB API is not supported in Quarkus; migrate to CDI beans and @Transactional
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not support EJBs. Remove the `javax.ejb:javax.ejb-api` (or equivalent jakarta.ejb-api) dependency and migrate stateless/stateful/singleton beans to CDI `@ApplicationScoped` beans with `@Transactional` for transaction semantics.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.ejb.javax.ejb-api
+        lowerbound: 0.0.0
 - ruleID: ejb-annotation-00010
-  description: EJB @Stateless is not supported in Quarkus; replace with CDI @Dependent
+  description: '@Stateless session beans are not supported; use @ApplicationScoped CDI beans with @Transactional'
   category: mandatory
   effort: 5
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
-  message: |-
-    Quarkus does not support Java EE Enterprise JavaBeans. Replace the `@javax.ejb.Stateless` annotation on the class with a CDI scope annotation such as `@javax.enterprise.context.Dependent`. The OpenRewrite recipe `JavaEEtoQuarkus2CodeMigration` performs this rewrite by removing the EJB import and adding `javax.enterprise.context.Dependent`.
-
-    ### Before
-    ```java
-    import javax.ejb.Stateless;
-
-    @Stateless
-    public class PingEJBSLS {
-        // ...
-    }
-    ```
-
-    ### After
-    ```java
-    import javax.enterprise.context.Dependent;
-
-    @Dependent
-    public class PingEJBSLS {
-        // ...
-    }
-    ```
-
-    ### Additional Info
-    - EJB lifecycle/transaction/security semantics differ from CDI. `@Dependent` beans are not pooled and are created/destroyed per injection point.
-    - If you relied on container-managed transactions on a stateless bean, add `@javax.transaction.Transactional` (Quarkus supports it via Narayana) to methods that previously got implicit transactions.
-    - Verify that any `@EJB` injection points referencing this class are also migrated to `@Inject`.
-    - See the OpenRewrite recipe `org.openrewrite.quarkus.migrate.javaee.JavaEEtoQuarkus2CodeMigration` for the automated rewrite.
+  message: Replace `@Stateless` with `@ApplicationScoped` (CDI) and add `@Transactional` (jakarta.transaction) on methods that need transactional semantics.
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/javaeetoquarkus2codemigration
+    - url: https://quarkus.io/guides/cdi-reference
       title: Migration Documentation
   when:
     java.referenced:
         pattern: javax.ejb.Stateless
         location: ANNOTATION
 - ruleID: ejb-annotation-00020
-  description: EJB @Stateful is not supported in Quarkus; replace with CDI @SessionScoped
+  description: Stateful session beans are not supported; choose a CDI scope that matches the desired lifetime
   category: mandatory
-  effort: 5
+  effort: 7
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
-  message: |-
-    Quarkus does not support Java EE Enterprise JavaBeans. Replace the `@javax.ejb.Stateful` annotation on the class with the CDI `@javax.enterprise.context.SessionScoped` annotation. The OpenRewrite migration recipe also removes any companion `@javax.ejb.Local` annotation on the same class.
-
-    ### Before
-    ```java
-    import javax.ejb.Stateful;
-    import javax.ejb.Local;
-
-    @Stateful
-    @Local
-    public class PingEJBLocal {
-        // ...
-    }
-    ```
-
-    ### After
-    ```java
-    import javax.enterprise.context.SessionScoped;
-
-    @SessionScoped
-    public class PingEJBLocal {
-        // ...
-    }
-    ```
-
-    ### Additional Info
-    - A `@SessionScoped` CDI bean must implement `java.io.Serializable` to follow the CDI spec — verify your class implements `Serializable` or pick `@RequestScoped`/`@ApplicationScoped` if session semantics are not required.
-    - EJB stateful conversation semantics (`@Remove`, passivation) have no direct Quarkus equivalent — review business logic that depended on those features.
-    - The `@Local` business-interface annotation is dropped during migration; the class becomes a plain CDI bean.
+  message: 'Stateful EJBs have no direct replacement. Choose a CDI scope that matches the bean''s lifecycle: `@SessionScoped` (HTTP session, requires `quarkus-undertow`), `@RequestScoped`, `@TransactionScoped`, or a custom scope.'
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/javaeetoquarkus2codemigration
+    - url: https://quarkus.io/guides/cdi-reference
       title: Migration Documentation
   when:
     java.referenced:
         pattern: javax.ejb.Stateful
         location: ANNOTATION
 - ruleID: ejb-annotation-00030
-  description: EJB @Singleton is not supported in Quarkus; replace with CDI @ApplicationScoped
+  description: EJB @Singleton is not supported; use CDI @Singleton
   category: mandatory
-  effort: 5
+  effort: 3
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
-  message: |-
-    Quarkus does not support the EJB `@javax.ejb.Singleton` annotation. Replace it with the CDI `@javax.enterprise.context.ApplicationScoped` annotation, which provides similar single-instance-per-application semantics.
-
-    ### Before
-    ```java
-    import javax.ejb.Singleton;
-
-    @Singleton
-    public class PingEJBSingleton {
-        // ...
-    }
-    ```
-
-    ### After
-    ```java
-    import javax.enterprise.context.ApplicationScoped;
-
-    @ApplicationScoped
-    public class PingEJBSingleton {
-        // ...
-    }
-    ```
-
-    ### Additional Info
-    - Beware the package collision: `javax.ejb.Singleton` and `javax.inject.Singleton` are different annotations. The migration target here is the CDI `@ApplicationScoped`, not `javax.inject.Singleton`.
-    - EJB `@Startup`, container-managed concurrency (`@Lock`, `@ConcurrencyManagement`) and `@DependsOn` have no direct CDI equivalent. Use Quarkus `@Startup` (`io.quarkus.runtime.Startup`) for eager initialization and explicit synchronization for concurrency.
-    - Container-managed transactions on singleton methods can be re-enabled with `@javax.transaction.Transactional` in Quarkus.
+  message: Replace `@javax.ejb.Singleton` with `@jakarta.inject.Singleton`. Container-managed concurrency (`@Lock`, `@AccessTimeout`) is NOT provided — synchronize manually if needed.
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/javaeetoquarkus2codemigration
+    - url: https://quarkus.io/guides/cdi-reference
       title: Migration Documentation
   when:
     java.referenced:
         pattern: javax.ejb.Singleton
         location: ANNOTATION
 - ruleID: ejb-annotation-00040
-  description: EJB @Local has no equivalent in Quarkus CDI and must be removed
+  description: EJB-style @EJB injection is not supported; use CDI @Inject
   category: mandatory
   effort: 1
   labels:
     - konveyor.io/source=java-ee
     - konveyor.io/source=javaee
     - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
     - konveyor.io/target=quarkus
     - konveyor.io/generated-by=ai-rule-gen
-  message: |-
-    The EJB `@javax.ejb.Local` business-interface annotation has no analogue in Quarkus CDI and must be removed. CDI does not differentiate between local and remote beans — every bean is injectable in-process.
-
-    ### Migration Steps
-    1. Remove the `@javax.ejb.Local` annotation from any class or interface declaration.
-    2. Remove the corresponding `import javax.ejb.Local;` statement.
-    3. If the type was used purely as an EJB business-interface marker, you may also drop the interface entirely and inject the implementation directly with `@Inject`.
-
-    ### Additional Info
-    - Quarkus does not support remote EJB invocation. Code that relied on `@Remote` must be redesigned to use REST, gRPC, or messaging.
-    - The `JavaEEtoQuarkus2CodeMigration` OpenRewrite recipe deletes `@Local` together with the `@Stateful` → `@SessionScoped` rewrite.
+  message: Replace `@EJB MyService svc;` with `@Inject MyService svc;`. The target class must be a CDI bean (annotated with a bean-defining annotation).
   links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/javaeetoquarkus2codemigration
-      title: Migration Documentation
-  when:
-    java.referenced:
-        pattern: javax.ejb.Local
-        location: ANNOTATION
-- ruleID: ejb-annotation-00050
-  description: EJB @EJB injection is not supported in Quarkus; replace with CDI @Inject
-  category: mandatory
-  effort: 5
-  labels:
-    - konveyor.io/source=java-ee
-    - konveyor.io/source=javaee
-    - konveyor.io/source=jakarta-ee
-    - konveyor.io/target=quarkus
-    - konveyor.io/generated-by=ai-rule-gen
-  message: |-
-    Quarkus uses CDI (ArC) for dependency injection and does not honour the EJB `@javax.ejb.EJB` injection annotation. Replace every `@EJB`-annotated field, method, or constructor parameter with `@javax.inject.Inject`.
-
-    ### Before
-    ```java
-    import javax.ejb.EJB;
-
-    public class PingEJBSLS {
-        @EJB
-        private PingEJBLocal pingEJBLocal;
-
-        @EJB(lookup = "java:global/PingEJBSingleton")
-        private PingEJBSingleton pingEJBSingleton;
-    }
-    ```
-
-    ### After
-    ```java
-    import javax.inject.Inject;
-
-    public class PingEJBSLS {
-        @Inject
-        private PingEJBLocal pingEJBLocal;
-
-        @Inject
-        private PingEJBSingleton pingEJBSingleton;
-    }
-    ```
-
-    ### Additional Info
-    - Drop the `lookup`, `mappedName`, `beanInterface`, and `name` attributes — CDI resolves beans by type and qualifiers, not by JNDI string. If you previously selected an implementation via `lookup`, introduce a CDI qualifier annotation instead.
-    - The target class itself must be a CDI bean (annotated with a scope such as `@Dependent`, `@ApplicationScoped`, or `@SessionScoped`) for `@Inject` to resolve it.
-    - Cross-application/remote EJB lookups (`java:global/...`) are not supported in Quarkus; replace those with a REST/gRPC client.
-  links:
-    - url: https://docs.openrewrite.org/recipes/quarkus/migrate/javaee/javaeetoquarkus2codemigration
+    - url: https://quarkus.io/guides/cdi-reference
       title: Migration Documentation
   when:
     java.referenced:
         pattern: javax.ejb.EJB
         location: ANNOTATION
+- ruleID: ejb-annotation-00050
+  description: EJB asynchronous method invocation is not supported in Quarkus
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not provide container-managed async EJB invocation. Return `io.smallrye.mutiny.Uni`/`Multi` or `java.util.concurrent.CompletionStage`, or inject `org.eclipse.microprofile.context.ManagedExecutor` to dispatch work to a worker pool.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ejb.Asynchronous
+        location: ANNOTATION
+- ruleID: ejb-import-00020
+  description: EJB is not supported by Quarkus; migrate to CDI + JTA + Scheduler
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does NOT support EJB (`@Stateless`, `@Stateful`, `@Singleton`, `@MessageDriven`, `@LocalBean`). Replace each with the appropriate CDI scope (`@ApplicationScoped`, `@Dependent`, `@Singleton`), JTA `@Transactional`, scheduling via `io.quarkus.scheduler.Scheduled`, and messaging via SmallRye Reactive Messaging (`@Incoming`/`@Outgoing`).
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ejb
+        location: PACKAGE
+- ruleID: ejb-import-00030
+  description: EJB is not supported by Quarkus
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not support Jakarta EJB. Replace each EJB type with the corresponding CDI scope and use JTA + Quarkus Scheduler + SmallRye Reactive Messaging instead.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: jakarta.ejb
+        location: PACKAGE
+- ruleID: ejb-pattern-00010
+  description: Quarkus does not support EJB; ejb-jar.xml has no effect
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not implement EJB. `ejb-jar.xml` is ignored. Migrate session bean definitions to CDI beans (`@ApplicationScoped`/`@Singleton`/`@Dependent`) and MDBs to SmallRye Reactive Messaging consumers.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: META-INF/ejb-jar\.xml
+        filePattern: (.*/)?ejb-jar\.xml

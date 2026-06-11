@@ -1,0 +1,33 @@
+- ruleID: jpa-config-xml-00010
+  description: META-INF/persistence.xml is supported but not recommended in Quarkus; prefer application.properties
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus supports a META-INF/persistence.xml file for configuring Hibernate ORM, but recommends switching to application.properties (using quarkus.hibernate-orm.* and quarkus.datasource.* properties). Using persistence.xml has constraints:
+    - Persistence units always use the default datasource
+    - Mixing persistence.xml with quarkus.hibernate-orm.* properties raises an exception
+    - Quarkus will NOT configure the dialect/database version automatically — you must set it explicitly
+
+    ### Migration Steps
+    1. Move connection settings to `quarkus.datasource.*` properties (db-kind, jdbc.url, username, password)
+    2. Move Hibernate settings to `quarkus.hibernate-orm.*` properties (dialect, schema-management.strategy, packages, etc.)
+    3. Delete META-INF/persistence.xml — OR set `quarkus.hibernate-orm.persistence-xml.ignore=true` to keep it but ignore it
+
+    ### Additional Info
+    - See https://quarkus.io/guides/hibernate-orm for the full Quarkus Hibernate ORM configuration reference
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#persistence-xml
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='persistence-unit']
+        filepaths:
+            - persistence.xml
+            - META-INF/persistence.xml

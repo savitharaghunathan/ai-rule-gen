@@ -1,6 +1,6 @@
-# Ruleset comparison: ai-generated vs handcrafted
+# Ruleset comparison: ai vs handcrafted
 
-- **A**: ai-generated (275 rules) — `evals/javaee-to-quarkus/rules`
+- **A**: ai (275 rules) — `evals/javaee-to-quarkus/rules`
 - **B**: handcrafted (82 rules) — `evals/javaee-to-quarkus-handcrafted/rules`
 
 ## Coverage matrix
@@ -9,10 +9,10 @@ How many rules on one side are matched by a rule keyed on the same API on the ot
 
 | Direction | Covered | Partial | Missing |
 |---|---|---|---|
-| A → B (ai-generated rules covered by handcrafted) | 24 | 16 | 235 |
-| B → A (handcrafted rules covered by ai-generated) | 20 | 11 | 51 |
+| A → B (ai rules covered by handcrafted) | 24 | 16 | 235 |
+| B → A (handcrafted rules covered by ai) | 20 | 11 | 51 |
 
-### Rules in ai-generated with no equivalent in handcrafted (235)
+### Rules in ai with no equivalent in handcrafted (235)
 
 - `build-annotation-00020` — Spring Boot auto-configuration is not used in Quarkus
   - keys: java:org.springframework.boot.autoconfigure.enableautoconfiguration
@@ -485,7 +485,7 @@ How many rules on one side are matched by a rule keyed on the same API on the ot
 - `web-xml-00010` — web.xml is not honoured by Quarkus REST; servlet/filter declarations must be removed
   - keys: xml://*[local-name()='web-app']
 
-### Rules in handcrafted with no equivalent in ai-generated (51)
+### Rules in handcrafted with no equivalent in ai (51)
 
 - `cdi-to-quarkus-00000` — Replace javax.enterprise:cdi-api dependency
   - keys: xml:/m:project/m:dependencies/m:dependency[m:artifactId/text() = 'cdi-api' and m:groupId/text() = 'javax.enterprise' and (count(../m:dependency/m:groupId[contains(., 'io.quarkus')]) = 0)]
@@ -590,48 +590,21 @@ How many rules on one side are matched by a rule keyed on the same API on the ot
 - `springboot-webmvc-to-quarkus-01000` — Spring WebFlux is not supported by Quarkus
   - keys: dep:org.springframework.boot.spring-boot-starter-webflux, dep:org.springframework.spring-webflux
 
-## Kantra diff (app: /Users/fabian/scratch/eval-apps/coolstore)
+## Kantra diff (app: /Users/fabian/scratch/eval-apps/ejb-remote)
 
-| | ai-generated | handcrafted |
+| | ai | handcrafted |
 |---|---|---|
-| Rules fired | 32 | 25 |
-| Incidents | 214 | 55 |
-| Files flagged only here | 12 | 1 |
-| Files flagged by both | 14 | 14 |
+| Rules fired | 1 | 7 |
+| Incidents | 1 | 20 |
+| Files flagged only here | 0 | 2 |
+| Files flagged by both | 1 | 1 |
 
-### Files flagged only by ai-generated (12)
+### Files flagged only by handcrafted (2)
 
-- `src/main/java/com/redhat/coolstore/model/CatalogItemEntity.java`
-- `src/main/java/com/redhat/coolstore/model/InventoryEntity.java`
-- `src/main/java/com/redhat/coolstore/model/Order.java`
-- `src/main/java/com/redhat/coolstore/model/OrderItem.java`
-- `src/main/java/com/redhat/coolstore/model/ShoppingCart.java`
-- `src/main/java/com/redhat/coolstore/rest/CartEndpoint.java`
-- `src/main/java/com/redhat/coolstore/rest/OrderEndpoint.java`
-- `src/main/java/com/redhat/coolstore/rest/ProductEndpoint.java`
-- `src/main/java/com/redhat/coolstore/service/PromoService.java`
-- `src/main/java/com/redhat/coolstore/utils/StartupListener.java`
-- `src/main/java/com/redhat/coolstore/utils/Transformers.java`
-- `src/main/webapp/WEB-INF/web.xml`
+- `pom.xml`
+- `server-side/pom.xml`
 
-### Files flagged only by handcrafted (1)
+### Files flagged by both (1)
 
-- `src/main/webapp/WEB-INF/beans.xml`
-
-### Files flagged by both (14)
-
-- `pom.xml` — A: [build-dependency-00010 build-xml-00040] · B: [javaee-pom-to-quarkus-00000 javaee-pom-to-quarkus-00010 javaee-pom-to-quarkus-00020 …+4]
-- `src/main/java/com/redhat/coolstore/persistence/Resources.java` — A: [cdi-import-00010 cdi-import-00060 cdi-import-00070 …+3] · B: [cdi-to-quarkus-00040 persistence-to-quarkus-00010 persistence-to-quarkus-00011]
-- `src/main/java/com/redhat/coolstore/rest/RestApplication.java` — A: [rest-import-00010 web-import-00020] · B: [jaxrs-to-quarkus-00020]
-- `src/main/java/com/redhat/coolstore/service/CatalogService.java` — A: [cdi-import-00020 cdi-import-00050 ejb-annotation-00010 …+5] · B: [ee-to-quarkus-00000 ee-to-quarkus-00020 transaction-to-quarkus-00002]
-- `src/main/java/com/redhat/coolstore/service/InventoryNotificationMDB.java` — A: [cdi-import-00020 cdi-import-00050 datasource-method-00010 …+3] · B: [jms-to-reactive-quarkus-00050 jndi-to-quarkus-00001 jndi-to-quarkus-00002]
-- `src/main/java/com/redhat/coolstore/service/OrderService.java` — A: [cdi-import-00020 cdi-import-00030 cdi-import-00050 …+6] · B: [ee-to-quarkus-00000 ee-to-quarkus-00020 transaction-to-quarkus-00001]
-- `src/main/java/com/redhat/coolstore/service/OrderServiceMDB.java` — A: [cdi-import-00020 cdi-import-00050 ejb-import-00010 …+4] · B: [ee-to-quarkus-00020 jms-to-reactive-quarkus-00010 jms-to-reactive-quarkus-00020 …+1]
-- `src/main/java/com/redhat/coolstore/service/ProductService.java` — A: [cdi-import-00020 cdi-import-00050 ejb-annotation-00010 …+2] · B: [ee-to-quarkus-00000 ee-to-quarkus-00020]
-- `src/main/java/com/redhat/coolstore/service/ShippingService.java` — A: [ejb-annotation-00010 ejb-import-00010 ejb-import-00020] · B: [ee-to-quarkus-00000 ee-to-quarkus-00020 remote-ejb-to-quarkus-00000]
-- `src/main/java/com/redhat/coolstore/service/ShoppingCartOrderProcessor.java` — A: [cdi-import-00020 cdi-import-00030 cdi-import-00050 …+8] · B: [ee-to-quarkus-00000 ee-to-quarkus-00020 jms-to-reactive-quarkus-00040 …+1]
-- `src/main/java/com/redhat/coolstore/service/ShoppingCartService.java` — A: [cdi-import-00020 cdi-import-00050 datasource-method-00010 …+5] · B: [ee-to-quarkus-00010 ee-to-quarkus-00020 jndi-to-quarkus-00001 …+1]
-- `src/main/java/com/redhat/coolstore/utils/DataBaseMigrationStartup.java` — A: [cdi-import-00020 cdi-import-00030 cdi-import-00050 …+6] · B: [ee-to-quarkus-00020]
-- `src/main/java/com/redhat/coolstore/utils/Producers.java` — A: [cdi-import-00010 cdi-import-00070 logging-change-00050] · B: [cdi-to-quarkus-00040]
-- `src/main/resources/META-INF/persistence.xml` — A: [hibernate-xml-00010 hibernate-xml-00030 jpa-config-xml-00010 …+1] · B: [persistence-to-quarkus-00000]
+- `client/pom.xml` — A: [build-xml-00040] · B: [javaee-pom-to-quarkus-00010 javaee-pom-to-quarkus-00020 javaee-pom-to-quarkus-00030 …+3]
 

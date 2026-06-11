@@ -1,0 +1,109 @@
+- ruleID: rest-import-00010
+  description: javax.ws.rs was renamed to jakarta.ws.rs in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Quarkus uses Jakarta REST (3.1). Replace `import javax.ws.rs.*` with `import jakarta.ws.rs.*` everywhere: `@Path`, `@GET`, `@POST`, `@Produces`, `@Consumes`, `Response`, `WebApplicationException`, etc.'
+  links:
+    - url: https://quarkus.io/guides/rest
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ws.rs
+        location: PACKAGE
+- ruleID: rest-change-00010
+  description: Spring WebClient should be replaced by Quarkus REST Client (reactive) or Vert.x WebClient
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.springframework.web.reactive.function.client.WebClient` with one of:
+    - Quarkus REST Client returning `Uni<T>` (`quarkus-rest-client-jackson`).
+    - Vert.x Mutiny Web Client `io.vertx.mutiny.ext.web.client.WebClient` for low-level reactive HTTP.
+  links:
+    - url: https://quarkus.io/guides/rest-client
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.reactive.function.client.WebClient
+        location: TYPE
+- ruleID: rest-import-00020
+  description: Spring WebFlux is not supported; migrate to Quarkus REST + Mutiny
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does NOT support Spring WebFlux. Replace `@RestController` + `Mono`/`Flux` return types with Jakarta REST `@Path` resources returning `io.smallrye.mutiny.Uni`/`Multi`. The Quarkus REST runtime is built on Vert.x and runs reactive methods directly on the IO thread when the return type indicates non-blocking.
+  links:
+    - url: https://quarkus.io/guides/rest
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.reactive
+        location: PACKAGE
+- ruleID: rest-dependency-00010
+  description: Classic quarkus-resteasy is being replaced by quarkus-rest (reactive) as the recommended stack
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus REST (artifact `quarkus-rest`, formerly known as RESTEasy Reactive) is the recommended JAX-RS implementation in Quarkus. The classic `quarkus-resteasy` stack is still supported, but new applications should use `quarkus-rest` for its non-blocking core and better integration with reactive Quarkus features.
+
+    If you migrate to `quarkus-rest`:
+    - Servlet types (`HttpServletRequest`, `HttpServletResponse`) are not available - they require `quarkus-undertow` + the classic stack. Use Vert.x `HttpServerRequest`/`HttpServerResponse` instead.
+    - Replace `quarkus-resteasy-jackson` with `quarkus-rest-jackson`.
+    - Replace `quarkus-resteasy-client` with `quarkus-rest-client`.
+    - Endpoint methods returning `Uni`/`Multi`/`CompletionStage`/reactive types run on the IO thread by default. Use `@Blocking` to force worker-thread execution.
+
+    ### Additional Info
+    - Methods annotated with `@jakarta.transaction.Transactional` are automatically treated as blocking.
+    - The `quarkus-rest` execution model and migration steps are documented in the [Quarkus REST guide](https://quarkus.io/guides/rest).
+  links:
+    - url: https://quarkus.io/guides/rest
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: io.quarkus.quarkus-resteasy
+        lowerbound: 0.0.0
+- ruleID: rest-dependency-00020
+  description: quarkus-resteasy-jackson is replaced by quarkus-rest-jackson on the Quarkus REST stack
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: When migrating from classic RESTEasy (`quarkus-resteasy`) to Quarkus REST (`quarkus-rest`), replace `quarkus-resteasy-jackson` with `quarkus-rest-jackson` for JSON serialization.
+  links:
+    - url: https://quarkus.io/guides/rest
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: io.quarkus.quarkus-resteasy-jackson
+        lowerbound: 0.0.0

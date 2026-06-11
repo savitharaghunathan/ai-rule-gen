@@ -1,0 +1,96 @@
+- ruleID: core-method-00010
+  description: SpringApplication.run() does not apply; Quarkus generates its own main
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `SpringApplication.run(...)` with `io.quarkus.runtime.Quarkus.run(args)` inside a `@QuarkusMain`-annotated class - or simply delete the bootstrap class, since Quarkus generates the main entry point for you when no `@QuarkusMain` is declared.
+  links:
+    - url: https://quarkus.io/guides/getting-started
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.SpringApplication.run
+        location: METHOD_CALL
+- ruleID: core-import-00010
+  description: javax.annotation was renamed to jakarta.annotation in Jakarta EE 9+
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `import javax.annotation.*` with `import jakarta.annotation.*` for `@PostConstruct`, `@PreDestroy`, `@Priority`, `@Resource`. Security annotations (`@RolesAllowed`, `@PermitAll`, `@DenyAll`) move to `jakarta.annotation.security.*`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.annotation
+        location: PACKAGE
+- ruleID: core-type-00010
+  description: CommandLineRunner has no Quarkus equivalent; use StartupEvent or @QuarkusMain
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `CommandLineRunner` with one of:
+    - `@Observes StartupEvent` on a CDI bean for arbitrary startup work,
+    - `@QuarkusMain` + `QuarkusApplication` for full control of the lifecycle,
+    - The `quarkus-picocli` extension for command-line applications.
+
+    ### Before
+    ```java
+    @Component
+    public class Bootstrap implements CommandLineRunner {
+        public void run(String... args) { ... }
+    }
+    ```
+
+    ### After
+    ```java
+    @ApplicationScoped
+    public class Bootstrap {
+        void onStart(@Observes StartupEvent ev) { ... }
+    }
+    ```
+  links:
+    - url: https://quarkus.io/guides/lifecycle
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.CommandLineRunner
+        location: IMPLEMENTS_TYPE
+- ruleID: core-type-00020
+  description: ApplicationRunner has no Quarkus equivalent
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `ApplicationRunner` with `@Observes StartupEvent` on a CDI bean, or implement `io.quarkus.runtime.QuarkusApplication` and annotate the class with `@QuarkusMain`.
+  links:
+    - url: https://quarkus.io/guides/lifecycle
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.ApplicationRunner
+        location: IMPLEMENTS_TYPE
