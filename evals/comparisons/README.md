@@ -2,9 +2,10 @@
 
 Side-by-side numbers for ai-rule-gen vs the hand-authored rulesets at konveyor/rulesets. Generated artifacts in this dir:
 
-- `javaee-to-jakarta.md` / `javaee-to-quarkus.md` / `spring-boot2-to-spring-boot3.md` — `cmd/compare` output (coverage matrix + kantra-analyze diff)
-- `javaee-to-{jakarta,quarkus}.{ejb-remote,ejb-security,tasks-qute,kitchensink,helloworld-*,cmt,hibernate,bmt}.md` — javaee diffs against more sample apps
+- `javaee-to-jakarta.md` / `javaee-to-quarkus.md` / `spring-boot2-to-spring-boot3.md` — `cmd/compare` output on the primary sample app (coverage matrix + kantra-analyze diff)
 - `*-judge.md` — LLM judge writeups (head-to-head, sampled rules)
+
+Cross-app numbers in the table below were taken from per-app `cmd/compare` runs that aren't committed; regenerate any of them with `go run ./cmd/compare --app-dir <path> ...` (see Re-running below).
 
 ## Setup
 
