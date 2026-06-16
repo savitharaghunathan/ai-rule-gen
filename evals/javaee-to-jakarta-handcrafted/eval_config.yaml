@@ -1,0 +1,6 @@
+guide_url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/
+app_repo: https://github.com/konveyor-ecosystem/coolstore
+app_commit: b5752b9
+source: java-ee
+target: jakarta-ee
+rules_dir: evals/javaee-to-jakarta-handcrafted/rules

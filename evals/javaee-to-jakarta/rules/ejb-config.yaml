@@ -1,0 +1,122 @@
+- ruleID: ejb-config-xml-00010
+  description: idle-timeout attribute on infinispan passivation-store is deprecated; eager passivation is no longer supported
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `idle-timeout` attribute on the infinispan `passivation-store` of the `ejb3` subsystem is deprecated in JBoss EAP 7.1 and later. Only lazy passivation, triggered when the `max-size` threshold is reached, is supported.
+
+    ### Migration Steps
+
+    1. Remove the `idle-timeout` attribute from any custom `passivation-store` configuration.
+    2. Use the `max-size` attribute on the cache to control when passivation is triggered.
+    3. If you previously relied on eager passivation, plan for the change in timing behavior — beans now passivate only under cache pressure.
+
+    ### Additional Info
+
+    - Eager passivation via `idle-timeout` is no longer supported, even though the attribute may still be writable in older 7.x versions.
+    - The cluster name used by the Jakarta Enterprise Beans client is now derived from the actual cluster name of the channel configured in the `jgroups` subsystem.
+    - In EAP 8.0 this configuration is replaced entirely by the new `distributable-ejb` subsystem (see related rule on the deprecated `/subsystem=ejb3/cache` and `/subsystem=ejb3/passivation-store` resources).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#configuring_custom_stateful_session_bean_cache_for_passivation
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:ejb3:')]//*[local-name()='passivation-store' and @idle-timeout]
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+- ruleID: ejb-config-xml-00020
+  description: /subsystem=ejb3/cache is deprecated in EAP 8.0; replaced by simple-cache and distributable-cache resources
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 8.0 replaces the deprecated `/subsystem=ejb3/cache` resource with two new resources: `/subsystem=ejb3/simple-cache` for non-distributable stateful session beans and `/subsystem=ejb3/distributable-cache` for distributable SFSBs. A new `distributable-ejb` subsystem is also introduced for configuring SFSB caching distributively.
+
+    ### Migration Steps
+
+    1. Replace each `/subsystem=ejb3/cache=NAME:add(...)` (with no passivation store) by `/subsystem=ejb3/simple-cache=NAME:add()`.
+    2. Replace each `/subsystem=ejb3/cache=NAME:add(passivation-store=...)` with a `distributable-cache` that references a `distributable-ejb` bean-management resource.
+
+       ```
+       /subsystem=distributable-ejb=example-distributed-cache/infinispan-bean-management=example-bean-cache:add(cache-container=ejb, cache=default, max-active-beans=1024)
+       /subsystem=ejb3/distributable-cache=example-distributed-cache:add(bean-management=example-bean-cache)
+       ```
+
+    ### Additional Info
+
+    - The deprecated resources still function in 8.0 but may be removed in future major releases.
+    - If no `bean-management` is specified, it defaults to the `bean-management` resource within the `distributable-ejb` subsystem.
+    - Review and update any management scripts or CI tooling that references the old paths.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#ejb_subsystem_configuration_changes_from_version_8_0_and_later
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:ejb3:')]//*[local-name()='caches']/*[local-name()='cache']
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+- ruleID: ejb-config-xml-00030
+  description: /subsystem=ejb3/passivation-store is deprecated in EAP 8.0; replaced by distributable-ejb bean-management
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 8.0 deprecates the `/subsystem=ejb3/passivation-store` resource. Passivation behavior is now configured through the `distributable-ejb` subsystem's bean-management resources, referenced from a `distributable-cache`.
+
+    ### Migration Steps
+
+    1. Remove existing passivation-store entries:
+
+       ```
+       /subsystem=ejb3/file-passivation-store=file:remove
+       /subsystem=ejb3/cluster-passivation-store=infinispan:remove
+       ```
+
+    2. Add an `infinispan-bean-management` resource in the `distributable-ejb` subsystem and reference it from a `distributable-cache`:
+
+       ```
+       /subsystem=distributable-ejb=example-distributed-cache/infinispan-bean-management=example-bean-cache:add(cache-container=ejb, cache=default, max-active-beans=1024)
+       /subsystem=ejb3/distributable-cache=example-distributed-cache:add(bean-management=example-bean-cache)
+       ```
+
+    ### Additional Info
+
+    - Deprecated resources may continue to work in EAP 8.0 but are expected to be removed in future major releases.
+    - The new model splits non-distributable (`simple-cache`) and distributable (`distributable-cache`) configurations.
+    - See also the related rule for `/subsystem=ejb3/cache`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#ejb_subsystem_configuration_changes_from_version_8_0_and_later
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:ejb3:')]//*[local-name()='passivation-stores']/*[local-name()='cluster-passivation-store' or local-name()='file-passivation-store' or local-name()='passivation-store']
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml

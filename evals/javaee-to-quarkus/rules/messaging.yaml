@@ -1,0 +1,128 @@
+- ruleID: messaging-import-00010
+  description: Java EE JMS (javax.jms) is replaced by jakarta.jms; native JMS is provided via Reactive Messaging or quarkus-artemis-jms
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Java EE JMS code in `javax.jms` does not run under Quarkus. The recommended path is SmallRye Reactive Messaging (with `@Incoming` / `@Outgoing` / `Emitter`); a lower-level option is `quarkus-artemis-jms` which exposes the `jakarta.jms` API.
+
+    ### Before
+    ```java
+    import javax.jms.ConnectionFactory;
+    import javax.jms.Queue;
+    import javax.annotation.Resource;
+
+    @Resource(lookup = "java:/ConnectionFactory") ConnectionFactory cf;
+    @Resource(lookup = "jms/queue/Orders") Queue orders;
+    ```
+
+    ### After
+    ```java
+    import jakarta.inject.Inject;
+    import org.eclipse.microprofile.reactive.messaging.Channel;
+    import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+    @Inject
+    @Channel("orders")
+    Emitter<String> ordersEmitter;
+    ```
+
+    ### Additional Info
+    - For pure JMS, add `quarkus-artemis-jms` and re-import the API from `jakarta.jms.*`.
+    - Message-Driven Beans (`@MessageDriven`) must be re-implemented as `@Incoming` listeners.
+    - `JMSContext` / `Session` / `MessageProducer` lifecycle is handled automatically by Reactive Messaging connectors.
+  links:
+    - url: https://quarkus.io/guides/jms
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.jms*
+        location: PACKAGE
+- ruleID: messaging-annotation-00010
+  description: Message-Driven Beans are not supported; use SmallRye Reactive Messaging @Incoming
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@MessageDriven` beans with `@ApplicationScoped` beans whose methods are annotated with `@org.eclipse.microprofile.reactive.messaging.Incoming("channel")`. The channel is configured in `application.properties` via `mp.messaging.incoming.channel.connector=...`.
+  links:
+    - url: https://quarkus.io/guides/messaging
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ejb.MessageDriven
+        location: ANNOTATION
+- ruleID: messaging-change-00010
+  description: JMS Queue/Topic fields are not injectable in Quarkus; use SmallRye Reactive Messaging Emitter with @Channel
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `@Resource(lookup="jms/queue/X") Queue q;` with `@Inject @Channel("x") Emitter<String> emitter;` (or `MutinyEmitter<T>`) from SmallRye Reactive Messaging.
+
+    ### Before
+    ```java
+    @Resource(lookup = "java:/jms/queue/Orders")
+    private Queue ordersQueue;
+    ```
+
+    ### After
+    ```java
+    import org.eclipse.microprofile.reactive.messaging.Channel;
+    import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+    @Inject
+    @Channel("orders")
+    Emitter<String> ordersEmitter;
+    ```
+
+    ### Additional Info
+    - Channels are configured via `mp.messaging.outgoing.orders.*` properties (connector + broker URL).
+    - For pure JMS keep using `jakarta.jms` types and add `quarkus-artemis-jms`.
+  links:
+    - url: https://quarkus.io/guides/messaging
+      title: Migration Documentation
+  when:
+    or:
+        - java.referenced:
+            pattern: javax.jms.Queue
+            location: FIELD
+        - java.referenced:
+            pattern: javax.jms.Topic
+            location: FIELD
+- ruleID: messaging-import-00020
+  description: javax.jms was renamed to jakarta.jms in Jakarta EE 9+
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus uses Jakarta Messaging 3.x. Replace `javax.jms.*` with `jakarta.jms.*`. Consider migrating message-driven beans to SmallRye Reactive Messaging (`@Incoming`/`@Outgoing` / `@Channel`) for a more idiomatic Quarkus approach.
+  links:
+    - url: https://quarkus.io/guides/jms
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.jms
+        location: PACKAGE

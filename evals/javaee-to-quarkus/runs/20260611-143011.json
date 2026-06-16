@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-06-11T14:30:11Z",
+  "migration": "javaee-to-quarkus",
+  "rule_count": 275,
+  "effective_coverage_pct": 49,
+  "quality_avg": 5.487272727272727,
+  "guidance_depth_avg": 2.4872727272727273,
+  "overlap_conflict_count": 226,
+  "specificity_gap_count": 44,
+  "guide_specificity_gap_count": null
+}

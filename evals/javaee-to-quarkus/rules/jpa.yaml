@@ -1,0 +1,497 @@
+- ruleID: jpa-import-00010
+  description: Quarkus uses Jakarta EE 9+ namespace; javax.persistence is replaced by jakarta.persistence
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses Jakarta Persistence (Jakarta EE 9+) which renamed the `javax.persistence` namespace to `jakarta.persistence`. All JPA annotations, entity manager APIs, and persistence types must be re-imported from `jakarta.persistence.*`.
+
+    ### Before
+    ```java
+    import javax.persistence.Entity;
+    import javax.persistence.Id;
+    import javax.persistence.EntityManager;
+    import javax.persistence.PersistenceContext;
+
+    @Entity
+    public class Fruit {
+        @Id
+        private Long id;
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.persistence.Entity;
+    import jakarta.persistence.Id;
+    import jakarta.persistence.EntityManager;
+    import jakarta.persistence.PersistenceContext;
+
+    @Entity
+    public class Fruit {
+        @Id
+        private Long id;
+    }
+    ```
+
+    ### Additional Info
+    - Quarkus integrates Hibernate ORM with Jakarta Persistence; the `quarkus-hibernate-orm` extension supplies the implementation.
+    - Replace `@PersistenceContext EntityManager` with constructor / field injection via CDI `@Inject EntityManager`.
+    - Consider migrating repository code to Panache (`PanacheRepository<Entity, Long>`) for less boilerplate.
+    - See the Quarkus Hibernate ORM guide for configuration via `quarkus.hibernate-orm.*` properties instead of `persistence.xml`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.persistence*
+        location: PACKAGE
+- ruleID: jpa-dependency-00010
+  description: Java EE JPA API is provided by the quarkus-hibernate-orm extension (which brings jakarta.persistence)
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `javax.persistence:javax.persistence-api` (and any standalone Hibernate Core dependency) with `io.quarkus:quarkus-hibernate-orm` (or `quarkus-hibernate-orm-panache` for the Panache active-record / repository API). Configuration moves from `persistence.xml` to `quarkus.hibernate-orm.*` properties.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.persistence.javax.persistence-api
+        lowerbound: 0.0.0
+- ruleID: jpa-dependency-00020
+  description: spring-boot-starter-data-jpa is replaced by quarkus-hibernate-orm-panache; quarkus-spring-data-jpa provides repository compatibility
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `spring-boot-starter-data-jpa` and add `io.quarkus:quarkus-hibernate-orm-panache` plus a JDBC driver extension (`quarkus-jdbc-postgresql`, etc.). For Spring Data repository compatibility add `io.quarkus:quarkus-spring-data-jpa` — Quarkus generates the implementation at build time.
+  links:
+    - url: https://quarkus.io/guides/spring-data-jpa
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-data-jpa
+        lowerbound: 0.0.0
+- ruleID: jpa-dependency-00030
+  description: spring-data-jpa is replaced by quarkus-spring-data-jpa (build-time repository generation)
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Spring Data Commons / JPA dependency replaced by quarkus-spring-data-jpa: spring-data-jpa is replaced by quarkus-spring-data-jpa (build-time repository generation)'
+  links:
+    - url: https://quarkus.io/guides/spring-data-jpa
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.data.spring-data-jpa
+        lowerbound: 0.0.0
+- ruleID: jpa-type-00010
+  description: Spring Data repository interfaces require quarkus-spring-data-jpa; PanacheRepository is the native Quarkus equivalent
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Add `io.quarkus:quarkus-spring-data-jpa` to keep `CrudRepository`, `JpaRepository`, `PagingAndSortingRepository`, etc. working — Quarkus generates the implementation at build time.
+
+    ### Before
+    ```java
+    import org.springframework.data.repository.CrudRepository;
+
+    public interface FruitRepository extends CrudRepository<Fruit, Long> {
+        List<Fruit> findByColor(String color);
+    }
+    ```
+
+    ### After (native Quarkus style)
+    ```java
+    import io.quarkus.hibernate.orm.panache.PanacheRepository;
+
+    @ApplicationScoped
+    public class FruitRepository implements PanacheRepository<Fruit> {
+        public List<Fruit> findByColor(String color) {
+            return list("color", color);
+        }
+    }
+    ```
+
+    ### Additional Info
+    - Unsupported: `QueryByExampleExecutor`, `JpaSpecificationExecutor`, QueryDSL, native/named `@Query`, `org.springframework.data.jpa.repository.Lock`, custom base repositories.
+    - `@Modifying`-annotated methods are automatically wrapped in `@Transactional`.
+  links:
+    - url: https://quarkus.io/guides/spring-data-jpa
+      title: Migration Documentation
+  when:
+    or:
+        - java.referenced:
+            pattern: org.springframework.data.repository.CrudRepository
+            location: INHERITANCE
+        - java.referenced:
+            pattern: org.springframework.data.repository.Repository
+            location: INHERITANCE
+        - java.referenced:
+            pattern: org.springframework.data.repository.ListCrudRepository
+            location: INHERITANCE
+        - java.referenced:
+            pattern: org.springframework.data.repository.PagingAndSortingRepository
+            location: INHERITANCE
+        - java.referenced:
+            pattern: org.springframework.data.repository.ListPagingAndSortingRepository
+            location: INHERITANCE
+        - java.referenced:
+            pattern: org.springframework.data.jpa.repository.JpaRepository
+            location: INHERITANCE
+- ruleID: jpa-annotation-00010
+  description: Spring Data @Query is supported with JPQL only; native and named queries are NOT supported by quarkus-spring-data-jpa
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`quarkus-spring-data-jpa` supports `@Query` with JPQL only — `nativeQuery=true` and named queries are NOT supported. Migrate native SQL queries to `EntityManager.createNativeQuery(...)` or Panache `Fruit.find("sql", ...).nativeQuery()`.'
+  links:
+    - url: https://quarkus.io/guides/spring-data-jpa
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.data.jpa.repository.Query
+        location: ANNOTATION
+- ruleID: jpa-type-00020
+  description: JpaSpecificationExecutor and Specifications are NOT supported by quarkus-spring-data-jpa
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`JpaSpecificationExecutor` and `Specification` are NOT supported. Migrate dynamic queries to `EntityManager.getCriteriaBuilder()` (JPA Criteria API) or to dynamic JPQL on a Panache repository.'
+  links:
+    - url: https://quarkus.io/guides/spring-data-jpa
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.data.jpa.repository.JpaSpecificationExecutor
+        location: INHERITANCE
+- ruleID: jpa-type-00030
+  description: Query By Example is not supported by quarkus-spring-data-jpa
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: QBE methods throw at runtime in `quarkus-spring-data-jpa`. Reimplement using JPQL or the Criteria API.
+  links:
+    - url: https://quarkus.io/guides/spring-data-jpa
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.data.repository.query.QueryByExampleExecutor
+        location: INHERITANCE
+- ruleID: jpa-xml-00010
+  description: Quarkus configures Hibernate ORM via application.properties instead of persistence.xml
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Delete `META-INF/persistence.xml` and move its settings into `application.properties` under the `quarkus.hibernate-orm.*` namespace (datasource selection is automatic when a single datasource exists).
+
+    ### Migration Steps
+    1. Remove `persistence.xml`.
+    2. Set the datasource via `quarkus.datasource.db-kind`, `quarkus.datasource.username`, `quarkus.datasource.jdbc.url`.
+    3. Map Hibernate properties: `hibernate.hbm2ddl.auto` -> `quarkus.hibernate-orm.schema-management.strategy`; `hibernate.dialect` is auto-detected from `db-kind`.
+    4. For multiple persistence units, define named units under `quarkus.hibernate-orm."<unit>".*`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='persistence-unit']
+        namespaces:
+            p: http://xmlns.jcp.org/xml/ns/persistence
+            p2: https://jakarta.ee/xml/ns/persistence
+        filepaths:
+            - src/main/resources/META-INF/persistence.xml
+            - META-INF/persistence.xml
+- ruleID: jpa-pattern-00010
+  description: spring.jpa.* properties must be renamed to quarkus.hibernate-orm.* in Quarkus
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Rename `spring.jpa.*` properties to `quarkus.hibernate-orm.*`:
+    - `spring.jpa.hibernate.ddl-auto` -> `quarkus.hibernate-orm.schema-management.strategy`
+    - `spring.jpa.show-sql` -> `quarkus.hibernate-orm.log.sql`
+    - `spring.jpa.properties.hibernate.dialect` -> usually unnecessary; Quarkus picks the dialect from `db-kind`.
+    - `spring.jpa.properties.hibernate.*` -> `quarkus.hibernate-orm.unsupported-properties."hibernate.*"`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jpa\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: jpa-pattern-00020
+  description: Quarkus configures Hibernate ORM via application.properties; persistence.xml is optional and discouraged
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In Quarkus, Hibernate ORM is configured via `application.properties` (`quarkus.hibernate-orm.*` keys). A `persistence.xml` file is unnecessary for typical applications and only retained for advanced use cases.
+
+    ### Migration Steps
+    - Move JPA settings from `persistence.xml` to `application.properties` using `quarkus.hibernate-orm.*` and `quarkus.datasource.*` keys.
+    - Replace `<jta-data-source>` JNDI references with a Quarkus named datasource.
+    - Replace `<class>` listings with classpath-discovered `@Entity` classes (Quarkus indexes them automatically).
+    - For mapping files, use `quarkus.hibernate-orm.mapping-files` instead of `<mapping-file>`.
+    - Remove or simplify `persistence.xml` once migration is complete.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: META-INF/persistence.xml
+        filePattern: (.*/)?persistence\.xml
+- ruleID: jpa-pattern-00030
+  description: Quarkus auto-includes META-INF/orm.xml; verify mapping settings and that duplicate files do not exist in multiple JARs
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus auto-includes `META-INF/orm.xml` by default. Verify that no duplicate `orm.xml` files exist across JARs (Quarkus does not handle duplicates), and switch to `quarkus.hibernate-orm.mapping-files=no-file` if you want to disable it.
+
+    ### Additional Info
+    - `hbm.xml` format is deprecated by Hibernate; prefer `orm.xml`.
+    - XML mapping files are parsed at build time in Quarkus.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#xml-mapping
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: META-INF/orm\.xml
+        filePattern: (.*/)?META-INF/orm\.xml
+- ruleID: jpa-pattern-00040
+  description: Hibernate hbm.xml mapping format is deprecated; migrate to orm.xml or annotations
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate's `hbm.xml` mapping format is deprecated. Convert mappings to `orm.xml` (Jakarta Persistence XML format) or to JPA annotations on `@Entity` classes.
+
+    ### Additional Info
+    - Quarkus still parses `hbm.xml` when referenced, but support is best-effort.
+    - See https://quarkus.io/guides/hibernate-orm#xml-mapping
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#xml-mapping
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: \.hbm\.xml
+        filePattern: .*\.hbm\.xml
+- ruleID: jpa-import-00020
+  description: Hibernate ThreadLocalSessionContext is not supported in Quarkus; use CDI injection
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does not implement Hibernate's `ThreadLocalSessionContext` for binding the Session to a thread-local. Use CDI injection (`@Inject EntityManager` or `@Inject Session`) instead.
+
+    ### Additional Info
+    - The thread-local pattern does not integrate with reactive context propagation; CDI is the recommended approach.
+    - See https://quarkus.io/guides/hibernate-orm#limitations (Binding the Session to ThreadLocal context).
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#limitations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.context.internal.ThreadLocalSessionContext
+        location: IMPORT
+- ruleID: jpa-import-00030
+  description: Hibernate ORM JACC integration is disabled in Quarkus native images; use Quarkus security extensions
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Hibernate ORM JACC integration is disabled in Quarkus native images: Hibernate ORM JACC integration is disabled in Quarkus native images; use Quarkus security extensions'
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#limitations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.secure
+        location: PACKAGE
+- ruleID: jpa-pattern-00050
+  description: Quarkus configures Hibernate ORM via application.properties; hibernate.cfg.xml is unused
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not load `hibernate.cfg.xml`. Migrate the Hibernate settings to `application.properties` using `quarkus.hibernate-orm.*` and `quarkus.datasource.*` properties.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.cfg\.xml
+        filePattern: (.*/)?hibernate\.cfg\.xml
+- ruleID: jpa-annotation-00020
+  description: Quarkus discovers @Entity classes automatically; remove @EntityScan
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus discovers `@Entity` classes by scanning the index at build time, including those in dependencies indexed via Jandex. `@EntityScan` is unnecessary and should be removed.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.domain.EntityScan
+        location: ANNOTATION
+- ruleID: jpa-import-00040
+  description: Hibernate ORM JMX integration is disabled in Quarkus native images; expose stats via Micrometer
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Hibernate ORM's JMX integration is disabled in Quarkus native images. Expose statistics via Micrometer by setting `quarkus.hibernate-orm.metrics.enabled=true` and adding a metrics extension (`quarkus-micrometer-registry-prometheus`).
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#limitations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.jmx
+        location: PACKAGE
+- ruleID: jpa-pattern-00060
+  description: Quarkus reconfigures Hibernate to require a semicolon terminator per statement; review import.sql for multi-line statements
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus configures Hibernate ORM to require a semicolon (`;`) at the end of each statement in `import.sql`, allowing multi-line SQL. Migrate scripts that relied on the default Hibernate behavior (one statement per line, no terminator) so every statement ends with `;`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#other-notable-differences
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: (?s)\bimport\.sql\b
+        filePattern: (.*/)?import\.sql
+- ruleID: jpa-pattern-00070
+  description: Hibernate JNDI configuration properties are ignored in Quarkus; remove them
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus disables JNDI in the Hibernate ORM extension. `hibernate.jndi.*` properties (e.g., `hibernate.jndi.class`, `hibernate.jndi.url`) have no effect. Remove these properties and rely on the Quarkus datasource configured via `quarkus.datasource.*`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#limitations
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.jndi\.
+        filePattern: (.*/)?persistence\.xml|(.*/)?hibernate\.cfg\.xml|application.*\.(properties|ya?ml)

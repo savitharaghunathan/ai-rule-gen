@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-06-11T16:17:09Z",
+  "migration": "spring-boot2-to-spring-boot3-handcrafted",
+  "rule_count": 170,
+  "effective_coverage_pct": 29,
+  "quality_avg": 5.623529411764705,
+  "guidance_depth_avg": 2.623529411764706,
+  "overlap_conflict_count": 19,
+  "specificity_gap_count": 0,
+  "guide_specificity_gap_count": null
+}

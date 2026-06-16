@@ -1,0 +1,413 @@
+- ruleID: spring-di-annotation-00010
+  description: Spring @Service has no Quarkus-native equivalent; use @ApplicationScoped or quarkus-spring-di
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `@Service` with a CDI scope such as `@ApplicationScoped`, or keep it and add the `quarkus-spring-di` extension which reads Spring stereotype metadata.
+
+    ### Before
+    ```java
+    import org.springframework.stereotype.Service;
+
+    @Service
+    public class GreetingService { ... }
+    ```
+
+    ### After
+    ```java
+    import jakarta.enterprise.context.ApplicationScoped;
+
+    @ApplicationScoped
+    public class GreetingService { ... }
+    ```
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.stereotype.Service
+        location: ANNOTATION
+- ruleID: spring-di-annotation-00020
+  description: Spring @Repository has no Quarkus-native equivalent; use @ApplicationScoped or Panache
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does not provide special exception translation for `@Repository`. Replace with `@ApplicationScoped` and use Hibernate ORM/Panache, or use the `quarkus-spring-data-jpa` extension to keep Spring Data repositories.
+
+    ### Before
+    ```java
+    import org.springframework.stereotype.Repository;
+
+    @Repository
+    public class FruitRepository { ... }
+    ```
+
+    ### After
+    ```java
+    import jakarta.enterprise.context.ApplicationScoped;
+
+    @ApplicationScoped
+    public class FruitRepository { ... }
+    ```
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.stereotype.Repository
+        location: ANNOTATION
+- ruleID: spring-di-type-00010
+  description: Spring BeanFactoryPostProcessor is not executed in Quarkus
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not invoke `BeanFactoryPostProcessor` implementations. Move the bean definition customization to a Quarkus build-time extension or to CDI producer methods.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.beans.factory.config.BeanFactoryPostProcessor
+        location: IMPLEMENTS_TYPE
+- ruleID: spring-di-type-00020
+  description: ApplicationContextAware is not invoked in Quarkus
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Quarkus does not provide a `ApplicationContext`. Replace `ApplicationContextAware` usages with CDI APIs: inject `jakarta.enterprise.inject.spi.BeanManager` or use `io.quarkus.arc.Arc.container()` to look beans up programmatically.'
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.ApplicationContextAware
+        location: IMPLEMENTS_TYPE
+- ruleID: spring-di-annotation-00030
+  description: Spring @Profile should be replaced by Quarkus @IfBuildProfile
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@Profile("dev")` with `@io.quarkus.arc.profile.IfBuildProfile("dev")` for build-time profile selection, or use `@io.quarkus.arc.properties.IfBuildProperty` / `@LookupIfProperty` for runtime configuration-driven activation.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference#enable_build_profile
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.context.annotation.Profile
+        location: ANNOTATION
+- ruleID: spring-di-annotation-00040
+  description: Spring @ConditionalOnProperty should be replaced by Quarkus IfBuildProperty or LookupIfProperty
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@ConditionalOnProperty(name="foo", havingValue="bar")` with `@io.quarkus.arc.properties.IfBuildProperty(name="foo", stringValue="bar")` (build-time) or `@io.quarkus.arc.lookup.LookupIfProperty(name="foo", stringValue="bar")` (runtime, for `Instance<T>`-style lookup).
+  links:
+    - url: https://quarkus.io/guides/cdi-reference#enable_build_properties
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+        location: ANNOTATION
+- ruleID: spring-di-annotation-00050
+  description: '@ConditionalOnClass has no native Quarkus equivalent'
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not provide an `@ConditionalOnClass` annotation. Conditional behaviour based on dependency presence should be handled at the Quarkus extension level, or replaced with explicit configuration. For typical use cases, leverage `@IfBuildProperty` or `@LookupIfProperty` after exposing a config property.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+        location: ANNOTATION
+- ruleID: spring-di-annotation-00060
+  description: Spring @ConditionalOnMissingBean should be replaced by @DefaultBean
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@ConditionalOnMissingBean` with `@io.quarkus.arc.DefaultBean`. A `@DefaultBean` is only resolved if no other bean of the same type is provided by the application.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference#default_beans
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+        location: ANNOTATION
+- ruleID: spring-di-annotation-00070
+  description: Replace Spring @RequestScope with CDI @RequestScoped
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@org.springframework.web.context.annotation.RequestScope` with `@jakarta.enterprise.context.RequestScoped`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.context.annotation.RequestScope
+        location: ANNOTATION
+- ruleID: spring-di-annotation-00080
+  description: '@SessionScope has limited support in Quarkus'
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Session scope (`@SessionScoped`) is only supported by Quarkus when the Undertow extension is present. Most Quarkus applications use the Vert.x HTTP layer where session scope is not available. Refactor session-scoped state into Redis, a database, or a JWT claim.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference#supported_features_and_limitations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.web.context.annotation.SessionScope
+        location: ANNOTATION
+- ruleID: spring-di-annotation-00090
+  description: Spring @Async has no Quarkus equivalent
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does NOT support `@Async`. Rewrite methods to return `java.util.concurrent.CompletionStage`, `io.smallrye.mutiny.Uni`/`Multi`, or submit work to `io.quarkus.runtime.util.ExecutorRecorder.getCurrent()` / `ManagedExecutor`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.scheduling.annotation.Async
+        location: ANNOTATION
+- ruleID: spring-di-annotation-00100
+  description: '@EnableAsync is unused in Quarkus'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `@EnableAsync`. There is no equivalent in Quarkus - async behaviour comes from return types (`CompletionStage`, `Uni`).
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.scheduling.annotation.EnableAsync
+        location: ANNOTATION
+- ruleID: spring-di-type-00030
+  description: InitializingBean lifecycle is not invoked in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does NOT invoke `InitializingBean.afterPropertiesSet()`. Rewrite the initialisation logic in a method annotated with `@jakarta.annotation.PostConstruct`, or as a `@Observes StartupEvent` observer.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.beans.factory.InitializingBean
+        location: IMPLEMENTS_TYPE
+- ruleID: spring-di-type-00040
+  description: DisposableBean destroy hook is not invoked in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does NOT invoke `DisposableBean.destroy()`. Use `@jakarta.annotation.PreDestroy` for per-bean cleanup, or `@Observes ShutdownEvent` for application-wide cleanup.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.beans.factory.DisposableBean
+        location: IMPLEMENTS_TYPE
+- ruleID: spring-di-pattern-00010
+  description: Quarkus does not read Spring XML configuration files
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not parse Spring XML configuration (`applicationContext.xml`, `spring-config.xml`). Convert the XML bean definitions into CDI beans or Spring annotations (`@Component`, `@Configuration`, `@Bean`) so the Quarkus Spring DI extension can discover them at build time.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: applicationContext\.xml
+        filePattern: (.*/)?applicationContext.*\.xml
+- ruleID: spring-di-type-00050
+  description: FactoryBean is a Spring infrastructure class and is not executed in Quarkus
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.springframework.beans.factory.FactoryBean` is a Spring infrastructure class and is NOT executed by Quarkus. Replace `FactoryBean` implementations with CDI producer methods that return the desired type directly.
+
+    ### Before
+    ```java
+    @Component
+    public class MyServiceFactory implements FactoryBean<MyService> {
+        @Override
+        public MyService getObject() { return new MyService(); }
+        @Override
+        public Class<?> getObjectType() { return MyService.class; }
+    }
+    ```
+
+    ### After
+    ```java
+    @ApplicationScoped
+    public class MyServiceProducer {
+        @Produces
+        @ApplicationScoped
+        public MyService myService() { return new MyService(); }
+    }
+    ```
+
+    ### Additional Info
+    - CDI producers are the idiomatic replacement for custom bean construction.
+    - The Spring Application Context is not started in Quarkus.
+  links:
+    - url: https://quarkus.io/guides/spring-di#important-technical-note
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.beans.factory.FactoryBean
+        location: IMPLEMENTS_TYPE
+- ruleID: spring-di-annotation-00110
+  description: Spring AOP / AspectJ aspects are not supported in Quarkus; use CDI interceptors
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring AOP (and AspectJ `@Aspect`/`@Around`/`@Before`/`@After`) is NOT supported in Quarkus. Replace aspects with CDI interceptors: define an `@InterceptorBinding` annotation, an `@Interceptor`-annotated class with `@AroundInvoke`, and apply the binding to target methods or classes.
+
+    ### Before
+    ```java
+    @Aspect
+    @Component
+    public class LoggingAspect {
+        @Around("@annotation(Logged)")
+        public Object log(ProceedingJoinPoint pjp) { ... }
+    }
+    ```
+
+    ### After
+    ```java
+    @InterceptorBinding
+    @Target({TYPE, METHOD})
+    @Retention(RUNTIME)
+    public @interface Logged {}
+
+    @Logged
+    @Interceptor
+    public class LoggingInterceptor {
+        @AroundInvoke
+        public Object log(InvocationContext ctx) throws Exception { ... }
+    }
+    ```
+
+    ### Additional Info
+    - Interceptors on static methods are supported when `quarkus.arc.interception-of-static-methods` is enabled.
+    - Self-invocations within a class do not trigger interceptors unless `quarkus.arc.intercepted-self-invocation` is enabled.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.aspectj.lang.annotation.Aspect
+        location: ANNOTATION

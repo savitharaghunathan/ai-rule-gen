@@ -1,0 +1,87 @@
+- ruleID: batch-annotation-00010
+  description: '@EnableBatchProcessing is no longer required for Boot''s auto-configuration and is now discouraged; remove it unless you intentionally disable auto-configuration'
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `@EnableBatchProcessing` is no longer required to activate Spring Boot's auto-configuration of Spring Batch. In Spring Boot 3.0, the annotation has the opposite effect: a bean annotated with `@EnableBatchProcessing` (or extending `DefaultBatchConfiguration`) tells the auto-configuration to back off, surrendering control to the user.
+
+    ### Before
+    ```java
+    import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+    import org.springframework.boot.SpringApplication;
+    import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+    @SpringBootApplication
+    @EnableBatchProcessing
+    public class BatchApplication {
+        public static void main(String[] args) {
+            SpringApplication.run(BatchApplication.class, args);
+        }
+    }
+    ```
+
+    ### After
+    ```java
+    import org.springframework.boot.SpringApplication;
+    import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+    @SpringBootApplication
+    public class BatchApplication {
+        public static void main(String[] args) {
+            SpringApplication.run(BatchApplication.class, args);
+        }
+    }
+    ```
+
+    ### Additional Info
+    - If you DO want full control over the Batch configuration, keep `@EnableBatchProcessing` (or extend `DefaultBatchConfiguration`) — the semantics reversed.
+    - Removing the annotation enables Boot's default `JobRepository`, `JobLauncher`, and transaction manager wiring.
+    - Spring Batch 5.0 also moved many APIs to `jakarta.*`; coordinate this change with the broader Jakarta EE migration.
+    - See the [Spring Batch 5.0 migration guide](https://github.com/spring-projects/spring-batch/wiki/Spring-Batch-5.0-Migration-Guide).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#enablebatchprocessing-is-now-discouraged
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.batch.core.configuration.annotation.EnableBatchProcessing
+        location: ANNOTATION
+- ruleID: batch-change-00010
+  description: Running multiple batch jobs at startup is no longer supported; if multiple Job beans exist, set spring.batch.job.name to choose one
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Running multiple Spring Batch jobs at application startup is no longer supported. If the auto-configuration detects exactly one `Job` bean, it will be executed on startup. If multiple `Job` beans are present in the context, you must supply `spring.batch.job.name` to tell Boot which job to run.
+
+    ### Migration Steps
+    1. Inventory all `org.springframework.batch.core.Job` beans defined in your application (including those produced by `@Bean` factory methods).
+    2. If only one `Job` exists, no action is needed.
+    3. If multiple `Job` beans exist:
+       - Set `spring.batch.job.name=<jobName>` in `application.properties`/`.yml`, OR
+       - Pass `--spring.batch.job.name=<jobName>` on the command line, OR
+       - Override the launching behavior by injecting `JobLauncher` and calling jobs manually.
+    4. CI/CD pipelines that schedule multiple jobs by restarting the application now need explicit job names per invocation.
+
+    Reference: [Spring Boot 3 migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#multiple-batch-jobs).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#multiple-batch-jobs
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.batch.core.Job
+        location: TYPE

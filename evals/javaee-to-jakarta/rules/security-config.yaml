@@ -1,0 +1,330 @@
+- ruleID: security-config-xml-00010
+  description: Vaults have been removed from JBoss EAP 8.0; use Elytron credential store
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Picketbox `<vault>` configuration has been removed from JBoss EAP 8.0. Sensitive strings must be stored in a credential store provided by the `elytron` subsystem.
+
+    ### Migration Steps
+
+    1. Remove the `<vault>` element from `standalone.xml` (or `host.xml`/`domain.xml`).
+    2. Create an Elytron credential store and migrate every vault block (`VAULT::...`) to a credential reference. For example:
+
+       ```
+       /subsystem=elytron/credential-store=cs:add(location="cs.jceks", relative-to=jboss.server.config.dir, credential-reference={clear-text="storepass"}, create=true)
+       ```
+
+    3. Update each `${VAULT::...}` expression in the configuration to use `credential-reference={store=cs, alias=...}` instead.
+    4. Use the WildFly Elytron tool (`elytron-tool.sh credential-store`) to import existing vault data when feasible.
+
+    ### Additional Info
+
+    - Vault migration is mandatory for EAP 8.0 — the server will not start with a `<vault>` element present.
+    - See the Elytron migration chapter for end-to-end vault-to-credential-store conversion.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#vaults_migration
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='vault']
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+            - host.xml
+- ruleID: security-config-xml-00020
+  description: The legacy security subsystem has been removed in JBoss EAP 8.0; use the elytron subsystem
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The legacy `security` subsystem (PicketBox) has been removed from JBoss EAP 8.0. All security domains, login modules, and authentication configuration must be migrated to the `elytron` subsystem.
+
+    ### Migration Steps
+
+    1. Remove the legacy `<subsystem xmlns="urn:jboss:domain:security:...">` block from your server configuration.
+    2. Replace each `<security-domain>` with an equivalent Elytron `security-domain` and supporting realms (filesystem-realm, properties-realm, jdbc-realm, ldap-realm, jaas-realm, etc.).
+    3. For custom login modules, register them in a `jaas-realm` (see the related rule for custom login modules).
+    4. Update each deployment's `jboss-web.xml` / `jboss-ejb3.xml` to point at the new Elytron `application-security-domain`.
+
+    ### Additional Info
+
+    - The JBoss Server Migration Tool can perform much of this migration automatically — run it before manual edits.
+    - Related rules cover legacy `<security-realms>`, PicketLink, and Keycloak OIDC adapter removals.
+    - See "Migrate Authentication Configuration" in the EAP 8.0 migration guide for end-to-end examples.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#legacy_security_subsystem_and_security_realms_removal
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:security:')]
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+- ruleID: security-config-xml-00030
+  description: Legacy security realms have been removed from JBoss EAP 8.0; use Elytron-provided realms
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `<security-realms>` block in the `<management>` section of the legacy configuration is no longer supported in JBoss EAP 8.0. Authentication for management and applications must use realms provided by the Elytron subsystem.
+
+    ### Migration Steps
+
+    1. Remove the `<security-realms>` block (e.g., `ManagementRealm`, `ApplicationRealm`).
+    2. In the `elytron` subsystem, create equivalent realms:
+       - `properties-realm` for property-based users/groups,
+       - `filesystem-realm` for file-system backed users,
+       - `ldap-realm` for LDAP,
+       - `jdbc-realm` for relational databases.
+    3. Wire those realms into Elytron `security-domain` and `http-authentication-factory` / `sasl-authentication-factory` resources, and bind them to the management interfaces.
+
+    ### Additional Info
+
+    - The JBoss Server Migration Tool migrates the standard `ManagementRealm`/`ApplicationRealm` automatically.
+    - LDAP behavior changes in EAP 8.0 — see "Legacy security behavior changes in LDAP".
+    - Properties-based realms in Elytron support the same `mgmt-users.properties` and `mgmt-groups.properties` files.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#legacy_security_subsystem_and_security_realms_removal
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='management']/*[local-name()='security-realms']
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+            - host.xml
+- ruleID: security-config-xml-00040
+  description: PicketLink subsystem has been removed from JBoss EAP 8.0; use Red Hat build of Keycloak
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The PicketLink federation subsystem has been removed from JBoss EAP 8.0. Identity provider deployments must move to the Red Hat build of Keycloak, and PicketLink SAML service providers must be replaced by the Red Hat build of Keycloak SAML adapter.
+
+    ### Migration Steps
+
+    1. Remove the `<subsystem xmlns="urn:jboss:domain:picketlink-federation:...">` block.
+    2. Replace each PicketLink IDP/SP deployment with the Red Hat build of Keycloak equivalent.
+    3. Update application web.xml/jboss-web.xml login-config entries to use the Keycloak SAML adapter.
+
+    ### Additional Info
+
+    - The JBoss Server Migration Tool flags PicketLink configuration but does NOT automatically migrate it.
+    - Keycloak SAML adapter configuration is documented in the Red Hat build of Keycloak Securing Applications and Services guide.
+    - Identity store schemas may need to be exported and re-imported into Keycloak.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#picketlink_subsystem_removal
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:picketlink-federation:')]
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+- ruleID: security-config-xml-00050
+  description: PicketLink identity management subsystem has been removed from JBoss EAP 8.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The PicketLink identity management subsystem has been removed from JBoss EAP 8.0. Migrate identity management to the Red Hat build of Keycloak or to Elytron realms.
+
+    ### Migration Steps
+
+    1. Remove the `<subsystem xmlns="urn:jboss:domain:picketlink-identity-management:...">` block.
+    2. Replicate the user/role data in a Keycloak realm or in an Elytron realm (filesystem-realm, jdbc-realm, ldap-realm).
+    3. Update applications to delegate authentication to Keycloak or to an Elytron `application-security-domain`.
+
+    ### Additional Info
+
+    - This change is mandatory — the server will not start with a PicketLink identity-management configuration in 8.0.
+    - See the PicketLink removal section of the JBoss EAP 8.0 migration guide for additional pointers.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#picketlink_subsystem_removal
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:picketlink-identity-management:')]
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+- ruleID: security-config-xml-00060
+  description: The keycloak subsystem is replaced by the elytron-oidc-client subsystem in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The Red Hat build of Keycloak OIDC client adapter (the `keycloak` subsystem) is no longer supported in JBoss EAP 8.0. It is replaced by the `elytron-oidc-client` subsystem, which is shipped as part of EAP 8.0.
+
+    ### Migration Steps
+
+    1. Remove the `<subsystem xmlns="urn:jboss:domain:keycloak:...">` block from the server configuration.
+    2. Add the `elytron-oidc-client` subsystem and create a `secure-deployment` for each application that previously used Keycloak OIDC:
+
+       ```
+       /subsystem=elytron-oidc-client/secure-deployment=app.war:add(realm=demo, resource=app, public-client=false, auth-server-url=https://keycloak.example.com)
+       ```
+
+    3. Remove the Keycloak adapter JARs from the deployment and rely on the subsystem to install OIDC at runtime.
+
+    ### Additional Info
+
+    - The JBoss Server Migration Tool performs this migration by default.
+    - The configuration model of `elytron-oidc-client` mirrors the legacy keycloak subsystem; most attributes carry over unchanged.
+    - See the EAP 8.0 "OpenID Connect configuration" guide for the full attribute reference.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#migrate_from_red_hat_build_of_keycloak_oidc_client_adapter_to_jboss_eap_subsystem
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:keycloak:')]
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+- ruleID: security-config-xml-00070
+  description: Legacy security-realm-based SSL configuration must be migrated to Elytron in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    SSL configurations declared inside a legacy `<security-realm>` (using `<server-identities>/<ssl>/<keystore>`) are no longer supported in JBoss EAP 8.0. SSL must be configured through the Elytron `key-store`, `key-manager`, and `server-ssl-context` resources.
+
+    ### Migration Steps
+
+    1. Capture the keystore path, alias, and passwords from the legacy `<ssl>` element.
+    2. Create the Elytron equivalents:
+
+       ```
+       /subsystem=elytron/key-store=LocalhostKeyStore:add(path=server.keystore,relative-to=jboss.server.config.dir,credential-reference={clear-text="keystore_password"},type=JKS)
+       /subsystem=elytron/key-manager=LocalhostKeyManager:add(key-store=LocalhostKeyStore,alias-filter=server,credential-reference={clear-text="key_password"})
+       /subsystem=elytron/server-ssl-context=LocalhostSslContext:add(key-manager=LocalhostKeyManager)
+       ```
+
+    3. Switch the `https-listener` from `security-realm` to the new `ssl-context`:
+
+       ```
+       /subsystem=undertow/server=default-server/https-listener=https:undefine-attribute(name=security-realm)
+       /subsystem=undertow/server=default-server/https-listener=https:write-attribute(name=ssl-context,value=LocalhostSslContext)
+       ```
+
+    ### Additional Info
+
+    - Required because the legacy `security` subsystem and `security-realms` have been removed entirely in EAP 8.0.
+    - For CLIENT-CERT authentication, also migrate the `<truststore>` element under `<authentication>` (see related rule).
+    - The JBoss Server Migration Tool handles the standard `ApplicationRealm`/`ManagementRealm` SSL setup.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#migrate_ssl_configurations
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='security-realm']/*[local-name()='server-identities']/*[local-name()='ssl']
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+            - host.xml
+- ruleID: security-config-xml-00080
+  description: Legacy truststore-based CLIENT-CERT authentication must be migrated to Elytron trust-manager in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    CLIENT-CERT authentication that uses a legacy security-realm `<authentication>/<truststore>` is no longer supported in JBoss EAP 8.0. Migrate to an Elytron `trust-manager` referenced from a `server-ssl-context` with `need-client-auth=true`.
+
+    ### Migration Steps
+
+    1. Create an Elytron `key-store` for the truststore:
+
+       ```
+       /subsystem=elytron/key-store=TrustStore:add(path=server.truststore,relative-to=jboss.server.config.dir,credential-reference={clear-text="truststore_password"},type=JKS)
+       ```
+
+    2. Create a `trust-manager` and reference it from the `server-ssl-context`:
+
+       ```
+       /subsystem=elytron/trust-manager=TrustManager:add(key-store=TrustStore)
+       /subsystem=elytron/server-ssl-context=LocalhostSslContext:add(key-manager=LocalhostKeyManager,trust-manager=TrustManager,need-client-auth=true)
+       ```
+
+    3. For client-certificate-based principal extraction, configure an `x500-attribute-principal-decoder` and (optionally) a `configurable-http-server-mechanism-factory` with `org.wildfly.security.http.skip-certificate-verification=true`.
+    4. Bind the new `ssl-context` to the relevant `https-listener` and create an HTTP authentication factory if needed.
+
+    ### Additional Info
+
+    - `need-client-auth=true` is the Elytron equivalent of declaring `<truststore>` under `<authentication>`.
+    - If you previously relied on properties-based fallback (`<local/>`, `<properties/>`), recreate those mechanisms in an Elytron `http-authentication-factory`.
+    - The principal decoder, security realms/domains, and HTTP authentication factory are all illustrated in the related EAP 8.0 migration sub-sections.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#migrate_client_cert_ssl_authentication_to_elytron
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='security-realm']/*[local-name()='authentication']/*[local-name()='truststore']
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml
+            - host.xml

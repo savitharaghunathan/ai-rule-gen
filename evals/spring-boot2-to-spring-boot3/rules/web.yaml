@@ -1,0 +1,78 @@
+- ruleID: web-pattern-00010
+  description: server.max-http-header-size is deprecated; use server.max-http-request-header-size
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `server.max-http-header-size` has been deprecated in Spring Boot 3.0 and replaced by `server.max-http-request-header-size`. The new property applies only to the request header size regardless of the underlying embedded web server (Tomcat, Jetty, Netty, Undertow).
+
+    ### Before
+    ```properties
+    server.max-http-header-size=64KB
+    ```
+
+    ### After
+    ```properties
+    server.max-http-request-header-size=64KB
+    ```
+
+    ### Additional Info
+    - The old property previously configured request and response header sizes inconsistently across servers
+    - To limit response header size on Tomcat or Jetty, use a `WebServerFactoryCustomizer`
+    - Spring Boot's `spring-boot-properties-migrator` will report the change at startup
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#servermax-http-header-size
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: server\.max-http-header-size
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: web-dependency-00010
+  description: Apache HttpClient 4.x support removed in Spring Framework 6.0; replaced by httpclient5
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Framework 6.0 removes support for Apache HttpClient 4.x (`org.apache.httpcomponents:httpclient`). Replace it with `org.apache.httpcomponents.client5:httpclient5`, which has a different groupId.
+
+    ### Before
+    ```xml
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+    ```
+
+    ### After
+    ```xml
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - `org.apache.httpcomponents:httpclient` may be pulled in transitively — check your dependency tree
+    - Without httpclient5 on the classpath, RestTemplate may silently fall back to the JDK HttpURLConnection client
+    - HttpClient 5 uses the `org.apache.hc.client5.*` package namespace
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#apache-httpclient-in-resttemplate
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.httpcomponents.httpclient
+        lowerbound: 0.0.0

@@ -1,0 +1,102 @@
+- ruleID: web-type-00010
+  description: JBoss Web (Catalina) ValveBase is replaced by Undertow handlers in JBoss EAP 7+
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 7 replaced the JBoss Web (Catalina) servlet container with Undertow. Custom valves that extend `org.apache.catalina.valves.ValveBase` no longer have a runtime in JBoss EAP 7/8 and must be re-implemented as Undertow handlers.
+
+    ### Migration Steps
+    - Identify classes that extend `org.apache.catalina.valves.ValveBase`.
+    - Rewrite the logic as an Undertow `HttpHandler` registered through the Undertow subsystem or the `jboss-web.xml` `<handlers>` element.
+    - Remove the corresponding `<valve>` entries from `jboss-web.xml` (see the jboss-web.xml valve rule).
+
+    ### Additional Info
+    - See *Creating Custom Handlers* in the JBoss EAP Development Guide.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#migrate-custom-application-valves
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.catalina.valves.ValveBase
+        location: INHERITANCE
+- ruleID: web-xml-00010
+  description: <valve> in jboss-web.xml is obsolete in JBoss EAP 7+ (use Undertow handlers)
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 7 replaced JBoss Web with Undertow, so the `<valve>` element in `jboss-web.xml` is no longer honoured. Migrate the valve to an Undertow handler and remove the `<valve>` entry.
+
+    ### Before
+    ```xml
+    <jboss-web>
+        <valve>
+            <class-name>org.jboss.examples.MyValve</class-name>
+            <param>
+                <param-name>myParam</param-name>
+                <param-value>foobar</param-value>
+            </param>
+        </valve>
+    </jboss-web>
+    ```
+
+    ### After
+    Use an Undertow `<handlers>` element with `<handler class-name="...">` referencing a custom `io.undertow.server.HttpHandler` implementation.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#migrate-custom-application-valves
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='jboss-web']/*[local-name()='valve']
+        filepaths:
+            - jboss-web.xml
+- ruleID: web-method-00010
+  description: HttpSession.getId() now returns only the session ID; the session-id.instance-id format used in EAP 6.4 is no longer used in EAP 7/8
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In JBoss EAP 6.4, `request.getSession().getId()` returned the session ID in `session-id.instance-id` format. In JBoss EAP 7 and 8, only the session ID is returned. If your application parses this value to recreate `JSESSIONID` cookies or to extract the cluster instance ID, you must update the code.
+
+    ### Before
+    ```java
+    String id = request.getSession().getId();
+    // 6.4: "abc123.node1"
+    String[] parts = id.split("\\.");
+    String sessionId = parts[0];
+    String instanceId = parts[1];
+    ```
+
+    ### After
+    ```java
+    String id = request.getSession().getId();
+    // 7/8: "abc123"
+    // instance-id (route) must come from a separate source (e.g., load balancer cookie)
+    ```
+
+    ### Additional Info
+    - This change affects applications that build routeless cookies based on the return value.
+    - The routing information (cluster node) is now propagated through other mechanisms; consult your load balancer documentation.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#http-session-id-change_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.servlet.http.HttpSession.getId
+        location: METHOD_CALL

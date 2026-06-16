@@ -1,0 +1,164 @@
+- ruleID: datasource-change-00010
+  description: Quarkus exposes JDBC datasources as CDI beans of type AgroalDataSource (a javax.sql.DataSource subtype); JNDI lookup is replaced by @Inject
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus configures datasources declaratively via `quarkus.datasource.*` properties and exposes them as CDI beans. Replace JNDI / `@Resource` lookups of `javax.sql.DataSource` with `@Inject` of `io.agroal.api.AgroalDataSource` (or `javax.sql.DataSource`).
+
+    ### Before
+    ```java
+    import javax.annotation.Resource;
+    import javax.sql.DataSource;
+
+    public class OrderRepository {
+        @Resource(lookup = "java:jboss/datasources/MyDS")
+        private DataSource dataSource;
+    }
+    ```
+
+    ### After
+    ```java
+    import jakarta.inject.Inject;
+    import io.agroal.api.AgroalDataSource;
+
+    public class OrderRepository {
+        @Inject
+        AgroalDataSource dataSource;
+    }
+    ```
+
+    ### Additional Info
+    - Define the datasource via `quarkus.datasource.db-kind`, `quarkus.datasource.username`, `quarkus.datasource.jdbc.url` in `application.properties`.
+    - Add the matching `quarkus-jdbc-<db>` extension (postgresql/mysql/mariadb/mssql/oracle/db2/h2).
+    - Named datasources are injected with `@DataSource("name")`.
+    - For reactive access, inject the Vert.x SQL client (`PgPool`, `MySQLPool`, …) instead and add the `quarkus-reactive-*-client` extension.
+  links:
+    - url: https://quarkus.io/guides/datasource
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.sql.DataSource
+        location: FIELD
+- ruleID: datasource-method-00010
+  description: JNDI lookups via InitialContext are not supported in Quarkus; use CDI @Inject instead
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does not provide a JNDI tree. Replace `new InitialContext()` / `ctx.lookup(...)` calls with CDI `@Inject` of the bean you wanted.
+
+    ### Before
+    ```java
+    import javax.naming.InitialContext;
+    import javax.sql.DataSource;
+
+    InitialContext ctx = new InitialContext();
+    DataSource ds = (DataSource) ctx.lookup("java:jboss/datasources/MyDS");
+    ```
+
+    ### After
+    ```java
+    import jakarta.inject.Inject;
+    import io.agroal.api.AgroalDataSource;
+
+    @Inject
+    AgroalDataSource dataSource;
+    ```
+
+    ### Additional Info
+    - Any java:comp/java:jboss/java:global lookups must be replaced by `@Inject` (datasources, queues, beans, transaction manager).
+    - For multi-datasource setups use `@io.quarkus.agroal.DataSource("name")`.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.naming.InitialContext
+        location: CONSTRUCTOR_CALL
+- ruleID: datasource-method-00020
+  description: JNDI Context.lookup calls are not supported in Quarkus; use CDI @Inject
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `ctx.lookup("...")` calls with constructor or field `@Inject` of the target type. See the JNDI rule for InitialContext for a full example.
+  links:
+    - url: https://quarkus.io/guides/cdi-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.naming.Context.lookup
+        location: METHOD_CALL
+- ruleID: datasource-pattern-00010
+  description: Spring Boot datasource properties (spring.datasource.*) must be renamed to quarkus.datasource.*
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Rename `spring.datasource.*` properties to `quarkus.datasource.*`:
+    - `spring.datasource.url` -> `quarkus.datasource.jdbc.url`
+    - `spring.datasource.username` -> `quarkus.datasource.username`
+    - `spring.datasource.password` -> `quarkus.datasource.password`
+    - `spring.datasource.driver-class-name` -> usually unnecessary; set `quarkus.datasource.db-kind` instead.
+
+    Also add the matching `quarkus-jdbc-<db>` extension (postgresql/mysql/oracle/mssql/db2/mariadb/h2).
+  links:
+    - url: https://quarkus.io/guides/datasource
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.datasource\.(url|username|password|driver-class-name)
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: datasource-import-00010
+  description: Quarkus configures DataSource via application.properties; remove DataSourceBuilder usage
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses Agroal and configures datasources via `quarkus.datasource.*` properties. Replace `DataSourceBuilder` usage with declarative configuration:
+
+    ```properties
+    quarkus.datasource.db-kind=postgresql
+    quarkus.datasource.username=...
+    quarkus.datasource.password=...
+    quarkus.datasource.jdbc.url=jdbc:postgresql://...
+    ```
+
+    Inject `javax.sql.DataSource` or `io.agroal.api.AgroalDataSource` directly.
+  links:
+    - url: https://quarkus.io/guides/datasource
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.jdbc.DataSourceBuilder
+        location: IMPORT

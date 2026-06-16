@@ -1,0 +1,266 @@
+- ruleID: ejb-client-pattern-00010
+  description: JBoss EAP 7+ default remote connection port changed from 4447 to 8080
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with JBoss EAP 7, the default remote connection port for Jakarta Enterprise Beans clients changed from `4447` to `8080`. Client `jboss-ejb-client.properties` files pointing at the legacy port will fail to connect to an EAP 7/8 server using the default configuration.
+
+    ### Before
+    ```properties
+    remote.connection.default.host=localhost
+    remote.connection.default.port=4447
+    ```
+
+    ### After
+    ```properties
+    remote.connection.default.host=localhost
+    remote.connection.default.port=8080
+    ```
+
+    ### Additional Info
+    - The new default uses the HTTP upgrade-based `http-remoting` connector on port 8080.
+    - If your server still exposes the legacy `remote` connector, keep the 4447 port but ensure the connector is explicitly configured on the server side.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#update-the-default-remote-connection-port
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: remote\.connection\..*\.port\s*=\s*4447
+        filePattern: .*jboss-ejb-client\.properties
+- ruleID: ejb-client-pattern-00020
+  description: JBoss EAP 7+ replaces the legacy remote connector with http-remoting; clients overriding protocol=remote target the old connector
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 7 replaced the legacy `remote` connector with `http-remoting`. EJB clients that set `remote.connection.<name>.protocol=remote` were typically built to talk to an EAP 6 server through the old connector.
+
+    ### Migration Steps
+    - Audit `jboss-ejb-client.properties` files for `remote.connection.<name>.protocol=remote`.
+    - If the target server is JBoss EAP 7 or later, remove the override so the client uses the default `http-remoting` connector on port 8080.
+    - If the target server is JBoss EAP 6, keep the override but plan to upgrade the server to use `http-remoting`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#update-the-default-connector
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: remote\.connection\..*\.protocol\s*=\s*remote\b
+        filePattern: .*jboss-ejb-client\.properties
+- ruleID: ejb-client-import-00010
+  description: Legacy JBoss remote naming InitialContextFactory replaced by WildFlyInitialContextFactory in JBoss EAP 7
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 7 replaces the legacy `org.jboss.naming.remote.client.InitialContextFactory` with `org.wildfly.naming.client.WildFlyInitialContextFactory`. The associated provider URL also changes from `remote://host:4447` to `http-remoting://host:8080`.
+
+    ### Before
+    ```java
+    Properties props = new Properties();
+    props.put(Context.INITIAL_CONTEXT_FACTORY, "org.jboss.naming.remote.client.InitialContextFactory");
+    props.put(Context.PROVIDER_URL, "remote://localhost:4447");
+    ```
+
+    ### After
+    ```java
+    Properties props = new Properties();
+    props.put(Context.INITIAL_CONTEXT_FACTORY, "org.wildfly.naming.client.WildFlyInitialContextFactory");
+    props.put(Context.PROVIDER_URL, "http-remoting://localhost:8080");
+    ```
+
+    ### Additional Info
+    - The factory class name appears as a string literal in property files and code, so also audit `jndi.properties` and other configuration files.
+    - Consider migrating to the unified `wildfly-config.xml` client configuration file instead of per-context properties.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#migrate-remote-naming-client-code
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.naming.remote.client.InitialContextFactory
+        location: IMPORT
+- ruleID: ejb-client-pattern-00030
+  description: Legacy JBoss remote naming InitialContextFactory string is referenced in config files; switch to WildFlyInitialContextFactory
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The factory class name `org.jboss.naming.remote.client.InitialContextFactory` is typically configured as a string in `jndi.properties`, `jboss-ejb-client.properties`, or other property/XML files. Replace it with `org.wildfly.naming.client.WildFlyInitialContextFactory` when migrating to JBoss EAP 7 or later.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#migrate-remote-naming-client-code
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.jboss\.naming\.remote\.client\.InitialContextFactory
+        filePattern: .*\.(properties|xml|java|jndi)
+- ruleID: ejb-client-pattern-00040
+  description: remote:// provider URL scheme replaced by http-remoting:// in JBoss EAP 7+
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `remote://` JNDI provider URL scheme used with the legacy connector on port 4447 is replaced by `http-remoting://host:8080` in JBoss EAP 7 and later.
+
+    ### Before
+    ```properties
+    java.naming.provider.url=remote://localhost:4447
+    ```
+
+    ### After
+    ```properties
+    java.naming.provider.url=http-remoting://localhost:8080
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#migrate-remote-naming-client-code
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: (java\.naming\.provider\.url|PROVIDER_URL)\s*=?.*remote://
+        filePattern: .*\.(properties|xml|java)
+- ruleID: ejb-client-method-00010
+  description: EJBMetaDataImpl.toAbstractEJBMetaData() is deprecated in JBoss EJB client 4.x shipped with EAP 7.1+
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: JBoss EJB client 4.x (shipped with JBoss EAP 7.1 and later, including EAP 8) deprecates `org.jboss.ejb.client.EJBMetaDataImpl.toAbstractEJBMetaData()`. Switch to the new `AbstractEJBMetaData` APIs that replace the legacy meta-data conversion entry point.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#additional-jboss-ejb-client-changes-introduced-in-jboss-eap-7-1
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.ejb.client.EJBMetaDataImpl.toAbstractEJBMetaData
+        location: METHOD_CALL
+- ruleID: ejb-client-method-00020
+  description: The EJBMetaDataImpl(AbstractEJBMetaData<?,?>) constructor is deprecated in JBoss EJB client 4.x
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `EJBMetaDataImpl(AbstractEJBMetaData<?,?>)` constructor is deprecated in JBoss EJB client 4.x. Use the new `AbstractEJBMetaData` constructors or factories introduced in JBoss EAP 7.1+ instead of the legacy `EJBMetaDataImpl` wrapper.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#additional-jboss-ejb-client-changes-introduced-in-jboss-eap-7-1
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.ejb.client.EJBMetaDataImpl
+        location: CONSTRUCTOR_CALL
+- ruleID: ejb-client-pattern-00050
+  description: jboss-ejb-client.properties is superseded by the unified META-INF/wildfly-config.xml client configuration in JBoss EAP 7.1+
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 7.1 introduced `META-INF/wildfly-config.xml` to unify Jakarta Enterprise Beans, naming, and authentication client configuration into a single file. Applications that still ship `jboss-ejb-client.properties` should migrate to `wildfly-config.xml`.
+
+    ### Before
+    ```properties
+    # jboss-ejb-client.properties
+    remote.connections=one
+    remote.connection.one.host=127.0.0.1
+    remote.connection.one.port=8080
+    remote.connection.one.username=quickuser
+    remote.connection.one.password=quick-123
+    ```
+
+    ### After
+    ```xml
+    <!-- META-INF/wildfly-config.xml -->
+    <configuration>
+      <authentication-client xmlns="urn:elytron:client:1.7">
+        <authentication-configurations>
+          <configuration name="ejb">
+            <set-user-name name="quickuser"/>
+            <credentials><clear-password password="quick-123"/></credentials>
+          </configuration>
+        </authentication-configurations>
+      </authentication-client>
+      <jboss-ejb-client xmlns="urn:jboss:wildfly-client-ejb:3.2">
+        <connections>
+          <connection uri="remote+http://127.0.0.1:8080"/>
+        </connections>
+      </jboss-ejb-client>
+    </configuration>
+    ```
+
+    ### Additional Info
+    - The legacy file still works but consolidating configuration eases authentication migration to Elytron Client.
+    - See *Client Configuration Using the wildfly-config.xml File*.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#migrate-clients-to-use-the-wildfly-configuration-file
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: remote\.connection
+        filePattern: .*jboss-ejb-client\.properties
+- ruleID: ejb-client-pattern-00060
+  description: Setting URL_PKG_PREFIXES to org.jboss.ejb.client.naming is the legacy EJB client naming approach replaced by Elytron in EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Setting `Context.URL_PKG_PREFIXES` to `org.jboss.ejb.client.naming` is the legacy EJB-client naming approach. JBoss EAP 8.0 expects Jakarta Enterprise Beans clients to use the WildFly Naming client with Elytron-based authentication.
+
+    ### Migration Steps
+
+    1. Remove `properties.put(Context.URL_PKG_PREFIXES, "org.jboss.ejb.client.naming");` from the client code.
+    2. Add `properties.put(Context.INITIAL_CONTEXT_FACTORY, "org.wildfly.naming.client.WildFlyInitialContextFactory");` instead.
+    3. Either:
+       - Create `META-INF/wildfly-config.xml` with `<authentication-client>` and `<jboss-ejb-client>` sections, or
+       - Wrap JNDI calls in an Elytron `AuthenticationContext.runCallable(...)` block.
+    4. Delete the obsolete `jboss-ejb-client.properties` file (see related rule).
+
+    ### Additional Info
+
+    - The looked-up name (`ejb:/...` JNDI string) does not change, only how the `InitialContext` is configured.
+    - Connection details (`remote+http://host:port`) move into `<jboss-ejb-client>/<connections>` inside `wildfly-config.xml`.
+    - User credentials move from `remote.connection.default.username`/`password` into `<authentication-configurations>`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#migrate_a_jakarta_enterprise_beans_client_to_elytron
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.jboss\.ejb\.client\.naming
+        filePattern: .*\.(java|properties|xml)

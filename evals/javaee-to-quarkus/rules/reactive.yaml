@@ -1,0 +1,38 @@
+- ruleID: reactive-change-00010
+  description: Quarkus prefers Mutiny over Project Reactor
+  category: optional
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus reactive types are based on SmallRye Mutiny. Replace `Mono<T>` with `io.smallrye.mutiny.Uni<T>`. There are utility converters between Reactor and Mutiny, but for new code prefer Mutiny end-to-end.
+  links:
+    - url: https://smallrye.io/smallrye-mutiny/
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: reactor.core.publisher.Mono
+        location: TYPE
+- ruleID: reactive-change-00020
+  description: Quarkus prefers Mutiny Multi over Reactor Flux
+  category: optional
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `Flux<T>` with `io.smallrye.mutiny.Multi<T>` for streaming reactive APIs. Mutiny is the first-class reactive library in Quarkus.
+  links:
+    - url: https://smallrye.io/smallrye-mutiny/
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: reactor.core.publisher.Flux
+        location: TYPE

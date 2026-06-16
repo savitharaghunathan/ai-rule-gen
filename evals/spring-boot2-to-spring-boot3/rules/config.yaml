@@ -1,0 +1,111 @@
+- ruleID: config-pattern-00010
+  description: Cassandra configuration properties moved from spring.data.cassandra.* to spring.cassandra.*
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Cassandra configuration properties have been relocated. Update keys that begin with `spring.data.cassandra.` to use the new `spring.cassandra.` prefix.
+
+    ### Before
+    ```properties
+    spring.data.cassandra.contact-points=localhost:9042
+    spring.data.cassandra.keyspace-name=mykeyspace
+    spring.data.cassandra.username=cassandra
+    ```
+
+    ### After
+    ```properties
+    spring.cassandra.contact-points=localhost:9042
+    spring.cassandra.keyspace-name=mykeyspace
+    spring.cassandra.username=cassandra
+    ```
+
+    ### Additional Info
+    - The `spring.data.*` prefix is now reserved for Spring Data. Cassandra-specific connection properties belong under `spring.cassandra.*`.
+    - Update `.yml`/`.yaml` configuration files in addition to `.properties`.
+    - Verify any externalized configuration (environment variables, k8s ConfigMaps) that exposes these keys.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#cassandra-properties).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#cassandra-properties
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.data\.cassandra\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: config-pattern-00020
+  description: Redis configuration properties moved from spring.redis.* to spring.data.redis.*
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Redis configuration properties have been relocated under the `spring.data.*` namespace because Redis auto-configuration now requires Spring Data on the classpath.
+
+    ### Before
+    ```properties
+    spring.redis.host=localhost
+    spring.redis.port=6379
+    spring.redis.password=secret
+    ```
+
+    ### After
+    ```properties
+    spring.data.redis.host=localhost
+    spring.data.redis.port=6379
+    spring.data.redis.password=secret
+    ```
+
+    ### Additional Info
+    - Update keys in both `.properties` and `.yml`/`.yaml` configuration files.
+    - Any property starting with `spring.redis.` should be renamed to `spring.data.redis.`.
+    - Externalized configuration (env vars `SPRING_REDIS_*`, ConfigMaps) must also be updated.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#redis-properties).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#redis-properties
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.redis\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: config-pattern-00030
+  description: spring.session.store-type was removed; session store is auto-detected by classpath ordering
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Explicitly configuring the Spring Session store type via `spring.session.store-type` is no longer supported. When multiple session-store implementations are present on the classpath, Spring Boot uses a fixed priority order to pick the `SessionRepository` to auto-configure.
+
+    ### Migration Steps
+    1. Remove `spring.session.store-type` from all configuration sources (`application.properties`, `application.yml`, profiles, environment variables, command-line args).
+    2. If the default ordering doesn't match the previous explicit choice, remove the unwanted session-store starter from the classpath, OR
+    3. Define your own `SessionRepository` `@Bean` to override Spring Boot's auto-configuration entirely.
+    4. Review the documented [session store ordering](https://docs.spring.io/spring-boot/docs/3.0.x/reference/html/web.html#web.spring-session) (e.g., Redis > JDBC > Hazelcast > MongoDB > in-memory).
+
+    Reference: [Spring Boot 3 migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#spring-session-store-type).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#spring-session-store-type
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.session\.store-type
+        filePattern: application.*\.(properties|ya?ml)

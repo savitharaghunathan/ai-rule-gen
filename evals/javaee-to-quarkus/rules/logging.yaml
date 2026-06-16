@@ -1,0 +1,589 @@
+- ruleID: logging-pattern-00010
+  description: Spring's logging.level.* property is replaced by quarkus.log.category."<pkg>".level
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `logging.level.org.acme=DEBUG` with `quarkus.log.category."org.acme".level=DEBUG`. The root level moves from `logging.level.root` to `quarkus.log.level`.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: logging\.level\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: logging-pattern-00020
+  description: Quarkus uses JBoss LogManager; Logback configuration files are ignored
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Delete `logback-spring.xml` (and `logback.xml`). Quarkus uses JBoss LogManager and is configured via `quarkus.log.*` properties in `application.properties`. To keep Logback as the runtime add the `quarkus-logging-logback` extension.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: logback-spring
+        filePattern: .*logback-spring\.xml
+- ruleID: logging-change-00010
+  description: JBoss Logging continues to work but io.quarkus.logging.Log offers static-method ergonomics
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '`org.jboss.logging.Logger` is the underlying logger Quarkus uses. You may keep it as-is; for less boilerplate consider `io.quarkus.logging.Log` (static methods) in application classes. Do NOT use `Log` in extension code or libraries - it relies on Quarkus build-time transformations.'
+  links:
+    - url: https://quarkus.io/guides/logging#simplified-logging
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.logging.Logger
+        location: TYPE
+- ruleID: logging-change-00020
+  description: SLF4J works but routes through JBoss Logging; ensure SLF4J adapter is on classpath
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus supports SLF4J via an adapter that routes messages to JBoss Log Manager. Make sure the SLF4J adapter is on the classpath (it is by default with `quarkus-core`). For Quarkus-native ergonomics, migrate to `io.quarkus.logging.Log` or `org.jboss.logging.Logger`.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.slf4j.Logger
+        location: TYPE
+- ruleID: logging-change-00030
+  description: Log4j 2 messages are routed via adapter; backend is JBoss Log Manager
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not use Log4j 2 directly - log4j-api calls are routed to JBoss Log Manager through an adapter. Configure via `quarkus.log.*` rather than `log4j2.xml`. Long-term, migrate to `io.quarkus.logging.Log`.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.logging.log4j.Logger
+        location: TYPE
+- ruleID: logging-change-00040
+  description: Log4j 1 is end-of-life; use adapter and migrate to JBoss Logging or io.quarkus.logging.Log
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Apache Log4j 1.x is end-of-life. Quarkus offers a compatibility adapter routing to JBoss Log Manager, but you should migrate to `io.quarkus.logging.Log` or `org.jboss.logging.Logger`. Configuration belongs in `application.properties` under `quarkus.log.*`.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.log4j.Logger
+        location: TYPE
+- ruleID: logging-change-00050
+  description: JUL works out-of-the-box but io.quarkus.logging.Log is recommended
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: JUL is supported out-of-the-box through a JBoss Log Manager adapter. No code change required, but you may migrate to `io.quarkus.logging.Log` or `org.jboss.logging.Logger` for consistency.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: java.util.logging.Logger
+        location: TYPE
+- ruleID: logging-import-00010
+  description: Apache Commons Logging needs a JBoss Logging adapter in Quarkus, especially for native executables
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    Quarkus uses JBoss Logging. Code using Apache Commons Logging must be routed through the JBoss Logging adapter; otherwise native executables will fail with `ClassNotFoundException: org.apache.commons.logging.impl.LogFactoryImpl`.
+
+    ### Migration Steps
+    - Add the adapter dependency:
+      ```xml
+      <dependency>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>commons-logging-jboss-logging</artifactId>
+      </dependency>
+      ```
+    - Optionally migrate logger declarations from `org.apache.commons.logging.LogFactory` to `org.jboss.logging.Logger` or `io.quarkus.logging.Log`.
+    - Exclude the upstream `commons-logging` jar if needed.
+
+    ### Specific replacements
+
+    | Old class | Replacement |
+    |---|---|
+    | `org.apache.commons.logging.Log` | Use commons-logging adapter for JBoss Log Manager |
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-commons-logging
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.commons.logging
+        location: PACKAGE
+- ruleID: logging-method-00010
+  description: SLF4J calls require the slf4j-jboss-logmanager adapter to integrate with Quarkus logging
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus' logging backend is JBoss Log Manager. SLF4J calls must be routed through the `org.jboss.slf4j:slf4j-jboss-logmanager` adapter so log output is consistent (especially in native executables).
+
+    ### Migration Steps
+    - Add the adapter dependency to `pom.xml` or `build.gradle`:
+      ```xml
+      <dependency>
+          <groupId>org.jboss.slf4j</groupId>
+          <artifactId>slf4j-jboss-logmanager</artifactId>
+      </dependency>
+      ```
+    - Optionally migrate the code to use `io.quarkus.logging.Log` or `org.jboss.logging.Logger` directly.
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-slf4j
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.slf4j.LoggerFactory
+        location: METHOD_CALL
+- ruleID: logging-import-00020
+  description: Log4j 2 calls must be routed via the log4j2-jboss-logmanager adapter in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses JBoss Log Manager. Code using the Log4j 2 API must be routed through the `org.jboss.logmanager:log4j2-jboss-logmanager` adapter.
+
+    ### Migration Steps
+    - Replace Log4j 2 implementation dependencies (`log4j-core`, `log4j-api`) with `org.jboss.logmanager:log4j2-jboss-logmanager`.
+    - Do NOT add any Log4j 2 dependencies alongside the adapter — the adapter includes everything needed.
+    - Optionally migrate to `io.quarkus.logging.Log` for a more idiomatic API.
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-log4j2
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.logging.log4j
+        location: PACKAGE
+- ruleID: logging-import-00030
+  description: Log4j 1.x is removed in Quarkus; migrate to JBoss Logging or a supported API
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |
+    Log4j 1.x is no longer supported by Quarkus. Migrate code that references the `org.apache.log4j` package to JBoss Logging (`org.jboss.logging.Logger`), SLF4J, or the Log4j 2 adapter.
+
+    ### Before
+    ```java
+    import org.apache.log4j.Logger;
+    Logger log = Logger.getLogger(MyClass.class);
+    ```
+
+    ### After
+    ```java
+    import io.quarkus.logging.Log;
+    Log.info("...");
+    ```
+
+    ### Additional Info
+    - Replace any `log4j.properties` / `log4j.xml` configuration with `quarkus.log.*` properties.
+    - Remove `log4j:log4j` dependency from your build.
+
+    ### Specific replacements
+
+    | Old class | Replacement |
+    |---|---|
+    | `org.apache.log4j.MDC` | org.jboss.logmanager.MDC |
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-log4j
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.log4j
+        location: PACKAGE
+- ruleID: logging-dependency-00010
+  description: log4j:log4j (Log4j 1.x) is unsupported in Quarkus; remove or migrate
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus dropped support for Log4j 1.x. Remove `log4j:log4j` from your build and migrate logging code to JBoss Logging, SLF4J, or Log4j 2 (via the `org.jboss.logmanager:log4j2-jboss-logmanager` adapter).
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-log4j
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: log4j.log4j
+        lowerbound: 0.0.0
+- ruleID: logging-import-00040
+  description: Use org.jboss.logmanager.MDC instead of Log4j 2 ThreadContext in Quarkus
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus uses JBoss Log Manager and propagates MDC data through reactive contexts. Migrate `org.apache.logging.log4j.ThreadContext.put(key, value)` to `org.jboss.logmanager.MDC.put(key, value)` for consistent context propagation.
+  links:
+    - url: https://quarkus.io/guides/logging#mdc-and-supported-logging-apis
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.apache.logging.log4j.ThreadContext
+        location: IMPORT
+- ruleID: logging-import-00050
+  description: Use org.jboss.logmanager.MDC for reactive context propagation in Quarkus
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus overrides MDC to propagate context through reactive code. While SLF4J MDC will work via the adapter, using `org.jboss.logmanager.MDC` directly avoids any indirection and ensures reactive propagation.
+  links:
+    - url: https://quarkus.io/guides/logging#mdc-and-supported-logging-apis
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.slf4j.MDC
+        location: IMPORT
+- ruleID: logging-dependency-00020
+  description: Replace log4j-core with org.jboss.logmanager:log4j2-jboss-logmanager in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus uses JBoss Log Manager. Remove `org.apache.logging.log4j:log4j-core` (and any other `log4j-*` implementation jars) and add `org.jboss.logmanager:log4j2-jboss-logmanager` so Log4j 2 API calls are routed through Quarkus' logging backend.
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-log4j2
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.logging.log4j.log4j-core
+        lowerbound: 0.0.0
+- ruleID: logging-dependency-00030
+  description: Ensure Log4j 2 API calls go through the JBoss Log Manager adapter in Quarkus
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Keep `org.apache.logging.log4j:log4j-api` only if you intentionally use the Log4j 2 API. Ensure that `org.jboss.logmanager:log4j2-jboss-logmanager` is also on the classpath so the API binds to JBoss Log Manager. Do NOT also depend on `log4j-core` or `log4j-slf4j-impl`.
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-log4j2
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.logging.log4j.log4j-api
+        lowerbound: 0.0.0
+- ruleID: logging-dependency-00040
+  description: Replace commons-logging with org.jboss.logging:commons-logging-jboss-logging in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus requires Commons Logging calls to be routed through `org.jboss.logging:commons-logging-jboss-logging`. Remove the standard `commons-logging:commons-logging` dependency and add the JBoss adapter.
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-commons-logging
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: commons-logging.commons-logging
+        lowerbound: 0.0.0
+- ruleID: logging-dependency-00050
+  description: Replace slf4j-log4j12 binding with slf4j-jboss-logmanager in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The `slf4j-log4j12` binding routes SLF4J calls to Log4j 1.x, which Quarkus does not support. Remove this binding and add `org.jboss.slf4j:slf4j-jboss-logmanager` so SLF4J output goes through JBoss Log Manager.
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-slf4j
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.slf4j.slf4j-log4j12
+        lowerbound: 0.0.0
+- ruleID: logging-dependency-00060
+  description: Replace logback-classic with org.jboss.slf4j:slf4j-jboss-logmanager in Quarkus
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not use Logback as the logging backend. Remove `ch.qos.logback:logback-classic` and add `org.jboss.slf4j:slf4j-jboss-logmanager`. Migrate `logback.xml` / `logback-spring.xml` settings to `quarkus.log.*` properties in `application.properties`.
+  links:
+    - url: https://quarkus.io/guides/logging#logging-adapters-slf4j
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: ch.qos.logback.logback-classic
+        lowerbound: 0.0.0
+- ruleID: logging-dependency-00070
+  description: Remove spring-boot-starter-logging in Quarkus; logging is provided by JBoss Log Manager
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus has its own logging stack (JBoss Log Manager) built in. Remove `org.springframework.boot:spring-boot-starter-logging` and any related Logback configuration. Configure logging via `quarkus.log.*` in `application.properties`.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-logging
+        lowerbound: 0.0.0
+- ruleID: logging-pattern-00030
+  description: Quarkus uses JBoss Log Manager; logback.xml has no effect
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does not use Logback. `logback.xml`/`logback-spring.xml` files have no effect. Migrate the configuration to `quarkus.log.*` properties in `application.properties`.
+
+    ### Additional Info
+    - Log levels: `quarkus.log.category."my.package".level=DEBUG`
+    - Console format: `quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c] %s%n`
+    - File logging: `quarkus.log.file.enable=true`, `quarkus.log.file.path=...`
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: logback\.xml
+        filePattern: (.*/)?logback.*\.xml
+- ruleID: logging-pattern-00040
+  description: Quarkus uses JBoss Log Manager; log4j.xml has no effect
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not load `log4j.xml` (Log4j 1.x is unsupported). Migrate the configuration to `quarkus.log.*` properties in `application.properties`.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: log4j\.xml
+        filePattern: (.*/)?log4j\.xml
+- ruleID: logging-pattern-00050
+  description: Quarkus configures logging via application.properties; log4j2.xml has no effect unless the log4j2-jboss-logmanager adapter integrates with it
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus configures logging via `quarkus.log.*` properties. `log4j2.xml` is not read by Quarkus' logging backend. Migrate the configuration to `application.properties`.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: log4j2\.xml
+        filePattern: (.*/)?log4j2.*\.xml
+- ruleID: logging-pattern-00060
+  description: Quarkus uses JBoss Log Manager; log4j.properties has no effect
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not load `log4j.properties`. Migrate the configuration to `quarkus.log.*` properties in `application.properties`.
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: log4j\.properties
+        filePattern: (.*/)?log4j\.properties
+- ruleID: logging-pattern-00070
+  description: Log4j/Logback config files are ignored by Quarkus; use quarkus.log.* properties
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does NOT process log4j2.xml, log4j.xml, logback.xml, or logback-spring.xml. All log configuration must be moved to application.properties using the `quarkus.log.*` namespace.
+
+    ### Migration Steps
+    1. Delete log4j2.xml / logback.xml / logback-spring.xml
+    2. Translate log levels to `quarkus.log.category."my.package".level=INFO`
+    3. Translate appenders to Quarkus handlers:
+       - Console: `quarkus.log.console.*`
+       - File: `quarkus.log.file.enable=true`, `quarkus.log.file.path=app.log`, with rotation via `quarkus.log.file.rotation.*`
+       - Syslog: `quarkus.log.syslog.*`
+       - Socket: `quarkus.log.socket.*`
+    4. JSON logging is enabled by adding `quarkus-logging-json` extension
+    5. See https://quarkus.io/guides/logging#log-handlers
+  links:
+    - url: https://quarkus.io/guides/logging
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: log4j2\.xml|log4j\.xml|logback\.xml|logback-spring\.xml
+        filePattern: .*(log4j2?\.xml|logback(-spring)?\.xml)
+- ruleID: logging-pattern-00080
+  description: Spring Boot logging.pattern.* / logging.file.* properties must be migrated to quarkus.log.*
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot logging configuration properties (`logging.pattern.console`, `logging.pattern.file`, `logging.file.name`, `logging.file.path`, etc.) are not recognized by Quarkus. Migrate to the `quarkus.log.console.*` and `quarkus.log.file.*` namespaces.
+
+    ### Before
+    ```properties
+    logging.pattern.console=%d %level %msg%n
+    logging.file.name=app.log
+    logging.file.path=/var/log
+    ```
+
+    ### After
+    ```properties
+    quarkus.log.console.format=%d %p %m%n
+    quarkus.log.file.enable=true
+    quarkus.log.file.path=/var/log/app.log
+    ```
+
+    ### Additional Info
+    - Format placeholders use JBoss LogManager syntax (mostly identical to Log4j patterns)
+    - See https://quarkus.io/guides/logging
+  links:
+    - url: https://quarkus.io/guides/logging#log-handlers
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: logging\.(pattern|file)\.
+        filePattern: application.*\.(properties|ya?ml)

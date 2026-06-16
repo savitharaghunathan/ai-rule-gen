@@ -1,0 +1,487 @@
+# Ruleset comparison: ai vs handcrafted
+
+- **A**: ai (70 rules) — `evals/spring-boot2-to-spring-boot3/rules`
+- **B**: handcrafted (170 rules) — `evals/spring-boot2-to-spring-boot3-handcrafted/rules`
+
+## Coverage matrix
+
+How many rules on one side are matched by a rule keyed on the same API on the other side.
+
+| Direction | Covered | Partial | Missing |
+|---|---|---|---|
+| A → B (ai rules covered by handcrafted) | 13 | 0 | 57 |
+| B → A (handcrafted rules covered by ai) | 11 | 0 | 159 |
+
+### Rules in ai with no equivalent in handcrafted (57)
+
+- `actuator-import-00010` — HttpTraceRepository renamed to HttpExchangeRepository and moved to org.springframework.boot.actuate.web.exchanges
+  - keys: java:org.springframework.boot.actuate.trace.http.httptracerepository
+- `actuator-pattern-00010` — httptrace actuator endpoint renamed to httpexchanges; config keys and exposure ids change
+  - keys: fc:management\.(endpoint|endpoints)\.[^=:]*httptrace
+- `actuator-pattern-00020` — Keys-based sanitization removed; replaced with role-based show-values (NEVER/ALWAYS/WHEN_AUTHORIZED)
+  - keys: fc:management\.endpoint\.(env|configprops)\.keys-to-sanitize
+- `batch-change-00010` — Running multiple batch jobs at startup is no longer supported; if multiple Job beans exist, set spring.batch.job.name t…
+  - keys: java:org.springframework.batch.core.job
+- `build-dependency-00010` — Git Commit ID Maven Plugin coordinates changed from pl.project13.maven:git-commit-id-plugin to io.github.git-commit-id:…
+  - keys: dep:pl.project13.maven.git-commit-id-plugin
+- `build-pattern-00010` — bootJar/bootRun/bootWar now resolve the main class from the main source set output; use springBoot { mainClass } if rel…
+  - keys: fc:mainClassName\s*=
+- `build-pattern-00020` — Spring Boot's Gradle tasks now use Gradle Property API; isEnabled = false must become enabled.set(false) in Kotlin DSL
+  - keys: fc:isEnabled\s*=
+- `build-pattern-00030` — Setting build-info properties to null to exclude them was replaced with a name-based 'excludes' list
+  - keys: fc:buildInfo\s*\{
+- `build-xml-00010` — The fork attribute of spring-boot:run and spring-boot:start was deprecated in Spring Boot 2.7 and removed in 3.0
+  - keys: xml://*[local-name()='plugin' and *[local-name()='artifactId' and text()='spring-boot-maven-plugin']]//*[local-name()='configuration']/*[local-name()='fork']
+- `config-pattern-00010` — Cassandra configuration properties moved from spring.data.cassandra.* to spring.cassandra.*
+  - keys: fc:spring\.data\.cassandra\.
+- `config-pattern-00020` — Redis configuration properties moved from spring.redis.* to spring.data.redis.*
+  - keys: fc:spring\.redis\.
+- `core-annotation-00010` — @ConstructorBinding is no longer needed at the type level on @ConfigurationProperties classes
+  - keys: java:org.springframework.boot.context.properties.constructorbinding
+- `core-dependency-00010` — Spring Boot 3.0 requires Java 17 and Spring Framework 6.0; Java 8 is no longer supported
+  - keys: dep:org.springframework.boot.spring-boot
+- `core-dependency-00020` — Spring Boot 3.0 requires Spring Framework 6.0; spring-core below 6.0.0 must be upgraded
+  - keys: dep:org.springframework.spring-core
+- `core-pattern-00010` — Registering auto-configurations under EnableAutoConfiguration in spring.factories is removed; use AutoConfiguration.imp…
+  - keys: fc:org\.springframework\.boot\.autoconfigure\.EnableAutoConfiguration\s*=
+- `data-dependency-00010` — Hibernate dependencies now use the org.hibernate.orm group ID; org.hibernate:hibernate-core is replaced
+  - keys: dep:org.hibernate.hibernate-core
+- `data-import-00010` — FlywayConfigurationCustomizer is now invoked after Callback and JavaMigration beans are added, changing the customizati…
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayconfigurationcustomizer
+- `data-import-00020` — Spring Boot 3.0 removed auto-configuration for the Elasticsearch high-level REST client; use the new Elasticsearch Java…
+  - keys: java:org.elasticsearch.client.resthighlevelclient
+- `data-import-00030` — ElasticsearchRestTemplate (built on the high-level REST client) is removed; use ElasticsearchTemplate on the new Java c…
+  - keys: java:org.springframework.data.elasticsearch.core.elasticsearchresttemplate
+- `data-import-00040` — ReactiveElasticsearchRestClientAutoConfiguration renamed to ReactiveElasticsearchClientAutoConfiguration and moved to a…
+  - keys: java:org.springframework.boot.autoconfigure.data.elasticsearch.reactiveelasticsearchrestclientautoconfiguration
+- `data-pattern-00010` — spring.jpa.hibernate.use-new-id-generator-mappings was removed; Hibernate 6 only supports the new ID generator mappings
+  - keys: fc:spring\.jpa\.hibernate\.use-new-id-generator-mappings
+- `dependencies-dependency-00010` — Dependency management for Apache Johnzon removed in favor of Eclipse Yasson
+  - keys: dep:org.apache.johnzon.johnzon-jsonb
+- `dependencies-dependency-00020` — Dependency management for ANTLR 2 (antlr:antlr) removed; must specify version explicitly if used
+  - keys: dep:antlr.antlr
+- `dependencies-dependency-00030` — Dependency management for RxJava 1.x removed; RxJava 3 dependency management added in its place
+  - keys: dep:io.reactivex.rxjava
+- `dependencies-dependency-00040` — Dependency management for RxJava 2.x removed; RxJava 3 dependency management added in its place
+  - keys: dep:io.reactivex.rxjava2.rxjava
+- `dependencies-dependency-00050` — Dependency management for Hazelcast Hibernate removed; specify version explicitly or use hibernate-jcache
+  - keys: dep:com.hazelcast.hazelcast-hibernate53
+- `dependencies-dependency-00060` — Dependency management for Hazelcast Hibernate removed; specify version explicitly or use hibernate-jcache
+  - keys: dep:com.hazelcast.hazelcast-hibernate52
+- `dependencies-dependency-00070` — Ehcache3 ehcache module now declared with a jakarta classifier to support Jakarta EE 9+
+  - keys: dep:org.ehcache.ehcache
+- `dependencies-dependency-00080` — Ehcache3 ehcache-transactions module now declared with a jakarta classifier to support Jakarta EE 9+
+  - keys: dep:org.ehcache.ehcache-transactions
+- `dependencies-dependency-00090` — Apache ActiveMQ (Classic) support removed in Spring Boot 3.0
+  - keys: dep:org.apache.activemq.activemq-client
+- `dependencies-dependency-00100` — spring-boot-starter-activemq removed in Spring Boot 3.0
+  - keys: dep:org.springframework.boot.spring-boot-starter-activemq
+- `dependencies-dependency-00110` — Atomikos transaction manager support removed in Spring Boot 3.0
+  - keys: dep:com.atomikos.transactions
+- `dependencies-dependency-00120` — spring-boot-starter-jta-atomikos removed in Spring Boot 3.0
+  - keys: dep:org.springframework.boot.spring-boot-starter-jta-atomikos
+- `dependencies-dependency-00130` — EhCache 2 (net.sf.ehcache) support removed in Spring Boot 3.0
+  - keys: dep:net.sf.ehcache.ehcache
+- `dependencies-dependency-00150` — Hazelcast 3 client artifact removed in Spring Boot 3.0; Hazelcast 4+ uses a unified hazelcast artifact
+  - keys: dep:com.hazelcast.hazelcast-client
+- `dependencies-dependency-00160` — Apache Solr support removed in Spring Boot 3.0; Http2SolrClient is not compatible with Jetty 11
+  - keys: dep:org.apache.solr.solr-solrj
+- `dependencies-dependency-00170` — spring-boot-starter-data-solr removed in Spring Boot 3.0
+  - keys: dep:org.springframework.boot.spring-boot-starter-data-solr
+- `dependencies-import-00010` — EhCache 2 (net.sf.ehcache) support removed in Spring Boot 3.0; migrate to Ehcache 3 (org.ehcache)
+  - keys: java:net.sf.ehcache
+- `jakarta-import-00010` — javax.servlet package renamed to jakarta.servlet in Jakarta EE 9+
+  - keys: java:javax.servlet
+- `jakarta-import-00020` — javax.persistence package renamed to jakarta.persistence in JPA 3.1
+  - keys: java:javax.persistence
+- `jakarta-import-00030` — javax.annotation package renamed to jakarta.annotation in Jakarta EE 9+
+  - keys: java:javax.annotation
+- `jakarta-import-00040` — javax.validation package renamed to jakarta.validation in Jakarta EE 9+
+  - keys: java:javax.validation
+- `jakarta-import-00050` — javax.transaction package renamed to jakarta.transaction in Jakarta EE 9+
+  - keys: java:javax.transaction
+- `jakarta-import-00060` — javax.ejb package renamed to jakarta.ejb in Jakarta EE 9+
+  - keys: java:javax.ejb
+- `jakarta-import-00070` — javax.jms package renamed to jakarta.jms in Jakarta EE 9+
+  - keys: java:javax.jms
+- `jakarta-import-00080` — javax.mail package renamed to jakarta.mail in Jakarta EE 9+
+  - keys: java:javax.mail
+- `jakarta-import-00090` — javax.ws.rs package renamed to jakarta.ws.rs in Jakarta EE 9+
+  - keys: java:javax.ws.rs
+- `jakarta-import-00100` — javax.xml.bind (JAXB) package renamed to jakarta.xml.bind in Jakarta EE 9+
+  - keys: java:javax.xml.bind
+- `metrics-import-00010` — WebMvcMetricsFilter deleted in Spring Boot 3.0; replaced by Spring Framework's ServerHttpObservationFilter
+  - keys: java:org.springframework.boot.actuate.metrics.web.servlet.webmvcmetricsfilter
+- `metrics-import-00020` — MetricsRestTemplateCustomizer removed in Spring Boot 3.0; replaced by ObservationRestTemplateCustomizer
+  - keys: java:org.springframework.boot.actuate.metrics.web.client.metricsresttemplatecustomizer
+- `metrics-import-00070` — RestTemplateExchangeTagsProvider deprecated; replaced by ClientRequestObservationConvention
+  - keys: java:org.springframework.boot.actuate.metrics.web.client.resttemplateexchangetagsprovider
+- `metrics-import-00080` — WebClientExchangeTagsProvider deprecated; replaced by ClientRequestObservationConvention
+  - keys: java:org.springframework.boot.actuate.metrics.web.reactive.client.webclientexchangetagsprovider
+- `metrics-pattern-00010` — Actuator metrics export properties moved from management.metrics.export.<product> to management.<product>.metrics.export
+  - keys: fc:management\.metrics\.export\.
+- `security-change-00010` — ReactiveUserDetailsService is no longer auto-configured when an AuthenticationManagerResolver is present
+  - keys: java:org.springframework.security.core.userdetails.reactiveuserdetailsservice
+- `security-dependency-00010` — Spring Boot 3.0 upgrades to Spring Security 6.0; review Spring Security 5.8 to 6.0 migration guide
+  - keys: dep:org.springframework.security.spring-security-core
+- `security-pattern-00010` — spring.security.saml2.relyingparty.registration.{id}.identity-provider.* properties removed; use asserting-party.*
+  - keys: fc:spring\.security\.saml2\.relyingparty\.registration\.[^.]+\.identity-provider
+- `web-dependency-00010` — Apache HttpClient 4.x support removed in Spring Framework 6.0; replaced by httpclient5
+  - keys: dep:org.apache.httpcomponents.httpclient
+
+### Rules in handcrafted with no equivalent in ai (159)
+
+- `spring-boot-2.x-to-3.0-actuator-00010` — Actuator endpoint exposure configuration has changed
+  - keys: fc:management.endpoints.jmx.exposure, fc:management.endpoints.web.exposure
+- `spring-boot-2.x-to-3.0-actuator-00020` — Custom actuator endpoints may need updates for Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.endpoint.annotation.endpoint
+- `spring-boot-2.x-to-3.0-actuator-00030` — Actuator base path configuration review
+  - keys: fc:management.server.base-path
+- `spring-boot-2.x-to-3.0-batch-00010` — Running multiple batch jobs is no longer supported
+  - keys: dep:org.springframework.batch.spring-batch-core
+- `spring-boot-2.x-to-3.0-core-changes-00001` — Image banner support removed
+  - keys: file:banner.gif, file:banner.jpg, file:banner.png
+- `spring-boot-2.x-to-3.0-core-changes-00010` — @ConstructorBinding no longer needed at type level
+  - keys: java:*
+- `spring-boot-2.x-to-3.0-core-changes-00030` — Autoconfiguration mechanism has changed
+  - keys: file:spring.factories
+- `spring-boot-2.x-to-3.0-core-changes-00040` — Consider using the Spring Boot Properties Migrator
+  - keys: file:build.gradle, file:pom.xml
+- `spring-boot-2.x-to-3.0-core-changes-00050` — Logging date format has changed in Spring Boot 3.0
+  - keys: fc:LOG_DATEFORMAT_PATTERN, fc:logging.pattern.dateformat
+- `spring-boot-2.x-to-3.0-datasource-00000` — Spring data properties
+  - keys: fc:spring\.data
+- `spring-boot-2.x-to-3.0-datasource-00010` — Spring Boot 3.0 uses Flyway 9.0 by default
+  - keys: dep:org.flywaydb.flyway-core
+- `spring-boot-2.x-to-3.0-datasource-00020` — Spring Boot 3.0 uses Flyway 9.0 by default
+  - keys: dep:org.flywaydb.flyway-core
+- `spring-boot-2.x-to-3.0-datasource-00030` — Liquibase updates
+  - keys: dep:org.liquibase.liquibase-core
+- `spring-boot-2.x-to-3.0-datasource-00060` — Elasticsearch high level REST client no longer supported
+  - keys: dep:org.elasticsearch.client.elasticsearch-rest-high-level-client
+- `spring-boot-2.x-to-3.0-dependencies-00001` — Spring Boot 3.0 must use at least spring-cloud-bus 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-bus
+- `spring-boot-2.x-to-3.0-dependencies-00002` — Spring Boot 3.0 must use at least spring-cloud-circuitbreaker 3.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-circuitbreaker*
+- `spring-boot-2.x-to-3.0-dependencies-00003` — Spring Boot 3.0 must use at least spring-cloud-commons 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-commons
+- `spring-boot-2.x-to-3.0-dependencies-00004` — Spring Boot 3.0 must use at least spring-cloud-config 4.1.x
+  - keys: dep:org.springframework.cloud.spring-cloud-config*
+- `spring-boot-2.x-to-3.0-dependencies-00005` — Spring Boot 3.0 must use at least spring-cloud-consul 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-consul*
+- `spring-boot-2.x-to-3.0-dependencies-00006` — Spring Boot 3.0 must use at least spring-cloud-contract 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-contract
+- `spring-boot-2.x-to-3.0-dependencies-00007` — Spring Boot 3.0 must use at least spring-cloud-function 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-function-core
+- `spring-boot-2.x-to-3.0-dependencies-00008` — Spring Boot 3.0 must use at least spring-cloud-gateway 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-gateway.*
+- `spring-boot-2.x-to-3.0-dependencies-00009` — Spring Boot 3.0 must use at least spring-cloud-kubernetes 3.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-kubernetes
+- `spring-boot-2.x-to-3.0-dependencies-00010` — Spring Boot 3.0 must use at least spring-cloud-netflix 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-netflix.*
+- `spring-boot-2.x-to-3.0-dependencies-00011` — Spring Boot 3.0 must use at least spring-cloud-openfeign 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-openfeign
+- `spring-boot-2.x-to-3.0-dependencies-00012` — Spring Boot 3.0 must use at least spring-cloud-stream 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-stream
+- `spring-boot-2.x-to-3.0-dependencies-00013` — Spring Boot 3.0 must use at least spring-cloud-task 3.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-task
+- `spring-boot-2.x-to-3.0-dependencies-00014` — Spring Boot 3.0 must use at least spring-cloud-vault 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-vault
+- `spring-boot-2.x-to-3.0-dependencies-00015` — Spring Boot 3.0 must use at least spring-cloud-zookeeper 4.0.x
+  - keys: dep:org.springframework.cloud.spring-cloud-zookeeper
+- `spring-boot-2.x-to-3.0-dependencies-00016` — Spring Boot 3.0 must use at least Spring Cloud 2022
+  - keys: dep:org.springframework.cloud.spring-cloud-dependencies
+- `spring-boot-2.x-to-3.0-dependencies-00020` — Spring Boot parent version must be upgraded to 3.0+
+  - keys: dep:org.springframework.boot.spring-boot-starter-parent
+- `spring-boot-2.x-to-3.0-micrometer-00020` — JvmInfoMetrics is now auto-configured in Spring Boot 3.0
+  - keys: java:io.micrometer.core.instrument.binder.jvm.jvminfometrics, java:io.micrometer.core.instrument.binder.jvm.jvmmemorymetrics
+- `spring-boot-2.x-to-3.0-micrometer-00030` — Micrometer has been upgraded to 1.10+ in Spring Boot 3.0
+  - keys: dep:io.micrometer.micrometer-core, java:io.micrometer.core.instrument.meterregistry
+- `spring-boot-2.x-to-3.0-micrometer-00040` — Review direct Micrometer instrumentation for Spring Boot 3.0
+  - keys: java:io.micrometer.core.instrument.counter, java:io.micrometer.core.instrument.gauge, java:io.micrometer.core.instrument.timer
+- `spring-boot-2.x-to-3.0-removals-00010` — AbstractDataSourceInitializer has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.jdbc.abstractdatasourceinitializer
+- `spring-boot-2.x-to-3.0-removals-00020` — AbstractDataSourceInitializer inheritance is no longer supported in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.jdbc.abstractdatasourceinitializer
+- `spring-boot-2.x-to-3.0-removals-00030` — BatchDataSourceInitializer has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.batch.batchdatasourceinitializer
+- `spring-boot-2.x-to-3.0-removals-00040` — ConfigFileApplicationListener has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.context.config.configfileapplicationlistener
+- `spring-boot-2.x-to-3.0-removals-00050` — ElasticsearchRestHealthIndicator has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.elasticsearch.elasticsearchresthealthindicator
+- `spring-boot-2.x-to-3.0-removals-00060` — IntegrationDataSourceInitializer has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.integration.integrationdatasourceinitializer
+- `spring-boot-2.x-to-3.0-removals-00070` — JdbcSessionDataSourceInitializer has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.session.jdbcsessiondatasourceinitializer
+- `spring-boot-2.x-to-3.0-removals-00080` — QuartzDataSourceInitializer has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.quartz.quartzdatasourceinitializer
+- `spring-boot-2.x-to-3.0-removals-00090` — SpringPhysicalNamingStrategy has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.orm.jpa.hibernate.springphysicalnamingstrategy
+- `spring-boot-2.x-to-3.0-removals-00100` — WebFluxProperties.Cookie has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.autoconfigure.web.reactive.webfluxproperties.cookie
+- `spring-boot-2.x-to-3.0-removals-00110` — WebFluxProperties.Session has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.autoconfigure.web.reactive.webfluxproperties.session
+- `spring-boot-2.x-to-3.0-removals-00120` — DataSourceInitializationMode has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.jdbc.datasourceinitializationmode
+- `spring-boot-2.x-to-3.0-removals-00130` — IncludeExcludeEndpointFilter.DefaultIncludes has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.actuate.autoconfigure.endpoint.expose.includeexcludeendpointfilter.defaultincludes
+- `spring-boot-2.x-to-3.0-removals-00140` — WebFluxProperties.SameSite has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.autoconfigure.web.reactive.webfluxproperties.samesite
+- `spring-boot-2.x-to-3.0-removals-00150` — LocalManagementPort has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.actuate.autoconfigure.web.server.localmanagementport
+- `spring-boot-2.x-to-3.0-removals-00160` — LocalRSocketServerPort has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.rsocket.context.localrsocketserverport
+- `spring-boot-2.x-to-3.0-removals-00170` — LocalServerPort has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.web.server.localserverport
+- `spring-boot-2.x-to-3.0-removals-00180` — The method `assertThat()` from `ApplicationContextAssertProvider` has been removed in Spring Boot 3.0.
+  - keys: java:org.springframework.boot.test.context.assertj.applicationcontextassertprovider.assertthat()
+- `spring-boot-2.x-to-3.0-removals-00190` — SpringPhysicalNamingStrategy has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.orm.jpa.hibernate.springphysicalnamingstrategy
+- `spring-boot-2.x-to-3.0-removals-00200` — SslServerCustomizer has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.web.embedded.netty.sslservercustomizer
+- `spring-boot-2.x-to-3.0-removals-00210` — WebFluxProperties.Cookie has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.reactive.webfluxproperties.cookie
+- `spring-boot-2.x-to-3.0-removals-00220` — WebFluxProperties.Session has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.reactive.webfluxproperties.session
+- `spring-boot-2.x-to-3.0-removals-00230` — DataSourceInitializationMode has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.jdbc.datasourceinitializationmode
+- `spring-boot-2.x-to-3.0-removals-00250` — LocalManagementPort has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.web.server.localmanagementport
+- `spring-boot-2.x-to-3.0-removals-00260` — LocalRSocketServerPort has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.rsocket.context.localrsocketserverport
+- `spring-boot-2.x-to-3.0-removals-00270` — LocalServerPort has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.web.server.localserverport
+- `spring-boot-2.x-to-3.0-removals-00290` — JsonContent.assertThat() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.test.json.jsoncontent.assertthat()
+- `spring-boot-2.x-to-3.0-removals-00300` — configureObjectMapper has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.context.properties.configurationpropertiesreportendpoint.configureobjectmapper
+- `spring-boot-2.x-to-3.0-removals-00310` — createClassLoader(List<Archive>) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.launcher.createclassloader
+- `spring-boot-2.x-to-3.0-removals-00320` — createSpringApplication(Class<?>) method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.builder.springapplicationbuilder.createspringapplication
+- `spring-boot-2.x-to-3.0-removals-00330` — The method forEach has been removed from Archive in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.archive.archive.foreach
+- `spring-boot-2.x-to-3.0-removals-00340` — DatabaseDriver.fromDataSource method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.jdbc.databasedriver.fromdatasource
+- `spring-boot-2.x-to-3.0-removals-00350` — getClassPathArchives() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.launcher.getclasspatharchives
+- `spring-boot-2.x-to-3.0-removals-00360` — MustacheProperties.getContentType method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.getcontenttype
+- `spring-boot-2.x-to-3.0-removals-00370` — WebMvcProperties.getDateFormat() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.servlet.webmvcproperties.getdateformat()
+- `spring-boot-2.x-to-3.0-removals-00380` — getDefaultEndpointsOutcome has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.onendpointelementcondition.getdefaultendpointsoutcome()
+- `spring-boot-2.x-to-3.0-removals-00390` — DynatraceProperties.getDeviceId() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.dynatrace.dynatraceproperties.getdeviceid()
+- `spring-boot-2.x-to-3.0-removals-00400` — Method `getErrorAttributes(ServerRequest, boolean)` has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.reactive.error.abstracterrorwebexceptionhandler.geterrorattributes
+- `spring-boot-2.x-to-3.0-removals-00410` — DynatraceProperties.getGroup() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.dynatrace.dynatraceproperties.getgroup()
+- `spring-boot-2.x-to-3.0-removals-00420` — getIdentityprovider() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.security.saml2.saml2relyingpartyproperties.registration.getidentityprovider()
+- `spring-boot-2.x-to-3.0-removals-00430` — The getJwsAlgorithm() method has been removed from OAuth2ResourceServerProperties.Jwt in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.security.oauth2.resource.oauth2resourceserverproperties.jwt.getjwsalgorithm()
+- `spring-boot-2.x-to-3.0-removals-00440` — getNestedArchives(Archive.EntryFilter) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.archive.archive.getnestedarchives(org.springframework.boot.loader.archive.archive.entryfilter)
+- `spring-boot-2.x-to-3.0-removals-00450` — ConfigData.getOptions() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.context.config.configdata.getoptions()
+- `spring-boot-2.x-to-3.0-removals-00460` — getOracleKerberosConfigFile method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.getoraclekerberosconfigfile()
+- `spring-boot-2.x-to-3.0-removals-00470` — getProtocolVersion method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.ganglia.gangliaproperties.getprotocolversion()
+- `spring-boot-2.x-to-3.0-removals-00480` — getRateUnits() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.ganglia.gangliaproperties.getrateunits
+- `spring-boot-2.x-to-3.0-removals-00490` — getTechnologyType() has been removed from DynatraceProperties in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.dynatrace.dynatraceproperties.gettechnologytype()
+- `spring-boot-2.x-to-3.0-removals-00500` — isAllowEncodedSlash() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.serverproperties.undertow.isallowencodedslash
+- `spring-boot-2.x-to-3.0-removals-00510` — The method isAllowRequestOverride has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.isallowrequestoverride
+- `spring-boot-2.x-to-3.0-removals-00520` — isAllowSessionOverride() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.isallowsessionoverride
+- `spring-boot-2.x-to-3.0-removals-00530` — MustacheProperties.isCache() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.iscache
+- `spring-boot-2.x-to-3.0-removals-00540` — isExposeRequestAttributes() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.isexposerequestattributes
+- `spring-boot-2.x-to-3.0-removals-00550` — isExposeSessionAttributes() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.isexposesessionattributes
+- `spring-boot-2.x-to-3.0-removals-00560` — isExposeSpringMacroHelpers method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.isexposespringmacrohelpers
+- `spring-boot-2.x-to-3.0-removals-00570` — isFavorPathExtension() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.servlet.webmvcproperties.contentnegotiation.isfavorpathextension
+- `spring-boot-2.x-to-3.0-removals-00580` — isIgnoreFutureMigrations() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.isignorefuturemigrations
+- `spring-boot-2.x-to-3.0-removals-00590` — isIgnoreIgnoredMigrations() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.isignoreignoredmigrations
+- `spring-boot-2.x-to-3.0-removals-00600` — isIgnoreMissingMigrations method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.isignoremissingmigrations
+- `spring-boot-2.x-to-3.0-removals-00610` — isIgnorePendingMigrations() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.isignorependingmigrations
+- `spring-boot-2.x-to-3.0-removals-00620` — isOnlyLogRecordMetadata() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.kafka.kafkaproperties.listener.isonlylogrecordmetadata
+- `spring-boot-2.x-to-3.0-removals-00630` — isUseRegisteredSuffixPattern() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.servlet.webmvcproperties.pathmatch.isuseregisteredsuffixpattern
+- `spring-boot-2.x-to-3.0-removals-00640` — isUseSuffixPattern() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.servlet.webmvcproperties.pathmatch.isusesuffixpattern
+- `spring-boot-2.x-to-3.0-removals-00650` — JarFileArchive.iterator() method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.archive.jarfilearchive.iterator
+- `spring-boot-2.x-to-3.0-removals-00660` — Archive.iterator() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.archive.archive.iterator
+- `spring-boot-2.x-to-3.0-removals-00670` — The iterator() method of ExplodedArchive has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.archive.explodedarchive.iterator
+- `spring-boot-2.x-to-3.0-removals-00680` — jooqProvidersDefaultConfigurationCustomizer method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.jooq.jooqautoconfiguration.dslcontextconfiguration.jooqprovidersdefaultconfigurationcustomizer
+- `spring-boot-2.x-to-3.0-removals-00690` — Log4J2LoggingSystem.loadConfiguration(String, LogFile) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.logging.log4j2.log4j2loggingsystem.loadconfiguration(java.lang.string, org.springframework.boot.logging.logfile)
+- `spring-boot-2.x-to-3.0-removals-00700` — AbstractApplicationContextRunner.newInstance has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.test.context.runner.abstractapplicationcontextrunner.newinstance(*)
+- `spring-boot-2.x-to-3.0-removals-00710` — ApplicationContextRunner.newInstance has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.test.context.runner.applicationcontextrunner.newinstance
+- `spring-boot-2.x-to-3.0-removals-00720` — newInstance method of ReactiveWebApplicationContextRunner has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.test.context.runner.reactivewebapplicationcontextrunner.newinstance
+- `spring-boot-2.x-to-3.0-removals-00730` — WebApplicationContextRunner.newInstance has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.test.context.runner.webapplicationcontextrunner.newinstance
+- `spring-boot-2.x-to-3.0-removals-00740` — SpringApplicationRunListener.running method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.springapplicationrunlistener.running
+- `spring-boot-2.x-to-3.0-removals-00750` — EnvironmentEndpoint.sanitize method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.env.environmentendpoint.sanitize
+- `spring-boot-2.x-to-3.0-removals-00760` — setAllowEncodedSlash method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.serverproperties.undertow.setallowencodedslash
+- `spring-boot-2.x-to-3.0-removals-00770` — setAllowRequestOverride method has been removed from MustacheProperties in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.setallowrequestoverride
+- `spring-boot-2.x-to-3.0-removals-00780` — MustacheProperties.setAllowSessionOverride(boolean) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.setallowsessionoverride
+- `spring-boot-2.x-to-3.0-removals-00790` — MustacheProperties.setCache(boolean) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.setcache
+- `spring-boot-2.x-to-3.0-removals-00800` — MustacheProperties.setContentType method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.setcontenttype
+- `spring-boot-2.x-to-3.0-removals-00810` — WebMvcProperties.setDateFormat(String) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.servlet.webmvcproperties.setdateformat
+- `spring-boot-2.x-to-3.0-removals-00820` — setDeviceId(String) method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.dynatrace.dynatraceproperties.setdeviceid
+- `spring-boot-2.x-to-3.0-removals-00830` — MustacheProperties.setExposeRequestAttributes method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.setexposerequestattributes
+- `spring-boot-2.x-to-3.0-removals-00840` — MustacheProperties.setExposeSessionAttributes has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.setexposesessionattributes
+- `spring-boot-2.x-to-3.0-removals-00850` — MustacheProperties.setExposeSpringMacroHelpers method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.mustache.mustacheproperties.setexposespringmacrohelpers
+- `spring-boot-2.x-to-3.0-removals-00860` — setFavorPathExtension(boolean) method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.servlet.webmvcproperties.contentnegotiation.setfavorpathextension
+- `spring-boot-2.x-to-3.0-removals-00870` — DynatraceProperties.setGroup(String) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.dynatrace.dynatraceproperties.setgroup
+- `spring-boot-2.x-to-3.0-removals-00880` — setIgnoreFutureMigrations has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.setignorefuturemigrations
+- `spring-boot-2.x-to-3.0-removals-00890` — setIgnoreIgnoredMigrations method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.setignoreignoredmigrations
+- `spring-boot-2.x-to-3.0-removals-00900` — FlywayProperties.setIgnoreMissingMigrations(boolean) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.setignoremissingmigrations
+- `spring-boot-2.x-to-3.0-removals-00910` — FlywayProperties.setIgnorePendingMigrations has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.setignorependingmigrations
+- `spring-boot-2.x-to-3.0-removals-00920` — setJwsAlgorithm method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.security.oauth2.resource.oauth2resourceserverproperties.jwt.setjwsalgorithm
+- `spring-boot-2.x-to-3.0-removals-00930` — setOnlyLogRecordMetadata(boolean) method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.kafka.kafkaproperties.listener.setonlylogrecordmetadata
+- `spring-boot-2.x-to-3.0-removals-00940` — FlywayProperties.setOracleKerberosConfigFile(String) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.flyway.flywayproperties.setoraclekerberosconfigfile
+- `spring-boot-2.x-to-3.0-removals-00950` — GangliaProperties.setProtocolVersion has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.ganglia.gangliaproperties.setprotocolversion
+- `spring-boot-2.x-to-3.0-removals-00960` — setRabbitProperties(RabbitProperties) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.amqp.abstractrabbitlistenercontainerfactoryconfigurer.setrabbitproperties(org.springframework.boot.autoconfigure.amqp.rabbitproperties)
+- `spring-boot-2.x-to-3.0-removals-00970` — setRabbitProperties(RabbitProperties) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.amqp.rabbittemplateconfigurer.setrabbitproperties
+- `spring-boot-2.x-to-3.0-removals-00980` — setRateUnits method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.ganglia.gangliaproperties.setrateunits
+- `spring-boot-2.x-to-3.0-removals-00990` — setTechnologyType(String) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.metrics.export.dynatrace.dynatraceproperties.settechnologytype
+- `spring-boot-2.x-to-3.0-removals-01000` — setUseRegisteredSuffixPattern method has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.servlet.webmvcproperties.pathmatch.setuseregisteredsuffixpattern
+- `spring-boot-2.x-to-3.0-removals-01010` — Method setUseSuffixPattern has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.web.servlet.webmvcproperties.pathmatch.setusesuffixpattern
+- `spring-boot-2.x-to-3.0-removals-01020` — Archive.spliterator has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.archive.archive.spliterator
+- `spring-boot-2.x-to-3.0-removals-01030` — SpringApplicationRunListener.started(ConfigurableApplicationContext) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.springapplicationrunlistener.started
+- `spring-boot-2.x-to-3.0-removals-01040` — AbstractApplicationContextRunner(Supplier<C>) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.test.context.runner.abstractapplicationcontextrunner
+- `spring-boot-2.x-to-3.0-removals-01050` — AbstractApplicationContextRunner constructor with multiple parameters has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.test.context.runner.abstractapplicationcontextrunner
+- `spring-boot-2.x-to-3.0-removals-01060` — AbstractRabbitListenerContainerFactoryConfigurer has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.amqp.abstractrabbitlistenercontainerfactoryconfigurer
+- `spring-boot-2.x-to-3.0-removals-01070` — ApplicationReadyEvent constructor has been updated in Spring Boot 3.0
+  - keys: java:org.springframework.boot.context.event.applicationreadyevent
+- `spring-boot-2.x-to-3.0-removals-01080` — The constructor ApplicationStartedEvent(SpringApplication, String[], ConfigurableApplicationContext) has been removed i…
+  - keys: java:org.springframework.boot.context.event.applicationstartedevent
+- `spring-boot-2.x-to-3.0-removals-01090` — DirectRabbitListenerContainerFactoryConfigurer() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.amqp.directrabbitlistenercontainerfactoryconfigurer
+- `spring-boot-2.x-to-3.0-removals-01100` — HealthEndpoint constructor with 2 arguments has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.health.healthendpoint
+- `spring-boot-2.x-to-3.0-removals-01110` — HealthEndpointWebExtension constructor has been updated in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.health.healthendpointwebextension
+- `spring-boot-2.x-to-3.0-removals-01120` — IncludeExcludeEndpointFilter has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.autoconfigure.endpoint.expose.includeexcludeendpointfilter(java.lang.class, org.springframework.core.env.environment, java.lang.string, org.springframework.boot.actuate.autoconfigure.endpoint.expose.includeexcludeendpointfilter.defaultincludes)
+- `spring-boot-2.x-to-3.0-removals-01140` — Packager(File, LayoutFactory) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.tools.packager
+- `spring-boot-2.x-to-3.0-removals-01150` — RabbitTemplateConfigurer() has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.amqp.rabbittemplateconfigurer
+- `spring-boot-2.x-to-3.0-removals-01160` — ReactiveHealthEndpointWebExtension constructor has been changed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.actuate.health.reactivehealthendpointwebextension
+- `spring-boot-2.x-to-3.0-removals-01170` — Repackager(File, LayoutFactory) has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.loader.tools.repackager
+- `spring-boot-2.x-to-3.0-removals-01180` — RestartClassLoader constructor with Log parameter has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.devtools.restart.classloader.restartclassloader
+- `spring-boot-2.x-to-3.0-removals-01190` — SimpleRabbitListenerContainerFactoryConfigurer() constructor has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.autoconfigure.amqp.simplerabbitlistenercontainerfactoryconfigurer
+- `spring-boot-2.x-to-3.0-removals-01200` — DatabaseDriver.GAE has been removed in Spring Boot 3.0
+  - keys: java:org.springframework.boot.jdbc.databasedriver.gae
+- `spring-boot-2.x-to-3.0-security-00000` — ReactiveUserDetailsService is no longer auto-configured
+  - keys: java:org.springframework.context.annotation.configuration, java:org.springframework.security.authentication.authenticationmanagerresolver
+- `spring-boot-2.x-to-3.0-security-00010` — SAML2 relying party configuration
+  - keys: fc:spring\.security\.saml2\.relyingparty\.registration\..*\.identity-provider
+- `spring-boot-2.x-to-3.0-session-00010` — Spring Session 3.0 is required for Spring Boot 3.0
+  - keys: dep:org.springframework.session.spring-session-core, dep:org.springframework.session.spring-session-data-redis, dep:org.springframework.session.spring-session-jdbc
+- `spring-boot-2.x-to-3.0-session-00020` — Review Spring Session configuration for Spring Boot 3.0
+  - keys: fc:spring-session, fc:spring.session
+- `spring-boot-2.x-to-3.0-webapp-changes-00010` — Updated Phases for Graceful Shutdown
+  - keys: java:org.springframework.context.smartlifecycle
+- `spring-boot-2.x-to-3.0-webapp-changes-00020` — Jetty must be upgraded to version 11+ for Spring Boot 3.0
+  - keys: dep:org.eclipse.jetty.jetty-server, dep:org.eclipse.jetty.jetty-webapp
+- `spring-boot-2.x-to-3.0-webapp-changes-00030` — Path matching strategy defaults have changed
+  - keys: fc:pathmatch, fc:spring.mvc.pathmatch.matching-strategy
+- `spring-boot-2.x-to-3.0-webapp-changes-00040` — ErrorController implementations may need updates
+  - keys: java:org.springframework.boot.web.servlet.error.errorcontroller
+
+## Kantra diff (app: /Users/fabian/scratch/eval-apps/spring-petclinic)
+
+| | ai | handcrafted |
+|---|---|---|
+| Rules fired | 8 | 5 |
+| Incidents | 47 | 10 |
+| Files flagged only here | 12 | 4 |
+| Files flagged by both | 1 | 1 |
+
+### Files flagged only by ai (12)
+
+- `src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java`
+- `src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java`
+- `src/main/java/org/springframework/samples/petclinic/model/Person.java`
+- `src/main/java/org/springframework/samples/petclinic/owner/Owner.java`
+- `src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java`
+- `src/main/java/org/springframework/samples/petclinic/owner/Pet.java`
+- `src/main/java/org/springframework/samples/petclinic/owner/PetController.java`
+- `src/main/java/org/springframework/samples/petclinic/owner/PetType.java`
+- `src/main/java/org/springframework/samples/petclinic/owner/Visit.java`
+- `src/main/java/org/springframework/samples/petclinic/owner/VisitController.java`
+- `src/main/java/org/springframework/samples/petclinic/vet/Specialty.java`
+- `src/main/java/org/springframework/samples/petclinic/vet/Vet.java`
+
+### Files flagged only by handcrafted (4)
+
+- `pom.xml`
+- `src/main/resources/application-mysql.properties`
+- `src/main/resources/application-postgres.properties`
+- `src/main/resources/application.properties`
+
+### Files flagged by both (1)
+
+- `build.gradle` — A: [core-dependency-00010 core-dependency-00020 data-dependency-00010 …+3] · B: [spring-boot-2.x-to-3.0-datasource-00070 spring-boot-2.x-to-3.0-micrometer-00030]
+

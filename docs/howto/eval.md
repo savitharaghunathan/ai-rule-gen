@@ -156,6 +156,21 @@ EVAL REPORT
 
 The report goes to stderr. Structured JSON goes to stdout for programmatic consumption.
 
+## Comparing two rulesets
+
+To diff a generated ruleset against another ruleset (e.g. a hand-authored baseline from [konveyor/rulesets](https://github.com/konveyor/rulesets)), use `cmd/compare`:
+
+```bash
+go run ./cmd/compare \
+  --a evals/<migration>/rules \
+  --b /path/to/baseline/rules \
+  --name-a ai --name-b handcrafted \
+  --app-dir /path/to/sample-app \
+  --out comparison.md
+```
+
+Output is a coverage matrix (per-rule condition-key matching, both directions) plus a side-by-side `kantra analyze` diff on the same app. Worked examples in `evals/comparisons/`.
+
 ## See Also
 
 - [Eval examples and directory layout](../../evals/README.md)

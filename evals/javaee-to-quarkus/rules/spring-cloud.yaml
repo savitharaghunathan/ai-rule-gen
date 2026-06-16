@@ -1,0 +1,58 @@
+- ruleID: spring-cloud-pattern-00010
+  description: Spring Cloud Config bootstrap.properties is replaced by quarkus.spring-cloud-config.* in application.properties
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Cloud Config client configuration (typically in `bootstrap.properties` or `bootstrap.yaml`) is replaced in Quarkus by the `quarkus-spring-cloud-config-client` extension, configured through `quarkus.spring-cloud-config.*` properties in `application.properties`.
+
+    ### Before (bootstrap.properties)
+    ```properties
+    spring.application.name=a-bootiful-client
+    spring.cloud.config.uri=http://localhost:8888
+    spring.cloud.config.enabled=true
+    ```
+
+    ### After (application.properties)
+    ```properties
+    quarkus.application.name=a-bootiful-client
+    quarkus.spring-cloud-config.enabled=true
+    quarkus.spring-cloud-config.url=http://localhost:8888
+    ```
+
+    ### Additional Info
+    - `bootstrap.properties` is NOT processed by Quarkus.
+    - Use the `quarkus-spring-cloud-config-client` extension to enable retrieval.
+    - See the [Spring Cloud Config Client guide](https://quarkus.io/guides/spring-cloud-config-client).
+  links:
+    - url: https://quarkus.io/guides/spring-cloud-config-client
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.cloud\.config
+        filePattern: (application|bootstrap).*\.(properties|ya?ml)
+- ruleID: spring-cloud-pattern-00020
+  description: spring.cloud.config.uri property is renamed to quarkus.spring-cloud-config.url in Quarkus
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The Spring Cloud Config property `spring.cloud.config.uri` is renamed in Quarkus to `quarkus.spring-cloud-config.url`. Move the setting from `bootstrap.properties` to `application.properties`.
+  links:
+    - url: https://quarkus.io/guides/spring-cloud-config-client#configuring-the-application
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.cloud\.config\.uri
+        filePattern: (application|bootstrap).*\.(properties|ya?ml)

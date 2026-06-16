@@ -1,0 +1,45 @@
+- ruleID: persistence-import-00010
+  description: javax.persistence was renamed to jakarta.persistence in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus uses Jakarta EE 10/11. Replace every `import javax.persistence.*` with the equivalent `import jakarta.persistence.*`. This includes `@Entity`, `@Id`, `@GeneratedValue`, `EntityManager`, `Query`, etc.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.persistence
+        location: PACKAGE
+- ruleID: persistence-pattern-00010
+  description: persistence.xml is supported but discouraged; prefer Quarkus application.properties configuration
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus accepts `META-INF/persistence.xml` for migration convenience, but it forces several constraints:
+    - Persistence units defined there always use the default datasource.
+    - Dialect/version are NOT auto-detected and must be configured explicitly.
+    - You CANNOT mix `persistence.xml` with `quarkus.hibernate-orm.*` properties - doing so raises an exception.
+    - Several Dev UI features are disabled.
+
+    The recommended approach is to move all configuration to `application.properties` using `quarkus.hibernate-orm.*` keys. To force Quarkus to ignore an existing `persistence.xml`, set `quarkus.hibernate-orm.persistence-xml.ignore=true`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#persistence-xml
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: META-INF/persistence\.xml
+        filePattern: .*persistence\.xml

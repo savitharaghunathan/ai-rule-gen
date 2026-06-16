@@ -1,0 +1,1185 @@
+- ruleID: hibernate-dependency-00010
+  description: Hibernate 5.4 (HHH-12973) requires Microsoft SQL Server JDBC Driver 6.1.2 or later
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate 5.4 (used in JBoss EAP 7.x and later) requires Microsoft SQL Server JDBC Driver 6.1.2 or later because older versions cannot introspect `INFORMATION_SCHEMA.SEQUENCES` without closing the database connection (HHH-12973).
+
+    ### Migration Steps
+    - Update the `com.microsoft.sqlserver:mssql-jdbc` dependency in your `pom.xml` to at least version `6.1.2`.
+    - For JBoss EAP 8, prefer the most recent driver version compatible with your SQL Server release.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#sql-server-jdbc-driver-version-upgrade-to-at-least-6-1-2_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.microsoft.sqlserver.mssql-jdbc
+        upperbound: 6.1.2
+        lowerbound: 0.0.0
+- ruleID: hibernate-dependency-00020
+  description: Hibernate 5.5 reworked XML mapping parsing on top of JAXB and stopped depending on DOM4J
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.5 reworked XML mapping parsing to use JAXB instead of DOM4J. Hibernate no longer pulls in the `dom4j:dom4j` artifact transitively. If your application code or `pom.xml` relied on the transitive `dom4j` dependency, declare it explicitly or migrate to a supported XML API.
+
+    ### Migration Steps
+    - If your code uses `org.dom4j.*`, add an explicit dependency on `dom4j:dom4j` or migrate to `jakarta.xml.bind` / JAXB.
+    - If your application does not use DOM4J directly, no action is required.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#dom4j-based-xml-mapping_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: dom4j.dom4j
+        lowerbound: 0.0.0
+- ruleID: hibernate-pattern-00010
+  description: Hibernate 5.6 removed javassist as a bytecode enhancement provider; hibernate.bytecode.provider=javassist is no longer valid
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with Hibernate ORM 5.6, Javassist is no longer available as a bytecode enhancement provider. The `hibernate.bytecode.provider=javassist` configuration is no longer valid.
+
+    ### Migration Steps
+    - Remove the `hibernate.bytecode.provider=javassist` setting from `hibernate.properties`, `hibernate.cfg.xml`, `persistence.xml`, or your application properties.
+    - Hibernate uses Byte Buddy by default; no replacement value is required.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#removal-of-javassist_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.bytecode\.provider\s*=\s*javassist
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-dependency-00030
+  description: Hibernate 5.6 dropped javassist from its dependency list; declare explicitly if you still need it
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.6 no longer lists Javassist among its dependencies. If your application directly uses `org.javassist:javassist`, declare the dependency explicitly in your `pom.xml`.
+
+    ### Migration Steps
+    - If you do not use Javassist directly, no action is required.
+    - If your code references `javassist.*` classes, add an explicit `org.javassist:javassist` dependency or migrate to Byte Buddy.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#removal-of-javassist_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.javassist.javassist
+        lowerbound: 0.0.0
+- ruleID: hibernate-import-00010
+  description: Deprecated org.hibernate.cfg.AnnotationConfiguration was removed in Hibernate ORM 5.0
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.hibernate.cfg.AnnotationConfiguration` was deprecated in earlier Hibernate releases and removed in Hibernate ORM 5.0.
+
+    ### Before
+    ```java
+    import org.hibernate.cfg.AnnotationConfiguration;
+
+    AnnotationConfiguration cfg = new AnnotationConfiguration();
+    ```
+
+    ### After
+    ```java
+    import org.hibernate.cfg.Configuration;
+
+    Configuration cfg = new Configuration();
+    ```
+
+    ### Additional Info
+    - Use `org.hibernate.cfg.Configuration` instead.
+    - See the Hibernate ORM 5.0 Migration Guide for additional bootstrap changes.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.cfg.AnnotationConfiguration
+        location: IMPORT
+- ruleID: hibernate-import-00020
+  description: Deprecated org.hibernate.id.TableGenerator was removed in Hibernate ORM 5.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The legacy `org.hibernate.id.TableGenerator` class was removed in Hibernate ORM 5.0.
+
+    ### Migration Steps
+    - Replace usages with `org.hibernate.id.enhanced.TableGenerator` (the modern enhanced generator).
+    - Review identifier generator configuration; consult the Hibernate ORM 5.0 Migration Guide.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.id.TableGenerator
+        location: IMPORT
+- ruleID: hibernate-import-00030
+  description: Deprecated org.hibernate.id.TableHiLoGenerator was removed in Hibernate ORM 5.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The legacy `org.hibernate.id.TableHiLoGenerator` class was removed in Hibernate ORM 5.0.
+
+    ### Migration Steps
+    - Replace usages with `org.hibernate.id.enhanced.TableGenerator` configured with the hi-lo optimizer.
+    - Review and migrate your custom identifier generation logic.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.id.TableHiLoGenerator
+        location: IMPORT
+- ruleID: hibernate-import-00040
+  description: Deprecated org.hibernate.id.SequenceGenerator was removed in Hibernate ORM 5.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The legacy `org.hibernate.id.SequenceGenerator` class was removed in Hibernate ORM 5.0.
+
+    ### Migration Steps
+    - Replace usages with `org.hibernate.id.enhanced.SequenceStyleGenerator`.
+    - Note that defaults for implicit sequence generation also changed in later Hibernate versions.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.id.SequenceGenerator
+        location: IMPORT
+- ruleID: hibernate-import-00050
+  description: Hibernate 5 extracted parts of JdbcServices into the new org.hibernate.engine.jdbc.env.spi.JdbcEnvironment interface
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In Hibernate ORM 5.0, portions of `org.hibernate.engine.jdbc.spi.JdbcServices` were extracted into the new `org.hibernate.engine.jdbc.env.spi.JdbcEnvironment` interface. Custom integrators that use `JdbcServices` for dialect/identifier-helper lookups must be updated.
+
+    ### Migration Steps
+    - Switch lookups for dialect, identifier helpers, and SQL exception conversion to `JdbcEnvironment`.
+    - Inject `JdbcEnvironment` via `ServiceRegistry` rather than fetching it from `JdbcServices`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.engine.jdbc.spi.JdbcServices
+        location: IMPORT
+- ruleID: hibernate-import-00060
+  description: TypeContributor migrated from org.hibernate.metamodel.spi to org.hibernate.boot.model in Hibernate ORM 5.0
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.hibernate.metamodel.spi.TypeContributor` was moved to `org.hibernate.boot.model.TypeContributor` in Hibernate ORM 5.0.
+
+    ### Migration Steps
+    - Update imports from `org.hibernate.metamodel.spi.TypeContributor` to `org.hibernate.boot.model.TypeContributor`.
+    - The interface signature is unchanged.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.metamodel.spi.TypeContributor
+        location: IMPORT
+- ruleID: hibernate-import-00070
+  description: TypeContributions migrated from org.hibernate.metamodel.spi to org.hibernate.boot.model in Hibernate ORM 5.0
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.hibernate.metamodel.spi.TypeContributions` was moved to `org.hibernate.boot.model.TypeContributions` in Hibernate ORM 5.0.
+
+    ### Migration Steps
+    - Update imports from `org.hibernate.metamodel.spi.TypeContributions` to `org.hibernate.boot.model.TypeContributions`.
+    - Used in conjunction with the relocated `TypeContributor`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.metamodel.spi.TypeContributions
+        location: IMPORT
+- ruleID: hibernate-pattern-00020
+  description: hibernate.transaction.factory_class deprecated in Hibernate 5; use hibernate.transaction.coordinator_class
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5 introduced a redesigned transaction SPI. The `hibernate.transaction.factory_class` property is deprecated and replaced by `hibernate.transaction.coordinator_class`, which refers to a `TransactionCoordinatorBuilder` instead of a `TransactionFactory`.
+
+    ### Migration Steps
+    - Replace `hibernate.transaction.factory_class=<TransactionFactory FQN>` with `hibernate.transaction.coordinator_class=<TransactionCoordinatorBuilder FQN>`.
+    - Use the short names `jdbc` or `jta` where appropriate.
+    - A non-Jakarta-Persistence application that uses Jakarta Transactions should set this to `jta`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.transaction\.factory_class
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-import-00080
+  description: TransactionFactory SPI replaced by TransactionCoordinatorBuilder in Hibernate ORM 5
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `org.hibernate.engine.transaction.spi.TransactionFactory` SPI was replaced in Hibernate ORM 5 by `org.hibernate.resource.transaction.TransactionCoordinatorBuilder`. Custom transaction factory implementations must be migrated.
+
+    ### Migration Steps
+    - Replace the implementation of `TransactionFactory` with a `TransactionCoordinatorBuilder`.
+    - Update bootstrap configuration to use `hibernate.transaction.coordinator_class` referencing the new builder FQN.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-4-3-to-hibernate-orm-5-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.engine.transaction.spi.TransactionFactory
+        location: IMPORT
+- ruleID: hibernate-import-00090
+  description: Legacy Hibernate Criteria API (org.hibernate.Criteria) was removed in Hibernate ORM 6.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The legacy Hibernate Criteria API (`org.hibernate.Criteria`), deprecated since Hibernate 5.x, was removed in Hibernate ORM 6.0.
+
+    ### Before
+    ```java
+    import org.hibernate.Criteria;
+
+    Criteria criteria = session.createCriteria(User.class);
+    criteria.add(Restrictions.eq("username", "alice"));
+    List<User> users = criteria.list();
+    ```
+
+    ### After
+    ```java
+    import jakarta.persistence.criteria.CriteriaBuilder;
+    import jakarta.persistence.criteria.CriteriaQuery;
+    import jakarta.persistence.criteria.Root;
+
+    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    CriteriaQuery<User> cq = cb.createQuery(User.class);
+    Root<User> root = cq.from(User.class);
+    cq.select(root).where(cb.equal(root.get("username"), "alice"));
+    List<User> users = entityManager.createQuery(cq).getResultList();
+    ```
+
+    ### Additional Info
+    - Use the Jakarta Persistence Criteria API (`jakarta.persistence.criteria.*`).
+    - Hibernate-specific extensions are available via `HibernateCriteriaBuilder`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-6-to-6-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.Criteria
+        location: IMPORT
+- ruleID: hibernate-import-00100
+  description: Hibernate 6.0 no longer supports calling SQL functions and procedures via NativeQuery
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 6.0 no longer supports using `NativeQuery` to call SQL functions and procedures. Use `org.hibernate.procedure.ProcedureCall` or `jakarta.persistence.StoredProcedureQuery` instead.
+
+    ### Migration Steps
+    - Locate any usage of `NativeQuery` that invokes stored procedures or SQL functions.
+    - Replace with `session.createStoredProcedureCall("procName")` or `entityManager.createStoredProcedureQuery("procName")`.
+    - Use parameter registration APIs on the new types.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-6-to-6-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.query.NativeQuery
+        location: IMPORT
+- ruleID: hibernate-xml-00010
+  description: Legacy hbm.xml mapping format is deprecated in Hibernate ORM 6.0 and will be removed in a future major release
+  category: potential
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Legacy `hbm.xml` mapping files are deprecated in Hibernate ORM 6.0 and will no longer be supported beyond the 6.x line.
+
+    ### Migration Steps
+    - Convert legacy `*.hbm.xml` mappings to JPA annotations (`@Entity`, `@Table`, `@Column`, etc.) or to JPA `orm.xml` mappings.
+    - Hibernate 6.x still supports `hbm.xml` but will not in future major releases.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-6-to-6-0_default
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='hibernate-mapping']
+- ruleID: hibernate-dependency-00040
+  description: Hibernate ORM 6.0 removed built-in JMX integration; the hibernate-jmx module is no longer provided
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 6.0 removed its built-in JMX integration. The `org.hibernate:hibernate-jmx` module is no longer provided.
+
+    ### Migration Steps
+    - Remove the `hibernate-jmx` dependency from your build.
+    - If you need JMX-based statistics or monitoring, expose `Statistics` manually via your own MBean implementation.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-6-to-6-0_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-jmx
+        lowerbound: 0.0.0
+- ruleID: hibernate-dependency-00050
+  description: Hibernate ORM 6.0 removed built-in JACC integration; the hibernate-jacc module is no longer provided
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 6.0 removed its built-in JACC integration. The `org.hibernate:hibernate-jacc` module is no longer provided.
+
+    ### Migration Steps
+    - Remove the `hibernate-jacc` dependency from your build.
+    - Use container-managed authorization (Jakarta Authorization on Jakarta EE servers) or another mechanism.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-6-to-6-0_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-jacc
+        lowerbound: 0.0.0
+- ruleID: hibernate-method-00010
+  description: Hibernate 6.0 changed Interceptor#onSave id parameter from Serializable to Object
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 6.0 changed the signature of `Interceptor#onSave`: the identifier parameter type changed from `Serializable` to `Object` to align with the relaxation of identifier type constraints.
+
+    ### Before
+    ```java
+    boolean onSave(Object entity, Serializable id, Object[] state,
+                   String[] propertyNames, Type[] types);
+    ```
+
+    ### After
+    ```java
+    boolean onSave(Object entity, Object id, Object[] state,
+                   String[] propertyNames, Type[] types);
+    ```
+
+    ### Additional Info
+    - Many other Hibernate API/SPI methods previously typed as `Serializable` now use `Object`.
+    - Recompile and update all overriding methods accordingly.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-6-to-6-0_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.Interceptor.onSave
+        location: METHOD_CALL
+- ruleID: hibernate-pattern-00030
+  description: Hibernate 6.2 changed the default value of hibernate.timezone.default_storage to DEFAULT, affecting OffsetTime/OffsetDateTime DDL
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with Hibernate ORM 6.2, `hibernate.timezone.default_storage` defaults to `DEFAULT` (previously `NORMALIZE`). DDL expectations for `OffsetTime` and `OffsetDateTime` columns change as a result, which can cause schema validation errors on existing databases.
+
+    ### Migration Steps
+    - Review your usage of `OffsetTime`/`OffsetDateTime` entity properties.
+    - If you depended on the previous behavior, set `hibernate.timezone.default_storage=NORMALIZE` explicitly.
+    - Otherwise, regenerate / migrate the affected database columns to match the new DDL.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-6-1-to-6-2_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.timezone\.default_storage
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-pattern-00040
+  description: Hibernate 6.2 only resolves CDI extensions when hibernate.cdi.extensions=true; behavior change for applications relying on CDI bean resolution
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 6.2 only resolves CDI BeanManager extensions when `hibernate.cdi.extensions` is set to `true`. If your application relied on Hibernate resolving CDI beans (e.g., AttributeConverter beans) implicitly, you must opt in.
+
+    ### Migration Steps
+    - Set `hibernate.cdi.extensions=true` in `persistence.xml`/`hibernate.properties` if your converters or other components are managed CDI beans.
+    - Otherwise no action is required.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-6-1-to-6-2_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.cdi\.extensions
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-pattern-00050
+  description: hibernate.enhancer.enableLazyInitialization deprecated in Hibernate 6.2; the underlying enhancement tooling option default is now true
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with Hibernate ORM 6.2, the `enableLazyInitialization` enhancement tooling option defaults to `true` and the corresponding `hibernate.enhancer.enableLazyInitialization` configuration property is deprecated.
+
+    ### Migration Steps
+    - Remove `hibernate.enhancer.enableLazyInitialization` from your configuration unless you need the legacy `false` behavior.
+    - The same applies to the build-plugin/tooling argument of the same name.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-6-1-to-6-2_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.enhancer\.enableLazyInitialization
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-pattern-00060
+  description: hibernate.enhancer.enableDirtyTracking deprecated in Hibernate 6.2; default value flipped to true
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with Hibernate ORM 6.2, the `enableDirtyTracking` enhancement tooling option defaults to `true` and the corresponding `hibernate.enhancer.enableDirtyTracking` configuration property is deprecated.
+
+    ### Migration Steps
+    - Remove `hibernate.enhancer.enableDirtyTracking` from your configuration unless you need to opt out.
+    - The same applies to the build-plugin/tooling argument of the same name.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-6-1-to-6-2_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.enhancer\.enableDirtyTracking
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-pattern-00070
+  description: hibernate.bytecode.use_reflection_optimizer deprecated in Hibernate 6.2; default value flipped to true
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Starting with Hibernate ORM 6.2, the global `hibernate.bytecode.use_reflection_optimizer` property defaults to `true` and is deprecated.
+
+    ### Migration Steps
+    - Remove the setting unless you need to disable the optimizer.
+    - Future Hibernate releases will not honor this property.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-6-1-to-6-2_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.bytecode\.use_reflection_optimizer
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-import-00110
+  description: Hibernate 5.1 unified schema management; classes such as SchemaExport now route through the SchemaManagementTool SPI
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.1 unified schema management around the `SchemaManagementTool` SPI. Applications that programmatically invoke `org.hibernate.tool.hbm2ddl.SchemaExport` must adapt to the new bootstrap path.
+
+    ### Migration Steps
+    - Build the Hibernate `Metadata` via the new `MetadataSources`/`StandardServiceRegistryBuilder` API.
+    - Drive schema export through `SchemaExport` constructed with `(StandardServiceRegistry, Metadata)` (or via `SchemaManagementTool`).
+    - For ad-hoc use, switch to the JPA `Persistence.generateSchema(...)` entry point.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-0-to-hibernate-orm-5-1_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.tool.hbm2ddl.SchemaExport
+        location: IMPORT
+- ruleID: hibernate-import-00120
+  description: Hibernate 5.1 SchemaUpdate is driven by the unified SchemaManagementTool SPI
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.1 reworked schema management; programmatic users of `org.hibernate.tool.hbm2ddl.SchemaUpdate` must adopt the new bootstrap path.
+
+    ### Migration Steps
+    - Construct `SchemaUpdate` using `(StandardServiceRegistry, Metadata)`.
+    - Or use the `SchemaManagementTool` SPI directly via `ServiceRegistry`.
+    - Configure JDBC metadata extraction strategy via `hibernate.hbm2ddl.jdbc_metadata_extraction_strategy`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-0-to-hibernate-orm-5-1_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.tool.hbm2ddl.SchemaUpdate
+        location: IMPORT
+- ruleID: hibernate-import-00130
+  description: Hibernate 5.1 SchemaValidator is driven by the unified SchemaManagementTool SPI
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.1 reworked schema validation. `org.hibernate.tool.hbm2ddl.SchemaValidator` must be constructed against the new bootstrap path.
+
+    ### Migration Steps
+    - Construct `SchemaValidator` using `(StandardServiceRegistry, Metadata)` instead of the legacy `Configuration` constructor.
+    - The new default JDBC metadata extraction strategy (`grouped`) may require `hibernate.default_schema` / `hibernate.default_catalog` to be set.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-0-to-hibernate-orm-5-1_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.tool.hbm2ddl.SchemaValidator
+        location: IMPORT
+- ruleID: hibernate-import-00140
+  description: SchemaManagementTool SPI replaces the legacy hbm2ddl entry points in Hibernate 5.1
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.1 introduced `org.hibernate.tool.schema.spi.SchemaManagementTool` as the unified entry point for schema export/update/validation. Code that relied on the legacy `hbm2ddl` classes should adopt this SPI.
+
+    ### Migration Steps
+    - Resolve `SchemaManagementTool` via the `ServiceRegistry`.
+    - Use its `getSchemaCreator`, `getSchemaDropper`, `getSchemaMigrator`, `getSchemaValidator` delegates.
+    - Custom strategies should be registered via `hibernate.schema_management_tool`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-0-to-hibernate-orm-5-1_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.tool.schema.spi.SchemaManagementTool
+        location: IMPORT
+- ruleID: hibernate-pattern-00080
+  description: Hibernate 5.1 introduced hibernate.hbm2ddl.jdbc_metadata_extraction_strategy; the default grouped strategy may require default_schema/default_catalog
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.1 introduced `hibernate.hbm2ddl.jdbc_metadata_extraction_strategy`. The new `grouped` default may require you to set `hibernate.default_schema` and/or `hibernate.default_catalog`.
+
+    ### Migration Steps
+    - If schema validation/migration now fails because the wrong tables are inspected, set `hibernate.default_schema` and `hibernate.default_catalog` explicitly.
+    - To revert to per-entity metadata queries, set `hibernate.hbm2ddl.jdbc_metadata_extraction_strategy=individually`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-0-to-hibernate-orm-5-1_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.hbm2ddl\.jdbc_metadata_extraction_strategy
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-dependency-00060
+  description: Hibernate ORM 5.2 merged hibernate-java8 into hibernate-core; the separate module is no longer published
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.2 merged the `hibernate-java8` module into `hibernate-core`; the separate artifact is no longer published.
+
+    ### Migration Steps
+    - Remove the `org.hibernate:hibernate-java8` dependency from `pom.xml`.
+    - Java 8 date/time types are natively supported in `hibernate-core` from 5.2 onward.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-java8
+        lowerbound: 0.0.0
+- ruleID: hibernate-dependency-00070
+  description: Hibernate ORM 5.2 merged hibernate-entitymanager into hibernate-core; the separate module is no longer published
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.2 merged the `hibernate-entitymanager` module into `hibernate-core`; the separate artifact is no longer published.
+
+    ### Migration Steps
+    - Remove the `org.hibernate:hibernate-entitymanager` dependency from `pom.xml`.
+    - `HibernateEntityManager` and `HibernateEntityManagerFactory` are deprecated; use `Session`/`SessionFactory` directly.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-entitymanager
+        lowerbound: 0.0.0
+- ruleID: hibernate-import-00150
+  description: HibernateEntityManager was deprecated in Hibernate 5.2; use Session directly
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.hibernate.jpa.HibernateEntityManager` was deprecated in Hibernate ORM 5.2 (and removed in 6.0). Use `org.hibernate.Session` directly via `entityManager.unwrap(Session.class)`.
+
+    ### Before
+    ```java
+    import org.hibernate.jpa.HibernateEntityManager;
+    HibernateEntityManager hem = (HibernateEntityManager) entityManager;
+    Session session = hem.getSession();
+    ```
+
+    ### After
+    ```java
+    import org.hibernate.Session;
+    Session session = entityManager.unwrap(Session.class);
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.jpa.HibernateEntityManager
+        location: IMPORT
+- ruleID: hibernate-import-00160
+  description: HibernateEntityManagerFactory was deprecated in Hibernate 5.2; use SessionFactory directly
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.hibernate.jpa.HibernateEntityManagerFactory` was deprecated in Hibernate ORM 5.2 (and removed in 6.0). Use `org.hibernate.SessionFactory` directly via `entityManagerFactory.unwrap(SessionFactory.class)`.
+
+    ### Migration Steps
+    - Replace casts to `HibernateEntityManagerFactory` with `unwrap(SessionFactory.class)`.
+    - The Jakarta Persistence `EntityManagerFactory` API is sufficient for most code.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.jpa.HibernateEntityManagerFactory
+        location: IMPORT
+- ruleID: hibernate-pattern-00090
+  description: Hibernate 5.2 introduced hibernate.legacy_limit_handler to opt back into the Hibernate 4.3 limit handling behavior
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.2 introduced the `hibernate.legacy_limit_handler` setting (default `false`) to opt back into the Hibernate 4.3-era `LimitHandler` behavior for a limited set of dialects.
+
+    ### Migration Steps
+    - If your application observed paging differences after upgrading from Hibernate 4.3, set `hibernate.legacy_limit_handler=true` as a short-term workaround and plan to migrate queries to use the modern limit/offset handling.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.legacy_limit_handler
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-pattern-00100
+  description: Hibernate 5.3 made JDBC-style native query parameters 1-based to align with Jakarta Persistence; legacy 0-based binding requires this opt-in property
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 changed JDBC-style parameter declarations in native queries from 0-based to 1-based to align with Jakarta Persistence. The `hibernate.query.sql.jdbc_style_params_base=true` setting opts back into the legacy 0-based binding.
+
+    ### Migration Steps
+    - Audit native queries that bind positional parameters.
+    - Either update the bindings to 1-based positions, or temporarily set `hibernate.query.sql.jdbc_style_params_base=true`.
+    - Also note: HQL/JPQL JDBC-style positional declarations are no longer supported.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.query\.sql\.jdbc_style_params_base
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-pattern-00110
+  description: Hibernate 5.3 @TableGenerator now stores the last generated value (not next); existing apps must set hibernate.id.generator.stored_last_used=false
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 changed `@TableGenerator` to store the last generated value instead of the next, to comply with Jakarta Persistence. Existing applications using `@TableGenerator` must set `hibernate.id.generator.stored_last_used=false` to preserve their identifier sequence.
+
+    ### Migration Steps
+    - Set `hibernate.id.generator.stored_last_used=false` on applications upgraded to 5.3+.
+    - New applications can leave the property at its default.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.id\.generator\.stored_last_used
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-dependency-00080
+  description: Hibernate 5.3 moved second-level Infinispan cache support out of hibernate-infinispan into the Infinispan project
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 moved second-level cache support for Infinispan out of `hibernate-infinispan` and into the Infinispan project's own artifacts.
+
+    ### Migration Steps
+    - Remove the `org.hibernate:hibernate-infinispan` dependency.
+    - Add the equivalent Infinispan-provided artifact (e.g., `org.infinispan:infinispan-hibernate-cache-v53`).
+    - Update the second-level cache provider class name in `hibernate.cache.region.factory_class`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-infinispan
+        lowerbound: 0.0.0
+- ruleID: hibernate-method-00020
+  description: Hibernate 5.3 EnhancementTask Ant task dropped addFileset() in favor of setBase()/setDir()
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 dropped `EnhancementTask.addFileset()` from the Ant task API in favor of `setBase()` and `setDir()` (HHH-11795).
+
+    ### Migration Steps
+    - Update Ant build scripts: replace `<fileset>` usage with `base`/`dir` attributes.
+    - The replacement attributes accept a directory and configure which classes are enhanced.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.tool.enhance.EnhancementTask.addFileset
+        location: METHOD_CALL
+- ruleID: hibernate-type-00010
+  description: Hibernate 5.3 unified JPA and native event listeners; JpaIntegrator is obsolete and must be replaced with Integrator
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `org.hibernate.jpa.event.spi.JpaIntegrator` is obsolete in Hibernate ORM 5.3 (HHH-11264). Classes that extended `JpaIntegrator` must be changed to implement `org.hibernate.integrator.spi.Integrator` directly.
+
+    ### Migration Steps
+    - Change `extends JpaIntegrator` to `implements Integrator`.
+    - Re-implement the lifecycle methods to register event listeners via `EventListenerRegistry` directly.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.jpa.event.spi.JpaIntegrator
+        location: INHERITANCE
+- ruleID: hibernate-pattern-00120
+  description: Hibernate 5.3 added hibernate.native_exception_handling_51_compliance for native bootstrap applications relying on Hibernate 5.1 exception semantics
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 (since 5.3.3) added `hibernate.native_exception_handling_51_compliance`. Set it to `true` only if your application uses Hibernate native bootstrapping (not Jakarta Persistence) and depends on Hibernate 5.1 exception semantics where `HibernateException` is not wrapped.
+
+    ### Migration Steps
+    - Audit code that catches `HibernateException` or its subclasses.
+    - For Jakarta Persistence bootstrapping, the property is ignored.
+    - For native bootstrapping, set the property based on the exception-handling behavior your application requires.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.native_exception_handling_51_compliance
+        filePattern: .*\.(properties|cfg\.xml|xml|ya?ml)
+- ruleID: hibernate-pattern-00130
+  description: Hibernate51CompatibilityTransformer is a temporary measure; replace transformed method calls with the Hibernate 5.3 equivalents
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JBoss EAP 7.4 introduced `org.jboss.as.hibernate.Hibernate51CompatibilityTransformer` as a temporary measure to keep Hibernate 5.1 API behavior under Hibernate 5.3. JBoss EAP 8 expects applications to be migrated; you should remove the transformer and replace transformed method calls with their Hibernate 5.3+ / Jakarta Persistence equivalents.
+
+    ### Migration Steps
+    - Remove the `Hibernate51CompatibilityTransformer` system property if set on the server.
+    - Remove the `<transformer class="org.jboss.as.hibernate.Hibernate51CompatibilityTransformer"/>` entries from `jboss-deployment-structure.xml`.
+    - Apply the per-method migrations listed in the JBoss EAP migration guide table (e.g., `getFlushMode` -> `getHibernateFlushMode`, `getMaxResults` -> `getHibernateMaxResults`, `FlushMode.NEVER` -> `FlushMode.MANUAL`).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: Hibernate51CompatibilityTransformer
+        filePattern: .*\.(xml|properties|MF|conf|sh|args|env)
+- ruleID: hibernate-method-00030
+  description: Hibernate 5.3 renamed BasicQueryContract.getFlushMode() to getHibernateFlushMode() to avoid conflict with Jakarta Persistence
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 renamed `org.hibernate.BasicQueryContract.getFlushMode()` to `getHibernateFlushMode()` to disambiguate from the Jakarta Persistence `getFlushMode()` method.
+
+    ### Before
+    ```java
+    org.hibernate.FlushMode fm = query.getFlushMode();
+    ```
+
+    ### After
+    ```java
+    org.hibernate.FlushMode fm = query.getHibernateFlushMode();
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.BasicQueryContract.getFlushMode
+        location: METHOD_CALL
+- ruleID: hibernate-method-00040
+  description: Hibernate 5.3 renamed Session.getFlushMode() to getHibernateFlushMode() to avoid conflict with Jakarta Persistence
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 renamed `org.hibernate.Session.getFlushMode()` to `getHibernateFlushMode()` to disambiguate from the Jakarta Persistence `getFlushMode()` method.
+
+    ### Before
+    ```java
+    org.hibernate.FlushMode fm = session.getFlushMode();
+    ```
+
+    ### After
+    ```java
+    org.hibernate.FlushMode fm = session.getHibernateFlushMode();
+    ```
+
+    ### Additional Info
+    - The Jakarta Persistence `getFlushMode()` still returns a `javax.persistence.FlushModeType`.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.Session.getFlushMode
+        location: METHOD_CALL
+- ruleID: hibernate-change-00010
+  description: Hibernate 5.3 renamed the FlushMode.NEVER enum constant to FlushMode.MANUAL
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 renamed the `FlushMode.NEVER` enum constant to `FlushMode.MANUAL`.
+
+    ### Migration Steps
+    - Replace `org.hibernate.FlushMode.NEVER` with `org.hibernate.FlushMode.MANUAL`.
+    - The ordinal (0) is preserved.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.FlushMode.NEVER
+        location: ENUM
+- ruleID: hibernate-method-00050
+  description: Hibernate 5.3 renamed Query.getMaxResults() to getHibernateMaxResults() to preserve legacy Hibernate pagination semantics
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 added `getHibernateMaxResults()` to preserve the legacy Hibernate-style pagination behavior. The Jakarta Persistence `getMaxResults()` may behave differently.
+
+    ### Migration Steps
+    - Where you previously relied on Hibernate-style semantics, call `query.getHibernateMaxResults()`.
+    - The Jakarta Persistence accessor (`getMaxResults()`) returns `Integer.MAX_VALUE` when unset.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.Query.getMaxResults
+        location: METHOD_CALL
+- ruleID: hibernate-method-00060
+  description: Hibernate 5.3 renamed Query.setMaxResults(int) to setHibernateMaxResults(int) to preserve legacy Hibernate pagination semantics
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 added `setHibernateMaxResults(int)` to preserve the legacy Hibernate-style pagination behavior.
+
+    ### Migration Steps
+    - Where you previously relied on Hibernate-style semantics, call `query.setHibernateMaxResults(n)`.
+    - For Jakarta Persistence semantics keep `setMaxResults(int)` from the JPA interface.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.Query.setMaxResults
+        location: METHOD_CALL
+- ruleID: hibernate-method-00070
+  description: Hibernate 5.3 renamed Query.getFirstResult() to getHibernateFirstResult() to preserve legacy Hibernate pagination semantics
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 added `getHibernateFirstResult()` to preserve the legacy Hibernate-style pagination behavior.
+
+    ### Migration Steps
+    - Where you previously relied on Hibernate-style semantics, call `query.getHibernateFirstResult()`.
+    - The Jakarta Persistence `getFirstResult()` returns 0 when unset.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.Query.getFirstResult
+        location: METHOD_CALL
+- ruleID: hibernate-method-00080
+  description: Hibernate 5.3 renamed Query.setFirstResult(int) to setHibernateFirstResult(int) to preserve legacy Hibernate pagination semantics
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate ORM 5.3 added `setHibernateFirstResult(int)` to preserve the legacy Hibernate-style pagination behavior.
+
+    ### Migration Steps
+    - Where you previously relied on Hibernate-style semantics, call `query.setHibernateFirstResult(n)`.
+    - For Jakarta Persistence semantics keep `setFirstResult(int)` from the JPA interface.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#migrating-from-hibernate-orm-5-1-and-hibernate-orm-5-2-to-hibernate-orm_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.Query.setFirstResult
+        location: METHOD_CALL

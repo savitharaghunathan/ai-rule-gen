@@ -1,0 +1,212 @@
+- ruleID: dependencies-dependency-00010
+  description: Spring Boot Actuator starter has no direct replacement
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot Actuator does not have a single Quarkus replacement. Use a combination of:
+    - `quarkus-smallrye-health` for health checks (`/q/health`).
+    - `quarkus-micrometer` (+ `quarkus-micrometer-registry-prometheus`) for metrics (`/q/metrics`).
+    - `quarkus-info` for build/git info.
+    - `quarkus-opentelemetry` for tracing.
+  links:
+    - url: https://quarkus.io/guides/smallrye-health
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-actuator
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00020
+  description: Spring Boot test starter has no direct equivalent
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `org.springframework.boot:spring-boot-starter-test` and add `io.quarkus:quarkus-junit5` plus `io.rest-assured:rest-assured` (test scope). `@QuarkusTest` replaces `@SpringBootTest`. For Mockito support, also add `io.quarkus:quarkus-junit5-mockito`.
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-test
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00030
+  description: Spring Boot Data REST starter must be replaced
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `org.springframework.boot:spring-boot-starter-data-rest` and add `io.quarkus:quarkus-spring-data-rest` (Spring Data REST style endpoints) or `io.quarkus:quarkus-rest-data-panache` (Quarkus-native Panache-based REST endpoints).
+  links:
+    - url: https://quarkus.io/guides/spring-data-rest
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-data-rest
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00040
+  description: Spring Cloud Config Client must be replaced by quarkus-spring-cloud-config-client
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Remove `org.springframework.cloud:spring-cloud-config-client` (and `spring-cloud-starter-config`) and add `io.quarkus:quarkus-spring-cloud-config-client`. Configure with `quarkus.spring-cloud-config.enabled=true` and `quarkus.spring-cloud-config.url=...` in `application.properties`. Note: `spring.cloud.config.*` properties from `bootstrap.properties` are NOT honoured.'
+  links:
+    - url: https://quarkus.io/guides/spring-cloud-config-client
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.cloud.spring-cloud-config-client
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00050
+  description: Spring Boot core jar must be removed when migrating to Quarkus
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove the `org.springframework.boot:spring-boot` dependency. Quarkus replaces the Spring Boot runtime entirely. Add Quarkus extensions (`quarkus-rest`, `quarkus-hibernate-orm`, `quarkus-arc`, ...) corresponding to the Spring Boot starters previously used.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00060
+  description: spring-boot-autoconfigure has no Quarkus replacement
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `org.springframework.boot:spring-boot-autoconfigure`. Quarkus auto-configures based on the present extensions at build time - there is no equivalent dynamic auto-configuration step at runtime.
+  links:
+    - url: https://quarkus.io/guides/spring-di
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-autoconfigure
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00070
+  description: spring-tx should be removed; use quarkus-narayana-jta instead
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `org.springframework:spring-tx`. Transactions in Quarkus are provided by the `io.quarkus:quarkus-narayana-jta` extension (typically pulled in transitively by `quarkus-hibernate-orm`).
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.spring-tx
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00080
+  description: springdoc-openapi-ui must be replaced by quarkus-smallrye-openapi
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `org.springdoc:springdoc-openapi-ui` and add `io.quarkus:quarkus-smallrye-openapi`. Quarkus serves the OpenAPI spec at `/q/openapi` and Swagger UI at `/q/swagger-ui` by default (dev/test).
+  links:
+    - url: https://quarkus.io/guides/openapi-swaggerui
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springdoc.springdoc-openapi-ui
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00090
+  description: Use quarkus-micrometer-registry-prometheus instead of the bare Micrometer registry
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Prefer `io.quarkus:quarkus-micrometer-registry-prometheus` over the bare `io.micrometer:micrometer-registry-prometheus`. The Quarkus extension wires up `MeterRegistry` as a CDI bean and exposes `/q/metrics` automatically.
+  links:
+    - url: https://quarkus.io/guides/telemetry-micrometer
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: io.micrometer.micrometer-registry-prometheus
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00100
+  description: Spring Boot parent POM must be replaced with Quarkus BOM
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Remove the spring-boot-starter-parent <parent> reference in pom.xml. Use the Quarkus BOM via <dependencyManagement> instead:
+
+    ```xml
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus.platform</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    ```
+
+    Also add the quarkus-maven-plugin to your build.
+  links:
+    - url: https://quarkus.io/guides/maven-tooling
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-parent
+        lowerbound: 0.0.0

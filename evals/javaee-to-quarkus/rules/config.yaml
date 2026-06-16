@@ -1,0 +1,295 @@
+- ruleID: config-dependency-00010
+  description: Spring Cloud Config Client is replaced by the quarkus-spring-cloud-config-client extension
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `spring-cloud-starter-config` with `io.quarkus:quarkus-spring-cloud-config-client`. Configure the server via `quarkus.spring-cloud-config.enabled=true` and `quarkus.spring-cloud-config.url=<server>`.
+  links:
+    - url: https://quarkus.io/guides/spring-cloud-config-client
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.cloud.spring-cloud-starter-config
+        lowerbound: 0.0.0
+- ruleID: config-annotation-00010
+  description: Spring @Value maps to MicroProfile @ConfigProperty in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `@Value("${prop:default}")` with `@ConfigProperty(name = "prop", defaultValue = "default")`. SpEL expressions inside `@Value` are NOT supported.
+
+    ### Before
+    ```java
+    @Value("${greeting.suffix:!}")
+    String suffix;
+    ```
+
+    ### After
+    ```java
+    import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+    @ConfigProperty(name = "greeting.suffix", defaultValue = "!")
+    String suffix;
+    ```
+
+    ### Additional Info
+    - For grouped config use `@ConfigMapping` (Quarkus) or `@ConfigurationProperties` via `quarkus-spring-boot-properties` for Spring compatibility.
+    - Property keys keep the same `.`-separated form.
+  links:
+    - url: https://quarkus.io/guides/config-reference
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.beans.factory.annotation.Value
+        location: ANNOTATION
+- ruleID: config-annotation-00020
+  description: Spring @ConfigurationProperties is supported by quarkus-spring-boot-properties; new code should use @ConfigMapping
+  category: optional
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Add `io.quarkus:quarkus-spring-boot-properties` to keep `@ConfigurationProperties` working. For new code prefer `@io.smallrye.config.ConfigMapping(prefix = "greeting")` which has more features (Maps, validation, nested groups) and is type-safe.
+  links:
+    - url: https://quarkus.io/guides/spring-boot-properties
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.context.properties.ConfigurationProperties
+        location: ANNOTATION
+- ruleID: config-pattern-00010
+  description: Spring's server.port is replaced by quarkus.http.port
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Rename `server.port=8080` to `quarkus.http.port=8080`. Other server bindings: `server.address` -> `quarkus.http.host`; `server.ssl.*` -> `quarkus.http.ssl.*`.'
+  links:
+    - url: https://quarkus.io/guides/config-reference
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: server\.port
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: config-pattern-00020
+  description: spring.application.name is replaced by quarkus.application.name
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Rename `spring.application.name=foo` to `quarkus.application.name=foo`. Version follows the same pattern: `quarkus.application.version`.'
+  links:
+    - url: https://quarkus.io/guides/config-reference
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.application\.name
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: config-pattern-00030
+  description: Spring's spring.profiles.active is replaced by quarkus.profile (or the QUARKUS_PROFILE env var)
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `spring.profiles.active=prod` with `quarkus.profile=prod` (or set the `QUARKUS_PROFILE` env var). Profile-specific keys use the `%prod.` prefix in `application.properties` (e.g., `%prod.quarkus.datasource.jdbc.url=...`).
+  links:
+    - url: https://quarkus.io/guides/config-reference#profiles
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.profiles\.active
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: config-annotation-00030
+  description: '@EnableConfigurationProperties is unused; ConfigMapping classes are auto-discovered'
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Remove `@EnableConfigurationProperties`. `@ConfigMapping` interfaces are automatically registered by Quarkus at build time, and `@ConfigurationProperties` classes are registered by the `quarkus-spring-boot-properties` extension when present.
+  links:
+    - url: https://quarkus.io/guides/config-mappings
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.context.properties.EnableConfigurationProperties
+        location: ANNOTATION
+- ruleID: config-pattern-00040
+  description: Quarkus does not use bootstrap.properties; move settings to application.properties
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Spring Boot's `bootstrap.properties`/`bootstrap.yml` files are NOT read by Quarkus. Move settings into `application.properties` (or `application.yaml` with the `quarkus-config-yaml` extension). Spring Cloud Config client configuration now uses `quarkus.spring-cloud-config.*` keys.
+  links:
+    - url: https://quarkus.io/guides/spring-cloud-config-client
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: bootstrap\.properties
+        filePattern: bootstrap\.(properties|ya?ml)
+- ruleID: config-method-00010
+  description: Quarkus configuration is layered (sys props, env, files); avoid direct System.getProperty/getenv
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus configuration is layered (system properties, env vars, `.env`, `application.properties`, etc.). Reading config via `System.getProperty("...")` skips the Quarkus configuration sources and may miss values defined elsewhere. Use `@ConfigProperty` or `SmallRyeConfig.getValue(...)`.
+
+    ### Before
+    ```java
+    String db = System.getProperty("database.name");
+    ```
+
+    ### After
+    ```java
+    @ConfigProperty(name = "database.name")
+    String db;
+    // or
+    SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    String db = config.getValue("database.name", String.class);
+    ```
+  links:
+    - url: https://quarkus.io/guides/config-reference#programmatically-access
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: java.lang.System.getProperty
+        location: METHOD_CALL
+- ruleID: config-method-00020
+  description: Avoid System.getenv for app configuration in Quarkus; use @ConfigProperty
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Reading environment variables directly via `System.getenv("...")` bypasses Quarkus' MicroProfile Config layering (system properties, env, .env, application.properties). Use `@ConfigProperty` or `SmallRyeConfig` so the same code works across configuration sources and profiles.
+  links:
+    - url: https://quarkus.io/guides/config-reference#programmatically-access
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: java.lang.System.getenv
+        location: METHOD_CALL
+- ruleID: config-pattern-00050
+  description: Quarkus does not read spring.* config keys; migrate to quarkus.* or spring-cloud-config-client extension
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does not honor Spring Boot's `spring.*` configuration keys (datasource, JPA, server, etc.). Map them to their Quarkus equivalents:
+
+    | Spring property | Quarkus property |
+    |---|---|
+    | `spring.datasource.url` | `quarkus.datasource.jdbc.url` |
+    | `spring.datasource.username` | `quarkus.datasource.username` |
+    | `spring.datasource.password` | `quarkus.datasource.password` |
+    | `spring.jpa.hibernate.ddl-auto` | `quarkus.hibernate-orm.schema-management.strategy` |
+    | `spring.profiles.active` | `quarkus.profile` |
+    | `server.port` | `quarkus.http.port` |
+  links:
+    - url: https://quarkus.io/guides/config-reference
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: ^\s*spring\.
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: config-pattern-00060
+  description: Quarkus reads quarkus.datasource.jdbc.url instead of spring.datasource.url
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `spring.datasource.url=...` with `quarkus.datasource.jdbc.url=...`. Also migrate `spring.datasource.username` -> `quarkus.datasource.username` and `spring.datasource.password` -> `quarkus.datasource.password`. Add `quarkus.datasource.db-kind=<vendor>` (e.g. `postgresql`).
+  links:
+    - url: https://quarkus.io/guides/datasource
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.datasource\.url
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: config-pattern-00070
+  description: Quarkus uses quarkus.hibernate-orm.schema-management.strategy instead of spring.jpa.hibernate.ddl-auto
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `spring.jpa.hibernate.ddl-auto=update` with `quarkus.hibernate-orm.schema-management.strategy=update`. Possible values: `none`, `validate`, `update`, `drop-and-create`, `create`, `drop`.
+
+    ### Additional Info
+    - Older Quarkus versions used `quarkus.hibernate-orm.database.generation`; the current preferred property is `quarkus.hibernate-orm.schema-management.strategy`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jpa\.hibernate\.ddl-auto
+        filePattern: application.*\.(properties|ya?ml)

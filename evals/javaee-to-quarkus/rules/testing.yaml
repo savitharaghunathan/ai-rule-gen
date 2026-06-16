@@ -1,0 +1,302 @@
+- ruleID: testing-annotation-00010
+  description: '@QuarkusTestResource is being replaced by @WithTestResource for finer scoping'
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus introduced `@io.quarkus.test.common.WithTestResource`, which supports scoping via `TestResourceScope` (MATCHING_RESOURCES, RESTRICTED_TO_CLASS, GLOBAL). `@QuarkusTestResource` still works but is the older API; new code should prefer `@WithTestResource`.
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing#usage-of-withtestresource
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: io.quarkus.test.common.QuarkusTestResource
+        location: ANNOTATION
+- ruleID: testing-annotation-00020
+  description: '@SpringBootTest must be replaced by @QuarkusTest'
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `@SpringBootTest` with `@io.quarkus.test.junit.QuarkusTest`. Replace `MockMvc` HTTP assertions with REST-assured. `@WebMvcTest`/`@DataJpaTest` slices have no exact equivalent - use `@QuarkusTest` plus profile-restricted properties to disable unrelated extensions.
+
+    ### Before
+    ```java
+    @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+    class MyTest {
+        @Autowired TestRestTemplate restTemplate;
+    }
+    ```
+
+    ### After
+    ```java
+    @QuarkusTest
+    class MyTest {
+        @Test void greet() {
+            given().when().get("/greeting").then().statusCode(200);
+        }
+    }
+    ```
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.context.SpringBootTest
+        location: ANNOTATION
+- ruleID: testing-annotation-00030
+  description: '@WebMvcTest has no equivalent slice in Quarkus'
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not support test slices. Replace `@WebMvcTest` with `@QuarkusTest`. Use a custom `QuarkusTestProfile` to disable unrelated extensions when isolation is required.
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+        location: ANNOTATION
+- ruleID: testing-annotation-00040
+  description: '@DataJpaTest has no equivalent slice in Quarkus'
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus has no `@DataJpaTest` slice. Use `@QuarkusTest` and a Dev Services / Testcontainers-backed database, or `@QuarkusTest` + `QuarkusTestProfile` to skip web extensions.
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+        location: ANNOTATION
+- ruleID: testing-change-00010
+  description: TestRestTemplate should be replaced by REST-assured for Quarkus tests
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `TestRestTemplate` with REST-assured's fluent assertions. `@QuarkusTest` automatically picks a test port and exposes it to REST-assured.
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing#restassured
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.web.client.TestRestTemplate
+        location: TYPE
+- ruleID: testing-change-00020
+  description: MockMvc is Spring-specific; use REST-assured
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Quarkus tests do not mock the HTTP layer - they hit the real Quarkus HTTP server on a random port. Replace `MockMvc.perform(...)` style tests with REST-assured: `given().when().get("/path").then().statusCode(200)`.'
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing#restassured
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.test.web.servlet.MockMvc
+        location: TYPE
+- ruleID: testing-annotation-00050
+  description: Replace Spring @MockBean with @InjectMock in Quarkus tests
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus' Mockito integration provides `@io.quarkus.test.InjectMock` (and `@InjectSpy`) to replace CDI beans with Mockito mocks during a `@QuarkusTest`. Add the `quarkus-junit5-mockito` dependency.
+
+    ### Before
+    ```java
+    @MockBean
+    MyService service;
+    ```
+
+    ### After
+    ```java
+    @InjectMock
+    MyService service;
+    ```
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing#further-simplification-with-injectmock
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.mock.mockito.MockBean
+        location: ANNOTATION
+- ruleID: testing-annotation-00060
+  description: Replace Spring @SpyBean with @InjectSpy in Quarkus tests
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Replace `@SpyBean` with `@io.quarkus.test.junit.mockito.InjectSpy` (from `quarkus-junit5-mockito`). Behavior is similar: the CDI bean is replaced by a Mockito spy for the duration of the test.'
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing#using-spies-instead-of-mocks-with-injectspy
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.mock.mockito.SpyBean
+        location: ANNOTATION
+- ruleID: testing-annotation-00070
+  description: Spring @TestConfiguration is not supported; use QuarkusTestProfile or test-scope CDI alternatives
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus does not honor Spring's `@TestConfiguration`. Provide test-specific beans either by:
+
+    - Putting `@Mock`-stereotyped alternatives in `src/test/java`.
+    - Implementing `io.quarkus.test.junit.QuarkusTestProfile` to override configuration or contribute producers.
+    - Using `@io.quarkus.test.InjectMock` for Mockito-based replacements.
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing#mock-cdi-alternative
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.test.context.TestConfiguration
+        location: ANNOTATION
+- ruleID: testing-annotation-00080
+  description: Spring @TestPropertySource is not supported; use a QuarkusTestProfile
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus does not implement Spring's `@TestPropertySource`. Override configuration in tests by implementing `io.quarkus.test.junit.QuarkusTestProfile.getConfigOverrides()` and annotating the test with `@TestProfile(MyProfile.class)`.
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing#writing-a-profile
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.test.context.TestPropertySource
+        location: ANNOTATION
+- ruleID: testing-annotation-00090
+  description: Quarkus testing uses JUnit 5; JUnit 4 @Test must be migrated
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus testing infrastructure (`@QuarkusTest`, `@QuarkusIntegrationTest`, `QuarkusTestExtension`) is built on JUnit 5. JUnit 4 `org.junit.Test` annotations and Runners are not supported by `@QuarkusTest`. Migrate test classes to JUnit Jupiter (`org.junit.jupiter.api.Test`).
+
+    ### Before
+    ```java
+    import org.junit.Test;
+    import org.junit.runner.RunWith;
+    import org.junit.runners.JUnit4;
+
+    @RunWith(JUnit4.class)
+    public class FooTest {
+        @Test
+        public void test() { ... }
+    }
+    ```
+
+    ### After
+    ```java
+    import org.junit.jupiter.api.Test;
+    import io.quarkus.test.junit.QuarkusTest;
+
+    @QuarkusTest
+    public class FooTest {
+        @Test
+        void test() { ... }
+    }
+    ```
+
+    ### Additional Info
+    - Remove junit:junit (JUnit 4) dependency
+    - Add io.quarkus:quarkus-junit5 dependency
+    - For mocking use io.quarkus.test.InjectMock / io.quarkus.test.junit.QuarkusMock
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.junit.Test
+        location: ANNOTATION
+- ruleID: testing-annotation-00100
+  description: Spring's @RunWith / SpringRunner is not supported by Quarkus testing
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JUnit 4's `@RunWith(SpringRunner.class)` and `@RunWith(SpringJUnit4ClassRunner.class)` are not supported by Quarkus tests. Quarkus uses JUnit 5 extensions (registered automatically by @QuarkusTest).
+
+    ### Migration Steps
+    1. Remove @RunWith annotations
+    2. Add @QuarkusTest to the test class
+    3. Migrate test methods to JUnit Jupiter (org.junit.jupiter.api.Test)
+  links:
+    - url: https://quarkus.io/guides/getting-started-testing
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.junit.runner.RunWith
+        location: ANNOTATION

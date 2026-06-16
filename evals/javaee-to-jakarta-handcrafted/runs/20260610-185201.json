@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-06-10T18:52:01Z",
+  "migration": "javaee-to-jakarta-handcrafted",
+  "rule_count": 340,
+  "effective_coverage_pct": 20,
+  "quality_avg": 5.1382352941176475,
+  "guidance_depth_avg": 2.2941176470588234,
+  "overlap_conflict_count": 22,
+  "specificity_gap_count": 0,
+  "guide_specificity_gap_count": null
+}

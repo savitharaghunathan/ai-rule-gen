@@ -1,0 +1,9 @@
+name: spring-boot3/spring-boot2
+description: Rules for migrating from spring-boot2 to spring-boot3
+labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6

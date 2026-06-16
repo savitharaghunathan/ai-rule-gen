@@ -130,6 +130,8 @@ go run ./cmd/eval \
 
 Without ground truth, the eval reports quality scores, overlap conflicts, and (if `--app-dir` is provided) app coverage. Gap analysis and specificity checks require ground truth.
 
+To diff a generated ruleset against another ruleset (e.g. a hand-authored baseline), use `cmd/compare` — coverage matrix plus side-by-side kantra diff. See [docs/howto/eval.md](../docs/howto/eval.md#comparing-two-rulesets) and `evals/comparisons/`.
+
 ## Adding a New Migration
 
 1. Create `evals/<source>-to-<target>/`

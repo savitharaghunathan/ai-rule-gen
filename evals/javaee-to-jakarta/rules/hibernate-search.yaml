@@ -1,0 +1,51 @@
+- ruleID: hibernate-search-import-00010
+  description: Hibernate Search 5 APIs have been removed in JBoss EAP 8 and replaced by Hibernate Search 6 APIs; the package structure changed
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Hibernate Search 5 APIs (formerly under `org.hibernate.search.*` with classes like `FullTextSession`, `SearchFactory`, `QueryBuilder`) have been removed in JBoss EAP 8 and replaced by Hibernate Search 6 APIs. The new APIs use a different package structure (`org.hibernate.search.mapper.orm.*`, `org.hibernate.search.engine.*`) and a different programming model.
+
+    ### Migration Steps
+    - Migrate from `FullTextSession`/`FullTextEntityManager` to `SearchSession`.
+    - Replace the Lucene-based query builder with the new mapper DSL.
+    - For Elasticsearch backends, see Hibernate Search 6.2's Elasticsearch backend documentation.
+    - Hibernate Search 6 APIs are backwards-incompatible with Hibernate Search 5 APIs.
+    - See the Hibernate Search 6.0, 6.1, and 6.2 migration guides for details.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#hibernate-search-6-replaces-hibernate-search-5-apis_default
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.hibernate.search*
+        location: PACKAGE
+- ruleID: hibernate-search-dependency-00010
+  description: Hibernate Search 5 artifact (org.hibernate:hibernate-search-orm) removed in JBoss EAP 8; replaced by Hibernate Search 6 artifacts
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The Hibernate Search 5 Maven artifact `org.hibernate:hibernate-search-orm` is no longer supported in JBoss EAP 8. Replace it with the Hibernate Search 6 artifact `org.hibernate.search:hibernate-search-mapper-orm` (plus a backend artifact such as `hibernate-search-backend-lucene` or `hibernate-search-backend-elasticsearch`).
+
+    ### Migration Steps
+    - Remove `org.hibernate:hibernate-search-orm` from `pom.xml`.
+    - Add `org.hibernate.search:hibernate-search-mapper-orm`.
+    - Add the appropriate backend artifact for Lucene or Elasticsearch.
+    - Migrate code from the Hibernate Search 5 API to the Hibernate Search 6 API.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/#hibernate-search-6-replaces-hibernate-search-5-apis_default
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-search-orm
+        lowerbound: 0.0.0

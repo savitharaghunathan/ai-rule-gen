@@ -1,0 +1,236 @@
+- ruleID: build-pattern-00010
+  description: bootJar/bootRun/bootWar now resolve the main class from the main source set output; use springBoot { mainClass } if relying on another location
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    With Spring Boot 3.0's Gradle plugin, `bootJar`, `bootRun`, and `bootWar` all resolve the main class by looking only in the output of the main source set. If your project relied on the main class being resolved from a location outside that output (for example, a separate source set), the build will fail to find the main class.
+
+    ### Before
+    ```groovy
+    // Previously the main class could be discovered via a custom property or
+    // from outside the main source set's output:
+    mainClassName = 'com.example.Application'
+    ```
+
+    ### After
+    ```groovy
+    springBoot {
+        mainClass = 'com.example.Application'
+    }
+    ```
+
+    ### Additional Info
+    - Alternatively, configure the `classpath` property of the `resolveMainClassName` task to search additional locations.
+    - The `mainClassName` Gradle convention property (top-level) is still honored as a fallback, but the canonical place is now the `springBoot` DSL.
+    - This rule flags assignments to `mainClassName` in `build.gradle`/`build.gradle.kts` so you can confirm they still resolve correctly.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#simplified-main-class-name-resolution-with-gradle).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#simplified-main-class-name-resolution-with-gradle
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: mainClassName\s*=
+        filePattern: .*build\.gradle(\.kts)?
+- ruleID: build-pattern-00020
+  description: Spring Boot's Gradle tasks now use Gradle Property API; isEnabled = false must become enabled.set(false) in Kotlin DSL
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot's Gradle tasks now consistently use Gradle's `Property` support for configuration. In the Kotlin DSL, direct assignment (`isEnabled = false`) on task properties no longer compiles — you must use `enabled.set(false)`. Property accessors also change: `imageName` becomes `imageName.get()`.
+
+    ### Before
+    ```kotlin
+    tasks.named<BootJar>("bootJar") {
+        layered {
+            isEnabled = false
+        }
+    }
+    ```
+
+    ### After
+    ```kotlin
+    tasks.named<BootJar>("bootJar") {
+        layered {
+            enabled.set(false)
+        }
+    }
+    ```
+
+    ### Additional Info
+    - The Groovy DSL is also affected, but the syntactic change is less invasive (`layered.enabled = false` continues to work via the Property API).
+    - Reading property values requires `.get()` (e.g., `imageName.get()` instead of `imageName`).
+    - Audit all `tasks.named<BootJar>`, `tasks.named<BootRun>`, `tasks.named<BootBuildImage>` blocks in your Kotlin build script.
+    - See the [Gradle plugin reference](https://docs.spring.io/spring-boot/docs/3.0.x/gradle-plugin/reference/html/) for more examples.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#configuring-gradle-tasks).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#configuring-gradle-tasks
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: isEnabled\s*=
+        filePattern: .*build\.gradle\.kts
+- ruleID: build-pattern-00030
+  description: Setting build-info properties to null to exclude them was replaced with a name-based 'excludes' list
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The mechanism for excluding properties from the generated `build-info.properties` file has changed. Previously, properties could be excluded by setting them to `null`; this no longer works and has been replaced with a name-based `excludes` mechanism.
+
+    ### Before
+    ```groovy
+    springBoot {
+        buildInfo {
+            properties {
+                time = null
+            }
+        }
+    }
+    ```
+
+    ### After
+    ```groovy
+    springBoot {
+        buildInfo {
+            excludes = ['time']
+        }
+    }
+    ```
+
+    ### Additional Info
+    - Kotlin DSL equivalent:
+    ```kotlin
+    springBoot {
+        buildInfo {
+            excludes.set(setOf("time"))
+        }
+    }
+    ```
+    - Valid exclusion keys are the standard build-info entries: `group`, `artifact`, `name`, `version`, `time`.
+    - Custom `additional` properties cannot be added via the old null-assignment trick — use `excludes` to suppress, or `additional { }` to add.
+    - This rule flags all `buildInfo {}` blocks for manual review — confirm whether any `= null` exclusions are present.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#excluding-properties-from-build-infoproperties-with-gradle).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#excluding-properties-from-build-infoproperties-with-gradle
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: buildInfo\s*\{
+        filePattern: .*build\.gradle(\.kts)?
+- ruleID: build-xml-00010
+  description: The fork attribute of spring-boot:run and spring-boot:start was deprecated in Spring Boot 2.7 and removed in 3.0
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `fork` attribute of the `spring-boot:run` and `spring-boot:start` goals — deprecated in Spring Boot 2.7 — has been removed in Spring Boot 3.0. Maven plugin configurations that set `<fork>` will fail to parse.
+
+    ### Before
+    ```xml
+    <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+            <fork>false</fork>
+        </configuration>
+    </plugin>
+    ```
+
+    ### After
+    ```xml
+    <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <!-- fork removed; application now runs in the Maven process when previously fork=false -->
+    </plugin>
+    ```
+
+    ### Additional Info
+    - Without `<fork>`, the plugin's default behavior applies — `spring-boot:run` forks a new JVM by default for `run` and `start`.
+    - If you previously relied on `<fork>false</fork>` to share the Maven JVM (e.g., for shared system properties), use `<jvmArguments>` to recreate the necessary JVM options in the forked process.
+    - Command-line `-Dspring-boot.run.fork=false` is also no longer recognized.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#running-your-application-in-the-maven-process).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#running-your-application-in-the-maven-process
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='plugin' and *[local-name()='artifactId' and text()='spring-boot-maven-plugin']]//*[local-name()='configuration']/*[local-name()='fork']
+        namespaces:
+            m: http://maven.apache.org/POM/4.0.0
+        filepaths:
+            - pom.xml
+- ruleID: build-dependency-00010
+  description: Git Commit ID Maven Plugin coordinates changed from pl.project13.maven:git-commit-id-plugin to io.github.git-commit-id:git-commit-id-maven-plugin
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The Git Commit ID Maven Plugin has been updated to version 5. Its Maven coordinates changed: the old `pl.project13.maven:git-commit-id-plugin` is replaced by `io.github.git-commit-id:git-commit-id-maven-plugin`.
+
+    ### Before
+    ```xml
+    <plugin>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+        <version>4.9.10</version>
+    </plugin>
+    ```
+
+    ### After
+    ```xml
+    <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+    </plugin>
+    ```
+
+    ### Additional Info
+    - Spring Boot 3.0's dependency management knows the new coordinates; you can omit `<version>`.
+    - Configuration element names are largely unchanged between v4 and v5, but review any custom `<configuration>` block for removed options (see the plugin's [changelog](https://github.com/git-commit-id/git-commit-id-maven-plugin/blob/master/CHANGELOG.md)).
+    - Update any `<pluginManagement>` entries that pin the old coordinates.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#git-commit-id-maven-plugin).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#git-commit-id-maven-plugin
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: pl.project13.maven.git-commit-id-plugin
+        lowerbound: 0.0.0

@@ -1,0 +1,24 @@
+- ruleID: concurrency-pattern-00010
+  description: use-transaction-setup-provider is vendor-specific and deprecated; use ContextServiceDefinition
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Vendor-specific resource-definition attributes including `use-transaction-setup-provider` are deprecated. Under Jakarta EE Concurrency 3.0, the default ContextService clears the transaction context before a contextual task runs, which is a behavioral change vs. EAP 7 (where the default was `use-transaction-setup-provider=false`, leaving the transaction context unchanged).
+
+    ### Migration Steps
+    - Remove `use-transaction-setup-provider` attributes from resource-definition entries.
+    - To customize the `ContextService`, use the `@ContextServiceDefinition` annotation (with `cleared`, `propagated`, `unchanged` context types) or define it in `web.xml`/`ejb-jar.xml`.
+    - Be aware: the default behavior now clears the transaction context before a contextual task executes, which differs from EAP 7.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/jakarta-ee-changes#contextservice-customization-by-using-context-types
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: use-transaction-setup-provider
+        filePattern: .*\.xml

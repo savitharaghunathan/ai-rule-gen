@@ -1,0 +1,295 @@
+- ruleID: metrics-import-00010
+  description: WebMvcMetricsFilter deleted in Spring Boot 3.0; replaced by Spring Framework's ServerHttpObservationFilter
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `WebMvcMetricsFilter` has been removed in Spring Boot 3.0. It is effectively replaced by Spring Framework's `org.springframework.web.filter.ServerHttpObservationFilter`, which is applied automatically by the Observation auto-configuration.
+
+    ### Migration Steps
+    - Remove any direct reference to or registration of `WebMvcMetricsFilter`
+    - Rely on the auto-configured `ServerHttpObservationFilter` and the new Observation API
+    - Customize observation behavior with `ServerRequestObservationConvention` beans rather than filter customization
+
+    ### Additional Info
+    - The new instrumentation is based on Micrometer Observation (1.10+)
+    - This is part of the broader deprecation of Spring Boot 2.x instrumentation in favor of Observation
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#deprecation-of-the-spring-boot-2x-instrumentation
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetricsFilter
+        location: IMPORT
+- ruleID: metrics-import-00020
+  description: MetricsRestTemplateCustomizer removed in Spring Boot 3.0; replaced by ObservationRestTemplateCustomizer
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `MetricsRestTemplateCustomizer` has been removed in Spring Boot 3.0. An `ObservationRestTemplateCustomizer` is now applied on the auto-configured `RestTemplateBuilder` bean instead.
+
+    ### Migration Steps
+    - Remove any direct reference to or registration of `MetricsRestTemplateCustomizer`
+    - Use the auto-configured `RestTemplateBuilder` and rely on Observation-based instrumentation
+    - For WebClient, the analogous customizer is `ObservationWebClientCustomizer`
+
+    ### Additional Info
+    - The new instrumentation is based on Micrometer Observation (1.10+)
+    - This change is part of the deprecation of Spring Boot 2.x instrumentation in favor of Observation
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#deprecation-of-the-spring-boot-2x-instrumentation
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.metrics.web.client.MetricsRestTemplateCustomizer
+        location: IMPORT
+- ruleID: metrics-import-00030
+  description: WebMvcTagsProvider deprecated in Spring Boot 3.0; replaced by ServerRequestObservationConvention
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `WebMvcTagsProvider` has been deprecated. In the new Observation-based instrumentation model, tag providers are replaced by observation conventions. Implement `ServerRequestObservationConvention` (or extend `DefaultServerRequestObservationConvention`) and register it as a bean.
+
+    ### Before
+    ```java
+    import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider;
+
+    @Bean
+    public WebMvcTagsProvider tagsProvider() { return new CustomWebMvcTagsProvider(); }
+    ```
+
+    ### After
+    ```java
+    import org.springframework.http.server.observation.ServerRequestObservationConvention;
+    import org.springframework.http.server.observation.DefaultServerRequestObservationConvention;
+
+    public class CustomServerRequestObservationConvention
+            extends DefaultServerRequestObservationConvention { /* ... */ }
+
+    @Bean
+    public ServerRequestObservationConvention convention() {
+        return new CustomServerRequestObservationConvention();
+    }
+    ```
+
+    ### Additional Info
+    - The default convention is no longer used by the Observation instrumentation, but is kept around during the deprecation phase for migration
+    - You can also customize using `ObservationFilter` for post-processing key values
+    - `ServerRequestObservationContext` provides access to the current request
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#tag-providers-and-contributors-migration
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider
+        location: IMPORT
+- ruleID: metrics-import-00040
+  description: WebMvcTagsContributor deprecated in Spring Boot 3.0; replaced by observation conventions
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `WebMvcTagsContributor` has been deprecated. In the new Observation-based instrumentation model, tag contributors are replaced by observation conventions or `ObservationFilter`. Extend `DefaultServerRequestObservationConvention` to add tags while preserving defaults.
+
+    ### Before
+    ```java
+    import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsContributor;
+
+    @Bean
+    public WebMvcTagsContributor extraTags() { return new MyContributor(); }
+    ```
+
+    ### After
+    ```java
+    public class ExtendedServerRequestObservationConvention
+            extends DefaultServerRequestObservationConvention {
+        @Override
+        public KeyValues getLowCardinalityKeyValues(ServerRequestObservationContext context) {
+            return super.getLowCardinalityKeyValues(context).and(custom(context));
+        }
+    }
+    ```
+
+    ### Additional Info
+    - `ObservationFilter` is an alternative for adding/removing key values as a post-processing step
+    - Filters do not replace the default convention
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#tag-providers-and-contributors-migration
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsContributor
+        location: IMPORT
+- ruleID: metrics-import-00050
+  description: WebFluxTagsProvider deprecated in Spring Boot 3.0; replaced by observation conventions
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `WebFluxTagsProvider` has been deprecated in Spring Boot 3.0. Use a `ServerRequestObservationConvention` (or extend the default convention) for WebFlux request observation customization instead.
+
+    ### Migration Steps
+    - Replace `WebFluxTagsProvider` beans with observation convention beans for the WebFlux server request observation
+    - Use the appropriate `ServerRequestObservationContext` to extract request information
+
+    ### Additional Info
+    - The new instrumentation is based on Micrometer Observation (1.10+)
+    - The deprecated provider/contributor classes are kept around during the deprecation phase so existing infrastructure can be migrated
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#tag-providers-and-contributors-migration
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.metrics.web.reactive.server.WebFluxTagsProvider
+        location: IMPORT
+- ruleID: metrics-import-00060
+  description: WebFluxTagsContributor deprecated in Spring Boot 3.0; replaced by observation conventions
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `WebFluxTagsContributor` has been deprecated. Use an observation convention or `ObservationFilter` to add tags to WebFlux server request observations.
+
+    ### Additional Info
+    - Filters do not replace the default convention
+    - Conventions provide structured access to context (e.g., method, status, exception)
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#tag-providers-and-contributors-migration
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.metrics.web.reactive.server.WebFluxTagsContributor
+        location: IMPORT
+- ruleID: metrics-import-00070
+  description: RestTemplateExchangeTagsProvider deprecated; replaced by ClientRequestObservationConvention
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `RestTemplateExchangeTagsProvider` has been deprecated. In the new Observation-based model, client-side request tags are produced by `ClientRequestObservationConvention` implementations applied through the `ObservationRestTemplateCustomizer`.
+
+    ### Migration Steps
+    - Remove `RestTemplateExchangeTagsProvider` beans
+    - Implement or extend `DefaultClientRequestObservationConvention` and register as a bean
+    - The auto-configured `RestTemplateBuilder` will apply observation instrumentation automatically
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#tag-providers-and-contributors-migration
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.metrics.web.client.RestTemplateExchangeTagsProvider
+        location: IMPORT
+- ruleID: metrics-import-00080
+  description: WebClientExchangeTagsProvider deprecated; replaced by ClientRequestObservationConvention
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `WebClientExchangeTagsProvider` has been deprecated. Use a `ClientRequestObservationConvention` (or extend the default) for WebClient observation customization.
+
+    ### Additional Info
+    - The auto-configured `WebClient.Builder` applies observation instrumentation through `ObservationWebClientCustomizer`
+    - The deprecated provider is kept during the deprecation phase to ease migration
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#tag-providers-and-contributors-migration
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.metrics.web.reactive.client.WebClientExchangeTagsProvider
+        location: IMPORT
+- ruleID: metrics-pattern-00010
+  description: Actuator metrics export properties moved from management.metrics.export.<product> to management.<product>.metrics.export
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Actuator metrics export properties have been restructured. The old schema `management.metrics.export.<product>` is replaced with `management.<product>.metrics.export`.
+
+    ### Before
+    ```properties
+    management.metrics.export.prometheus.enabled=true
+    management.metrics.export.prometheus.step=1m
+    ```
+
+    ### After
+    ```properties
+    management.prometheus.metrics.export.enabled=true
+    management.prometheus.metrics.export.step=1m
+    ```
+
+    ### Additional Info
+    - Applies to all metrics export products (prometheus, statsd, datadog, influx, etc.)
+    - Spring Boot's `spring-boot-properties-migrator` reports these changes at startup
+    - See spring-projects/spring-boot#30381 for the complete list of moved properties
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#actuator-metrics-export-properties
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: management\.metrics\.export\.
+        filePattern: application.*\.(properties|ya?ml)

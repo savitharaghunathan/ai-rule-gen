@@ -1,0 +1,40 @@
+- ruleID: messaging-config-xml-00010
+  description: Default of check-for-live-server on replication-primary HA policy changed from false (EAP 7.0) to true (EAP 7.1+)
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    In JBoss EAP 7.0, when the `replication-primary` HA policy was configured without specifying `check-for-live-server`, the attribute defaulted to `false`. In JBoss EAP 7.1 and later, the default is `true`, which changes failover startup behavior.
+
+    ### Migration Steps
+
+    1. Review every `replication-primary` policy that omits `check-for-live-server`.
+    2. If the previous `false` behavior is required, set the attribute explicitly:
+
+       ```
+       /subsystem=messaging-activemq/server=default/ha-policy=replication-primary:write-attribute(name=check-for-live-server,value=false)
+       ```
+
+    3. Otherwise validate that the new `true` default is correct for your topology.
+
+    ### Additional Info
+
+    - The change applies starting in EAP 7.1 and remains in EAP 8.0.
+    - A `reload-required` server state is produced when the attribute is set.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/#messaging_configuration_changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='subsystem' and starts-with(namespace-uri(), 'urn:jboss:domain:messaging-activemq:')]//*[local-name()='replication-primary' and not(@check-for-live-server)]
+        filepaths:
+            - standalone.xml
+            - standalone-full.xml
+            - standalone-ha.xml
+            - standalone-full-ha.xml
+            - domain.xml

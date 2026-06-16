@@ -1,0 +1,391 @@
+- ruleID: jakarta-dependency-00010
+  description: javax.servlet:javax.servlet-api is replaced by jakarta.servlet:jakarta.servlet-api in Jakarta EE 9+
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3.0 uses Jakarta EE 10. The `javax.servlet:javax.servlet-api` dependency must be replaced with `jakarta.servlet:jakarta.servlet-api`. All `javax.servlet.*` imports must also be updated to `jakarta.servlet.*`.
+
+    ### Before
+    ```xml
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+    </dependency>
+    ```
+
+    ### After
+    ```xml
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - All Jakarta EE specs in Spring Boot 3 use the `jakarta.*` namespace
+    - OpenRewrite recipes can help automate this migration
+    - Be careful of transitive `javax.servlet` dependencies
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: javax.servlet.javax.servlet-api
+        lowerbound: 0.0.0
+- ruleID: jakarta-import-00010
+  description: javax.servlet package renamed to jakarta.servlet in Jakarta EE 9+
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed all `javax.*` packages to `jakarta.*`. Replace `javax.servlet` imports with `jakarta.servlet`. Spring Boot 3.0 uses the Servlet 6.0 specification under the `jakarta.servlet` namespace.
+
+    ### Before
+    ```java
+    import javax.servlet.http.HttpServletRequest;
+    import javax.servlet.Filter;
+    ```
+
+    ### After
+    ```java
+    import jakarta.servlet.http.HttpServletRequest;
+    import jakarta.servlet.Filter;
+    ```
+
+    ### Additional Info
+    - Update all `javax.servlet.*` imports to `jakarta.servlet.*`
+    - Replace the `javax.servlet:javax.servlet-api` dependency with `jakarta.servlet:jakarta.servlet-api`
+    - Use OpenRewrite or IntelliJ migration tooling to automate this
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.servlet
+        location: PACKAGE
+- ruleID: jakarta-import-00020
+  description: javax.persistence package renamed to jakarta.persistence in JPA 3.1
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.persistence` to `jakarta.persistence`. Spring Boot 3.0 uses the JPA 3.1 specification under the `jakarta.persistence` namespace.
+
+    ### Before
+    ```java
+    import javax.persistence.Entity;
+    import javax.persistence.EntityManager;
+    ```
+
+    ### After
+    ```java
+    import jakarta.persistence.Entity;
+    import jakarta.persistence.EntityManager;
+    ```
+
+    ### Additional Info
+    - All JPA annotations and types moved from `javax.persistence` to `jakarta.persistence`
+    - Hibernate 6.1 (used by Spring Boot 3) requires `jakarta.persistence`
+    - OpenRewrite recipes can automate this
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.persistence
+        location: PACKAGE
+- ruleID: jakarta-import-00030
+  description: javax.annotation package renamed to jakarta.annotation in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.annotation` to `jakarta.annotation`. Annotations like `@PostConstruct`, `@PreDestroy`, and `@Resource` now live under `jakarta.annotation`.
+
+    ### Before
+    ```java
+    import javax.annotation.PostConstruct;
+    import javax.annotation.PreDestroy;
+    ```
+
+    ### After
+    ```java
+    import jakarta.annotation.PostConstruct;
+    import jakarta.annotation.PreDestroy;
+    ```
+
+    ### Additional Info
+    - Common affected annotations: `@PostConstruct`, `@PreDestroy`, `@Resource`, `@Priority`
+    - The `javax.annotation:javax.annotation-api` dependency should be replaced with `jakarta.annotation:jakarta.annotation-api`
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.annotation
+        location: PACKAGE
+- ruleID: jakarta-import-00040
+  description: javax.validation package renamed to jakarta.validation in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.validation` to `jakarta.validation`. Bean Validation 3.0 uses the `jakarta.validation` namespace.
+
+    ### Before
+    ```java
+    import javax.validation.Valid;
+    import javax.validation.constraints.NotNull;
+    ```
+
+    ### After
+    ```java
+    import jakarta.validation.Valid;
+    import jakarta.validation.constraints.NotNull;
+    ```
+
+    ### Additional Info
+    - All Bean Validation annotations moved: `@NotNull`, `@Size`, `@Pattern`, etc.
+    - `@Valid` and `@Validated` semantics are unchanged
+    - Replace `javax.validation:validation-api` with `jakarta.validation:jakarta.validation-api`
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.validation
+        location: PACKAGE
+- ruleID: jakarta-import-00050
+  description: javax.transaction package renamed to jakarta.transaction in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.transaction` to `jakarta.transaction`. JTA 2.0 uses the `jakarta.transaction` namespace.
+
+    ### Before
+    ```java
+    import javax.transaction.Transactional;
+    ```
+
+    ### After
+    ```java
+    import jakarta.transaction.Transactional;
+    ```
+
+    ### Additional Info
+    - Use Spring's `org.springframework.transaction.annotation.Transactional` for programmatic Spring transaction management, or `jakarta.transaction.Transactional` for the JTA standard variant
+    - Replace `javax.transaction:javax.transaction-api` with `jakarta.transaction:jakarta.transaction-api`
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.transaction
+        location: PACKAGE
+- ruleID: jakarta-import-00060
+  description: javax.ejb package renamed to jakarta.ejb in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.ejb` to `jakarta.ejb`. Update imports accordingly when using EJB APIs alongside Spring Boot 3.
+
+    ### Before
+    ```java
+    import javax.ejb.Stateless;
+    ```
+
+    ### After
+    ```java
+    import jakarta.ejb.Stateless;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ejb
+        location: PACKAGE
+- ruleID: jakarta-import-00070
+  description: javax.jms package renamed to jakarta.jms in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.jms` to `jakarta.jms`. JMS 3.0 uses the `jakarta.jms` namespace.
+
+    ### Before
+    ```java
+    import javax.jms.Queue;
+    import javax.jms.MessageListener;
+    ```
+
+    ### After
+    ```java
+    import jakarta.jms.Queue;
+    import jakarta.jms.MessageListener;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.jms
+        location: PACKAGE
+- ruleID: jakarta-import-00080
+  description: javax.mail package renamed to jakarta.mail in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.mail` to `jakarta.mail`. Update imports accordingly.
+
+    ### Before
+    ```java
+    import javax.mail.Session;
+    import javax.mail.internet.MimeMessage;
+    ```
+
+    ### After
+    ```java
+    import jakarta.mail.Session;
+    import jakarta.mail.internet.MimeMessage;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.mail
+        location: PACKAGE
+- ruleID: jakarta-import-00090
+  description: javax.ws.rs package renamed to jakarta.ws.rs in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.ws.rs` to `jakarta.ws.rs`. JAX-RS 3.1 uses the `jakarta.ws.rs` namespace.
+
+    ### Before
+    ```java
+    import javax.ws.rs.Path;
+    import javax.ws.rs.GET;
+    ```
+
+    ### After
+    ```java
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.GET;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ws.rs
+        location: PACKAGE
+- ruleID: jakarta-import-00100
+  description: javax.xml.bind (JAXB) package renamed to jakarta.xml.bind in Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Jakarta EE 9+ renamed `javax.xml.bind` (JAXB) to `jakarta.xml.bind`. JAXB 4.0 uses the `jakarta.xml.bind` namespace.
+
+    ### Before
+    ```java
+    import javax.xml.bind.JAXBContext;
+    import javax.xml.bind.annotation.XmlRootElement;
+    ```
+
+    ### After
+    ```java
+    import jakarta.xml.bind.JAXBContext;
+    import jakarta.xml.bind.annotation.XmlRootElement;
+    ```
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#jakarta-ee
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.xml.bind
+        location: PACKAGE

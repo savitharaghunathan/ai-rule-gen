@@ -1,0 +1,343 @@
+- ruleID: data-import-00010
+  description: FlywayConfigurationCustomizer is now invoked after Callback and JavaMigration beans are added, changing the customization order
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3.0 uses Flyway 9.0 by default. `FlywayConfigurationCustomizer` beans are now called to customize the `FluentConfiguration` AFTER any `Callback` and `JavaMigration` beans have been added. If your customizer adds callbacks or Java migrations, it may overwrite or duplicate auto-registered ones.
+
+    ### Before
+    ```java
+    @Bean
+    public FlywayConfigurationCustomizer flywayCustomizer() {
+        return configuration -> configuration.callbacks(new MyCallback());
+    }
+    ```
+
+    ### After
+    ```java
+    @Bean
+    public FlywayConfigurationCustomizer flywayCustomizer() {
+        // Be aware: existing Callback beans were already added before this runs.
+        return configuration -> configuration.callbacks(
+            Stream.concat(
+                Arrays.stream(configuration.getCallbacks()),
+                Stream.of(new MyCallback())
+            ).toArray(Callback[]::new));
+    }
+    ```
+
+    ### Additional Info
+    - Review the [Flyway 9.0 release notes](https://flywaydb.org/documentation/learnmore/releaseNotes#9.0.0) for SQL-level breaking changes.
+    - If you define `Callback` or `JavaMigration` beans AND a customizer that adds callbacks/migrations, ensure intended callbacks are preserved.
+    - The new ordering ensures customizers always have the final word but may require additive logic.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#flyway).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#flyway
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer
+        location: IMPORT
+- ruleID: data-dependency-00010
+  description: Hibernate dependencies now use the org.hibernate.orm group ID; org.hibernate:hibernate-core is replaced
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3.0 updates dependency management and `spring-boot-starter-data-jpa` to use the new `org.hibernate.orm` group ID for Hibernate dependencies. The old `org.hibernate:hibernate-core` coordinates have been replaced.
+
+    ### Migration Steps
+    1. Update any explicit Hibernate `<dependency>` declarations: change `<groupId>org.hibernate</groupId>` to `<groupId>org.hibernate.orm</groupId>`.
+    2. Remove any version overrides that pin Hibernate 5.x — Spring Boot 3.0 defaults to Hibernate 6.1.
+    3. Review the [Hibernate 6.0](https://docs.jboss.org/hibernate/orm/6.0/migration-guide/migration-guide.html) and [6.1](https://docs.jboss.org/hibernate/orm/6.1/migration-guide/migration-guide.html) migration guides for JPQL/criteria/native-query breaking changes.
+    4. Hibernate 6 requires Jakarta Persistence (`jakarta.persistence`, not `javax.persistence`) — coordinate this change with the broader Jakarta EE migration.
+
+    See the [Spring Boot 3 migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#hibernate-61).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#hibernate-61
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.hibernate-core
+        lowerbound: 0.0.0
+- ruleID: data-pattern-00010
+  description: spring.jpa.hibernate.use-new-id-generator-mappings was removed; Hibernate 6 only supports the new ID generator mappings
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `spring.jpa.hibernate.use-new-id-generator-mappings` configuration property has been removed because Hibernate 6 no longer supports switching back to the old (Hibernate 4-style) ID generator mappings.
+
+    ### Migration Steps
+    1. Remove `spring.jpa.hibernate.use-new-id-generator-mappings` from `application.properties`, `application.yml`, and any profile-specific config files.
+    2. If your application relied on `use-new-id-generator-mappings=false`, audit `@GeneratedValue` usages — particularly `GenerationType.AUTO` and `GenerationType.SEQUENCE` — which may now produce different sequence/table names.
+    3. Verify generated DDL against existing database schemas; sequence and identity column conventions may differ.
+    4. See the [Hibernate 6.0 migration guide](https://docs.jboss.org/hibernate/orm/6.0/migration-guide/migration-guide.html#identifier-generators) for ID generator behavioural changes.
+
+    Reference: [Spring Boot 3 migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#hibernate-61).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#hibernate-61
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: spring\.jpa\.hibernate\.use-new-id-generator-mappings
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: data-dependency-00020
+  description: Spring Boot auto-configuration and dependency management for Flapdoodle Embedded MongoDB were removed
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Auto-configuration and dependency management for Flapdoodle embedded MongoDB has been removed in Spring Boot 3.0. The `de.flapdoodle.embed:de.flapdoodle.embed.mongo` dependency is no longer wired up automatically.
+
+    ### Migration Steps
+    1. Replace the dependency with the auto-configuration library provided by the Flapdoodle project: `de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring`.
+    2. Alternatively, migrate the test setup to use [Testcontainers](https://www.testcontainers.org/) with the official MongoDB image.
+    3. Remove any `spring.mongodb.embedded.*` properties from your configuration — they are no longer recognized.
+    4. Update test fixtures that relied on the embedded MongoDB starting on an ephemeral port.
+
+    See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#embedded-mongodb).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#embedded-mongodb
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: de.flapdoodle.embed.de.flapdoodle.embed.mongo
+        lowerbound: 0.0.0
+- ruleID: data-pattern-00020
+  description: r2dbc-bom.version override property was removed because R2DBC 1.0 no longer publishes a BOM
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3.0 uses R2DBC 1.0, which no longer publishes a bill of materials (BOM). The `r2dbc-bom.version` Spring Boot dependency management property can no longer be used to override R2DBC's version.
+
+    ### Migration Steps
+    1. Remove `<r2dbc-bom.version>` from your `pom.xml` `<properties>` block (or `r2dbc-bom.version` from `gradle.properties`).
+    2. Use the new individual module version properties instead:
+       - `oracle-r2dbc.version` for `com.oracle.database.r2dbc:oracle-r2dbc`
+       - `r2dbc-h2.version` for `io.r2dbc:r2dbc-h2`
+       - `r2dbc-pool.version` for `io.r2dbc:r2dbc-pool`
+       - `r2dbc-postgres.version` for `io.r2dbc:r2dbc-postgresql`
+       - `r2dbc-proxy.version` for `io.r2dbc:r2dbc-proxy`
+       - `r2dbc-spi.version` for `io.r2dbc:r2dbc-spi`
+    3. Validate the resolved R2DBC driver versions match your database server compatibility matrix.
+
+    Reference: [Spring Boot 3 migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#r2dbc-10).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#r2dbc-10
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: r2dbc-bom\.version
+        filePattern: .*(pom\.xml|build\.gradle|build\.gradle\.kts|gradle\.properties)
+- ruleID: data-import-00020
+  description: Spring Boot 3.0 removed auto-configuration for the Elasticsearch high-level REST client; use the new Elasticsearch Java client
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Support for Elasticsearch's high-level REST client (`RestHighLevelClient`) has been removed in Spring Boot 3.0. Auto-configuration now wires up Elasticsearch's new Java client (`co.elastic.clients.elasticsearch.ElasticsearchClient`).
+
+    ### Before
+    ```java
+    import org.elasticsearch.client.RestHighLevelClient;
+
+    @Autowired
+    private RestHighLevelClient client;
+    ```
+
+    ### After
+    ```java
+    import co.elastic.clients.elasticsearch.ElasticsearchClient;
+
+    @Autowired
+    private ElasticsearchClient client;
+    ```
+
+    ### Additional Info
+    - The `org.elasticsearch.client:elasticsearch-rest-high-level-client` dependency is no longer managed; replace it with `co.elastic.clients:elasticsearch-java`.
+    - The new client's API is fluent and typed — request/response classes have entirely different shapes.
+    - Spring Data Elasticsearch templates that built on the high-level REST client (e.g., `ElasticsearchRestTemplate`) are also removed; use `ElasticsearchTemplate` based on the new client.
+    - See [Spring Boot reference docs — Elasticsearch](https://docs.spring.io/spring-boot/docs/3.0.x/reference/html/data.html#data.nosql.elasticsearch).
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#elasticsearch-clients-and-templates).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#elasticsearch-clients-and-templates
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.elasticsearch.client.RestHighLevelClient
+        location: IMPORT
+- ruleID: data-import-00030
+  description: ElasticsearchRestTemplate (built on the high-level REST client) is removed; use ElasticsearchTemplate on the new Java client
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Support for the Spring Data Elasticsearch template that built on top of the high-level REST client (`ElasticsearchRestTemplate`) has been removed. Use the new `ElasticsearchTemplate` that builds upon the new Elasticsearch Java client.
+
+    ### Before
+    ```java
+    import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+
+    @Autowired
+    private ElasticsearchRestTemplate template;
+    ```
+
+    ### After
+    ```java
+    import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
+
+    @Autowired
+    private ElasticsearchTemplate template;
+    ```
+
+    ### Additional Info
+    - Query builder APIs differ between the legacy and new clients — `NativeSearchQueryBuilder` is replaced by `NativeQueryBuilder`.
+    - Operations are type-safe and use the new client's `co.elastic.clients.elasticsearch._types` request/response shapes.
+    - Reactive equivalent: `ReactiveElasticsearchRestTemplate` is also removed in favor of `ReactiveElasticsearchTemplate`.
+    - See [Spring Data Elasticsearch reference](https://docs.spring.io/spring-data/elasticsearch/docs/current/reference/html/) and the [Spring Boot 3 migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#elasticsearch-clients-and-templates).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#elasticsearch-clients-and-templates
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate
+        location: IMPORT
+- ruleID: data-import-00040
+  description: ReactiveElasticsearchRestClientAutoConfiguration renamed to ReactiveElasticsearchClientAutoConfiguration and moved to a new package
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    `ReactiveElasticsearchRestClientAutoConfiguration` has been renamed to `ReactiveElasticsearchClientAutoConfiguration` and moved from `org.springframework.boot.autoconfigure.data.elasticsearch` to `org.springframework.boot.autoconfigure.elasticsearch`.
+
+    ### Before
+    ```java
+    import org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveElasticsearchRestClientAutoConfiguration;
+
+    @SpringBootApplication(exclude = ReactiveElasticsearchRestClientAutoConfiguration.class)
+    public class App { }
+    ```
+
+    ### After
+    ```java
+    import org.springframework.boot.autoconfigure.elasticsearch.ReactiveElasticsearchClientAutoConfiguration;
+
+    @SpringBootApplication(exclude = ReactiveElasticsearchClientAutoConfiguration.class)
+    public class App { }
+    ```
+
+    ### Additional Info
+    - Update any `@SpringBootApplication(exclude=...)` or `@EnableAutoConfiguration(exclude=...)` references.
+    - Update `spring.autoconfigure.exclude` entries in `application.properties`/`.yml`.
+    - Update `META-INF/spring.factories` or `AutoConfiguration.imports` files that reference the old class name.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#elasticsearch-clients-and-templates).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#elasticsearch-clients-and-templates
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveElasticsearchRestClientAutoConfiguration
+        location: IMPORT
+- ruleID: data-dependency-00030
+  description: MySQL JDBC driver coordinates changed from mysql:mysql-connector-java to com.mysql:mysql-connector-j
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The coordinates of the MySQL JDBC driver have changed. The artifact `mysql:mysql-connector-java` is replaced by `com.mysql:mysql-connector-j` in MySQL Connector/J 8.0.31+.
+
+    ### Before
+    ```xml
+    <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+    </dependency>
+    ```
+
+    ### After
+    ```xml
+    <dependency>
+        <groupId>com.mysql</groupId>
+        <artifactId>mysql-connector-j</artifactId>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - Spring Boot 3.0's dependency management knows the new coordinates; you can omit the `<version>` and let Spring Boot manage it.
+    - The driver class name (`com.mysql.cj.jdbc.Driver`) is unchanged.
+    - Connection URLs, properties, and the JDBC driver class do not change.
+    - Update Gradle build files similarly: `runtimeOnly 'com.mysql:mysql-connector-j'`.
+    - See the [migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#mysql-jdbc-driver).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#mysql-jdbc-driver
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: mysql.mysql-connector-java
+        lowerbound: 0.0.0

@@ -1,0 +1,562 @@
+- ruleID: dependencies-dependency-00010
+  description: Dependency management for Apache Johnzon removed in favor of Eclipse Yasson
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed dependency management for Apache Johnzon (`org.apache.johnzon:johnzon-jsonb`) in favor of Eclipse Yasson. A Jakarta EE 10-compatible version of Apache Johnzon can still be used with Spring Boot 3, but you must now specify a version in your dependency declaration.
+
+    ### Migration Steps
+    - Prefer migrating to Eclipse Yasson (`org.eclipse:yasson`) — this is what Spring Boot 3 now manages.
+    - If you must continue using Apache Johnzon, pin a Jakarta EE 10-compatible version explicitly (`1.2.19` or newer with the `-jakarta` classifier, or `2.0.0+`).
+    - Verify that your JSON-B provider configuration still resolves the correct binding after the change.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — JSON-B](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#json-b).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#json-b
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.johnzon.johnzon-jsonb
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00020
+  description: Dependency management for ANTLR 2 (antlr:antlr) removed; must specify version explicitly if used
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 no longer manages the version of `antlr:antlr` (ANTLR 2). If your project still depends on ANTLR 2, you must specify an explicit version (e.g., `2.7.7`) in your `pom.xml` or `build.gradle`.
+
+    ### Migration Steps
+    - Locate the `antlr:antlr` dependency in your build file (it may be inherited transitively).
+    - Add an explicit `<version>` element (or `version` constraint in Gradle) for the version your code needs.
+    - Consider migrating to ANTLR 4 (`org.antlr:antlr4-runtime`) if feasible, as ANTLR 2 is long unmaintained.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — ANTLR 2](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#antlr-2).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#antlr-2
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: antlr.antlr
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00030
+  description: Dependency management for RxJava 1.x removed; RxJava 3 dependency management added in its place
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed dependency management for RxJava 1.x (`io.reactivex:rxjava`) and replaced it with RxJava 3 (`io.reactivex.rxjava3:rxjava`).
+
+    ### Migration Steps
+    - Remove `io.reactivex:rxjava` from your build configuration.
+    - Add `io.reactivex.rxjava3:rxjava` (or pin a version of RxJava 1.x explicitly if you cannot upgrade).
+    - Update imports: `rx.*` packages (RxJava 1.x) move to `io.reactivex.rxjava3.*` (RxJava 3).
+    - Review the [RxJava 3 What's Different in 3.0 guide](https://github.com/ReactiveX/RxJava/wiki/What's-different-in-3.0) — there are breaking API changes between 1.x and 3.x.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — RxJava](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#rxjava).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#rxjava
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: io.reactivex.rxjava
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00040
+  description: Dependency management for RxJava 2.x removed; RxJava 3 dependency management added in its place
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed dependency management for RxJava 2.x (`io.reactivex.rxjava2:rxjava`) and replaced it with RxJava 3 (`io.reactivex.rxjava3:rxjava`).
+
+    ### Migration Steps
+    - Remove `io.reactivex.rxjava2:rxjava` from your build configuration.
+    - Add `io.reactivex.rxjava3:rxjava` (or pin a version of RxJava 2.x explicitly if you cannot upgrade).
+    - Update imports: `io.reactivex.*` packages (RxJava 2.x) move to `io.reactivex.rxjava3.*` (RxJava 3).
+    - Review the [RxJava 3 What's Different in 3.0 guide](https://github.com/ReactiveX/RxJava/wiki/What's-different-in-3.0) — there are breaking API changes between 2.x and 3.x.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — RxJava](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#rxjava).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#rxjava
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: io.reactivex.rxjava2.rxjava
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00050
+  description: Dependency management for Hazelcast Hibernate removed; specify version explicitly or use hibernate-jcache
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 no longer manages the version of Hazelcast Hibernate (`com.hazelcast:hazelcast-hibernate53` and related artifacts). Spring Boot does not depend on Hazelcast Hibernate, so it no longer has an opinion about its version.
+
+    ### Migration Steps
+    - If you wish to continue using Hazelcast Hibernate, pin an explicit version in your build file (e.g., `5.2.0`).
+    - Alternatively, consider switching to `org.hibernate.orm:hibernate-jcache` as the second-level cache provider — this is the recommended replacement.
+    - Verify that the chosen Hazelcast Hibernate version is compatible with Hibernate 6.1 (used by Spring Boot 3).
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Hazelcast Hibernate Removed](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#hazelcast-hibernate-removed).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#hazelcast-hibernate-removed
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.hazelcast.hazelcast-hibernate53
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00060
+  description: Dependency management for Hazelcast Hibernate removed; specify version explicitly or use hibernate-jcache
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 no longer manages the version of Hazelcast Hibernate (`com.hazelcast:hazelcast-hibernate52` and related artifacts). Spring Boot does not depend on Hazelcast Hibernate, so it no longer has an opinion about its version.
+
+    ### Migration Steps
+    - If you wish to continue using Hazelcast Hibernate, pin an explicit version in your build file.
+    - Alternatively, consider switching to `org.hibernate.orm:hibernate-jcache` as the second-level cache provider — this is the recommended replacement.
+    - Verify that the chosen Hazelcast Hibernate version is compatible with Hibernate 6.1 (used by Spring Boot 3).
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Hazelcast Hibernate Removed](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#hazelcast-hibernate-removed).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#hazelcast-hibernate-removed
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.hazelcast.hazelcast-hibernate52
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00070
+  description: Ehcache3 ehcache module now declared with a jakarta classifier to support Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    To support Jakarta EE 9+, Spring Boot 3 now declares the Ehcache3 `org.ehcache:ehcache` module with a `jakarta` classifier. Any explicit declaration of this artifact in your `pom.xml` or `build.gradle` should be updated to use the same classifier so the Jakarta-compatible JAR is resolved.
+
+    ### Before
+    ```xml
+    <dependency>
+      <groupId>org.ehcache</groupId>
+      <artifactId>ehcache</artifactId>
+    </dependency>
+    ```
+
+    ### After
+    ```xml
+    <dependency>
+      <groupId>org.ehcache</groupId>
+      <artifactId>ehcache</artifactId>
+      <classifier>jakarta</classifier>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - Without the `jakarta` classifier you will get the legacy `javax.cache` JAR, which is incompatible with Jakarta EE 9+ APIs used by Spring Boot 3.
+    - Ehcache3 version `3.10.0+` is required for the `-jakarta` variant.
+    - See [Spring Boot 3 Migration Guide — Ehcache3](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#ehcache3).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#ehcache3
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.ehcache.ehcache
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00080
+  description: Ehcache3 ehcache-transactions module now declared with a jakarta classifier to support Jakarta EE 9+
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    To support Jakarta EE 9+, Spring Boot 3 now declares the Ehcache3 `org.ehcache:ehcache-transactions` module with a `jakarta` classifier. Any explicit declaration of this artifact in your `pom.xml` or `build.gradle` should be updated to use the same classifier so the Jakarta-compatible JAR is resolved.
+
+    ### Before
+    ```xml
+    <dependency>
+      <groupId>org.ehcache</groupId>
+      <artifactId>ehcache-transactions</artifactId>
+    </dependency>
+    ```
+
+    ### After
+    ```xml
+    <dependency>
+      <groupId>org.ehcache</groupId>
+      <artifactId>ehcache-transactions</artifactId>
+      <classifier>jakarta</classifier>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - Without the `jakarta` classifier you will get the legacy `javax.transaction` JAR, which is incompatible with Jakarta EE 9+ APIs used by Spring Boot 3.
+    - Ehcache3 version `3.10.0+` is required for the `-jakarta` variant.
+    - See [Spring Boot 3 Migration Guide — Ehcache3](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#ehcache3).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#ehcache3
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.ehcache.ehcache-transactions
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00090
+  description: Apache ActiveMQ (Classic) support removed in Spring Boot 3.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed support for Apache ActiveMQ (Classic). The auto-configuration, starter, and dependency management for `activemq-client` and `spring-boot-starter-activemq` are gone.
+
+    ### Migration Steps
+    - Migrate to ActiveMQ Artemis (`org.apache.activemq:artemis-jakarta-client` and `spring-boot-starter-artemis`), which is the supported broker in Spring Boot 3.
+    - Alternatively, pin ActiveMQ Classic explicitly and provide your own configuration — note that ActiveMQ Classic 5.x is `javax.jms`-based and will not work with Jakarta EE 9+.
+    - Update any `@JmsListener` and `ConnectionFactory` beans accordingly.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.activemq.activemq-client
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00100
+  description: spring-boot-starter-activemq removed in Spring Boot 3.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed the `spring-boot-starter-activemq` starter as support for Apache ActiveMQ (Classic) was dropped.
+
+    ### Migration Steps
+    - Replace `spring-boot-starter-activemq` with `spring-boot-starter-artemis` and migrate to ActiveMQ Artemis.
+    - Update `spring.activemq.*` configuration properties to their `spring.artemis.*` equivalents.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-activemq
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00110
+  description: Atomikos transaction manager support removed in Spring Boot 3.0
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed support for Atomikos. The auto-configuration and dependency management for `com.atomikos:*` artifacts are gone.
+
+    ### Migration Steps
+    - Migrate to a different JTA transaction manager. As of Spring Boot 3 there is no first-class auto-configured replacement — `spring-boot-starter-jta-atomikos` is removed and `spring-boot-starter-jta-bitronix` was already removed earlier.
+    - Consider switching to a non-JTA approach (e.g., chained transactions on a single XA-capable database) where possible.
+    - If you must stay on Atomikos, pin an explicit version that supports Jakarta EE 9+ (`com.atomikos:transactions:6.0.0+`) and wire the beans manually.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.atomikos.transactions
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00120
+  description: spring-boot-starter-jta-atomikos removed in Spring Boot 3.0
+  category: mandatory
+  effort: 9
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed the `spring-boot-starter-jta-atomikos` starter along with auto-configuration for Atomikos.
+
+    ### Migration Steps
+    - Remove `spring-boot-starter-jta-atomikos` from your build.
+    - Replace with manually-wired JTA support using an Atomikos `6.x+` (Jakarta-compatible) release, or migrate off Atomikos entirely.
+    - Update `spring.jta.atomikos.*` configuration properties — they are no longer recognized.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-jta-atomikos
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00130
+  description: EhCache 2 (net.sf.ehcache) support removed in Spring Boot 3.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed support for EhCache 2 (`net.sf.ehcache:ehcache`). Dependency management and auto-configuration are gone.
+
+    ### Migration Steps
+    - Migrate to Ehcache 3 (`org.ehcache:ehcache` with the `jakarta` classifier — see the Ehcache3 section of the migration guide).
+    - Update XML configurations: EhCache 2 used `ehcache.xml` with a specific schema; Ehcache 3 uses a different `ehcache.xml` schema and Java configuration.
+    - `net.sf.ehcache.*` imports must be replaced with `org.ehcache.*` equivalents.
+    - Cache regions, eviction policies, and persistence options have different APIs in Ehcache 3.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: net.sf.ehcache.ehcache
+        lowerbound: 0.0.0
+- ruleID: dependencies-import-00010
+  description: EhCache 2 (net.sf.ehcache) support removed in Spring Boot 3.0; migrate to Ehcache 3 (org.ehcache)
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed support for EhCache 2. Any code that imports from `net.sf.ehcache` will no longer be auto-configured by Spring Boot.
+
+    ### Before
+    ```java
+    import net.sf.ehcache.CacheManager;
+    import net.sf.ehcache.Cache;
+    ```
+
+    ### After
+    ```java
+    import org.ehcache.CacheManager;
+    import org.ehcache.Cache;
+    ```
+
+    ### Additional Info
+    - The Ehcache 3 API is substantially different — `CacheManager` is built via `CacheManagerBuilder`, and cache configuration moves from XML to Java builder calls.
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: net.sf.ehcache
+        location: PACKAGE
+- ruleID: dependencies-dependency-00140
+  description: Hazelcast 3 support removed in Spring Boot 3.0; upgrade to Hazelcast 4 or later
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed support for Hazelcast 3.x. Auto-configuration only recognizes Hazelcast 4 or later, and the dependency management for Hazelcast 3 client/server artifacts is gone.
+
+    ### Migration Steps
+    - Upgrade to Hazelcast 4 or later (5.x is recommended for Jakarta EE compatibility).
+    - Update imports: many APIs moved between Hazelcast 3.x and 4.x (e.g., `IMap` and `IList` configuration APIs).
+    - Replace `com.hazelcast.config.Config` setup if you used Hazelcast 3.x XML schemas — the schema changed in 4.x.
+    - Re-test client/server compatibility — Hazelcast 4 clients cannot connect to Hazelcast 3 clusters.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.hazelcast.hazelcast
+        upperbound: 4.0.0
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00150
+  description: Hazelcast 3 client artifact removed in Spring Boot 3.0; Hazelcast 4+ uses a unified hazelcast artifact
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 dropped Hazelcast 3 support. The Hazelcast 3 split `hazelcast-client` artifact is gone — Hazelcast 4+ ships client and member code in the single `com.hazelcast:hazelcast` artifact.
+
+    ### Migration Steps
+    - Remove `com.hazelcast:hazelcast-client` from your build configuration.
+    - Add `com.hazelcast:hazelcast` (4.0.0 or later) — this artifact contains both client and member code.
+    - Update any `ClientConfig` / `HazelcastClient.newHazelcastClient(...)` usages — the API moved packages in 4.x.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: com.hazelcast.hazelcast-client
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00160
+  description: Apache Solr support removed in Spring Boot 3.0; Http2SolrClient is not compatible with Jetty 11
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed support for Apache Solr because the Jetty-based client `Http2SolrClient` is not compatible with Jetty 11 (which Spring Boot 3 uses). Auto-configuration, the `spring-boot-starter-data-solr` starter, and dependency management for `solr-solrj` are gone.
+
+    ### Migration Steps
+    - Remove `org.apache.solr:solr-solrj` and `spring-boot-starter-data-solr` from your build.
+    - Implement Solr access manually using an HTTP client compatible with your servlet container (or use Solr's REST API directly).
+    - Consider migrating to Elasticsearch or OpenSearch if Solr-specific features aren't required.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.apache.solr.solr-solrj
+        lowerbound: 0.0.0
+- ruleID: dependencies-dependency-00170
+  description: spring-boot-starter-data-solr removed in Spring Boot 3.0
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3 has removed the `spring-boot-starter-data-solr` starter. Spring Data Solr itself was already discontinued upstream, and Spring Boot 3 dropped Apache Solr support entirely.
+
+    ### Migration Steps
+    - Remove `spring-boot-starter-data-solr` from your build.
+    - Remove any Spring Data Solr repositories (`SolrCrudRepository`, `@SolrDocument`, etc.) — these will not be auto-configured.
+    - Either implement Solr access manually via Solr's REST API, or migrate to Spring Data Elasticsearch / OpenSearch.
+
+    ### Additional Info
+    - See [Spring Boot 3 Migration Guide — Other Removals](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals).
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#other-removals
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.springframework.boot.spring-boot-starter-data-solr
+        lowerbound: 0.0.0

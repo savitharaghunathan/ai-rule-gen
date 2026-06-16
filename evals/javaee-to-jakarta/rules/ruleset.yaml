@@ -1,0 +1,7 @@
+name: jakarta-ee/java-ee
+description: Rules for migrating from java-ee to jakarta-ee
+labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8

@@ -1,0 +1,24 @@
+- ruleID: observability-pattern-00010
+  description: Spring Boot Actuator endpoints (management.endpoint.*) must be replaced by Quarkus equivalents
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot Actuator does not run in Quarkus. Migrate per concern:
+    - `management.endpoint.health.*` -> `quarkus-smallrye-health` exposes `/q/health`, `/q/health/live`, `/q/health/ready`.
+    - `management.endpoint.metrics.*` / Prometheus -> `quarkus-micrometer-registry-prometheus` exposes `/q/metrics`.
+    - `management.endpoint.info.*` -> `quarkus-info` extension exposes `/q/info`.
+    - Move the endpoints onto the management interface with `quarkus.management.enabled=true` and `quarkus.management.port=9000`.
+  links:
+    - url: https://quarkus.io/guides/smallrye-health
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: management\.endpoints?\.
+        filePattern: application.*\.(properties|ya?ml)

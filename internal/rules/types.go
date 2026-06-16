@@ -93,7 +93,7 @@ type JavaReferenced struct {
 	Pattern   string     `yaml:"pattern"`
 	Location  string     `yaml:"location,omitempty"`
 	Annotated *Annotated `yaml:"annotated,omitempty"`
-	Filepaths []string   `yaml:"filepaths,omitempty"`
+	Filepaths Filepaths  `yaml:"filepaths,omitempty"`
 }
 
 // Annotated filters by annotation presence.
@@ -141,7 +141,7 @@ type PythonReferenced struct {
 type BuiltinFilecontent struct {
 	Pattern     string   `yaml:"pattern"`
 	FilePattern string   `yaml:"filePattern,omitempty"`
-	Filepaths   []string `yaml:"filepaths,omitempty"`
+	Filepaths   Filepaths `yaml:"filepaths,omitempty"`
 }
 
 // BuiltinFile matches file name patterns.
@@ -153,20 +153,20 @@ type BuiltinFile struct {
 type BuiltinXML struct {
 	XPath      string            `yaml:"xpath"`
 	Namespaces map[string]string `yaml:"namespaces,omitempty"`
-	Filepaths  []string          `yaml:"filepaths,omitempty"`
+	Filepaths  Filepaths         `yaml:"filepaths,omitempty"`
 }
 
 // BuiltinJSON matches XPath expressions in JSON files.
 type BuiltinJSON struct {
-	XPath     string   `yaml:"xpath"`
-	Filepaths []string `yaml:"filepaths,omitempty"`
+	XPath     string    `yaml:"xpath"`
+	Filepaths Filepaths `yaml:"filepaths,omitempty"`
 }
 
 // BuiltinXMLPublicID matches DOCTYPE declarations.
 type BuiltinXMLPublicID struct {
 	Regex      string            `yaml:"regex"`
 	Namespaces map[string]string `yaml:"namespaces,omitempty"`
-	Filepaths  []string          `yaml:"filepaths,omitempty"`
+	Filepaths  Filepaths         `yaml:"filepaths,omitempty"`
 }
 
 // Java location constants.

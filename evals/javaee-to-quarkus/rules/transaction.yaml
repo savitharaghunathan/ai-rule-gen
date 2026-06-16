@@ -1,0 +1,359 @@
+- ruleID: transaction-import-00010
+  description: Quarkus uses Jakarta Transactions (jakarta.transaction); javax.transaction is renamed
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus's `quarkus-narayana-jta` extension implements Jakarta Transactions. All `javax.transaction.*` types (`@Transactional`, `UserTransaction`, `TransactionManager`, `Status`) must be re-imported from `jakarta.transaction.*`.
+
+    ### Before
+    ```java
+    import javax.transaction.Transactional;
+    import javax.transaction.UserTransaction;
+
+    @Transactional
+    public void process() { ... }
+    ```
+
+    ### After
+    ```java
+    import jakarta.transaction.Transactional;
+    import jakarta.transaction.UserTransaction;
+
+    @Transactional
+    public void process() { ... }
+    ```
+
+    ### Additional Info
+    - Prefer `@Transactional` on CDI beans over manual `UserTransaction` usage.
+    - For programmatic boundaries, prefer `io.quarkus.narayana.jta.QuarkusTransaction` over `UserTransaction`.
+    - Distributed transactions (JTS, REST-AT, WS-AT) are not supported.
+    - Set timeouts via `@TransactionConfiguration(timeout = ...)` or the `quarkus.transaction-manager.default-transaction-timeout` config property.
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.transaction*
+        location: PACKAGE
+- ruleID: transaction-change-00010
+  description: UserTransaction is the legacy API; prefer @Transactional or io.quarkus.narayana.jta.QuarkusTransaction in Quarkus
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus supports `jakarta.transaction.UserTransaction` for backwards compatibility but recommends `@Transactional` (declarative) or `io.quarkus.narayana.jta.QuarkusTransaction` (programmatic) for new code.
+
+    ### Before
+    ```java
+    @Inject UserTransaction transaction;
+
+    public void process() {
+        try {
+            transaction.begin();
+            // ... work ...
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+        }
+    }
+    ```
+
+    ### After
+    ```java
+    import io.quarkus.narayana.jta.QuarkusTransaction;
+
+    @Transactional
+    public void process() {
+        // ... work ...
+    }
+
+    // Or programmatically:
+    QuarkusTransaction.requiringNew().run(() -> {
+        // ... work ...
+    });
+    ```
+
+    ### Additional Info
+    - `@Transactional` on a CDI bean is the most idiomatic approach.
+    - `QuarkusTransaction.runner(...)` provides lambda-scoped transactions with timeouts and exception handlers.
+    - Re-import `UserTransaction` from `jakarta.transaction` if you keep it.
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.transaction.UserTransaction
+        location: FIELD
+- ruleID: transaction-change-00020
+  description: TransactionManager is provided by quarkus-narayana-jta in jakarta.transaction namespace
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Re-import `TransactionManager` from `jakarta.transaction`. Quarkus exposes it as a CDI bean via the `quarkus-narayana-jta` extension; call `tm.setRollbackOnly()` to programmatically mark a transaction for rollback.
+
+    ### Before
+    ```java
+    import javax.transaction.TransactionManager;
+    @Inject TransactionManager tm;
+    ```
+
+    ### After
+    ```java
+    import jakarta.transaction.TransactionManager;
+    @Inject TransactionManager tm;
+    ```
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.transaction.TransactionManager
+        location: FIELD
+- ruleID: transaction-annotation-00010
+  description: Spring's @Transactional is not used in Quarkus; the Jakarta Transactions annotation must be used instead
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Replace `org.springframework.transaction.annotation.Transactional` with `jakarta.transaction.Transactional`. The `propagation`, `isolation`, `readOnly`, and `rollbackFor` attributes don't map one-to-one — see the Quarkus transaction guide for the supported `TxType` values and `rollbackOn`/`dontRollbackOn`.
+
+    ### Before
+    ```java
+    import org.springframework.transaction.annotation.Transactional;
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void process() { ... }
+    ```
+
+    ### After
+    ```java
+    import jakarta.transaction.Transactional;
+    import jakarta.transaction.Transactional.TxType;
+
+    @Transactional(TxType.REQUIRES_NEW)
+    public void process() { ... }
+    ```
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.transaction.annotation.Transactional
+        location: ANNOTATION
+- ruleID: transaction-annotation-00020
+  description: EJB @TransactionAttribute maps to @Transactional in Quarkus
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `@TransactionAttribute(REQUIRED)` etc. with `@Transactional(TxType.REQUIRED)` from `jakarta.transaction`.
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.ejb.TransactionAttribute
+        location: ANNOTATION
+- ruleID: transaction-change-00030
+  description: Programmatic UserTransaction is the legacy approach; prefer @Transactional or QuarkusTransaction
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus supports `UserTransaction` but recommends `@Transactional` on the entry method, or `io.quarkus.narayana.jta.QuarkusTransaction` for programmatic transaction control. The latter integrates with the CDI request scope and auto-rolls back on leak.
+
+    ### Before
+    ```java
+    @Inject UserTransaction transaction;
+
+    public void work() {
+        try {
+            transaction.begin();
+            // ...work...
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+        }
+    }
+    ```
+
+    ### After (declarative)
+    ```java
+    @Transactional
+    public void work() {
+        // ...work...
+    }
+    ```
+
+    ### After (programmatic)
+    ```java
+    import io.quarkus.narayana.jta.QuarkusTransaction;
+
+    public void work() {
+        QuarkusTransaction.requiringNew().run(() -> {
+            // ...work...
+        });
+    }
+    ```
+
+    ### Additional Info
+    - You cannot use `UserTransaction` inside a method already running under `@Transactional` - it throws an exception.
+    - `QuarkusTransaction` provides finer-grained control (timeout, exception handler, semantics).
+  links:
+    - url: https://quarkus.io/guides/transaction#legacy-api-approach
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: jakarta.transaction.UserTransaction
+        location: FIELD
+- ruleID: transaction-annotation-00030
+  description: javax.transaction.Transactional must be migrated to jakarta.transaction.Transactional
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `javax.transaction.Transactional` with `jakarta.transaction.Transactional`. Quarkus exposes the Jakarta variant only.
+  links:
+    - url: https://quarkus.io/guides/transaction#declarative-approach
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.transaction.Transactional
+        location: ANNOTATION
+- ruleID: transaction-annotation-00040
+  description: '@TransactionalEventListener has no direct replacement; use CDI transaction-scoped events'
+  category: optional
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: 'Replace `@TransactionalEventListener` with CDI events filtered by transaction lifecycle: observe `@Initialized(TransactionScoped.class)`, `@BeforeDestroyed(TransactionScoped.class)`, or `@Destroyed(TransactionScoped.class)`.'
+  links:
+    - url: https://quarkus.io/guides/transaction#transaction-scope
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.transaction.event.TransactionalEventListener
+        location: ANNOTATION
+- ruleID: transaction-annotation-00050
+  description: javax.transaction.TransactionScoped must move to jakarta.transaction.TransactionScoped
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `javax.transaction.TransactionScoped` with `jakarta.transaction.TransactionScoped`.
+  links:
+    - url: https://quarkus.io/guides/transaction#transaction-scope
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.transaction.TransactionScoped
+        location: ANNOTATION
+- ruleID: transaction-import-00020
+  description: Quarkus uses Jakarta Transactions; migrate javax.transaction imports
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `javax.transaction.*` (e.g., `@Transactional`, `UserTransaction`, `TransactionManager`) with `jakarta.transaction.*`.
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.transaction
+        location: PACKAGE
+- ruleID: transaction-import-00030
+  description: Quarkus does not provide PlatformTransactionManager; use Jakarta @Transactional or UserTransaction
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus uses Narayana via `jakarta.transaction.UserTransaction` and `@Transactional`. Spring's `PlatformTransactionManager` and `TransactionTemplate` are not provided. Inject `UserTransaction` for programmatic control or annotate methods with `@Transactional`.
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.transaction.PlatformTransactionManager
+        location: IMPORT
+- ruleID: transaction-import-00040
+  description: Quarkus does not provide TransactionTemplate; use QuarkusTransaction utility or @Transactional
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Replace `TransactionTemplate.execute(...)` with the `io.quarkus.narayana.jta.QuarkusTransaction` utility (`requiringNew().run(...)`) or with `@jakarta.transaction.Transactional` on the calling method.
+  links:
+    - url: https://quarkus.io/guides/transaction
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.transaction.support.TransactionTemplate
+        location: IMPORT

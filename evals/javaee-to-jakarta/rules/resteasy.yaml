@@ -1,0 +1,829 @@
+- ruleID: resteasy-dependency-00010
+  description: resteasy-jackson-provider removed in JBoss EAP 8.0; use resteasy-jackson2-provider
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The provider org.jboss.resteasy:resteasy-jackson-provider has been removed in JBoss EAP 8.0. Replace it with org.jboss.resteasy:resteasy-jackson2-provider. Note that Jackson annotation packages also change from org.codehaus.jackson.annotate to com.fasterxml.jackson.annotation.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.resteasy.resteasy-jackson-provider
+        lowerbound: 0.0.0
+- ruleID: resteasy-dependency-00020
+  description: resteasy-jettison-provider removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The provider org.jboss.resteasy:resteasy-jettison-provider has been removed in JBoss EAP 8.0. Migrate to the recommended resteasy-jackson2-provider, or declare an explicit module dependency on org.jboss.resteasy.resteasy-jettison-provider via jboss-deployment-structure.xml if you must keep Jettison.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.resteasy.resteasy-jettison-provider
+        lowerbound: 0.0.0
+- ruleID: resteasy-dependency-00030
+  description: resteasy-yaml-provider removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The provider org.jboss.resteasy:resteasy-yaml-provider has been removed in JBoss EAP 8.0. The YAML provider was disabled by default since JBoss EAP 7 due to SnakeYAML security issues. Remove this dependency and migrate any YAML payload handling code to JSON or another supported format.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.jboss.resteasy.resteasy-yaml-provider
+        lowerbound: 0.0.0
+- ruleID: resteasy-annotation-00010
+  description: '@Suspend removed in JBoss EAP 8.0; use @Suspended'
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.jboss.resteasy.annotations.Suspend has been removed. Replace it with @jakarta.ws.rs.container.Suspended (the Jakarta REST asynchronous response annotation).'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.annotations.Suspend
+        location: ANNOTATION
+- ruleID: resteasy-import-00010
+  description: org.jboss.resteasy.spi.AsynchronousResponse removed; use jakarta.ws.rs.container.AsyncResponse
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    org.jboss.resteasy.spi.AsynchronousResponse has been removed in JBoss EAP 8.0. Replace it with jakarta.ws.rs.container.AsyncResponse.
+
+    ### Before
+    ```java
+    import org.jboss.resteasy.spi.AsynchronousResponse;
+    ```
+
+    ### After
+    ```java
+    import jakarta.ws.rs.container.AsyncResponse;
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.AsynchronousResponse
+        location: IMPORT
+- ruleID: resteasy-import-00020
+  description: org.jboss.resteasy.spi.StringConverter deprecated and removed; use jakarta.ws.rs.ext.ParamConverter
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.StringConverter is deprecated in RESTEasy 3.x and removed in JBoss EAP 8.0. Migrate the functionality to a jakarta.ws.rs.ext.ParamConverter implementation registered through a jakarta.ws.rs.ext.ParamConverterProvider.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.StringConverter
+        location: IMPORT
+- ruleID: resteasy-import-00030
+  description: SerializableProvider removed in JBoss EAP 8.0 (disabled since JBoss EAP 7 due to unsafe deserialization)
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.plugins.providers.SerializableProvider has been removed in JBoss EAP 8.0 (it was already disabled by default since JBoss EAP 7 because deserializing Java objects from untrusted sources is unsafe). Remove its usage; do not deserialize untrusted Java objects.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.plugins.providers.SerializableProvider
+        location: IMPORT
+- ruleID: resteasy-import-00040
+  description: PreProcessInterceptor removed; use Jakarta REST ContainerRequestFilter
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.PreProcessInterceptor has been removed. Replace it with jakarta.ws.rs.container.ContainerRequestFilter (the standard Jakarta REST request filter interface).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.PreProcessInterceptor
+        location: IMPORT
+- ruleID: resteasy-import-00050
+  description: PostProcessInterceptor removed; use Jakarta REST ContainerResponseFilter
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.PostProcessInterceptor has been removed. Replace it with jakarta.ws.rs.container.ContainerResponseFilter.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.PostProcessInterceptor
+        location: IMPORT
+- ruleID: resteasy-import-00060
+  description: ClientExecutionInterceptor removed; use Jakarta REST ClientRequestFilter
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.ClientExecutionInterceptor has been removed. Migrate to jakarta.ws.rs.client.ClientRequestFilter.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.ClientExecutionInterceptor
+        location: IMPORT
+- ruleID: resteasy-import-00070
+  description: ClientExecutionContext removed; use Jakarta REST ClientRequestContext
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.ClientExecutionContext has been removed. Use jakarta.ws.rs.client.ClientRequestContext via a ClientRequestFilter implementation.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.ClientExecutionContext
+        location: IMPORT
+- ruleID: resteasy-import-00080
+  description: AcceptedByMethod interface removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.AcceptedByMethod has been removed. Use the standard Jakarta REST filter/interceptor binding annotations (e.g. @NameBinding) instead.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.AcceptedByMethod
+        location: IMPORT
+- ruleID: resteasy-import-00090
+  description: MessageBodyReaderInterceptor removed; use jakarta.ws.rs.ext.ReaderInterceptor
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.MessageBodyReaderInterceptor has been removed. Replace it with jakarta.ws.rs.ext.ReaderInterceptor.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.MessageBodyReaderInterceptor
+        location: IMPORT
+- ruleID: resteasy-import-00100
+  description: MessageBodyWriterInterceptor removed; use jakarta.ws.rs.ext.WriterInterceptor
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.MessageBodyWriterInterceptor has been removed. Replace it with jakarta.ws.rs.ext.WriterInterceptor.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.MessageBodyWriterInterceptor
+        location: IMPORT
+- ruleID: resteasy-import-00110
+  description: MessageBodyWriterContext removed; use jakarta.ws.rs.ext.WriterInterceptorContext
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.MessageBodyWriterContext has been removed. Use jakarta.ws.rs.ext.WriterInterceptorContext.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.MessageBodyWriterContext
+        location: IMPORT
+- ruleID: resteasy-import-00120
+  description: MessageBodyReaderContext removed; use jakarta.ws.rs.ext.ReaderInterceptorContext
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.interception.MessageBodyReaderContext has been removed. Use jakarta.ws.rs.ext.ReaderInterceptorContext.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.interception.MessageBodyReaderContext
+        location: IMPORT
+- ruleID: resteasy-import-00130
+  description: InterceptorRegistry removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.core.interception.InterceptorRegistry has been removed. Register Jakarta REST filters and interceptors via standard @Provider classes (e.g. ContainerRequestFilter, ReaderInterceptor).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.core.interception.InterceptorRegistry
+        location: IMPORT
+- ruleID: resteasy-import-00140
+  description: InterceptorRegistryListener removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.core.interception.InterceptorRegistryListener has been removed. There is no direct replacement; rely on standard Jakarta REST filter/interceptor registration.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.core.interception.InterceptorRegistryListener
+        location: IMPORT
+- ruleID: resteasy-import-00150
+  description: ClientExecutionContextImpl removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.core.interception.ClientExecutionContextImpl has been removed. Migrate client-side interception to jakarta.ws.rs.client.ClientRequestFilter and friends.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.core.interception.ClientExecutionContextImpl
+        location: IMPORT
+- ruleID: resteasy-import-00160
+  description: ClientRequest removed in JBoss EAP 8.0; use ResteasyClient
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The legacy RESTEasy 2 client API class org.jboss.resteasy.client.ClientRequest has been removed in JBoss EAP 8.0. Migrate to org.jboss.resteasy.client.jaxrs.ResteasyClient or the standard jakarta.ws.rs.client.Client API.
+
+    ### Before
+    ```java
+    ClientRequest request = new ClientRequest(generateURL("/linkheader/str"));
+    ClientResponse response = request.post();
+    ```
+
+    ### After
+    ```java
+    ResteasyClient client = new ResteasyClientBuilder().build();
+    Response response = client.target(generateURL("/linkheader/str"))
+        .request().post(Entity.text(""));
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.ClientRequest
+        location: IMPORT
+- ruleID: resteasy-import-00170
+  description: ClientRequestFactory removed in JBoss EAP 8.0; use ResteasyClientBuilder
+  category: mandatory
+  effort: 7
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.client.ClientRequestFactory has been removed in JBoss EAP 8.0. Build clients using org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder or jakarta.ws.rs.client.ClientBuilder.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.ClientRequestFactory
+        location: IMPORT
+- ruleID: resteasy-import-00180
+  description: ClientResponse removed in JBoss EAP 8.0; use jakarta.ws.rs.core.Response
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    org.jboss.resteasy.client.ClientResponse has been removed in JBoss EAP 8.0. Replace it with jakarta.ws.rs.core.Response.
+
+    ### Before
+    ```java
+    import org.jboss.resteasy.client.ClientResponse;
+    ```
+
+    ### After
+    ```java
+    import jakarta.ws.rs.core.Response;
+    ```
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.ClientResponse
+        location: IMPORT
+- ruleID: resteasy-import-00190
+  description: Legacy ProxyBuilder removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.client.ProxyBuilder has been removed in JBoss EAP 8.0. Use org.jboss.resteasy.client.jaxrs.ResteasyWebTarget.proxy(Class) to build typed REST client proxies.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.ProxyBuilder
+        location: IMPORT
+- ruleID: resteasy-import-00200
+  description: Legacy ProxyConfig removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.client.ProxyConfig has been removed in JBoss EAP 8.0. Configure the RESTEasy client through ResteasyClientBuilder and ResteasyWebTarget.proxy() instead.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.ProxyConfig
+        location: IMPORT
+- ruleID: resteasy-import-00210
+  description: Legacy ProxyFactory removed in JBoss EAP 8.0
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.client.ProxyFactory has been removed in JBoss EAP 8.0. Use ResteasyWebTarget.proxy(Class) to obtain typed proxies.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.ProxyFactory
+        location: IMPORT
+- ruleID: resteasy-import-00220
+  description: ClientResponseFailure deprecated in RESTEasy 3.x; use Jakarta REST exceptions
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.client.ClientResponseFailure is deprecated. Catch jakarta.ws.rs.client.ResponseProcessingException or jakarta.ws.rs.WebApplicationException instead.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.ClientResponseFailure
+        location: IMPORT
+- ruleID: resteasy-import-00230
+  description: ClientExecutor deprecated in RESTEasy 3.x
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.client.ClientExecutor is deprecated. Configure the HTTP engine through ResteasyClientBuilder (httpEngine(...)).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.ClientExecutor
+        location: IMPORT
+- ruleID: resteasy-import-00240
+  description: EntityTypeFactory deprecated in RESTEasy 3.x
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.client.EntityTypeFactory is deprecated. Use jakarta.ws.rs.core.GenericType to describe generic response entities when calling RESTEasy or Jakarta REST clients.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.EntityTypeFactory
+        location: IMPORT
+- ruleID: resteasy-import-00250
+  description: org.jboss.resteasy.client.cache package deprecated; use org.jboss.resteasy.annotations.cache
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Classes and interfaces in org.jboss.resteasy.client.cache have been deprecated. Migrate imports to the equivalent classes in org.jboss.resteasy.annotations.cache.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_deprecated_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.client.cache
+        location: PACKAGE
+- ruleID: resteasy-method-00010
+  description: ResteasyProviderFactory.addBuiltInMessageBodyReader removed; use registerProvider()
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ResteasyProviderFactory.addBuiltInMessageBodyReader() has been removed in RESTEasy 3.0+. Use registerProvider() or registerProviderInstance() instead.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#removed_or_protected_resteasy_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.ResteasyProviderFactory.addBuiltInMessageBodyReader
+        location: METHOD_CALL
+- ruleID: resteasy-method-00020
+  description: ResteasyProviderFactory.addBuiltInMessageBodyWriter removed; use registerProvider()
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ResteasyProviderFactory.addBuiltInMessageBodyWriter() has been removed in RESTEasy 3.0+. Use registerProvider() or registerProviderInstance() instead.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#removed_or_protected_resteasy_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.ResteasyProviderFactory.addBuiltInMessageBodyWriter
+        location: METHOD_CALL
+- ruleID: resteasy-method-00030
+  description: ResteasyProviderFactory.addMessageBodyReader made protected; use registerProvider()
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ResteasyProviderFactory.addMessageBodyReader() has been made protected in RESTEasy 3.0+. External callers must use registerProvider() or registerProviderInstance() instead.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#removed_or_protected_resteasy_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.ResteasyProviderFactory.addMessageBodyReader
+        location: METHOD_CALL
+- ruleID: resteasy-method-00040
+  description: ResteasyProviderFactory.addMessageBodyWriter made protected; use registerProvider()
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: ResteasyProviderFactory.addMessageBodyWriter() has been made protected in RESTEasy 3.0+. External callers must use registerProvider() or registerProviderInstance() instead.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#removed_or_protected_resteasy_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.ResteasyProviderFactory.addMessageBodyWriter
+        location: METHOD_CALL
+- ruleID: resteasy-annotation-00020
+  description: '@ServerCached removed from RESTEasy 3'
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: '@org.jboss.resteasy.annotations.cache.ServerCached has been removed from RESTEasy 3 and must be removed from application code. There is no drop-in replacement; if server-side caching is required, configure it externally (e.g. via an HTTP cache or reverse proxy) or use the RESTEasy Cache documented mechanism.'
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#removed_or_protected_resteasy_classes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.annotations.cache.ServerCached
+        location: ANNOTATION
+- ruleID: resteasy-pattern-00010
+  description: Default for resteasy.add.charset changed to true in JBoss EAP 7.1 (adds charset=UTF-8 to Content-Type)
+  category: potential
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Starting with JBoss EAP 7.1, the resteasy.add.charset parameter is true by default, so charset=UTF-8 is appended to the Content-Type header for text/* and application/xml* responses without an explicit charset. Set resteasy.add.charset=false in your web.xml or application configuration if your clients rely on the absence of an explicit charset.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#additional_resteasy_changes
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: resteasy\.add\.charset
+        filePattern: (application.*\.(properties|ya?ml)|web\.xml)
+- ruleID: resteasy-import-00260
+  description: RESTEasy SPI ForbiddenException deprecated; use jakarta.ws.rs.ForbiddenException
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.ForbiddenException is deprecated. Replace it with jakarta.ws.rs.ForbiddenException.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_spi_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.ForbiddenException
+        location: IMPORT
+- ruleID: resteasy-import-00270
+  description: RESTEasy SPI MethodNotAllowedException deprecated; use jakarta.ws.rs.NotAllowedException
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.MethodNotAllowedException is deprecated. Replace it with jakarta.ws.rs.NotAllowedException.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_spi_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.MethodNotAllowedException
+        location: IMPORT
+- ruleID: resteasy-import-00280
+  description: RESTEasy SPI NotAcceptableException deprecated; use jakarta.ws.rs.NotAcceptableException
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.NotAcceptableException is deprecated. Replace it with jakarta.ws.rs.NotAcceptableException.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_spi_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.NotAcceptableException
+        location: IMPORT
+- ruleID: resteasy-import-00290
+  description: RESTEasy SPI NotFoundException deprecated; use jakarta.ws.rs.NotFoundException
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.NotFoundException is deprecated. Replace it with jakarta.ws.rs.NotFoundException.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_spi_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.NotFoundException
+        location: IMPORT
+- ruleID: resteasy-import-00300
+  description: RESTEasy SPI UnauthorizedException deprecated; use jakarta.ws.rs.NotAuthorizedException
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.UnauthorizedException is deprecated. Replace it with jakarta.ws.rs.NotAuthorizedException.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_spi_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.UnauthorizedException
+        location: IMPORT
+- ruleID: resteasy-import-00310
+  description: RESTEasy SPI UnsupportedMediaTypeException deprecated; use jakarta.ws.rs.NotSupportedException
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: org.jboss.resteasy.spi.UnsupportedMediaTypeException is deprecated. Replace it with jakarta.ws.rs.NotSupportedException.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_spi_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.jboss.resteasy.spi.UnsupportedMediaTypeException
+        location: IMPORT
+- ruleID: resteasy-import-00320
+  description: Jackson 1.x (org.codehaus.jackson) replaced by Jackson 2.x (com.fasterxml.jackson)
+  category: mandatory
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: JBoss EAP 7+ uses Jackson 2.x via resteasy-jackson2-provider. Migrate all Jackson 1.x imports (org.codehaus.jackson, org.codehaus.jackson.annotate, etc.) to their Jackson 2.x equivalents under com.fasterxml.jackson (e.g. com.fasterxml.jackson.annotation, com.fasterxml.jackson.databind).
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#jackson_provider_changes
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.codehaus.jackson
+        location: PACKAGE
+- ruleID: resteasy-xml-00010
+  description: RESTEasy Jettison provider deprecated since JBoss EAP 7 and no longer added to deployments by default
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: The RESTEasy Jettison JSON provider has been deprecated since JBoss EAP 7 and is no longer added to deployments by default. Migrate to the recommended Jackson provider (resteasy-jackson2-provider). If you must keep Jettison, declare the org.jboss.resteasy.resteasy-jettison-provider module explicitly in jboss-deployment-structure.xml and exclude the Jackson modules.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#resteasy_jettison_json_provider_changes
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='module' and @name='org.jboss.resteasy.resteasy-jettison-provider']
+        filepaths:
+            - jboss-deployment-structure.xml
+- ruleID: resteasy-pattern-00020
+  description: MicroProfile is no longer available on standard JBoss EAP; use JBoss EAP XP
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=eap7
+    - konveyor.io/target=jakarta-ee
+    - konveyor.io/target=eap8
+    - konveyor.io/generated-by=ai-rule-gen
+  message: MicroProfile was previously available for JBoss EAP 7.3 as a technology preview, but has been removed from JBoss EAP. MicroProfile is now available only on JBoss EAP XP. Applications that rely on org.eclipse.microprofile.* APIs must either drop the MicroProfile dependency or migrate the deployment to JBoss EAP XP.
+  links:
+    - url: https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/8.0/html-single/migration_guide/index#microprofile_for_jboss_eap
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: org\.eclipse\.microprofile
+        filePattern: .*\.(xml|properties|gradle|sbt)

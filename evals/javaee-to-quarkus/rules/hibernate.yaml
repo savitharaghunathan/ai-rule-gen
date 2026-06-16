@@ -1,0 +1,375 @@
+- ruleID: hibernate-annotation-00010
+  description: JNDI lookup is disabled in Quarkus Hibernate ORM extension; use CDI injection
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    JNDI support has been disabled in Quarkus' Hibernate ORM extension as both a security precaution and an optimisation. Configurations that look up `TransactionManager` or `Datasource` by name via JNDI must be migrated to direct CDI injection.
+
+    ### Migration Steps
+    1. Remove `jta-data-source` / `non-jta-data-source` JNDI names from `persistence.xml` and configure datasources via `application.properties` (`quarkus.datasource.*`).
+    2. Replace `@PersistenceUnit(unitName = "...")` and `@PersistenceContext(unitName = "...")` with `@Inject` + `@io.quarkus.hibernate.orm.PersistenceUnit("...")` for the named persistence unit, or simply `@Inject EntityManager em;` for the default unit.
+    3. Replace `lookup("java:/TransactionManager")` with `@Inject TransactionManager tm;`.
+
+    ### Additional Info
+    - The Narayana transaction manager is auto-wired by Quarkus' Hibernate ORM extension.
+    - Agroal provides the connection pool integration.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#limitations
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: jakarta.persistence.PersistenceUnit
+        location: ANNOTATION
+- ruleID: hibernate-annotation-00020
+  description: javax.persistence is replaced by jakarta.persistence; Quarkus also provides a Quarkus-specific PersistenceUnit qualifier
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses the Jakarta EE namespace; replace `javax.persistence.PersistenceUnit` with `jakarta.persistence.PersistenceUnit`. For Quarkus, the recommended pattern is to use CDI injection with the Quarkus-specific qualifier `@io.quarkus.hibernate.orm.PersistenceUnit("name")` to select a named persistence unit.
+
+    ### Before
+    ```java
+    import javax.persistence.PersistenceUnit;
+    import javax.persistence.EntityManagerFactory;
+
+    @PersistenceUnit(unitName = "mypu")
+    EntityManagerFactory emf;
+    ```
+
+    ### After
+    ```java
+    import io.quarkus.hibernate.orm.PersistenceUnit;
+    import jakarta.inject.Inject;
+    import jakarta.persistence.EntityManager;
+
+    @Inject
+    @PersistenceUnit("mypu")
+    EntityManager em;
+    ```
+
+    ### Additional Info
+    - For the default persistence unit, just use `@Inject EntityManager em;` - no qualifier needed.
+    - JNDI lookup of persistence units is disabled in the Quarkus extension.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#setting-up-multiple-persistence-units
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.persistence.PersistenceUnit
+        location: ANNOTATION
+- ruleID: hibernate-annotation-00030
+  description: Replace @PersistenceContext with CDI @Inject for EntityManager in Quarkus
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus uses CDI for entity manager injection. Replace `@PersistenceContext` with `@Inject` on an `EntityManager` field. Also migrate the `javax.persistence` namespace to `jakarta.persistence`.
+
+    ### Before
+    ```java
+    import javax.persistence.EntityManager;
+    import javax.persistence.PersistenceContext;
+
+    @PersistenceContext
+    EntityManager em;
+    ```
+
+    ### After
+    ```java
+    import jakarta.inject.Inject;
+    import jakarta.persistence.EntityManager;
+
+    @Inject
+    EntityManager em;
+    ```
+
+    ### Additional Info
+    - For named persistence units, use `@io.quarkus.hibernate.orm.PersistenceUnit("name")` alongside `@Inject`.
+    - The `EntityManager` is request-scoped or transaction-scoped depending on context.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#injecting-entry-points
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: javax.persistence.PersistenceContext
+        location: ANNOTATION
+- ruleID: hibernate-annotation-00040
+  description: Replace @PersistenceContext with CDI @Inject for EntityManager in Quarkus
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus uses CDI for entity manager injection. While `@PersistenceContext` may still work in some scenarios, the idiomatic Quarkus pattern is `@Inject EntityManager em;` (use `@io.quarkus.hibernate.orm.PersistenceUnit("name")` for named persistence units).
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#injecting-entry-points
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: jakarta.persistence.PersistenceContext
+        location: ANNOTATION
+- ruleID: hibernate-dependency-00010
+  description: Use Quarkus-managed hibernate-spatial without specifying version; Quarkus manages the version
+  category: optional
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When using Hibernate Spatial with Quarkus, add the dependency without a `<version>` element. Quarkus' Hibernate ORM extension manages the Hibernate Spatial version through its BOM.
+
+    ### pom.xml
+    ```xml
+    <dependency>
+        <groupId>org.hibernate.orm</groupId>
+        <artifactId>hibernate-spatial</artifactId>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - Don't pin the version - it will be inherited from the Quarkus BOM.
+    - See the [Hibernate ORM guide](https://quarkus.io/guides/hibernate-orm#spatial) for usage details.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#spatial
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.orm.hibernate-spatial
+        lowerbound: 0.0.0
+- ruleID: hibernate-dependency-00020
+  description: Use Quarkus extension io.quarkus:quarkus-hibernate-envers instead of bare Hibernate Envers in Quarkus
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus provides a dedicated extension for Hibernate Envers: `io.quarkus:quarkus-hibernate-envers`. Replace the bare `org.hibernate.orm:hibernate-envers` dependency with the Quarkus extension to get build-time integration and the proper Quarkus-managed version.
+
+    ### Before (pom.xml)
+    ```xml
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-envers</artifactId>
+    </dependency>
+    ```
+
+    ### After (pom.xml)
+    ```xml
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-envers</artifactId>
+    </dependency>
+    ```
+
+    ### Additional Info
+    - The extension currently exposes no additional configuration properties.
+    - See [hibernate.org/orm/envers/](https://hibernate.org/orm/envers/) for Hibernate Envers usage.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#envers
+      title: Migration Documentation
+  when:
+    java.dependency:
+        name: org.hibernate.orm.hibernate-envers
+        lowerbound: 0.0.0
+- ruleID: hibernate-method-00010
+  description: Quarkus' build-time Hibernate enhancement clones entity-specific fields; clone() is currently not supported
+  category: potential
+  effort: 5
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Due to Quarkus' build-time Hibernate ORM entity enhancement, calling `clone()` on entities is NOT currently supported - the enhancement adds entity-specific fields that the default `Object.clone()` will copy incorrectly.
+
+    ### Migration Steps
+    1. Replace `entity.clone()` calls with explicit copy constructors or builder-based copies.
+    2. Or use Java records / immutable data classes for transient copies.
+    3. Avoid `Cloneable` on entity classes.
+
+    ### Additional Info
+    - This limitation may be lifted in a future Quarkus release.
+    - The build-time enhancement also disables some reflection-based scenarios; review native-image impacts.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#automatic-build-time-enhancement
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: java.lang.Object.clone
+        location: METHOD_CALL
+- ruleID: hibernate-pattern-00010
+  description: hibernate.cache.use_second_level_cache must be set in persistence.xml; not via application.properties
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The Hibernate second-level cache can only be disabled globally via the `hibernate.cache.use_second_level_cache` property in `persistence.xml` - NOT through `application.properties` in Quarkus.
+
+    ### Migration Steps
+    1. If you previously set `hibernate.cache.use_second_level_cache=false` in `application.properties` or programmatically, move it into `persistence.xml`.
+    2. Use `<property name="hibernate.cache.use_second_level_cache" value="false"/>` inside the `<persistence-unit>` element.
+
+    ### Additional Info
+    - Disabling 2L cache is typically only useful for diagnosing issues.
+    - When 2L cache is disabled, all `@Cacheable` annotations are ignored at runtime.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#limitations-of-caching
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: hibernate\.cache\.use_second_level_cache
+        filePattern: .*persistence\.xml
+- ruleID: hibernate-annotation-00050
+  description: Use Quarkus' @io.quarkus.hibernate.orm.JsonFormat qualifier for FormatMapper beans, not Jackson's @JsonFormat
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    When implementing a Hibernate ORM `FormatMapper` for JSON serialization in Quarkus, use the Quarkus-specific qualifier `@io.quarkus.hibernate.orm.JsonFormat`. Do NOT use Jackson's `@com.fasterxml.jackson.annotation.JsonFormat` - that annotation has a completely different purpose (per-field formatting hint).
+
+    ### Migration Steps
+    1. Replace `import com.fasterxml.jackson.annotation.JsonFormat;` with `import io.quarkus.hibernate.orm.JsonFormat;`.
+    2. The class must also be annotated with `@io.quarkus.hibernate.orm.PersistenceUnitExtension`.
+    3. For XML mappers, use `@io.quarkus.hibernate.orm.XmlFormat` instead.
+
+    ### Additional Info
+    - Each persistence unit may only have one JSON and one XML format mapper bean; multiple registrations cause ambiguity.
+    - For non-default persistence units, use `@PersistenceUnitExtension("name")`.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#json_xml_serialization_deserialization
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: com.fasterxml.jackson.annotation.JsonFormat
+        location: ANNOTATION
+- ruleID: hibernate-xml-00010
+  description: Quarkus disables JNDI; jta-data-source in persistence.xml is not honored - configure via quarkus.datasource.*
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus' Hibernate ORM extension disables JNDI support. JNDI references in `persistence.xml` (`<jta-data-source>`, `<non-jta-data-source>`) are not honored. Configure the datasource directly via `quarkus.datasource.*` properties in `application.properties` instead.
+
+    ### Migration Steps
+    1. Remove `<jta-data-source>` and `<non-jta-data-source>` elements from `persistence.xml`.
+    2. Add `quarkus.datasource.db-kind`, `quarkus.datasource.username`, `quarkus.datasource.password`, `quarkus.datasource.jdbc.url` to `application.properties`.
+    3. Optionally remove `persistence.xml` entirely and use the `quarkus.hibernate-orm.*` properties for ORM configuration.
+
+    ### Additional Info
+    - Quarkus offers a configuration-only setup that does not require a `persistence.xml`.
+    - See [Hibernate ORM guide](https://quarkus.io/guides/hibernate-orm) for full property reference.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#persistence-xml
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='jta-data-source']
+        filepaths:
+            - persistence.xml
+            - '**/persistence.xml'
+- ruleID: hibernate-xml-00020
+  description: Quarkus disables JNDI; non-jta-data-source in persistence.xml is not honored
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: Quarkus disables JNDI; `<non-jta-data-source>` references in `persistence.xml` are not honored. Configure the datasource via `quarkus.datasource.*` properties in `application.properties`. Quarkus always operates in a JTA-managed environment, so the distinction between JTA and non-JTA datasources does not apply.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#persistence-xml
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='non-jta-data-source']
+        filepaths:
+            - persistence.xml
+            - '**/persistence.xml'
+- ruleID: hibernate-xml-00030
+  description: Quarkus prefers application.properties for Hibernate ORM config; persistence.xml is also supported with limitations
+  category: potential
+  effort: 3
+  labels:
+    - konveyor.io/source=java-ee
+    - konveyor.io/source=javaee
+    - konveyor.io/source=jakarta-ee
+    - konveyor.io/source=spring-boot
+    - konveyor.io/target=quarkus
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Quarkus supports `persistence.xml` but the idiomatic approach is to define the persistence unit through `quarkus.hibernate-orm.*` properties in `application.properties` (or `quarkus.hibernate-orm."unit-name".*` for multiple persistence units).
+
+    ### Migration Steps
+    1. If you have a single persistence unit and minimal configuration, replace `persistence.xml` with `quarkus.hibernate-orm.*` properties.
+    2. If you keep `persistence.xml`, remove JNDI datasource references and JNDI lookup elements.
+    3. For multiple persistence units, configure each in `application.properties` and attach model classes via `@io.quarkus.hibernate.orm.PersistenceUnit("name")` or package configuration.
+
+    ### Additional Info
+    - `persistence.xml` can still be used to set Hibernate-specific properties (e.g. second-level cache flag) that are not exposed via Quarkus configuration.
+    - XML mapping files (`orm.xml`) are supported with the limitation that file paths must be unique across JARs.
+  links:
+    - url: https://quarkus.io/guides/hibernate-orm#persistence-xml
+      title: Migration Documentation
+  when:
+    builtin.xml:
+        xpath: //*[local-name()='persistence-unit']
+        filepaths:
+            - persistence.xml
+            - '**/persistence.xml'

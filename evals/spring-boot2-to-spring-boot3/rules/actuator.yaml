@@ -1,0 +1,114 @@
+- ruleID: actuator-import-00010
+  description: HttpTraceRepository renamed to HttpExchangeRepository and moved to org.springframework.boot.actuate.web.exchanges
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `httptrace` actuator endpoint has been renamed to `httpexchanges`. Related infrastructure classes have been renamed and moved: `HttpTraceRepository` is now `HttpExchangeRepository` in `org.springframework.boot.actuate.web.exchanges`.
+
+    ### Before
+    ```java
+    import org.springframework.boot.actuate.trace.http.HttpTraceRepository;
+    import org.springframework.boot.actuate.trace.http.InMemoryHttpTraceRepository;
+    ```
+
+    ### After
+    ```java
+    import org.springframework.boot.actuate.web.exchanges.HttpExchangeRepository;
+    import org.springframework.boot.actuate.web.exchanges.InMemoryHttpExchangeRepository;
+    ```
+
+    ### Additional Info
+    - The contents of the endpoint's response has also been affected by the renaming — see the Actuator API documentation for `httpexchanges`
+    - `HttpTrace` and related types have been renamed to `HttpExchange`
+    - Endpoint exposure properties referencing `httptrace` must be updated to `httpexchanges`
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#httptrace-endpoint-renamed-to-httpexchanges
+      title: Migration Documentation
+  when:
+    java.referenced:
+        pattern: org.springframework.boot.actuate.trace.http.HttpTraceRepository
+        location: IMPORT
+- ruleID: actuator-pattern-00010
+  description: httptrace actuator endpoint renamed to httpexchanges; config keys and exposure ids change
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    The `httptrace` actuator endpoint has been renamed to `httpexchanges`. All configuration property keys and endpoint exposure identifiers referencing `httptrace` must be updated.
+
+    ### Before
+    ```properties
+    management.endpoint.httptrace.enabled=true
+    management.endpoints.web.exposure.include=health,httptrace
+    ```
+
+    ### After
+    ```properties
+    management.endpoint.httpexchanges.enabled=true
+    management.endpoints.web.exposure.include=health,httpexchanges
+    ```
+
+    ### Additional Info
+    - The endpoint id changed from `httptrace` to `httpexchanges`
+    - Related types in code (`HttpTraceRepository`) were renamed to `HttpExchangeRepository`
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#httptrace-endpoint-renamed-to-httpexchanges
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: management\.(endpoint|endpoints)\.[^=:]*httptrace
+        filePattern: application.*\.(properties|ya?ml)
+- ruleID: actuator-pattern-00020
+  description: Keys-based sanitization removed; replaced with role-based show-values (NEVER/ALWAYS/WHEN_AUTHORIZED)
+  category: mandatory
+  effort: 3
+  labels:
+    - konveyor.io/source=spring-boot2
+    - konveyor.io/source=spring-boot
+    - konveyor.io/source=spring5
+    - konveyor.io/target=spring-boot3
+    - konveyor.io/target=spring-boot
+    - konveyor.io/target=spring6
+    - konveyor.io/generated-by=ai-rule-gen
+  message: |-
+    Spring Boot 3.0 removed the keys-based approach to actuator sanitization in favor of a role-based approach. The `keys-to-sanitize` properties on the `/env` and `/configprops` endpoints no longer apply. All values are masked by default; use `show-values` to control disclosure.
+
+    ### Before
+    ```properties
+    management.endpoint.env.keys-to-sanitize=password,secret
+    management.endpoint.configprops.keys-to-sanitize=password,secret
+    ```
+
+    ### After
+    ```properties
+    management.endpoint.env.show-values=WHEN_AUTHORIZED
+    management.endpoint.configprops.show-values=WHEN_AUTHORIZED
+    ```
+
+    ### Additional Info
+    - Allowed `show-values` settings: `NEVER` (default), `ALWAYS`, `WHEN_AUTHORIZED`
+    - For JMX, users are always considered authorized
+    - For HTTP, users must be authenticated with the specified roles
+    - The QuartzEndpoint is configurable in the same way via `management.endpoint.quartz.show-values`
+  links:
+    - url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#actuator-endpoints-sanitization
+      title: Migration Documentation
+  when:
+    builtin.filecontent:
+        pattern: management\.endpoint\.(env|configprops)\.keys-to-sanitize
+        filePattern: application.*\.(properties|ya?ml)
