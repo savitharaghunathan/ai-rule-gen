@@ -215,6 +215,50 @@ func TestValidate_OrCombinator(t *testing.T) {
 	assertContains(t, result.Errors, "or[1]")
 }
 
+func TestValidate_JavaDependencyMissingBounds(t *testing.T) {
+	rules := []Rule{{
+		RuleID:  "test-00010",
+		Message: "test",
+		When: Condition{
+			JavaDependency: &Dependency{Name: "org.example.foo"},
+		},
+	}}
+	result := Validate(rules)
+	if result.Valid {
+		t.Error("expected invalid due to missing lowerbound/upperbound")
+	}
+	assertContains(t, result.Errors, "lowerbound")
+}
+
+func TestValidate_JavaDependencyWithBounds(t *testing.T) {
+	rules := []Rule{{
+		RuleID:  "test-00010",
+		Message: "test",
+		When: Condition{
+			JavaDependency: &Dependency{Name: "org.example.foo", Lowerbound: "1.0.0"},
+		},
+	}}
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid, got errors: %v", result.Errors)
+	}
+}
+
+func TestValidate_GoDependencyMissingBounds(t *testing.T) {
+	rules := []Rule{{
+		RuleID:  "test-00010",
+		Message: "test",
+		When: Condition{
+			GoDependency: &Dependency{Name: "golang.org/x/crypto"},
+		},
+	}}
+	result := Validate(rules)
+	if result.Valid {
+		t.Error("expected invalid due to missing lowerbound/upperbound")
+	}
+	assertContains(t, result.Errors, "lowerbound")
+}
+
 func assertContains(t *testing.T, items []string, substr string) {
 	t.Helper()
 	for _, item := range items {

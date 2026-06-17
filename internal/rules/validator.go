@@ -104,6 +104,9 @@ func validateCondition(c Condition, prefix string, result *ValidationResult) {
 		if c.JavaDependency.Name == "" && c.JavaDependency.NameRegex == "" {
 			result.addError("%s: java.dependency requires 'name' or 'name_regex'", prefix)
 		}
+		if c.JavaDependency.Lowerbound == "" && c.JavaDependency.Upperbound == "" {
+			result.addError("%s: java.dependency requires at least one of 'lowerbound' or 'upperbound'", prefix)
+		}
 		validateRegex(c.JavaDependency.NameRegex, prefix+": java.dependency name_regex", result)
 	}
 	if c.GoReferenced != nil && c.GoReferenced.Pattern == "" {
@@ -112,6 +115,9 @@ func validateCondition(c Condition, prefix string, result *ValidationResult) {
 	if c.GoDependency != nil {
 		if c.GoDependency.Name == "" && c.GoDependency.NameRegex == "" {
 			result.addError("%s: go.dependency requires 'name' or 'name_regex'", prefix)
+		}
+		if c.GoDependency.Lowerbound == "" && c.GoDependency.Upperbound == "" {
+			result.addError("%s: go.dependency requires at least one of 'lowerbound' or 'upperbound'", prefix)
 		}
 	}
 	if c.NodejsReferenced != nil && c.NodejsReferenced.Pattern == "" {

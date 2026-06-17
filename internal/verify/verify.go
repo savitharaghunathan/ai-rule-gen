@@ -15,6 +15,8 @@ func NewVerifier(language, cacheDir string) Verifier {
 	switch language {
 	case "java":
 		return NewJavaVerifier(cacheDir)
+	case "go":
+		return NewGoVerifier(cacheDir)
 	default:
 		return nil
 	}

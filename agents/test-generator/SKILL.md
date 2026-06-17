@@ -139,7 +139,7 @@ Record in `suspected_kantra_limitations` with reason `"artifact_not_found_on_mav
 
 See `references/languages/<language>/test-data-guide.md` for per-language dependency resolution rules. The key constraints:
 - **Java:** Do NOT run `mvn compile` or any Maven command — kantra resolves dependencies by parsing pom.xml directly
-- **Go:** Always run `go mod tidy` then `go mod vendor`
+- **Go:** Always run `go mod tidy` (do NOT run `go mod vendor` — vendored deps cause false positives in `go.referenced` analysis)
 
 ### 5. Sanitize XML
 

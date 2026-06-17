@@ -143,7 +143,7 @@ Do NOT include any other text or code blocks.
 - Build file: `go.mod` (type: go)
 - Source dir: `.` (root)
 - Main file: `main.go` (type: go)
-- After writing, run `go mod tidy` and `go mod vendor` so gopls can resolve modules reliably
+- After writing, run `go mod tidy` (do NOT vendor — vendored deps cause false positives in analysis)
 
 ### Node.js / TypeScript
 ```
@@ -197,7 +197,7 @@ For each group:
 
 ## Dependency Resolution
 
-- **Go:** Always run `go mod tidy` then `go mod vendor` for reproducible module resolution
+- **Go:** Always run `go mod tidy` (do NOT run `go mod vendor` — vendored deps cause false positives in `go.referenced` analysis)
 - **Java:** Do NOT run `mvn compile`, `mvn dependency:resolve`, or any Maven command. Do NOT import the project into an IDE. Kantra resolves `java.dependency` rules by parsing the pom.xml directly, and source-only analysis resolves IMPORT/ANNOTATION/TYPE patterns without downloaded JARs. Running Maven or IDE imports creates `.classpath`, `.project`, `.settings/`, `target/`, and `.factorypath` artifacts that pollute the test data.
 - **Node.js:** `npm install` only if needed for type resolution
 - **C#:** `dotnet restore` only if needed for type resolution
