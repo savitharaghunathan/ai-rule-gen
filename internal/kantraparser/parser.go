@@ -95,3 +95,45 @@ func TestFileRuleIDs(path string) ([]string, error) {
 	}
 	return ids, nil
 }
+
+// TestFileProviders extracts provider names from a .test.yaml file.
+func TestFileProviders(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var tf struct {
+		Providers []struct {
+			Name string `yaml:"name"`
+		} `yaml:"providers"`
+	}
+	if err := yaml.Unmarshal(data, &tf); err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, p := range tf.Providers {
+		if p.Name != "" {
+			names = append(names, p.Name)
+		}
+	}
+	return names, nil
+}
+
+// SupportsRunLocal returns true if all providers in the test file
+// are supported by kantra's --run-local (containerless) mode.
+// Only "java" and "builtin" are supported in containerless mode.
+func SupportsRunLocal(path string) bool {
+	providers, err := TestFileProviders(path)
+	if err != nil {
+		return false // fail-closed: use hybrid mode if we can't determine providers
+	}
+	if len(providers) == 0 {
+		return true // no providers declared, safe for run-local
+	}
+	for _, p := range providers {
+		if p != "java" && p != "builtin" {
+			return false
+		}
+	}
+	return true
+}

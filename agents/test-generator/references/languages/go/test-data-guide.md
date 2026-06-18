@@ -22,10 +22,9 @@ Always run after writing test files:
 
 ```bash
 go mod tidy
-go mod vendor
 ```
 
-gopls needs vendored modules — it cannot download them at analysis time.
+Do NOT run `go mod vendor`. Vendored dependencies are scanned as source code by the Go provider, which causes `go.referenced` rules to match inside vendored library code (false positives). The Go provider resolves dependencies from the module cache without vendoring.
 
 ## go.dependency Version Bounds
 

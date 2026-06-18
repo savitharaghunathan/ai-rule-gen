@@ -170,7 +170,8 @@ func runFiles(testFiles []string, timeout time.Duration, w *strings.Builder, onP
 			onProgress(name, i+1, n, -1, 0, false, 0)
 		}
 		start := time.Now()
-		out, runErr := runKantraTestWithTimeout(tf, timeout)
+		runLocal := kantraparser.SupportsRunLocal(tf)
+		out, runErr := runKantraTestWithTimeout(tf, timeout, runLocal)
 		elapsed := time.Since(start)
 		w.WriteString(out)
 		w.WriteString("\n")
@@ -202,14 +203,20 @@ func runFiles(testFiles []string, timeout time.Duration, w *strings.Builder, onP
 	return erroredRuleIDs, timedOutFiles, nil
 }
 
-func runKantraTestWithTimeout(testFile string, timeout time.Duration) (string, error) {
+func runKantraTestWithTimeout(testFile string, timeout time.Duration, runLocal bool) (string, error) {
+	args := []string{"rules", "test"}
+	if runLocal {
+		args = append(args, "--run-local")
+	}
+	args = append(args, testFile)
+
 	var cmd *exec.Cmd
 	if timeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		cmd = exec.CommandContext(ctx, "kantra", "rules", "test", "--run-local", testFile)
+		cmd = exec.CommandContext(ctx, "kantra", args...)
 	} else {
-		cmd = exec.Command("kantra", "rules", "test", "--run-local", testFile)
+		cmd = exec.Command("kantra", args...)
 	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

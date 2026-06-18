@@ -36,6 +36,7 @@ func TestEndToEnd_VerifyToReport(t *testing.T) {
 				Complexity:     "low",
 				Category:       "mandatory",
 				ProviderType:   "java",
+				LowerBound:     "0.0.0",
 			},
 		},
 	}

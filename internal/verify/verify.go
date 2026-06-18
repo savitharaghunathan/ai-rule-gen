@@ -1,13 +1,14 @@
 package verify
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
 )
 
 type Verifier interface {
-	Verify(pattern rules.MigrationPattern) (Result, error)
+	Verify(ctx context.Context, pattern rules.MigrationPattern) (Result, error)
 	Language() string
 }
 
@@ -15,12 +16,18 @@ func NewVerifier(language, cacheDir string) Verifier {
 	switch language {
 	case "java":
 		return NewJavaVerifier(cacheDir)
+	case "go":
+		return NewGoVerifier(cacheDir)
 	default:
 		return nil
 	}
 }
 
 func Run(extract *rules.ExtractOutput, cacheDir string) ([]Result, error) {
+	return RunWithContext(context.Background(), extract, cacheDir)
+}
+
+func RunWithContext(ctx context.Context, extract *rules.ExtractOutput, cacheDir string) ([]Result, error) {
 	v := NewVerifier(extract.Language, cacheDir)
 
 	results := make([]Result, 0, len(extract.Patterns))
@@ -34,7 +41,7 @@ func Run(extract *rules.ExtractOutput, cacheDir string) ([]Result, error) {
 			})
 			continue
 		}
-		r, err := v.Verify(p)
+		r, err := v.Verify(ctx, p)
 		if err != nil {
 			return nil, fmt.Errorf("verifying pattern %d (%s): %w", i, p.SourceFQN, err)
 		}
