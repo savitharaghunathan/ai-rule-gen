@@ -91,19 +91,20 @@ func (v *GoVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 				Reason:    fmt.Sprintf("Go module proxy unreachable: %v", err),
 			}, nil
 		}
-		return Result{}, err
+		return Result{
+			SourceFQN: pattern.SourceFQN,
+			Status:    StatusOffline,
+			Reason:    fmt.Sprintf("resolver error: %v", err),
+		}, nil
 	}
 
 	packages, err := v.getPackageList(modulePath, version)
 	if err != nil {
-		if isNetworkError(err) {
-			return Result{
-				SourceFQN: pattern.SourceFQN,
-				Status:    StatusOffline,
-				Reason:    fmt.Sprintf("Go module proxy unreachable: %v", err),
-			}, nil
-		}
-		return Result{}, err
+		return Result{
+			SourceFQN: pattern.SourceFQN,
+			Status:    StatusOffline,
+			Reason:    fmt.Sprintf("package list error: %v", err),
+		}, nil
 	}
 
 	pkgSubdir := strings.TrimPrefix(pattern.SourceFQN, modulePath)
@@ -254,9 +255,15 @@ func (v *GoVerifier) downloadModuleZip(modulePath, version, destPath string) err
 		return fmt.Errorf("creating %s: %w", destPath, err)
 	}
 
-	if _, err := io.Copy(f, io.LimitReader(resp.Body, maxModuleZipSize)); err != nil {
+	n, err := io.Copy(f, io.LimitReader(resp.Body, maxModuleZipSize+1))
+	if err != nil {
 		f.Close()
 		return fmt.Errorf("writing %s: %w", destPath, err)
+	}
+	if n > maxModuleZipSize {
+		f.Close()
+		os.Remove(destPath)
+		return fmt.Errorf("module zip %s exceeds %d bytes", zipURL, maxModuleZipSize)
 	}
 	if err := f.Close(); err != nil {
 		return fmt.Errorf("closing %s: %w", destPath, err)
@@ -287,7 +294,10 @@ func listPackagesInZip(zipPath, modulePath, version string) ([]string, error) {
 		if !strings.HasSuffix(rel, ".go") {
 			continue
 		}
-		// Skip test-only helpers and vendored code
+		if strings.HasSuffix(rel, "_test.go") {
+			continue
+		}
+		// Skip vendored code
 		if strings.Contains(rel, "/vendor/") || strings.HasPrefix(rel, "vendor/") {
 			continue
 		}

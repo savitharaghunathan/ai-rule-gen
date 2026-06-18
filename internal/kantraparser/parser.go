@@ -124,8 +124,11 @@ func TestFileProviders(path string) ([]string, error) {
 // Only "java" and "builtin" are supported in containerless mode.
 func SupportsRunLocal(path string) bool {
 	providers, err := TestFileProviders(path)
-	if err != nil || len(providers) == 0 {
-		return true // default to run-local if we can't determine
+	if err != nil {
+		return false // fail-closed: use hybrid mode if we can't determine providers
+	}
+	if len(providers) == 0 {
+		return true // no providers declared, safe for run-local
 	}
 	for _, p := range providers {
 		if p != "java" && p != "builtin" {

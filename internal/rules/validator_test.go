@@ -244,6 +244,20 @@ func TestValidate_JavaDependencyWithBounds(t *testing.T) {
 	}
 }
 
+func TestValidate_GoDependencyWithBounds(t *testing.T) {
+	rules := []Rule{{
+		RuleID:  "test-00010",
+		Message: "test",
+		When: Condition{
+			GoDependency: &Dependency{Name: "golang.org/x/crypto", Lowerbound: "0.1.0"},
+		},
+	}}
+	result := Validate(rules)
+	if !result.Valid {
+		t.Errorf("expected valid, got errors: %v", result.Errors)
+	}
+}
+
 func TestValidate_GoDependencyMissingBounds(t *testing.T) {
 	rules := []Rule{{
 		RuleID:  "test-00010",

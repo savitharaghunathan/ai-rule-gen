@@ -119,6 +119,7 @@ func validateCondition(c Condition, prefix string, result *ValidationResult) {
 		if c.GoDependency.Lowerbound == "" && c.GoDependency.Upperbound == "" {
 			result.addError("%s: go.dependency requires at least one of 'lowerbound' or 'upperbound'", prefix)
 		}
+		validateRegex(c.GoDependency.NameRegex, prefix+": go.dependency name_regex", result)
 	}
 	if c.NodejsReferenced != nil && c.NodejsReferenced.Pattern == "" {
 		result.addError("%s: nodejs.referenced missing required field 'pattern'", prefix)
