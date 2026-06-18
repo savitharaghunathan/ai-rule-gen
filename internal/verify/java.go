@@ -2,6 +2,7 @@ package verify
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -37,7 +38,7 @@ func NewJavaVerifier(cacheDir string) *JavaVerifier {
 
 func (v *JavaVerifier) Language() string { return "java" }
 
-func (v *JavaVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
+func (v *JavaVerifier) Verify(ctx context.Context, pattern rules.MigrationPattern) (Result, error) {
 	if pattern.DependencyName != "" {
 		return Result{
 			SourceFQN: pattern.DependencyName,
@@ -70,7 +71,7 @@ func (v *JavaVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 		}, nil
 	}
 
-	classLines, err := v.getClassList(sa.GroupID, sa.ArtifactID, sa.Version)
+	classLines, err := v.getClassList(ctx, sa.GroupID, sa.ArtifactID, sa.Version)
 	if err != nil {
 		if errors.Is(err, errArtifactNotFound) {
 			return Result{
@@ -148,7 +149,7 @@ func (v *JavaVerifier) verifyAgainstClassList(pattern rules.MigrationPattern, cl
 	}
 }
 
-func (v *JavaVerifier) getClassList(groupID, artifactID, version string) ([]string, error) {
+func (v *JavaVerifier) getClassList(ctx context.Context, groupID, artifactID, version string) ([]string, error) {
 	cacheDir := filepath.Join(v.cacheDir, groupID, artifactID, version)
 	classesFile := filepath.Join(cacheDir, "classes.txt")
 
@@ -161,7 +162,7 @@ func (v *JavaVerifier) getClassList(groupID, artifactID, version string) ([]stri
 	}
 
 	jarPath := filepath.Join(cacheDir, fmt.Sprintf("%s-%s.jar", artifactID, version))
-	if err := v.downloadJAR(groupID, artifactID, version, jarPath); err != nil {
+	if err := v.downloadJAR(ctx, groupID, artifactID, version, jarPath); err != nil {
 		return nil, err
 	}
 
@@ -177,12 +178,16 @@ func (v *JavaVerifier) getClassList(groupID, artifactID, version string) ([]stri
 	return lines, nil
 }
 
-func (v *JavaVerifier) downloadJAR(groupID, artifactID, version, destPath string) error {
+func (v *JavaVerifier) downloadJAR(ctx context.Context, groupID, artifactID, version, destPath string) error {
 	groupPath := strings.ReplaceAll(groupID, ".", "/")
 	jarURL := fmt.Sprintf("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
 		groupPath, artifactID, version, artifactID, version)
 
-	resp, err := v.httpClient.Get(jarURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, jarURL, nil)
+	if err != nil {
+		return fmt.Errorf("creating request for %s: %w", jarURL, err)
+	}
+	resp, err := v.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("downloading %s: %w", jarURL, err)
 	}

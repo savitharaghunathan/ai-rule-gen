@@ -3,6 +3,7 @@
 package verify
 
 import (
+	"context"
 	"testing"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -45,7 +46,7 @@ func TestGoVerifier_RealPackage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := v.Verify(tt.pattern)
+			result, err := v.Verify(context.Background(), tt.pattern)
 			if err != nil {
 				t.Fatalf("Verify() error: %v", err)
 			}
@@ -61,7 +62,7 @@ func TestGoVerifier_FakePackage(t *testing.T) {
 	cacheDir := t.TempDir()
 	v := NewGoVerifier(cacheDir)
 
-	result, err := v.Verify(rules.MigrationPattern{
+	result, err := v.Verify(context.Background(), rules.MigrationPattern{
 		SourceFQN:    "golang.org/x/crypto/nonexistent",
 		ProviderType: "go",
 	})
@@ -78,7 +79,7 @@ func TestGoVerifier_FakeModule(t *testing.T) {
 	cacheDir := t.TempDir()
 	v := NewGoVerifier(cacheDir)
 
-	result, err := v.Verify(rules.MigrationPattern{
+	result, err := v.Verify(context.Background(), rules.MigrationPattern{
 		SourceFQN:    "golang.org/x/nonexistentmodule/pkg",
 		ProviderType: "go",
 	})

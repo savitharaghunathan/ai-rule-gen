@@ -2,6 +2,7 @@ package verify
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,7 +44,7 @@ func NewGoVerifier(cacheDir string) *GoVerifier {
 
 func (v *GoVerifier) Language() string { return "go" }
 
-func (v *GoVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
+func (v *GoVerifier) Verify(ctx context.Context, pattern rules.MigrationPattern) (Result, error) {
 	if pattern.ProviderType == "builtin" {
 		return Result{
 			SourceFQN: pattern.SourceFQN,
@@ -75,7 +76,7 @@ func (v *GoVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 		}, nil
 	}
 
-	modulePath, version, err := v.resolveModule(pattern.SourceFQN)
+	modulePath, version, err := v.resolveModule(ctx, pattern.SourceFQN)
 	if err != nil {
 		if errors.Is(err, errModuleNotFound) {
 			return Result{
@@ -98,7 +99,7 @@ func (v *GoVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 		}, nil
 	}
 
-	packages, err := v.getPackageList(modulePath, version)
+	packages, err := v.getPackageList(ctx, modulePath, version)
 	if err != nil {
 		return Result{
 			SourceFQN: pattern.SourceFQN,
@@ -142,7 +143,7 @@ func (v *GoVerifier) Verify(pattern rules.MigrationPattern) (Result, error) {
 	}, nil
 }
 
-func (v *GoVerifier) resolveModule(importPath string) (string, string, error) {
+func (v *GoVerifier) resolveModule(ctx context.Context, importPath string) (string, string, error) {
 	if cached, ok := v.moduleCache[importPath]; ok {
 		return cached.modulePath, cached.version, nil
 	}
@@ -156,7 +157,7 @@ func (v *GoVerifier) resolveModule(importPath string) (string, string, error) {
 	for i := len(parts); i >= minParts; i-- {
 		candidate := strings.Join(parts[:i], "/")
 
-		version, err := v.getLatestVersion(candidate)
+		version, err := v.getLatestVersion(ctx, candidate)
 		if err != nil {
 			if errors.Is(err, errModuleNotFound) {
 				continue
@@ -171,14 +172,18 @@ func (v *GoVerifier) resolveModule(importPath string) (string, string, error) {
 	return "", "", fmt.Errorf("resolving module for %s: %w", importPath, errModuleNotFound)
 }
 
-func (v *GoVerifier) getLatestVersion(modulePath string) (string, error) {
+func (v *GoVerifier) getLatestVersion(ctx context.Context, modulePath string) (string, error) {
 	escaped, err := escapeModulePath(modulePath)
 	if err != nil {
 		return "", err
 	}
 
 	latestURL := fmt.Sprintf("https://proxy.golang.org/%s/@latest", escaped)
-	resp, err := v.httpClient.Get(latestURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, latestURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("creating request for %s: %w", latestURL, err)
+	}
+	resp, err := v.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetching %s: %w", latestURL, err)
 	}
@@ -200,7 +205,7 @@ func (v *GoVerifier) getLatestVersion(modulePath string) (string, error) {
 	return info.Version, nil
 }
 
-func (v *GoVerifier) getPackageList(modulePath, version string) ([]string, error) {
+func (v *GoVerifier) getPackageList(ctx context.Context, modulePath, version string) ([]string, error) {
 	escapedModule := escapeFSPath(modulePath)
 	cacheDir := filepath.Join(v.cacheDir, escapedModule, version)
 	packagesFile := filepath.Join(cacheDir, "packages.txt")
@@ -214,7 +219,7 @@ func (v *GoVerifier) getPackageList(modulePath, version string) ([]string, error
 	}
 
 	zipPath := filepath.Join(cacheDir, "module.zip")
-	if err := v.downloadModuleZip(modulePath, version, zipPath); err != nil {
+	if err := v.downloadModuleZip(ctx, modulePath, version, zipPath); err != nil {
 		return nil, err
 	}
 
@@ -230,14 +235,18 @@ func (v *GoVerifier) getPackageList(modulePath, version string) ([]string, error
 	return packages, nil
 }
 
-func (v *GoVerifier) downloadModuleZip(modulePath, version, destPath string) error {
+func (v *GoVerifier) downloadModuleZip(ctx context.Context, modulePath, version, destPath string) error {
 	escaped, err := escapeModulePath(modulePath)
 	if err != nil {
 		return err
 	}
 
 	zipURL := fmt.Sprintf("https://proxy.golang.org/%s/@v/%s.zip", escaped, version)
-	resp, err := v.httpClient.Get(zipURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, zipURL, nil)
+	if err != nil {
+		return fmt.Errorf("creating request for %s: %w", zipURL, err)
+	}
+	resp, err := v.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("downloading %s: %w", zipURL, err)
 	}

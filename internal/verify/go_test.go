@@ -1,6 +1,7 @@
 package verify
 
 import (
+	"context"
 	"testing"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -70,7 +71,7 @@ func TestGoVerifier_StdlibAutoVerified(t *testing.T) {
 		SourceFQN:    "crypto/sha256",
 		ProviderType: "go",
 	}
-	result, err := v.Verify(pattern)
+	result, err := v.Verify(context.Background(), pattern)
 	if err != nil {
 		t.Fatalf("Verify() error: %v", err)
 	}
@@ -87,7 +88,7 @@ func TestGoVerifier_DependencyAutoVerified(t *testing.T) {
 	pattern := rules.MigrationPattern{
 		DependencyName: "golang.org/x/crypto",
 	}
-	result, err := v.Verify(pattern)
+	result, err := v.Verify(context.Background(), pattern)
 	if err != nil {
 		t.Fatalf("Verify() error: %v", err)
 	}
@@ -129,7 +130,7 @@ func TestGoVerifier_BuiltinSkipped(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := v.Verify(tt.pattern)
+			result, err := v.Verify(context.Background(), tt.pattern)
 			if err != nil {
 				t.Fatalf("Verify() error: %v", err)
 			}
@@ -148,7 +149,7 @@ func TestGoVerifier_NoSourceFQN(t *testing.T) {
 	pattern := rules.MigrationPattern{
 		ProviderType: "go",
 	}
-	result, err := v.Verify(pattern)
+	result, err := v.Verify(context.Background(), pattern)
 	if err != nil {
 		t.Fatalf("Verify() error: %v", err)
 	}
