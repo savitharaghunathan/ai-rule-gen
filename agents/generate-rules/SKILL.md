@@ -291,7 +291,7 @@ After extraction/coverage:
 **3a. Scaffold (orchestrator runs this directly, not an agent):**
 
 ```bash
-go run ./cmd/scaffold <log_flags> --rules <migration_dir>/rules --output <migration_dir>/tests
+go run ./cmd/scaffold <log_flags> --rules <migration_dir>/rules --output <migration_dir>/tests --patterns <migration_dir>/patterns.json
 ```
 
 This creates all directories, `.test.yaml` files, and `manifest.json`. No LLM needed.

@@ -50,7 +50,7 @@ func TestScaffoldRun_UsesRepositoryLanguageConfig(t *testing.T) {
 
 	languagesDir := filepath.Join(repoRoot(t), "languages")
 	outDir := filepath.Join(tmpDir, "out")
-	result, err := scaffold.Run(rulesDir, outDir, "", languagesDir)
+	result, err := scaffold.Run(rulesDir, outDir, "", languagesDir, "")
 	if err != nil {
 		t.Fatalf("scaffold run failed: %v", err)
 	}

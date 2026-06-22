@@ -119,7 +119,7 @@ const maxRulesPerGroup = 8
 // (directories, .test.yaml files), and writes a manifest.json for the agent.
 // outputDir is the tests root directory where data/, *.test.yaml, and manifest.json are written.
 // languagesDir is the path to the languages/ directory containing per-language config.json files.
-func Run(rulesDir, outputDir, language, languagesDir string) (*Result, error) {
+func Run(rulesDir, outputDir, language, languagesDir, patternsPath string) (*Result, error) {
 	entries, err := os.ReadDir(rulesDir)
 	if err != nil {
 		return nil, fmt.Errorf("reading rules dir: %w", err)
@@ -159,8 +159,13 @@ func Run(rulesDir, outputDir, language, languagesDir string) (*Result, error) {
 				language = detected
 			}
 		}
+		if language == "" && patternsPath != "" {
+			if pf, err := rules.ReadPatternsFile(patternsPath); err == nil && pf.Language != "" {
+				language = pf.Language
+			}
+		}
 		if language == "" {
-			language = "java"
+			return nil, fmt.Errorf("unable to detect language from rules or patterns file; specify --language explicitly")
 		}
 		manifest.Language = language
 
