@@ -18,6 +18,8 @@ type LanguageConfig struct {
 	SourceDir     string `json:"source_dir"`
 	MainFile      string `json:"main_file"`
 	MainFileType  string `json:"main_file_type"`
+	TestSourceDir string `json:"test_source_dir,omitempty"`
+	TestMainFile  string `json:"test_main_file,omitempty"`
 }
 
 // languageFile mirrors the JSON structure of languages/<lang>/config.json.
@@ -172,7 +174,15 @@ func Run(rulesDir, outputDir, language, languagesDir string) (*Result, error) {
 
 		for _, group := range groups {
 			dataDir := filepath.Join(testsDir, "data", group.name)
-			sourceDir := filepath.Join(dataDir, langConfig.SourceDir)
+
+			effectiveSourceDir := langConfig.SourceDir
+			effectiveMainFile := langConfig.MainFile
+			if langConfig.TestSourceDir != "" && isTestRelatedGroup(group.rules) {
+				effectiveSourceDir = langConfig.TestSourceDir
+				effectiveMainFile = langConfig.TestMainFile
+			}
+
+			sourceDir := filepath.Join(dataDir, effectiveSourceDir)
 			if err := os.MkdirAll(sourceDir, 0o755); err != nil {
 				return nil, fmt.Errorf("creating data dir: %w", err)
 			}
@@ -206,7 +216,7 @@ func Run(rulesDir, outputDir, language, languagesDir string) (*Result, error) {
 					Purpose:  "build",
 				},
 				{
-					Path:     filepath.Join(relDataDir, langConfig.SourceDir, langConfig.MainFile),
+					Path:     filepath.Join(relDataDir, effectiveSourceDir, effectiveMainFile),
 					FileType: langConfig.MainFileType,
 					Purpose:  "source",
 				},
@@ -481,6 +491,64 @@ func needsSourceOnly(c rules.Condition) bool {
 	}
 	for _, entry := range c.And {
 		if needsSourceOnly(entry.Condition) {
+			return true
+		}
+	}
+	return false
+}
+
+var testPackagePrefixes = []string{
+	"org.junit",
+	"org.mockito",
+	"org.springframework.boot.test",
+	"org.springframework.test",
+	"org.assertj",
+	"org.hamcrest",
+	"org.testng",
+	"io.quarkus.test",
+}
+
+var testDependencyHints = []string{
+	"junit",
+	"mockito",
+	"spock",
+	"assertj",
+	"hamcrest",
+	"testng",
+	"-test",
+}
+
+func isTestRelatedGroup(ruleList []rules.Rule) bool {
+	for _, r := range ruleList {
+		if isTestRelatedCondition(r.When) {
+			return true
+		}
+	}
+	return false
+}
+
+func isTestRelatedCondition(c rules.Condition) bool {
+	if c.JavaReferenced != nil {
+		for _, prefix := range testPackagePrefixes {
+			if strings.HasPrefix(c.JavaReferenced.Pattern, prefix) {
+				return true
+			}
+		}
+	}
+	if c.JavaDependency != nil {
+		for _, hint := range testDependencyHints {
+			if strings.Contains(c.JavaDependency.Name, hint) {
+				return true
+			}
+		}
+	}
+	for _, entry := range c.Or {
+		if isTestRelatedCondition(entry.Condition) {
+			return true
+		}
+	}
+	for _, entry := range c.And {
+		if isTestRelatedCondition(entry.Condition) {
 			return true
 		}
 	}

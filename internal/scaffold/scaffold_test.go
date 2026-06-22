@@ -20,6 +20,7 @@ func setupTestLanguagesDir(t *testing.T) string {
 		"java": {Language: "java", Providers: []string{"java", "builtin"}, Scaffold: LanguageConfig{
 			BuildFile: "pom.xml", BuildFileType: "xml",
 			SourceDir: "src/main/java/com/example", MainFile: "Application.java", MainFileType: "java",
+			TestSourceDir: "src/test/java/com/example", TestMainFile: "ApplicationTest.java",
 		}},
 		"go": {Language: "go", Providers: []string{"go", "builtin"}, Scaffold: LanguageConfig{
 			BuildFile: "go.mod", BuildFileType: "go",
@@ -395,6 +396,158 @@ func TestDetectExtraFiles(t *testing.T) {
 			t.Errorf("expected 0 extras, got %d", len(extras))
 		}
 	})
+}
+
+func TestIsTestRelatedGroup(t *testing.T) {
+	tests := []struct {
+		name     string
+		rules    []rules.Rule
+		expected bool
+	}{
+		{
+			name: "MockBean annotation is test-related",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewJavaReferenced("org.springframework.boot.test.mock.mockito.MockBean", "ANNOTATION"),
+			}},
+			expected: true,
+		},
+		{
+			name: "JUnit import is test-related",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewJavaReferenced("org.junit.jupiter.api.Test", "ANNOTATION"),
+			}},
+			expected: true,
+		},
+		{
+			name: "MockMvc import is test-related",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewJavaReferenced("org.springframework.test.web.servlet.MockMvc", "IMPORT"),
+			}},
+			expected: true,
+		},
+		{
+			name: "spring-boot-starter-test dependency is test-related",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewJavaDependency("org.springframework.boot.spring-boot-starter-test", "0.0.0", ""),
+			}},
+			expected: true,
+		},
+		{
+			name: "spock dependency is test-related",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewJavaDependency("org.spockframework.spock-spring", "0.0.0", ""),
+			}},
+			expected: true,
+		},
+		{
+			name: "EJB annotation is not test-related",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewJavaReferenced("javax.ejb.Stateless", "ANNOTATION"),
+			}},
+			expected: false,
+		},
+		{
+			name: "spring-web dependency is not test-related",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When:   rules.NewJavaDependency("org.springframework.boot.spring-boot-starter-web", "0.0.0", ""),
+			}},
+			expected: false,
+		},
+		{
+			name: "or combinator with test-related child",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When: rules.NewOr(
+					rules.NewJavaReferenced("javax.ejb.Stateless", "ANNOTATION"),
+					rules.NewJavaReferenced("org.mockito.Mock", "ANNOTATION"),
+				),
+			}},
+			expected: true,
+		},
+		{
+			name:     "empty rule list",
+			rules:    nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isTestRelatedGroup(tt.rules)
+			if got != tt.expected {
+				t.Errorf("isTestRelatedGroup() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestRunWithTestRelatedRules(t *testing.T) {
+	dir := t.TempDir()
+	rulesDir := filepath.Join(dir, "rules")
+	os.MkdirAll(rulesDir, 0o755)
+
+	ruleList := []rules.Rule{
+		{
+			RuleID:  "test-00010",
+			Message: "MockBean removed",
+			When:    rules.NewJavaReferenced("org.springframework.boot.test.mock.mockito.MockBean", "ANNOTATION"),
+		},
+		{
+			RuleID:  "test-00020",
+			Message: "SpyBean removed",
+			When:    rules.NewJavaReferenced("org.springframework.boot.test.mock.mockito.SpyBean", "ANNOTATION"),
+		},
+	}
+	ruleData, _ := yaml.Marshal(ruleList)
+	os.WriteFile(filepath.Join(rulesDir, "testing.yaml"), ruleData, 0o644)
+
+	rsData, _ := yaml.Marshal(rules.Ruleset{Name: "test"})
+	os.WriteFile(filepath.Join(rulesDir, "ruleset.yaml"), rsData, 0o644)
+
+	langsDir := setupTestLanguagesDir(t)
+	result, err := Run(rulesDir, dir, "", langsDir)
+	if err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+
+	if result.Language != "java" {
+		t.Errorf("Language = %q, want %q", result.Language, "java")
+	}
+
+	// Verify test source directory was created at src/test/java (not src/main/java)
+	testSourceDir := filepath.Join(dir, "data", "testing", "src", "test", "java", "com", "example")
+	if _, err := os.Stat(testSourceDir); os.IsNotExist(err) {
+		t.Errorf("test source directory %s was not created", testSourceDir)
+	}
+	mainSourceDir := filepath.Join(dir, "data", "testing", "src", "main", "java", "com", "example")
+	if _, err := os.Stat(mainSourceDir); !os.IsNotExist(err) {
+		t.Errorf("main source directory %s should not exist for test-related rules", mainSourceDir)
+	}
+
+	// Verify manifest paths use test source dir
+	manifestData, err := os.ReadFile(result.ManifestPath)
+	if err != nil {
+		t.Fatalf("reading manifest: %v", err)
+	}
+	var manifest Manifest
+	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+		t.Fatalf("parsing manifest: %v", err)
+	}
+	if len(manifest.Groups) != 1 {
+		t.Fatalf("manifest has %d groups, want 1", len(manifest.Groups))
+	}
+	sourceFile := manifest.Groups[0].Files[1]
+	expectedPath := filepath.Join("data", "testing", "src", "test", "java", "com", "example", "ApplicationTest.java")
+	if sourceFile.Path != expectedPath {
+		t.Errorf("source file path = %q, want %q", sourceFile.Path, expectedPath)
+	}
 }
 
 func TestRunWithBuiltinRules(t *testing.T) {
