@@ -2,11 +2,21 @@
 
 ## Project Structure
 
-```
+### Standard rules (application code migrations)
+```text
 <data-dir>/
 ├── pom.xml                                        # Maven build file
 └── src/main/java/com/example/Application.java     # Source code
 ```
+
+### Test-related rules (JUnit, Mockito, Spring Test, etc.)
+```text
+<data-dir>/
+├── pom.xml                                        # Maven build file
+└── src/test/java/com/example/ApplicationTest.java # Test source code
+```
+
+The scaffold automatically detects test-related rules and places source files under `src/test/java/` instead of `src/main/java/`. Check the manifest `files[].path` to see which directory to use.
 
 ## How the Analyzer Matches Java Conditions
 

@@ -6,7 +6,9 @@
     "build_file_type": "xml",
     "source_dir": "src/main/java/com/example",
     "main_file": "Application.java",
-    "main_file_type": "java"
+    "main_file_type": "java",
+    "test_source_dir": "src/test/java/com/example",
+    "test_main_file": "ApplicationTest.java"
   },
   "dependency_resolution": {
     "command": "",
