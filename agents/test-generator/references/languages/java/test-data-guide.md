@@ -3,14 +3,14 @@
 ## Project Structure
 
 ### Standard rules (application code migrations)
-```
+```text
 <data-dir>/
 ├── pom.xml                                        # Maven build file
 └── src/main/java/com/example/Application.java     # Source code
 ```
 
 ### Test-related rules (JUnit, Mockito, Spring Test, etc.)
-```
+```text
 <data-dir>/
 ├── pom.xml                                        # Maven build file
 └── src/test/java/com/example/ApplicationTest.java # Test source code

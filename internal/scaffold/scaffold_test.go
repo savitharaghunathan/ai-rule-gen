@@ -472,6 +472,32 @@ func TestIsTestRelatedGroup(t *testing.T) {
 			expected: true,
 		},
 		{
+			name: "and combinator with test-related child",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When: rules.Condition{
+					And: []rules.ConditionEntry{
+						{Condition: rules.NewJavaReferenced("javax.ejb.Stateless", "ANNOTATION")},
+						{Condition: rules.NewJavaReferenced("org.mockito.Mock", "ANNOTATION")},
+					},
+				},
+			}},
+			expected: true,
+		},
+		{
+			name: "and combinator without test-related child",
+			rules: []rules.Rule{{
+				RuleID: "r1",
+				When: rules.Condition{
+					And: []rules.ConditionEntry{
+						{Condition: rules.NewJavaReferenced("javax.ejb.Stateless", "ANNOTATION")},
+						{Condition: rules.NewJavaReferenced("javax.inject.Inject", "ANNOTATION")},
+					},
+				},
+			}},
+			expected: false,
+		},
+		{
 			name:     "empty rule list",
 			rules:    nil,
 			expected: false,

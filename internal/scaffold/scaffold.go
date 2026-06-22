@@ -179,7 +179,9 @@ func Run(rulesDir, outputDir, language, languagesDir string) (*Result, error) {
 			effectiveMainFile := langConfig.MainFile
 			if langConfig.TestSourceDir != "" && isTestRelatedGroup(group.rules) {
 				effectiveSourceDir = langConfig.TestSourceDir
-				effectiveMainFile = langConfig.TestMainFile
+				if langConfig.TestMainFile != "" {
+					effectiveMainFile = langConfig.TestMainFile
+				}
 			}
 
 			sourceDir := filepath.Join(dataDir, effectiveSourceDir)
