@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/konveyor/ai-rule-gen/internal/rules"
@@ -267,7 +268,7 @@ func TestRun(t *testing.T) {
 	os.WriteFile(filepath.Join(rulesDir, "ruleset.yaml"), rsData, 0o644)
 
 	langsDir := setupTestLanguagesDir(t)
-	result, err := Run(rulesDir, dir, "", langsDir)
+	result, err := Run(rulesDir, dir, "", langsDir, "")
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -538,7 +539,7 @@ func TestRunWithTestRelatedRules(t *testing.T) {
 	os.WriteFile(filepath.Join(rulesDir, "ruleset.yaml"), rsData, 0o644)
 
 	langsDir := setupTestLanguagesDir(t)
-	result, err := Run(rulesDir, dir, "", langsDir)
+	result, err := Run(rulesDir, dir, "", langsDir, "")
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -592,7 +593,7 @@ func TestRunWithBuiltinRules(t *testing.T) {
 	os.WriteFile(filepath.Join(rulesDir, "config.yaml"), ruleData, 0o644)
 
 	langsDir := setupTestLanguagesDir(t)
-	result, err := Run(rulesDir, dir, "java", langsDir)
+	result, err := Run(rulesDir, dir, "java", langsDir, "")
 	if err != nil {
 		t.Fatalf("Run() error: %v", err)
 	}
@@ -616,6 +617,70 @@ func TestRunWithBuiltinRules(t *testing.T) {
 	}
 	if !hasConfig {
 		t.Error("expected a config file in manifest")
+	}
+}
+
+func TestRunWithPatternsLanguageFallback(t *testing.T) {
+	dir := t.TempDir()
+	rulesDir := filepath.Join(dir, "rules")
+	os.MkdirAll(rulesDir, 0o755)
+
+	// Rules with only builtin.filecontent using a generic YAML pattern — no language detectable
+	ruleList := []rules.Rule{
+		{
+			RuleID:  "k8s-00010",
+			Message: "deprecated API",
+			When:    rules.NewBuiltinFilecontent("apiVersion:\\s*extensions/v1beta1", `.*\.ya?ml`),
+		},
+	}
+	ruleData, _ := yaml.Marshal(ruleList)
+	os.WriteFile(filepath.Join(rulesDir, "k8s.yaml"), ruleData, 0o644)
+
+	rsData, _ := yaml.Marshal(rules.Ruleset{Name: "test"})
+	os.WriteFile(filepath.Join(rulesDir, "ruleset.yaml"), rsData, 0o644)
+
+	// Create a patterns.json with language: "go"
+	patternsPath := filepath.Join(dir, "patterns.json")
+	patternsData := []byte(`{"language": "go", "targets": ["gateway-api"], "patterns": []}`)
+	os.WriteFile(patternsPath, patternsData, 0o644)
+
+	langsDir := setupTestLanguagesDir(t)
+	result, err := Run(rulesDir, dir, "", langsDir, patternsPath)
+	if err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+
+	if result.Language != "go" {
+		t.Errorf("Language = %q, want %q", result.Language, "go")
+	}
+}
+
+func TestRunFailsWithoutDetectableLanguage(t *testing.T) {
+	dir := t.TempDir()
+	rulesDir := filepath.Join(dir, "rules")
+	os.MkdirAll(rulesDir, 0o755)
+
+	// Rules with only builtin.filecontent using a generic pattern — no language detectable
+	ruleList := []rules.Rule{
+		{
+			RuleID:  "k8s-00010",
+			Message: "deprecated API",
+			When:    rules.NewBuiltinFilecontent("apiVersion:\\s*extensions/v1beta1", `.*\.ya?ml`),
+		},
+	}
+	ruleData, _ := yaml.Marshal(ruleList)
+	os.WriteFile(filepath.Join(rulesDir, "k8s.yaml"), ruleData, 0o644)
+
+	rsData, _ := yaml.Marshal(rules.Ruleset{Name: "test"})
+	os.WriteFile(filepath.Join(rulesDir, "ruleset.yaml"), rsData, 0o644)
+
+	langsDir := setupTestLanguagesDir(t)
+	_, err := Run(rulesDir, dir, "", langsDir, "")
+	if err == nil {
+		t.Fatal("expected error when language cannot be detected, got nil")
+	}
+	if !strings.Contains(err.Error(), "unable to detect language") {
+		t.Errorf("error = %q, want it to mention unable to detect language", err.Error())
 	}
 }
 
