@@ -125,6 +125,7 @@ Each skill has a `SKILL.md` (instructions), optional `references/` (condition ty
 | `eval` | Deterministic quality scoring + app coverage analysis |
 | `ground-truth` | Extract API changes via japicmp or guide parsing |
 | `feedback` | Aggregate pipeline run trends and failure analysis |
+| `compare` | Compare rulesets side-by-side with optional app coverage |
 
 ## Data Flow
 
@@ -154,7 +155,7 @@ graph TD
 | `patterns.json` | JSON | Extracted migration patterns with conditions, FQNs, categories |
 | `rules/*.yaml` | YAML | Konveyor analyzer rules ready for [konveyor/rulesets](https://github.com/konveyor/rulesets) |
 | `tests/manifest.json` | JSON | Test metadata — groups, file list, rule assignments |
-| `tests/data/` | Java/XML | Compilable test source code triggering rule patterns |
+| `tests/data/` | Source code (language-dependent) | Compilable test source code triggering rule patterns |
 | `report.yaml` | YAML | Per-rule test status, pass rate, timing, verification |
 | `pipeline.log` | JSONL | Structured event log with agent attribution |
 
@@ -176,6 +177,8 @@ graph TD
 | `contract` | Skill contract schema validation |
 | `sanitize` | Fix malformed XML in test data |
 | `workspace` | Report generation and timing calculations |
+| `compare` | Rule-level diff, overlap detection between two rulesets |
+| `integration` | Shared integration test utilities |
 
 ## Resumption
 

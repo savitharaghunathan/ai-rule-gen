@@ -24,12 +24,18 @@ cmd/                      # CLI commands (go run ./cmd/<name>)
   construct/              # patterns.json → rule YAML + ruleset.yaml
   validate/               # Validate rule YAML files
   merge-patterns/         # Merge partial patterns files with deduplication
+  verify/                 # Verify extracted FQNs against published source artifacts
   contract-validate/      # Validate skill input/return payloads against contract.json
   scaffold/               # Create test dirs, .test.yaml, manifest.json
   sanitize/               # Fix illegal XML comments in a directory
   test/                   # Run kantra tests (sequential, auto-retry timeouts)
   report/                 # Generate YAML summary report
   coverage/               # Post-extraction coverage check
+  log/                    # Append structured events to pipeline log
+  eval/                   # Deterministic quality scoring + app coverage analysis
+  ground-truth/           # Extract API changes via japicmp or guide parsing
+  feedback/               # Aggregate pipeline run trends and failure analysis
+  compare/                # Compare rulesets side-by-side with optional app coverage
 internal/                 # Go library code (no LLM dependencies)
 agents/                   # Agent skills (agentskills.io format)
   <skill>/SKILL.md        # Skill definition (inputs, returns, workflow)
@@ -81,6 +87,12 @@ go run ./cmd/sanitize  --dir output/<src>-to-<tgt>/tests/data/
 go run ./cmd/test      --rules output/<src>-to-<tgt>/rules/ --tests output/<src>-to-<tgt>/tests/ [--files a.test.yaml,b.test.yaml] [--timeout 5m]
 go run ./cmd/report    --source <src> --target <tgt> --output output/<src>-to-<tgt>/report.yaml [--kantra-limitation N] [--kantra-limitation-rules id4,id5]
 go run ./cmd/coverage  --guide output/<src>-to-<tgt>/guide.md --patterns output/<src>-to-<tgt>/patterns.json [--language java]
+go run ./cmd/verify    --patterns output/<src>-to-<tgt>/patterns.json --output output/<src>-to-<tgt>/verify-results.json --cache output/<src>-to-<tgt>/verify-cache
+go run ./cmd/log       --log output/<src>-to-<tgt>/pipeline.log --agent <agent-name> --model <model-id> --message "<message>"
+go run ./cmd/eval      --rules-dir output/<src>-to-<tgt>/rules/ [--app-dir <app>] [--ground-truth <ground_truth.yaml>] [--save] [--compare <baseline.json>]
+go run ./cmd/ground-truth --old-artifact <groupId:artifactId:version> --new-artifact <groupId:artifactId:version> [--output ground_truth.yaml]
+go run ./cmd/feedback  [--output-dir output] [--migration-path <filter>] [--format text|json] [--min-runs 2]
+go run ./cmd/compare   --a output/<src>-to-<tgt>-run1/rules/ --b output/<src>-to-<tgt>-run2/rules/ [--app-dir <app>] [--out report.md]
 
 go test ./internal/...   # Unit tests
 ```
