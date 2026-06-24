@@ -1,0 +1,159 @@
+{
+  "exit_code": 0,
+  "duration_s": 7692.7,
+  "wall_clock_s": 1900.5,
+  "cost_usd": 66.63,
+  "token_usage": {
+    "input": 23042,
+    "output": 718646,
+    "cache_read": 50023529,
+    "cache_create": 3765124
+  },
+  "num_turns": 780,
+  "per_model_usage": {
+    "claude-opus-4-6": {
+      "input": 22799,
+      "output": 386694,
+      "cache_read": 33463450,
+      "cache_create": 2081527,
+      "cost_usd": 39.52261375000002
+    }
+  },
+  "per_model_turns": {
+    "claude-opus-4-6": 659
+  },
+  "num_cases": 5,
+  "model": "claude-opus-4-6",
+  "agent": "claude-code",
+  "agent_version": "2.1.187 (Claude Code)",
+  "execution_mode": "case",
+  "eval_params": {
+    "skill": "generate-rules-with-test",
+    "skill_args": "{guide_source} mode=non_interactive",
+    "execution_mode": "case",
+    "max_budget_usd": 35.0,
+    "timeout_s": 5400
+  },
+  "per_case": {
+    "case-001-httpclient4-to-httpclient5": {
+      "exit_code": 0,
+      "duration_s": 910.0,
+      "token_usage": {
+        "input": 1436,
+        "output": 49069,
+        "cache_read": 5587620,
+        "cache_create": 306891
+      },
+      "cost_usd": 5.945783749999998,
+      "num_turns": 96,
+      "per_model_usage": {
+        "claude-opus-4-6": {
+          "input": 1436,
+          "output": 49069,
+          "cache_read": 5587620,
+          "cache_create": 306891,
+          "cost_usd": 5.945783749999998
+        }
+      },
+      "per_model_turns": {
+        "claude-opus-4-6": 96
+      }
+    },
+    "case-005-junit4-to-junit5": {
+      "exit_code": 0,
+      "duration_s": 967.6,
+      "token_usage": {
+        "input": 10549,
+        "output": 68206,
+        "cache_read": 6157337,
+        "cache_create": 433107
+      },
+      "cost_usd": 7.543482250000001,
+      "num_turns": 124,
+      "per_model_usage": {
+        "claude-opus-4-6": {
+          "input": 10549,
+          "output": 68206,
+          "cache_read": 6157337,
+          "cache_create": 433107,
+          "cost_usd": 7.543482250000001
+        }
+      },
+      "per_model_turns": {
+        "claude-opus-4-6": 124
+      }
+    },
+    "case-004-tomcat9-to-tomcat10": {
+      "exit_code": 0,
+      "duration_s": 990.6,
+      "token_usage": {
+        "input": 3875,
+        "output": 69920,
+        "cache_read": 6258794,
+        "cache_create": 364674
+      },
+      "cost_usd": 7.175984499999994,
+      "num_turns": 115,
+      "per_model_usage": {
+        "claude-opus-4-6": {
+          "input": 3875,
+          "output": 69920,
+          "cache_read": 6258794,
+          "cache_create": 364674,
+          "cost_usd": 7.175984499999994
+        }
+      },
+      "per_model_turns": {
+        "claude-opus-4-6": 115
+      }
+    },
+    "case-003-log4j1-to-log4j2": {
+      "exit_code": 0,
+      "duration_s": 2924.0,
+      "token_usage": {
+        "input": 243,
+        "output": 331952,
+        "cache_read": 16560079,
+        "cache_create": 1683597
+      },
+      "cost_usd": 27.102535749999998,
+      "num_turns": 205,
+      "per_model_usage": {
+        "claude-opus-4-6": {
+          "input": 243,
+          "output": 331952,
+          "cache_read": 16560079,
+          "cache_create": 1683597,
+          "cost_usd": 27.102535749999998
+        }
+      },
+      "per_model_turns": {
+        "claude-opus-4-6": 205
+      }
+    },
+    "case-002-spring-boot3-to-spring-boot4": {
+      "exit_code": 0,
+      "duration_s": 1900.5,
+      "token_usage": {
+        "input": 6939,
+        "output": 199499,
+        "cache_read": 15459699,
+        "cache_create": 976855
+      },
+      "cost_usd": 18.857363250000027,
+      "num_turns": 240,
+      "per_model_usage": {
+        "claude-opus-4-6": {
+          "input": 6939,
+          "output": 199499,
+          "cache_read": 15459699,
+          "cache_create": 976855,
+          "cost_usd": 18.857363250000027
+        }
+      },
+      "per_model_turns": {
+        "claude-opus-4-6": 240
+      }
+    }
+  }
+}

@@ -1,0 +1,317 @@
+judges:
+  budget_check:
+    mean: 1.0
+    pass_rate: 1.0
+  extraction_completeness:
+    mean: 4.2
+    pass_rate: null
+  patterns_quality:
+    mean: 1.0
+    pass_rate: 1.0
+  report_exists:
+    mean: 0.8
+    pass_rate: 0.8
+  rule_correctness:
+    mean: 4.0
+    pass_rate: null
+  rules_generated:
+    mean: 1.0
+    pass_rate: 1.0
+  test_coverage:
+    mean: 0.8
+    pass_rate: 0.8
+per_case:
+  case-001-httpclient4-to-httpclient5:
+    budget_check:
+      judge_type: builtin
+      rationale: Cost $10.34 within budget $35.00
+      value: true
+    extraction_completeness:
+      judge_type: llm
+      rationale: Good coverage of migration artifacts. All 17 recipe table rows are
+        represented in patterns.json except one (HttpResponse.getEntity() → ClassicHttpResponse.getEntity()).
+        Package changes, dependency changes, SSL/TLS restructuring, timeout migration,
+        async migration paths, and key API renames are all captured. 10 patterns had
+        non-FQN source_fqn preventing rule generation, but these were correctly extracted
+        as patterns. Most uncovered items in the coverage report (CookieStore, BasicCookieStore,
+        CredentialsProvider, JsonFactory, etc.) are not migration-specific artifacts
+        but rather usage examples. Minor misses include ClassicRequestBuilder for
+        classic API and DefaultClientTlsStrategy.
+      value: 4
+    patterns_quality:
+      judge_type: check
+      rationale: 26 patterns extracted with all required fields
+      value: true
+    report_exists:
+      judge_type: check
+      rationale: 'report.yaml valid: 16 rules, 0% pass rate'
+      value: true
+    rule_correctness:
+      judge_type: llm
+      rationale: 'The 16 rules that were generated are structurally correct with accurate
+        when conditions, good before/after code examples, and specific documentation
+        URLs. Source artifacts are verified as real. However, significant coverage
+        gaps exist: 10 important migration patterns (timeout changes, SSL factory
+        setup, retry handler, connection TTL, getAllHeaders, closeExpiredConnections)
+        were dropped because method names weren''t fully qualified, leaving key migration
+        recipes uncovered. The normalizeUri filecontent pattern is overly broad. Some
+        async rules overlap with classic migration triggers without clear differentiation.
+        Tests could not validate due to environment issues. The rules that exist are
+        good quality, but the overall ruleset misses too many important migration
+        items to score higher.'
+      value: 3
+    rules_generated:
+      judge_type: check
+      rationale: 6 rule files, sampled 7 valid rules
+      value: true
+    test_coverage:
+      judge_type: check
+      rationale: 8 test files, 16 data files, 16 rules in manifest
+      value: true
+  case-002-spring-boot3-to-spring-boot4:
+    budget_check:
+      judge_type: builtin
+      rationale: Cost $16.80 within budget $35.00
+      value: true
+    extraction_completeness:
+      judge_type: llm
+      rationale: 'The output captures the vast majority of actionable migration artifacts
+        from the guide. Let me walk through what''s covered and what''s missing:\n\n**Well
+        covered (70+ patterns):**\n- Removed features: Undertow, Pulsar Reactive,
+        embedded launch scripts, Spring Session Hazelcast/MongoDB, Spock\n- Deprecated
+        starters: all 5 renamed starters captured\n- Package relocations: BootstrapRegistry,
+        BootstrapContext, BootstrapRegistryInitializer, EnvironmentPostProcessor,
+        @EntityScan, @PropertyMapping, Skip, TestRestTemplate\n- Jackson 3 migration:
+        package rename (com.fasterxml→tools.jackson), class renames (JsonObjectSerializer→ObjectValueSerializer,
+        JsonValueDeserializer→ObjectValueDeserializer, Jackson2ObjectMapperBuilderCustomizer→JsonMapperBuilderCustomizer),
+        annotation renames (@JsonComponent→@JacksonComponent, @JsonMixin→@JacksonMixin),
+        property moves (spring.jackson.read/write/parser)\n- Testing: @MockBean/@SpyBean
+        removal, MockitoTestExecutionListener removal, MockMvc/@SpringBootTest change,
+        HtmlUnit attribute change, TestRestTemplate relocation\n- Dependencies: Flyway/Liquibase
+        starter requirements, AOP starter rename, Spring Retry removal, Spring Authorization
+        Server version property, classic uber-jar loader, CycloneDX minimum version\n-
+        Data: Elasticsearch Rest5Client, MongoDB property renames, @EntityScan relocation,
+        Hibernate dependency changes\n- Messaging: Kafka StreamBuilderFactoryBeanCustomizer,
+        Kafka retry property, AMQP retry customizer\n- Build: optional dependencies,
+        embedded scripts, loaderImplementation\n- Web: fonts in static locations,
+        HttpMessageConverters deprecation, forwarded headers, Jersey/Jackson2, Tomcat
+        WAR runtime\n- Session property renames, Spring Batch in-memory mode, DevTools
+        live reload default\n- JSpecify nullability annotations, PropertyMapper API
+        change, liveness/readiness probes default\n- GraphQL package reorganization,
+        spring-graphql-test→starter swap\n\n**Notable gaps:**\n1. **Logback Default
+        Charset** - behavioral change about UTF-8 default not captured as a pattern\n2.
+        **spring.jackson.find-and-add-modules=false** - new Jackson module auto-discovery
+        behavior not captured\n3. **spring.jackson.use-jackson2-defaults** property
+        and **spring.jackson2** namespace for Jackson 2 compatibility not captured\n4.
+        **spring-boot-jackson2** module as a stop-gap dependency not captured as a
+        pattern\n5. **WebClient/@SpringBootTest** change (need @AutoConfigureRestTestClient
+        or @AutoConfigureTestRestTemplate) - partially covered via TestRestTemplate
+        but the WebClient side is missing\n6. **RestTestClient** as new recommended
+        replacement for TestRestTemplate not captured\n7. The massive **starter/module
+        tables** (~80+ rows each) are not individually captured as patterns - this
+        is reasonable since they''re reference information, but specific technologies
+        that previously had no starter (like Flyway/Liquibase) are captured\n8. **Classic
+        starters** (spring-boot-starter-classic, spring-boot-starter-test-classic)
+        as migration intermediary not captured\n9. **spring.data.mongodb.gridfs.bucket/database**
+        being unchanged is mentioned but not captured (though this is informational)\n10.
+        **spring.data.mongodb.representation.big-decimal** property not explicitly
+        captured (UUID representation is)\n\nThe coverage is strong across all major
+        sections. The gaps are mostly around informational/behavioral changes and
+        a few specific properties. The 3 verification failures (JsonValueDeserializer,
+        StreamBuilderFactoryBeanCustomizer, Skip enum) suggest minor FQN accuracy
+        issues but the patterns themselves are present. Test failures are all due
+        to JAVA_HOME not being set, not pattern issues.'
+      value: 4
+    patterns_quality:
+      judge_type: check
+      rationale: 73 patterns extracted with all required fields
+      value: true
+    report_exists:
+      judge_type: check
+      rationale: 'report.yaml valid: 73 rules, 0% pass rate'
+      value: true
+    rule_correctness:
+      judge_type: llm
+      rationale: Rules are overwhelmingly correct with accurate source-side when conditions,
+        detailed before/after code examples, specific migration guide URLs, and reasonable
+        category/effort values. Two rules (jackson-import-00030 for JsonValueDeserializer
+        and kafka-import-00010 for StreamBuilderFactoryBeanCustomizer) failed source
+        verification, suggesting potential class name inaccuracies — though these
+        could be version-specific naming issues rather than hallucinations. Test failures
+        are all environmental (JAVA_HOME not set), not rule defects. Messages are
+        thorough with migration steps, additional context, and links. The 0% test
+        pass rate is entirely an infrastructure issue, not a quality issue.
+      value: 4
+    rules_generated:
+      judge_type: check
+      rationale: 17 rule files, sampled 17 valid rules
+      value: true
+    test_coverage:
+      judge_type: check
+      rationale: 25 test files, 56 data files, 73 rules in manifest
+      value: true
+  case-003-log4j1-to-log4j2:
+    budget_check:
+      judge_type: builtin
+      rationale: Cost $9.84 within budget $35.00
+      value: true
+    extraction_completeness:
+      judge_type: llm
+      rationale: 'The extraction is very thorough, covering the vast majority of migration
+        artifacts from the guide. All 7 type migrations from Table 2 (MDC→ThreadContext,
+        NDC→ThreadContext, Priority→Level, Level→Level, Category→Logger, Logger→Logger,
+        LogManager→LogManager) are captured. All 3 method migrations from Table 3
+        (Logger.getLogger→LogManager.getLogger, Logger.getRootLogger→LogManager.getRootLogger,
+        Category.getEffectiveLevel→Logger.getLevel) are present. The special methods
+        from Table 4 (Logger.getLogger with LoggerFactory, LogManager.shutdown, setLevel)
+        are covered. All 5 dependency replacements from Table 5 are captured, plus
+        the log4j-over-slf4j incompatibility. All 11 appender mappings from Table
+        6 are present. All layout conversions are covered. The filters (DenyAllFilter,
+        LevelMatchFilter, LevelRangeFilter, StringMatchFilter) are captured. PropertyConfigurator
+        and DOMConfigurator are included. The interpolation ${foo}→${sys:foo} change
+        is captured. The log4j.configuration property is covered. Minor omissions:
+        (1) The org.apache.log4j.Level→org.apache.logging.log4j.Level type mapping
+        from Table 2 lacks its own dedicated import-level pattern (it''s partially
+        covered by the package-level rule). (2) The org.apache.log4j.LogManager→org.apache.logging.log4j.LogManager
+        import migration doesn''t have its own dedicated rule. (3) The pattern converter
+        compatibility table (%p→%v1Level, %x→%ndc, %X→%properties) is mentioned in
+        messages but not extracted as separate rules. (4) The rolling file specifics
+        (fileIndex=''min'' for DefaultRolloverStrategy, filePattern details from Table
+        7) are in messages but not separate patterns. (5) The parameterized logging
+        best practice (is*Enabled guards removal) is mentioned in a message but not
+        a standalone rule. (6) The log4j1.compatibility configuration property isn''t
+        a standalone detection rule. These are relatively minor gaps since most are
+        mentioned within existing rule messages.'
+      value: 4
+    patterns_quality:
+      judge_type: check
+      rationale: 44 patterns extracted with all required fields
+      value: true
+    report_exists:
+      judge_type: check
+      rationale: 'report.yaml valid: 44 rules, 0% pass rate'
+      value: true
+    rule_correctness:
+      judge_type: llm
+      rationale: 'Rules are well-constructed overall with accurate source-side when
+        conditions, real Log4j 1 classes/methods (verified against artifacts), comprehensive
+        before/after code examples, and specific documentation URLs. Category and
+        effort values are reasonable. Minor issues include: (1) configuration-pattern-00010/00020
+        use overly broad filePattern ''.*'' risking false positives, (2) the interpolation
+        regex lost its negative lookahead due to Go regex limitations creating potential
+        false positives on already-migrated syntax, and (3) minor URL inconsistencies
+        between rules. The 0% test pass rate is entirely due to a JAVA_HOME environment
+        issue, not rule defects. The source verification confirmed 18 of 18 Java-based
+        patterns exist in log4j-1.2.17.jar.'
+      value: 4
+    rules_generated:
+      judge_type: check
+      rationale: 3 rule files, sampled 44 valid rules
+      value: true
+    test_coverage:
+      judge_type: check
+      rationale: 8 test files, 24 data files, 44 rules in manifest
+      value: true
+  case-004-tomcat9-to-tomcat10:
+    budget_check:
+      judge_type: builtin
+      rationale: Cost $7.41 within budget $35.00
+      value: true
+    extraction_completeness:
+      judge_type: llm
+      rationale: 'Good coverage with 11 of 13 actionable migration artifacts captured.
+        All five javax-to-jakarta package renames, GenericPrincipal.getPassword()
+        removal, web.xml defaults, session management, access log pattern change,
+        and all four 10.0.x notable changes are properly extracted. Two concrete sections
+        are missing: (1) HTTP/2 connector configuration deduplication change, and
+        (2) logging behavioral change about log files only being created when there
+        is content to write. The general ''System properties'' section guidance about
+        properties being replaced with component attributes is also only partially
+        addressed (one specific property captured, but not the general pattern). These
+        are minor but non-trivial omissions.'
+      value: 4
+    patterns_quality:
+      judge_type: check
+      rationale: 13 patterns extracted with all required fields
+      value: true
+    report_exists:
+      judge_type: check
+      rationale: No report.yaml found in output
+      value: false
+    rule_correctness:
+      judge_type: llm
+      rationale: 'All sampled rules have accurate source-side when conditions, clear
+        before/after code examples, and specific documentation URLs. Categories and
+        effort levels are reasonable throughout. Minor issues include: (1) potential
+        overlap between javax.servlet* and javax.servlet.jsp* patterns, (2) the session
+        rule detects Manager presence rather than absence (slightly inverted logic),
+        (3) two Tomcat internal artifact versions (9.0.0) don''t exist on Maven Central
+        (should be 9.0.1+), and (4) the %D filecontent pattern is short enough to
+        risk false positives. These are minor and don''t undermine the overall quality.'
+      value: 4
+    rules_generated:
+      judge_type: check
+      rationale: 11 rule files, sampled 6 valid rules
+      value: true
+    test_coverage:
+      judge_type: check
+      rationale: No test data files found in tests/data/
+      value: false
+  case-005-junit4-to-junit5:
+    budget_check:
+      judge_type: builtin
+      rationale: Cost $7.78 within budget $35.00
+      value: true
+    extraction_completeness:
+      judge_type: llm
+      rationale: 'The patterns.json comprehensively captures virtually all migration
+        artifacts from the guide. All annotation changes are covered: @Test (org.junit.Test
+        → org.junit.jupiter.api.Test), @Before → @BeforeEach, @After → @AfterEach,
+        @BeforeClass → @BeforeAll, @AfterClass → @AfterAll, @Ignore → @Disabled, @Category
+        → @Tag, @RunWith → @ExtendWith, @Rule → @ExtendWith, @ClassRule → @ExtendWith.
+        The @Test expected/timeout parameter removal is thoroughly documented in the
+        @Test pattern''s message. Class-level changes are captured: Assert → Assertions,
+        Assume → Assumptions. The TestRule interface migration to extension callbacks
+        is captured. Build configuration changes (surefire <groups> → <includeTags>/<excludeTags>)
+        have a dedicated pattern. The junit:junit dependency migration and junit-vintage-engine
+        transitional dependency are both captured. The only remaining coverage gaps
+        identified by the system were standard library references (Integer, Arrays)
+        and generic POM structural elements (build, plugins) which are not migration
+        artifacts. Every before/after code example difference in the guide has a corresponding
+        pattern with detailed messages including equivalent before/after examples.'
+      value: 5
+    patterns_quality:
+      judge_type: check
+      rationale: 15 patterns extracted with all required fields
+      value: true
+    report_exists:
+      judge_type: check
+      rationale: 'report.yaml valid: 15 rules, 0% pass rate'
+      value: true
+    rule_correctness:
+      judge_type: llm
+      rationale: All 9 sampled rules demonstrate accurate source-side when conditions
+        with correct FQNs, location types, and provider types. Messages are thorough
+        with clear before/after code examples, explanations of what changed and why,
+        and practical migration guidance. Documentation URLs point to specific sections
+        of the migration guide. Category (all mandatory) and effort values (1-7) are
+        well-calibrated to the complexity of each change. All source artifacts are
+        verified against junit-4.13.2.jar with no hallucinated classes or methods.
+        The rules cover annotations, assertions, assumptions, build configuration,
+        and dependencies comprehensively. Test failures are solely due to missing
+        JAVA_HOME in the execution environment, not rule defects.
+      value: 5
+    rules_generated:
+      judge_type: check
+      rationale: 4 rule files, sampled 15 valid rules
+      value: true
+    test_coverage:
+      judge_type: check
+      rationale: 5 test files, 10 data files, 15 rules in manifest
+      value: true
+run_id: 2026-06-24-opus
+run_metrics:
+  cache_hit_rate: 0.946117
+  cost_per_mtok_usd: 0.8887
+  cost_per_turn_usd: 0.059273
+  output_tokens_per_turn: 723.66
