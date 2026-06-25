@@ -1,4 +1,15 @@
 {
+  "extraKnownMarketplaces": {
+    "agent-eval-harness": {
+      "source": {
+        "source": "github",
+        "repo": "opendatahub-io/agent-eval-harness"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "agent-eval-harness@agent-eval-harness": true
+  },
   "permissions": {
     "allow": [
       "Bash(mkdir *)",
