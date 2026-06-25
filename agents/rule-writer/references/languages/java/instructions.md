@@ -51,6 +51,14 @@ For `java.referenced` patterns, emit `source_artifact` so the deterministic veri
 }
 ```
 
+## FQN Resolution When Guide Text Is Incomplete
+
+Migration guides often reference methods or classes by short name without the full package path. When you encounter an incomplete FQN:
+
+1. Check the guide's import statements, code examples, or "before" snippets — the full package is usually shown there even if the prose uses the short name.
+2. Use the `source_artifact` Maven coordinate to infer the package. Standard Java libraries follow predictable package conventions (e.g., `org.apache.http.client` for HttpClient 4, `org.apache.logging.log4j` for Log4j). Cross-reference the group ID and known package structure.
+3. If you cannot determine the full package path from the guide content or library conventions, emit the pattern anyway with the best FQN you can construct. A pattern with a reasonable FQN that the construct stage and verifier can validate is better than dropping the migration entirely — the verifier will catch incorrect FQNs, but it cannot recover patterns that were never emitted.
+
 ## Validation Notes
 
 - Java has 14 valid location types: `TYPE`, `INHERITANCE`, `METHOD_CALL`, `CONSTRUCTOR_CALL`, `ANNOTATION`, `IMPLEMENTS_TYPE`, `ENUM`, `RETURN_TYPE`, `IMPORT`, `VARIABLE_DECLARATION`, `PACKAGE`, `FIELD`, `FIELD_DECLARATION`, `METHOD`, `CLASS`

@@ -1,0 +1,294 @@
+name: ai-rule-gen-eval
+description: Evaluate the generate-rules-with-test skill — end-to-end migration rule generation with test validation
+skill: generate-rules-with-test
+
+execution:
+  mode: case
+  arguments: "{guide_source} mode=non_interactive"
+  timeout: 5400
+  max_budget_usd: 35.0
+  max_turns: 250
+  parallelism: 5
+  env:
+    JAVA_HOME: "$JAVA_HOME"
+
+runner:
+  type: claude-code
+
+models:
+  skill: claude-opus-4-6
+  judge: claude-opus-4-6
+
+permissions:
+  allow:
+    - "Bash(go run ./cmd/*)"
+    - "Bash(cd * && go run ./cmd/*)"
+    - "Bash(ls *)"
+    - "Bash(wc *)"
+    - "Write(**/output/**)"
+    - "Edit(**/output/**)"
+    - "Read(**)"
+    - "Skill"
+  deny: []
+
+mlflow:
+  experiment: ai-rule-gen-eval
+
+dataset:
+  path: eval/generate-rules-with-test/cases
+  schema: |
+    Each case directory contains:
+    - input.yaml: YAML file with:
+      - 'guide_source' (string) — URL to a migration guide or relative path to a local guide.md file.
+        For URL-based cases, the value is the full URL (e.g., "https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide").
+        For file-based cases, the value is "guide.md" (referencing the companion file).
+      - 'sources' (optional list of strings) — source technology labels, e.g. ["spring-boot3", "spring-boot"].
+        Auto-detected from the guide if omitted.
+      - 'targets' (optional list of strings) — target technology labels, e.g. ["spring-boot4", "spring-boot"].
+        Auto-detected from the guide if omitted.
+    - guide.md (optional) — the migration guide content, required when guide_source is a local file path.
+      Markdown format with sections describing API changes, dependency updates, code migration patterns.
+    - annotations.yaml: Expected outcomes for annotation-aware judging:
+      - 'expected_min_rules' (int) — minimum number of rules expected from this guide
+      - 'expected_language' (string) — expected detected language (e.g., "java", "go")
+      - 'expected_categories' (list of strings) — expected migration concern categories
+        (e.g., ["web", "data", "core", "dependencies"])
+      - 'key_patterns' (list of strings) — specific source_fqn values that MUST appear in patterns.json
+        (critical migration artifacts that should never be missed)
+
+outputs:
+  - path: output
+    schema: |
+      The skill creates a timestamped subdirectory under output/ (e.g., output/spring-boot3-to-spring-boot4-20260615-180117/).
+      Within that directory:
+
+      - guide.md — ingested and cleaned migration guide markdown
+      - patterns.json — extracted migration patterns, a JSON object with:
+        - 'sources' (list): source technology labels
+        - 'targets' (list): target technology labels
+        - 'language' (string): detected language (e.g., "java")
+        - 'patterns' (array): each pattern has source_pattern/target_pattern, rationale,
+          complexity, category, concern, provider_type, documentation_url, message,
+          and optionally dependency_name/upper_bound
+      - rules/ — directory of Konveyor rule YAML files:
+        - ruleset.yaml — top-level ruleset with all source/target labels
+        - <concern>.yaml — rule files organized by migration concern (e.g., web.yaml, core.yaml)
+        Each rule has: ruleID, description, category, effort, labels, message (with
+        before/after code examples), and when conditions
+      - tests/ — kantra test suite directory:
+        - manifest.json — test structure (groups array with name, data_dir, rule_ids, files)
+        - <group>.test.yaml — kantra test definitions
+        - data/<group>/ — test source code and pom.xml files
+      - report.yaml — final report with:
+        - generated_at (ISO timestamp)
+        - sources/targets (lists)
+        - rules_total, tests_passed, tests_failed, kantra_limitation (counts)
+        - pass_rate (percentage)
+        - rules (array): per-rule with rule_id, test_status (passed/failed/kantra-limitation/untested),
+          source_verified (boolean)
+      - verify-results.json — Maven Central source artifact verification results
+      - pipeline.log — complete event log of all pipeline operations
+
+traces:
+  stdout: true
+  stderr: true
+  events: true
+  metrics: true
+
+judges:
+  - name: budget_check
+    builtin: cost_budget
+    arguments:
+      max_cost_usd: 35.0
+
+  - name: report_exists
+    description: |
+      Validates that the skill produced a report.yaml with all required fields:
+      generated_at, sources, targets, rules_total, pass_rate, and a rules array.
+    check: |
+      import yaml
+      files = outputs.get("files", {})
+      report_files = [k for k in files if k.endswith("report.yaml")]
+      if not report_files:
+          return (False, "No report.yaml found in output")
+      content = files[report_files[0]]
+      try:
+          report = yaml.safe_load(content)
+      except Exception as e:
+          return (False, f"report.yaml is not valid YAML: {e}")
+      required = ["generated_at", "sources", "targets", "rules_total", "pass_rate", "rules"]
+      missing = [f for f in required if f not in report]
+      if missing:
+          return (False, f"report.yaml missing fields: {missing}")
+      rules_total = report.get("rules_total", 0)
+      if rules_total == 0:
+          return (False, "rules_total is 0 — no rules generated")
+      return (True, f"report.yaml valid: {rules_total} rules, {report.get('pass_rate', 0)}% pass rate")
+
+  - name: rules_generated
+    description: |
+      Checks that rule YAML files were created and contain valid rule definitions
+      with ruleID, when conditions, and messages.
+    check: |
+      import yaml
+      files = outputs.get("files", {})
+      rule_files = [k for k in files if "/rules/" in k and k.endswith(".yaml") and "ruleset" not in k]
+      if not rule_files:
+          return (False, "No rule YAML files found in output/*/rules/")
+      total_rules = 0
+      for rf in rule_files[:5]:
+          content = files[rf]
+          try:
+              rules = yaml.safe_load(content)
+              if isinstance(rules, list):
+                  for r in rules:
+                      if "ruleID" in r and "when" in r:
+                          total_rules += 1
+          except Exception:
+              pass
+      if total_rules == 0:
+          return (False, f"Found {len(rule_files)} rule files but no valid rules with ruleID and when")
+      return (True, f"{len(rule_files)} rule files, sampled {total_rules} valid rules")
+
+  - name: patterns_quality
+    description: |
+      Validates patterns.json structure and content — checks that patterns have
+      required fields and reference source-side artifacts.
+    check: |
+      import json
+      files = outputs.get("files", {})
+      pattern_files = [k for k in files if k.endswith("patterns.json")]
+      if not pattern_files:
+          return (False, "No patterns.json found")
+      content = files[pattern_files[0]]
+      try:
+          data = json.loads(content)
+      except Exception as e:
+          return (False, f"patterns.json is not valid JSON: {e}")
+      patterns = data.get("patterns", [])
+      if not patterns:
+          return (False, "patterns.json has no patterns")
+      required_fields = ["source_pattern", "category", "concern", "message"]
+      missing_fields = []
+      for p in patterns[:10]:
+          for f in required_fields:
+              if f not in p:
+                  missing_fields.append(f)
+                  break
+      if missing_fields:
+          return (False, f"Patterns missing required fields: {set(missing_fields)}")
+      annotations = outputs.get("annotations", {})
+      min_rules = annotations.get("expected_min_rules", 5)
+      if len(patterns) < min_rules:
+          return (0.5, f"{len(patterns)} patterns extracted, expected at least {min_rules}")
+      return (True, f"{len(patterns)} patterns extracted with all required fields")
+
+  - name: test_coverage
+    description: |
+      Checks that test files and test data directories exist for the generated rules,
+      and that the test manifest covers the rules.
+    check: |
+      import json
+      files = outputs.get("files", {})
+      manifest_files = [k for k in files if k.endswith("manifest.json")]
+      test_yaml_files = [k for k in files if k.endswith(".test.yaml")]
+      test_data_files = [k for k in files if "/tests/data/" in k]
+      if not manifest_files:
+          return (False, "No manifest.json found in tests/")
+      if not test_yaml_files:
+          return (False, "No .test.yaml files found")
+      if not test_data_files:
+          return (False, "No test data files found in tests/data/")
+      try:
+          manifest = json.loads(files[manifest_files[0]])
+          groups = manifest.get("groups", [])
+          total_rule_ids = sum(len(g.get("rule_ids", [])) for g in groups)
+      except Exception:
+          total_rule_ids = 0
+      return (True, f"{len(test_yaml_files)} test files, {len(test_data_files)} data files, {total_rule_ids} rules in manifest")
+
+  - name: extraction_completeness
+    description: |
+      LLM judge that compares the ingested guide against extracted patterns to assess
+      whether all major migration artifacts were captured. Focuses on missed classes,
+      dependencies, configuration properties, and code example differences.
+    prompt: |
+      You are evaluating whether a migration rule generator completely extracted all
+      migration artifacts from a migration guide.
+
+      ## Skill Output
+
+      {{ outputs }}
+
+      ## Task
+
+      Compare the guide.md content against patterns.json. For each section of the guide,
+      check whether the migration artifacts mentioned (classes, methods, dependencies,
+      configuration properties, behavioral changes) were captured as patterns.
+
+      Focus on:
+      1. Are there classes/types/methods named in the guide that don't appear as source_pattern in any pattern?
+      2. Are there dependencies listed in the guide that lack corresponding patterns?
+      3. Are there configuration property changes (application.properties / application.yml) not captured?
+      4. Are there code example before/after differences not extracted?
+      5. Are reference table rows missing from the patterns?
+
+      ## Scoring
+
+      Score 1: Less than 40% of guide artifacts extracted — many entire sections missed
+      Score 2: 40-60% extracted — significant gaps in multiple sections
+      Score 3: 60-80% extracted — most major artifacts captured but notable misses
+      Score 4: 80-95% extracted — good coverage with only minor/edge-case omissions
+      Score 5: 95%+ extracted — comprehensive coverage, only trivial informational items omitted
+
+  - name: rule_correctness
+    description: |
+      LLM judge that assesses the quality and correctness of generated rule YAML files.
+      Checks whether when conditions match source artifacts, messages include migration
+      guidance with code examples, and documentation URLs are specific.
+    prompt: |
+      You are evaluating the quality and correctness of Konveyor analyzer migration rules.
+
+      ## Skill Output
+
+      {{ outputs }}
+
+      ## Task
+
+      Review a representative sample of 8-10 rule YAML files. For each rule, assess:
+
+      1. **When condition accuracy**: Does the `when` condition (java.referenced, builtin.filecontent, etc.)
+         correctly match the pre-migration artifact described in the pattern? The condition should match
+         SOURCE-side code, not target-side.
+      2. **Message quality**: Does the message explain WHAT changed, WHY it changed, and HOW to migrate?
+         Does it include before/after code examples?
+      3. **Documentation URL**: Is it a specific link to the relevant section of the migration guide,
+         not just the guide homepage?
+      4. **Category and effort**: Are category (mandatory/optional/potential) and effort (1-7) reasonable
+         for the type of change described?
+      5. **No hallucinations**: Are the source classes/methods/dependencies real (exist in the source
+         version's API), not invented?
+
+      ## Scoring
+
+      Score 1: Rules have wrong when conditions, target-side patterns, or hallucinated artifacts
+      Score 2: Some rules correct but many have missing code examples or wrong condition types
+      Score 3: Most rules structurally correct but messages lack depth or URLs are generic
+      Score 4: Rules are correct with good messages, minor issues in a few rules
+      Score 5: All sampled rules have accurate conditions, clear before/after examples, specific URLs
+
+thresholds:
+  budget_check:
+    min_pass_rate: 1.0
+  report_exists:
+    min_pass_rate: 1.0
+  rules_generated:
+    min_pass_rate: 1.0
+  patterns_quality:
+    min_pass_rate: 1.0
+  test_coverage:
+    min_pass_rate: 1.0
+  extraction_completeness:
+    min_mean: 3.5
+  rule_correctness:
+    min_mean: 3.5

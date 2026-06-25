@@ -80,7 +80,7 @@ Both commands invoke this skill. The user can override `checkpoint_behavior` exp
 **Do NOT use `grep`, `sed`, `awk`, `wc`, `find`, or other shell text-processing tools to parse data that CLI commands already return.**
 Every `go run ./cmd/*` command returns structured JSON. Use that JSON output directly — do not pipe it through shell commands to extract fields.
 This is a Go project. Run only commands listed in this permissions table.
-If a required action is not permitted, stop and report the limitation.
+If a required action is not permitted, stop and report the limitation — do NOT retry the same operation with different syntax (heredocs, base64 encoding, helper scripts, etc.). A permission denial means the action is blocked, not that the syntax was wrong. Move to the next pipeline step or end the pipeline.
 
 ## UX Principles
 
@@ -117,7 +117,7 @@ Generate a timestamp once at pipeline start (`YYYYMMDD-HHMMSS` in local time).
 Determine the migration directory path:
 - If the user provided `migration_dir`, use that (no timestamp)
 - If the user provided `sources` and `targets` (or `source` and `target`), use `output/<primary_source>-to-<primary_target>-<YYYYMMDD-HHMMSS>` where `primary_source` is `sources[0]` and `primary_target` is `targets[0]`
-- If auto-detecting: ingest to `output/guide-temp.md` first, read the first ~50 lines to detect source/target/language (lowercase, hyphenated names like `spring-boot-3`), then use `output/<source>-to-<target>-<YYYYMMDD-HHMMSS>`
+- If auto-detecting: ingest to `output/guide-temp-<YYYYMMDD-HHMMSS>.md` first (use the pipeline timestamp to avoid collisions when multiple invocations run in parallel), read the first ~50 lines to detect source/target/language (lowercase, hyphenated names like `spring-boot-3`), then use `output/<source>-to-<target>-<YYYYMMDD-HHMMSS>`
 
 ```bash
 mkdir -p output/<source>-to-<target>-<YYYYMMDD-HHMMSS>
@@ -135,7 +135,7 @@ The log flags are: `--log <migration_dir>/pipeline.log --agent orchestrator --mo
 - **File (not markdown):** `go run ./cmd/ingest --log <migration_dir>/pipeline.log --agent orchestrator --model <your_model_id> --input <path> --output <migration_dir>/guide.md`
 - **Pasted text or already markdown:** Write directly to `<migration_dir>/guide.md`
 
-If auto-detecting, write `output/guide-temp.md` to `<migration_dir>/guide.md` using the Write tool after the migration directory path is determined.
+If auto-detecting, write `output/guide-temp-<YYYYMMDD-HHMMSS>.md` to `<migration_dir>/guide.md` using the Write tool after the migration directory path is determined.
 
 **Stub detection — follow sub-pages.** After ingesting each URL, check the output for stub characteristics. A page is a stub if it has fewer than 100 non-blank lines of content after `cmd/ingest` processing (`cmd/ingest` already strips `<nav>`, `<footer>`, and `<aside>` elements during HTML-to-markdown conversion, so no additional filtering is needed).
 
